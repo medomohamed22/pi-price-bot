@@ -8,7 +8,7 @@ const token = '8339316854:AAFnR5ZilA5JDfN0r9QX2vQACEcDSrHSvXE';
 const bot = new TelegramBot(token);
 
 const PORT = process.env.PORT || 3000;
-const URL = 'https://pi-price-bot-gjul.onrender.com';
+const URL = 'https://pi-price-bot-0qtj.onrender.com';
 
 app.use(express.json());
 
