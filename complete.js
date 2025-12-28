@@ -11,10 +11,10 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ status: 'error', message: 'Missing paymentId or txid' }) };
   }
   
-  const apiKey = process.env.PI_API_KEY;
+  const apiKey = process.env.API_KEY;
   
   if (!apiKey) {
-    console.log("ERROR: PI_API_KEY not set!");
+    console.log("ERROR: API_KEY not set!");
     return { statusCode: 500, body: JSON.stringify({ status: 'error', message: 'Server configuration error' }) };
   }
   
