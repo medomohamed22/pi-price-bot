@@ -1,0 +1,5 @@
+[build]
+publish = "." # ينشر كل الملفات من الـ root (index.html هيبقى الصفحة الرئيسية)
+
+[functions]
+directory = "." # يعامل كل ملف .js في الـ root كـ function!
