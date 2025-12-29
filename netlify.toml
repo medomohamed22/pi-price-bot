@@ -1,7 +1,0 @@
-[build]
-publish = "." # Netlify ينشر كل الملفات من الـ root
-functions = "." # يعامل الملفات .js في الـ root كـ functions
-
-[[functions]]
-# كل ملف .js في الـ root هيبقى function تلقائي باسم الملف بدون .js
-# مثال: approve.js → يشتغل على /.netlify/functions/approve
