@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مسابقة التليفون الكبير - ادفع 1 Pi واربح!</title>
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 30px;
+            padding: 50px 40px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4);
+            max-width: 600px;
+            width: 90%;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .logo {
+            font-size: 140px;
+            margin-bottom: 20px;
+            animation: glow 2s infinite alternate;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 20px #fff; }
+            to { text-shadow: 0 0 40px #fff, 0 0 60px #2575fc; }
+        }
+
+        .prize {
+            font-size: 100px;
+            margin: 20px 0;
+        }
+
+        h1 {
+            font-size: 38px;
+            margin: 20px 0;
+        }
+
+        .details {
+            font-size: 22px;
+            margin: 30px 0;
+            line-height: 1.6;
+        }
+
+        .participants {
+            font-size: 28px;
+            margin: 30px 0;
+            font-weight: bold;
+            color: #ffeb3b;
+        }
+
+        button.pay {
+            background: linear-gradient(135deg, #ffeb3b, #ffc107);
+            color: #2575fc;
+            border: none;
+            padding: 20px 70px;
+            font-size: 26px;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+            transition: all 0.4s ease;
+            margin: 20px 0;
+        }
+
+        button.pay:hover {
+            transform: translateY(-10px) scale(1.05);
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        button.pay:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .note {
+            margin-top: 40px;
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .winner {
+            font-size: 32px;
+            color: #ffeb3b;
+            margin: 30px 0;
+            font-weight: bold;
+        }
+    </style>
+    <script>
+        Pi.init({ version: "2.0" });
+
+        const TARGET_PARTICIPANTS = 1000;
+        const PAY_AMOUNT = 1;
+
+        let currentUsername = null;
+        let participantsCount = 0;
+        let winnerAnnounced = false;
+        let winnerName = "";
+
+        async function authenticate() {
+            try {
+                const scopes = ['username', 'payments'];
+                const authResult = await Pi.authenticate(scopes);
+                currentUsername = authResult.user.username;
+                document.getElementById('welcome').innerText = `مرحباً، ${currentUsername} 👋`;
+                checkParticipationStatus();
+            } catch (err) {
+                console.error(err);
+                document.getElementById('welcome').innerText = "افتح الموقع داخل Pi Browser";
+            }
+        }
+
+        async function checkParticipationStatus() {
+            // في الإنتاج، هنجيب العدد من قاعدة بيانات أو backend
+            // دلوقتي هنحاكي (في النسخة الحقيقية هتستخدم Supabase أو localStorage)
+            participantsCount = Math.floor(Math.random() * 800) + 100; // محاكاة
+
+            document.getElementById('count').innerText = participantsCount;
+
+            if (participantsCount >= TARGET_PARTICIPANTS && !winnerAnnounced) {
+                winnerAnnounced = true;
+                winnerName = "محمد أحمد"; // محاكاة – هتجيب من backend
+                document.getElementById('winner').innerText = `الفائز: ${winnerName} 🎉`;
+                document.getElementById('payButton').disabled = true;
+                document.getElementById('payButton').innerText = "المسابقة انتهت!";
+            }
+        }
+
+        async function payWithPi() {
+            if (participantsCount >= TARGET_PARTICIPANTS) {
+                alert("المسابقة اكتملت! تم اختيار الفائز 🎉");
+                return;
+            }
+
+            const paymentData = {
+                amount: PAY_AMOUNT,
+                memo: `مشاركة في مسابقة التليفون - ${currentUsername}`,
+                metadata: { contest: "phone_giveaway", username: currentUsername }
+            };
+
+            const callbacks = {
+                onReadyForServerApproval: function(paymentId) {
+                    fetch('/.netlify/functions/approve', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ paymentId })
+                    })
+                    .then(res => res.json())
+                    .then(data => console.log("Approval:", data))
+                    .catch(err => console.error(err));
+                },
+                onReadyForServerCompletion: function(paymentId, txid) {
+                    fetch('/.netlify/functions/complete', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ paymentId, txid, username: currentUsername })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        console.log("Completion:", data);
+                        alert("تم الدفع بنجاح! أنت الآن مشارك في المسابقة 🎉");
+                        participantsCount++;
+                        document.getElementById('count').innerText = participantsCount;
+                        checkParticipationStatus();
+                    })
+                    .catch(err => console.error(err));
+                },
+                onCancel: () => alert("تم إلغاء الدفع"),
+                onError: (error) => console.error("Pi Error:", error)
+            };
+
+            Pi.createPayment(paymentData, callbacks);
+        }
+
+        window.onload = function() {
+            authenticate();
+        };
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">π</div>
+        <div class="prize">📱</div>
+        <h1>مسابقة التليفون الكبير!</h1>
+        <p id="welcome">جاري التوثيق عبر Pi...</p>
+
+        <div class="details">
+            <p>ادفع <strong>1 Pi فقط</strong> وادخل السحب على تليفون جديد!</p>
+            <p class="participants">عدد المشاركين الحالي: <span id="count">جاري التحميل...</span> / 1000</p>
+            <p id="winner" class="winner" style="display:none;"></p>
+        </div>
+
+        <button class="pay" id="payButton" onclick="payWithPi()">ادفع 1 Pi وشارك الآن!</button>
+
+        <p class="note">السحب العشوائي بعد اكتمال 1000 مشارك<br>الدفع آمن 100% عبر محفظة Pi الرسمية</p>
+    </div>
+</body>
+</html>
