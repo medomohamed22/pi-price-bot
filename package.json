@@ -1,0 +1,12 @@
+{
+  "name": "pi-payment-ts",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "@types/node": "^20.10.5",
+    "@netlify/functions": "^2.4.0"
+  }
+}

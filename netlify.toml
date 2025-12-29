@@ -1,0 +1,10 @@
+[build]
+publish = "."
+
+[functions]
+directory = "."
+
+[[redirects]]
+from = "/*"
+to = "/index.html"
+status = 200
