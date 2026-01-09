@@ -1,5 +1,3 @@
-const fetch = require('node-fetch'); // Netlify بيوفر node-fetch تلقائي
-
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
