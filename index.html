@@ -186,6 +186,7 @@
         Pi.init({ version: "2.0" });
 
         let currentLang = 'en';
+        let currentUsername = null; // لتخزين اسم المستخدم
 
         // تبديل اللغة
         document.getElementById('lang-switch').addEventListener('click', () => {
@@ -213,10 +214,10 @@
         });
 
         // دالة تحديث تحية المستخدم
-        function updateUserGreeting(username = null) {
+        function updateUserGreeting() {
             const greetingEl = document.getElementById('user-greeting');
-            const name = username || 'Guest';
-            const arName = username || 'زائر';
+            const name = currentUsername || 'Guest';
+            const arName = currentUsername || 'زائر';
             greetingEl.dataset.en = `Donate as ${name}`;
             greetingEl.dataset.ar = `تبرع كـ ${arName}`;
             greetingEl.textContent = greetingEl.dataset[currentLang];
@@ -226,6 +227,20 @@
         function updatePayButton(card, amount) {
             const payBtn = card.querySelector('.pay-btn');
             payBtn.textContent = currentLang === 'en' ? `Donate Now ${amount} Pi` : `تبرع الآن بـ ${amount} Pi`;
+        }
+
+        // التعرف على المستخدم فور تحميل الصفحة (للحصول على الاسم فقط)
+        async function authenticateOnLoad() {
+            try {
+                const user = await Pi.authenticate(['username'], onIncompletePaymentFound);
+                currentUsername = user.username || null;
+                updateUserGreeting();
+            } catch (err) {
+                // إذا رفض المستخدم أو حدث خطأ، نبقى على Guest
+                console.log('لم يتم التعرف على المستخدم عند التحميل:', err);
+                currentUsername = null;
+                updateUserGreeting();
+            }
         }
 
         // إعداد كل حملة
@@ -264,11 +279,15 @@
                 }
 
                 try {
-                    // طلب صلاحيات (بما فيها username)
-                    const user = await Pi.authenticate(['username', 'payments'], onIncompletePaymentFound);
+                    // طلب صلاحية الدفع (مع username إذا لم يكن موجودًا)
+                    const scopes = currentUsername ? ['payments'] : ['username', 'payments'];
+                    const user = await Pi.authenticate(scopes, onIncompletePaymentFound);
 
-                    // تحديث تحية المستخدم باسمه بعد التعرف عليه
-                    updateUserGreeting(user.username);
+                    // تحديث الاسم إذا تغير
+                    if (user.username && user.username !== currentUsername) {
+                        currentUsername = user.username;
+                        updateUserGreeting();
+                    }
 
                     const memoBase = card.dataset[`memo${currentLang.charAt(0).toUpperCase() + currentLang.slice(1)}`];
                     const paymentData = {
@@ -334,7 +353,10 @@
             alert(currentLang === 'en' ? 'Found a previous incomplete payment, try again or contact support' : 'وجدنا دفع غير مكتمل سابق، حاول تاني أو اتصل بالدعم');
         }
 
-        // تحديث أولي لتحية المستخدم
+        // تشغيل التعرف عند تحميل الصفحة
+        window.addEventListener('load', authenticateOnLoad);
+
+        // تحديث أولي للتحية
         updateUserGreeting();
     </script>
 </body>
