@@ -121,7 +121,7 @@
         let currentLang = 'en';
         let currentUsername = null;
 
-        // النصوص لكل اللغات (محافظين على نفس النصوص والحملات من الكود الجديد)
+        // النصوص
         const translations = {
             en: {
                 intro: "Donate with Pi Network to support charitable and humanitarian campaigns",
@@ -159,9 +159,50 @@
             }
         };
 
+        // كشف اللغة الافتراضية
+        const userLang = (navigator.language || navigator.userLanguage || 'en').substr(0, 2);
+        currentLang = userLang === 'ar' ? 'ar' : 'en';
+        document.documentElement.lang = currentLang;
+        document.documentElement.dir = currentLang === 'en' ? 'ltr' : 'rtl';
+        document.getElementById('lang-switch').textContent = currentLang === 'en' ? 'Switch to Arabic' : 'تبديل إلى الإنجليزية';
+
         const t = translations[currentLang];
 
-        // تبديل اللغة (زر موجود)
+        let selectedAmounts = {};
+
+        // تحديث تحية المستخدم فوراً (جاري التوثيق)
+        document.getElementById('user').textContent = t.userLoading;
+
+        function updateUserGreeting() {
+            const greeting = document.getElementById('user');
+            if (currentUsername) {
+                greeting.textContent = t.userGreeting.replace('{name}', currentUsername);
+            } else {
+                greeting.textContent = t.userGuest;
+            }
+        }
+
+        function updateDonateButton(card, amount) {
+            const btn = card.querySelector('.donate');
+            const safeAmount = amount || 10;
+            btn.textContent = t.donateButton.replace('{amount}', safeAmount);
+        }
+
+        // التعرف على المستخدم فور تحميل الصفحة
+        async function authenticateOnLoad() {
+            try {
+                // نحاول نأخد username بدون prompt إذا كان موجود (في Pi Browser بيشتغل تلقائي)
+                const user = await Pi.authenticate(['username']);
+                currentUsername = user.username || null;
+                updateUserGreeting();
+            } catch (err) {
+                // لو فشل أو رفض، نبقى على "تبرع كزائر"
+                console.log('تعرف تلقائي فشل (طبيعي لو مش في Pi Browser):', err);
+                updateUserGreeting();
+            }
+        }
+
+        // تبديل اللغة
         document.getElementById('lang-switch').addEventListener('click', () => {
             currentLang = currentLang === 'en' ? 'ar' : 'en';
             document.documentElement.lang = currentLang;
@@ -178,33 +219,10 @@
             document.querySelector('.note').innerHTML = translations[currentLang].note;
             document.querySelector('footer').textContent = translations[currentLang].footer;
 
-            // تحديث الحملات
-            document.querySelectorAll('.campaign-title').forEach((el, i) => {
-                el.textContent = translations[currentLang].campaigns[i].title;
-            });
-            document.querySelectorAll('.campaign-desc').forEach((el, i) => {
-                el.textContent = translations[currentLang].campaigns[i].desc;
-            });
-            document.querySelectorAll('.custom-input').forEach(input => {
-                input.placeholder = translations[currentLang].customPlaceholder;
-            });
-            document.querySelectorAll('.custom-btn').forEach(btn => {
-                btn.textContent = translations[currentLang].customButton;
-            });
-        }
-
-        function updateUserGreeting() {
-            const greeting = document.getElementById('user');
-            if (currentUsername) {
-                greeting.textContent = translations[currentLang].userGreeting.replace('{name}', currentUsername);
-            } else {
-                greeting.textContent = translations[currentLang].userGuest;
-            }
-        }
-
-        function updateDonateButton(card, amount) {
-            const btn = card.querySelector('.donate');
-            btn.textContent = translations[currentLang].donateButton.replace('{amount}', amount || 10);
+            document.querySelectorAll('.campaign-title').forEach((el, i) => el.textContent = translations[currentLang].campaigns[i].title);
+            document.querySelectorAll('.campaign-desc').forEach((el, i) => el.textContent = translations[currentLang].campaigns[i].desc);
+            document.querySelectorAll('.custom-input').forEach(input => input.placeholder = translations[currentLang].customPlaceholder);
+            document.querySelectorAll('.custom-btn').forEach(btn => btn.textContent = translations[currentLang].customButton);
         }
 
         function updateAllDonateButtons() {
@@ -215,25 +233,8 @@
             });
         }
 
-        let selectedAmounts = {};
-
-        // التعرف على المستخدم عند التحميل
-        async function authenticateOnLoad() {
-            document.getElementById('user').textContent = translations[currentLang].userLoading;
-            try {
-                const user = await Pi.authenticate(['username'], onIncompletePaymentFound);
-                currentUsername = user.username || null;
-                updateUserGreeting();
-            } catch (err) {
-                console.log('No auto auth:', err);
-                updateUserGreeting(); // Guest
-            }
-        }
-
-        // إعداد الحملات ديناميكيًا
         window.onload = function() {
             updateTexts();
-            updateUserGreeting();
 
             const container = document.getElementById('campaigns');
             translations[currentLang].campaigns.forEach((camp, index) => {
@@ -260,11 +261,11 @@
                         <button class="amount-btn custom-btn">${translations[currentLang].customButton}</button>
                     </div>
                     
-                    <button class="donate">${translations[currentLang].donateButton.replace('{amount}', '10')}</button>
+                    <button class="donate">${t.donateButton.replace('{amount}', '10')}</button>
                 `;
                 container.appendChild(card);
 
-                // Events للأزرار
+                // Events
                 card.querySelectorAll('.amount-btn[data-amount]').forEach(btn => {
                     btn.addEventListener('click', () => {
                         card.querySelectorAll('.amount-btn[data-amount]').forEach(b => b.classList.remove('selected'));
@@ -296,7 +297,7 @@
                     try {
                         const scopes = currentUsername ? ['payments'] : ['username', 'payments'];
                         const user = await Pi.authenticate(scopes, onIncompletePaymentFound);
-                        if (user.username) {
+                        if (user.username && user.username !== currentUsername) {
                             currentUsername = user.username;
                             updateUserGreeting();
                         }
@@ -326,6 +327,7 @@
                 });
             });
 
+            // التعرف على الاسم فور تحميل الصفحة
             authenticateOnLoad();
         };
 
