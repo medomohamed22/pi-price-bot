@@ -17,12 +17,11 @@
         .header {
             text-align: center;
             position: relative;
-            margin-bottom: 20px;
+            margin-bottom: 40px;
         }
-        #lang-switch {
+        #lang-switch, #connect-btn {
             position: absolute;
             top: 10px;
-            right: 10px;
             background: #6a0dad;
             color: white;
             border: none;
@@ -31,17 +30,25 @@
             cursor: pointer;
             font-size: 16px;
         }
-        #lang-switch:hover {
+        #lang-switch {
+            right: 10px;
+        }
+        #connect-btn {
+            left: 10px;
             background: #552a99;
+        }
+        #lang-switch:hover, #connect-btn:hover {
+            background: #441188;
         }
         h1 {
             color: #6a0dad;
             margin: 0 0 10px;
         }
         #user-greeting {
-            font-size: 18px;
+            font-size: 20px;
+            font-weight: bold;
             color: #6a0dad;
-            margin: 10px 0;
+            margin: 15px 0;
         }
         .campaigns {
             max-width: 1200px;
@@ -108,15 +115,17 @@
             .campaigns {
                 grid-template-columns: 1fr;
             }
-            #lang-switch {
+            #lang-switch, #connect-btn {
                 position: static;
-                margin-bottom: 20px;
+                margin: 10px;
+                display: inline-block;
             }
         }
     </style>
 </head>
 <body>
     <div class="header">
+        <button id="connect-btn" data-en="Connect with Pi" data-ar="اتصل بـ Pi">Connect with Pi</button>
         <button id="lang-switch">Switch to Arabic</button>
         <h1 data-en="Pi Network Donations" data-ar="تبرعات بعملة Pi Network">Pi Network Donations</h1>
         <p id="user-greeting" data-en="Donate as Guest" data-ar="تبرع كزائر">Donate as Guest</p>
@@ -135,7 +144,7 @@
             </div>
             
             <p data-en="Or enter a custom amount:" data-ar="أو أدخل مبلغ مخصص:">Or enter a custom amount:</p>
-            <input type="number" class="custom-amount" placeholder="e.g. 25" data-placeholder-en="e.g. 25" data-placeholder-ar="مثال: 25" min="0.000001" step="0.000001">
+            <input type="number" class="custom-amount" placeholder="e.g. 25" min="0.000001" step="0.000001">
             
             <button class="pay-btn">Donate Now 10 Pi</button>
             
@@ -154,7 +163,7 @@
             </div>
             
             <p data-en="Or enter a custom amount:" data-ar="أو أدخل مبلغ مخصص:">Or enter a custom amount:</p>
-            <input type="number" class="custom-amount" placeholder="e.g. 25" data-placeholder-en="e.g. 25" data-placeholder-ar="مثال: 25" min="0.000001" step="0.000001">
+            <input type="number" class="custom-amount" placeholder="e.g. 25" min="0.000001" step="0.000001">
             
             <button class="pay-btn">Donate Now 10 Pi</button>
             
@@ -173,7 +182,7 @@
             </div>
             
             <p data-en="Or enter a custom amount:" data-ar="أو أدخل مبلغ مخصص:">Or enter a custom amount:</p>
-            <input type="number" class="custom-amount" placeholder="e.g. 25" data-placeholder-en="e.g. 25" data-placeholder-ar="مثال: 25" min="0.000001" step="0.000001">
+            <input type="number" class="custom-amount" placeholder="e.g. 25" min="0.000001" step="0.000001">
             
             <button class="pay-btn">Donate Now 10 Pi</button>
             
@@ -186,7 +195,7 @@
         Pi.init({ version: "2.0" });
 
         let currentLang = 'en';
-        let currentUsername = null; // لتخزين اسم المستخدم
+        let currentUsername = null; // اسم المستخدم (null = غير متصل)
 
         // تبديل اللغة
         document.getElementById('lang-switch').addEventListener('click', () => {
@@ -194,54 +203,48 @@
             document.documentElement.lang = currentLang;
             document.documentElement.dir = currentLang === 'en' ? 'ltr' : 'rtl';
             document.getElementById('lang-switch').textContent = currentLang === 'en' ? 'Switch to Arabic' : 'تبديل إلى الإنجليزية';
+            document.getElementById('connect-btn').textContent = document.getElementById('connect-btn').dataset[currentLang];
 
-            // تحديث النصوص العامة
+            // تحديث النصوص + placeholders + أزرار الدفع + التحية
             document.querySelectorAll('[data-en]').forEach(el => {
-                el.textContent = el.dataset[currentLang] || el.dataset.en;
+                if (el.dataset[currentLang]) el.textContent = el.dataset[currentLang];
             });
-
-            // تحديث placeholders
             document.querySelectorAll('.custom-amount').forEach(input => {
-                input.placeholder = input.dataset['placeholder-' + currentLang];
+                input.placeholder = currentLang === 'en' ? 'e.g. 25' : 'مثال: 25';
             });
-
-            // تحديث أزرار الدفع وتحية المستخدم
             document.querySelectorAll('.campaign-card').forEach(card => {
-                const selected = parseFloat(card.dataset.selectedAmount) || 0;
-                updatePayButton(card, selected);
+                const amount = parseFloat(card.dataset.selectedAmount) || 10;
+                updatePayButton(card, amount);
             });
             updateUserGreeting();
         });
 
-        // دالة تحديث تحية المستخدم
+        // تحديث تحية المستخدم (المكان اللي محوط في الصورة)
         function updateUserGreeting() {
             const greetingEl = document.getElementById('user-greeting');
-            const name = currentUsername || 'Guest';
-            const arName = currentUsername || 'زائر';
-            greetingEl.dataset.en = `Donate as ${name}`;
-            greetingEl.dataset.ar = `تبرع كـ ${arName}`;
-            greetingEl.textContent = greetingEl.dataset[currentLang];
+            const name = currentUsername ? currentUsername : (currentLang === 'en' ? 'Guest' : 'زائر');
+            greetingEl.textContent = currentLang === 'en' ? `Donate as ${name}` : `تبرع كـ ${name}`;
         }
 
-        // دالة تحديث زر الدفع
+        // تحديث زر الدفع (عشان يتجنب undefined)
         function updatePayButton(card, amount) {
             const payBtn = card.querySelector('.pay-btn');
-            payBtn.textContent = currentLang === 'en' ? `Donate Now ${amount} Pi` : `تبرع الآن بـ ${amount} Pi`;
+            const safeAmount = amount || 10;
+            payBtn.textContent = currentLang === 'en' ? `Donate Now ${safeAmount} Pi` : `تبرع الآن بـ ${safeAmount} Pi`;
         }
 
-        // التعرف على المستخدم فور تحميل الصفحة (للحصول على الاسم فقط)
-        async function authenticateOnLoad() {
+        // زر الاتصال بـ Pi (للتعرف على الاسم)
+        document.getElementById('connect-btn').addEventListener('click', async () => {
             try {
                 const user = await Pi.authenticate(['username'], onIncompletePaymentFound);
                 currentUsername = user.username || null;
                 updateUserGreeting();
+                alert(currentLang === 'en' ? `Welcome, ${currentUsername}!` : `مرحباً، ${currentUsername}!`);
             } catch (err) {
-                // إذا رفض المستخدم أو حدث خطأ، نبقى على Guest
-                console.log('لم يتم التعرف على المستخدم عند التحميل:', err);
-                currentUsername = null;
-                updateUserGreeting();
+                console.log('فشل الاتصال:', err);
+                // لو رفض، نبقى على Guest
             }
-        }
+        });
 
         // إعداد كل حملة
         document.querySelectorAll('.campaign-card').forEach(card => {
@@ -261,7 +264,7 @@
 
             const customInput = card.querySelector('.custom-amount');
             customInput.addEventListener('input', (e) => {
-                if (e.target.value) {
+                if (e.target.value && !isNaN(e.target.value)) {
                     selectedAmount = parseFloat(e.target.value);
                     amountBtns.forEach(b => b.classList.remove('selected'));
                     card.dataset.selectedAmount = selectedAmount;
@@ -279,11 +282,11 @@
                 }
 
                 try {
-                    // طلب صلاحية الدفع (مع username إذا لم يكن موجودًا)
+                    // لو مش متصل، نطلب username + payments
                     const scopes = currentUsername ? ['payments'] : ['username', 'payments'];
                     const user = await Pi.authenticate(scopes, onIncompletePaymentFound);
 
-                    // تحديث الاسم إذا تغير
+                    // تحديث الاسم لو جاء جديد
                     if (user.username && user.username !== currentUsername) {
                         currentUsername = user.username;
                         updateUserGreeting();
@@ -298,24 +301,18 @@
 
                     const callbacks = {
                         onReadyForServerApproval: async (paymentId) => {
-                            console.log("Payment ID ready for approval:", paymentId);
                             try {
                                 const res = await fetch('/api/pi/approve', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({ paymentId })
                                 });
-                                if (res.ok) {
-                                    console.log(currentLang === 'en' ? 'Approval successful' : 'تم الموافقة على الدفع');
-                                } else {
-                                    alert(currentLang === 'en' ? 'Approval failed' : 'فشل في الموافقة على الدفع');
-                                }
+                                if (!res.ok) alert(currentLang === 'en' ? 'Approval failed' : 'فشل الموافقة');
                             } catch (err) {
-                                alert(currentLang === 'en' ? 'Server connection error' : 'خطأ في الاتصال بالسيرفر');
+                                alert(currentLang === 'en' ? 'Server error' : 'خطأ في السيرفر');
                             }
                         },
                         onReadyForServerCompletion: async (paymentId, txid) => {
-                            console.log("Payment ready for completion:", paymentId, txid);
                             try {
                                 const res = await fetch('/api/pi/complete', {
                                     method: 'POST',
@@ -325,18 +322,14 @@
                                 if (res.ok) {
                                     alert(currentLang === 'en' ? `Payment successful! TXID: ${txid}` : `تم الدفع بنجاح! TXID: ${txid}`);
                                 } else {
-                                    alert(currentLang === 'en' ? 'Completion failed' : 'فشل في إكمال الدفع');
+                                    alert(currentLang === 'en' ? 'Completion failed' : 'فشل الإكمال');
                                 }
                             } catch (err) {
-                                alert(currentLang === 'en' ? 'Server connection error' : 'خطأ في الاتصال بالسيرفر');
+                                alert(currentLang === 'en' ? 'Server error' : 'خطأ في السيرفر');
                             }
                         },
-                        onCancel: () => {
-                            alert(currentLang === 'en' ? 'Payment cancelled' : 'تم إلغاء الدفع');
-                        },
-                        onError: (error) => {
-                            alert(currentLang === 'en' ? 'Payment error: ' + error.message : 'خطأ في الدفع: ' + error.message);
-                        },
+                        onCancel: () => alert(currentLang === 'en' ? 'Payment cancelled' : 'تم إلغاء الدفع'),
+                        onError: (error) => alert(currentLang === 'en' ? 'Error: ' + error.message : 'خطأ: ' + error.message),
                     };
 
                     Pi.createPayment(paymentData, callbacks);
@@ -347,17 +340,13 @@
             });
         });
 
-        // معالجة دفعات غير مكتملة
         function onIncompletePaymentFound(payment) {
-            console.log("Previous incomplete payment found:", payment);
-            alert(currentLang === 'en' ? 'Found a previous incomplete payment, try again or contact support' : 'وجدنا دفع غير مكتمل سابق، حاول تاني أو اتصل بالدعم');
+            alert(currentLang === 'en' ? 'Previous incomplete payment found, try again' : 'دفع سابق غير مكتمل، حاول تاني');
         }
 
-        // تشغيل التعرف عند تحميل الصفحة
-        window.addEventListener('load', authenticateOnLoad);
-
-        // تحديث أولي للتحية
+        // تحديث أولي
         updateUserGreeting();
+        document.querySelectorAll('.campaign-card').forEach(card => updatePayButton(card, 10));
     </script>
 </body>
 </html>
