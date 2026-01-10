@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pi Network Donations</title>
+    <!-- تحميل Pi SDK -->
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f0ff;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            position: relative;
+            margin-bottom: 40px;
+        }
+        #lang-switch {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #6a0dad;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #lang-switch:hover {
+            background: #552a99;
+        }
+        h1 {
+            color: #6a0dad;
+            margin: 0;
+        }
+        .campaigns {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+        .campaign-card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .campaign-card h2 {
+            color: #6a0dad;
+            margin-bottom: 10px;
+        }
+        .amount-buttons {
+            margin: 20px 0;
+        }
+        .amount-btn {
+            background: #f0e6ff;
+            border: 2px solid #6a0dad;
+            color: #6a0dad;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+        .amount-btn:hover, .amount-btn.selected {
+            background: #6a0dad;
+            color: white;
+        }
+        .custom-amount {
+            padding: 10px;
+            width: 200px;
+            margin: 20px 0;
+            border: 2px solid #6a0dad;
+            border-radius: 10px;
+            font-size: 18px;
+        }
+        .pay-btn {
+            background: #6a0dad;
+            color: white;
+            padding: 15px 30px;
+            font-size: 20px;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .pay-btn:hover {
+            background: #552a99;
+        }
+        .note {
+            font-size: 14px;
+            color: #666;
+            margin-top: 20px;
+        }
+        @media (max-width: 768px) {
+            .campaigns {
+                grid-template-columns: 1fr;
+            }
+            #lang-switch {
+                position: static;
+                margin-bottom: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <button id="lang-switch">Switch to Arabic</button>
+        <h1 data-en="Pi Network Donations" data-ar="تبرعات بعملة Pi Network">Pi Network Donations</h1>
+    </div>
+
+    <section class="campaigns">
+        <!-- حملة 1: General Support -->
+        <div class="campaign-card" data-memo-en="Donation to General Support" data-memo-ar="تبرع للدعم العام">
+            <h2 data-en="General Support" data-ar="الدعم العام">General Support</h2>
+            <p data-en="Help us continue our mission and operations." data-ar="ساعدنا في استمرار مهمتنا وعملياتنا.">Help us continue our mission and operations.</p>
+            
+            <div class="amount-buttons">
+                <button class="amount-btn" data-amount="5">5 Pi</button>
+                <button class="amount-btn selected" data-amount="10">10 Pi</button>
+                <button class="amount-btn" data-amount="50">50 Pi</button>
+            </div>
+            
+            <p data-en="Or enter a custom amount:" data-ar="أو أدخل مبلغ مخصص:">Or enter a custom amount:</p>
+            <input type="number" class="custom-amount" placeholder="e.g. 25" data-placeholder-en="e.g. 25" data-placeholder-ar="مثال: 25" min="0.000001" step="0.000001">
+            
+            <button class="pay-btn">Donate Now 10 Pi</button>
+            
+            <p class="note" data-en="Secure payment via the official Pi wallet" data-ar="الدفع آمن عبر محفظة Pi الرسمية">Secure payment via the official Pi wallet</p>
+        </div>
+
+        <!-- حملة 2: Education for Children -->
+        <div class="campaign-card" data-memo-en="Donation to Education for Children" data-memo-ar="تبرع لتعليم الأطفال">
+            <h2 data-en="Education for Children" data-ar="تعليم الأطفال">Education for Children</h2>
+            <p data-en="Support educational programs for underprivileged kids." data-ar="ادعم برامج تعليمية للأطفال المحتاجين.">Support educational programs for underprivileged kids.</p>
+            
+            <div class="amount-buttons">
+                <button class="amount-btn" data-amount="5">5 Pi</button>
+                <button class="amount-btn selected" data-amount="10">10 Pi</button>
+                <button class="amount-btn" data-amount="50">50 Pi</button>
+            </div>
+            
+            <p data-en="Or enter a custom amount:" data-ar="أو أدخل مبلغ مخصص:">Or enter a custom amount:</p>
+            <input type="number" class="custom-amount" placeholder="e.g. 25" data-placeholder-en="e.g. 25" data-placeholder-ar="مثال: 25" min="0.000001" step="0.000001">
+            
+            <button class="pay-btn">Donate Now 10 Pi</button>
+            
+            <p class="note" data-en="Secure payment via the official Pi wallet" data-ar="الدفع آمن عبر محفظة Pi الرسمية">Secure payment via the official Pi wallet</p>
+        </div>
+
+        <!-- حملة 3: Health and Medical Aid -->
+        <div class="campaign-card" data-memo-en="Donation to Health and Medical Aid" data-memo-ar="تبرع للمساعدات الطبية">
+            <h2 data-en="Health and Medical Aid" data-ar="المساعدات الطبية">Health and Medical Aid</h2>
+            <p data-en="Provide medical support to those in need." data-ar="قدم دعم طبي للمحتاجين.">Provide medical support to those in need.</p>
+            
+            <div class="amount-buttons">
+                <button class="amount-btn" data-amount="5">5 Pi</button>
+                <button class="amount-btn selected" data-amount="10">10 Pi</button>
+                <button class="amount-btn" data-amount="50">50 Pi</button>
+            </div>
+            
+            <p data-en="Or enter a custom amount:" data-ar="أو أدخل مبلغ مخصص:">Or enter a custom amount:</p>
+            <input type="number" class="custom-amount" placeholder="e.g. 25" data-placeholder-en="e.g. 25" data-placeholder-ar="مثال: 25" min="0.000001" step="0.000001">
+            
+            <button class="pay-btn">Donate Now 10 Pi</button>
+            
+            <p class="note" data-en="Secure payment via the official Pi wallet" data-ar="الدفع آمن عبر محفظة Pi الرسمية">Secure payment via the official Pi wallet</p>
+        </div>
+    </section>
+
+    <script>
+        // تهيئة Pi SDK (mainnet)
+        Pi.init({ version: "2.0" });
+
+        let currentLang = 'en';
+
+        // تبديل اللغة
+        document.getElementById('lang-switch').addEventListener('click', () => {
+            currentLang = currentLang === 'en' ? 'ar' : 'en';
+            document.documentElement.lang = currentLang;
+            document.documentElement.dir = currentLang === 'en' ? 'ltr' : 'rtl';
+            document.getElementById('lang-switch').textContent = currentLang === 'en' ? 'Switch to Arabic' : 'تبديل إلى الإنجليزية';
+
+            // تحديث النصوص
+            document.querySelectorAll('[data-en]').forEach(el => {
+                el.textContent = el.dataset[currentLang];
+            });
+
+            // تحديث placeholders
+            document.querySelectorAll('.custom-amount').forEach(input => {
+                input.placeholder = input.dataset['placeholder-' + currentLang];
+            });
+
+            // تحديث أزرار الدفع
+            document.querySelectorAll('.campaign-card').forEach(card => {
+                const selected = parseFloat(card.dataset.selectedAmount) || 0;
+                updatePayButton(card, selected);
+            });
+        });
+
+        // دالة تحديث زر الدفع
+        function updatePayButton(card, amount) {
+            const payBtn = card.querySelector('.pay-btn');
+            payBtn.textContent = currentLang === 'en' ? `Donate Now ${amount} Pi` : `تبرع الآن بـ ${amount} Pi`;
+        }
+
+        // إعداد كل حملة
+        document.querySelectorAll('.campaign-card').forEach(card => {
+            let selectedAmount = 10;
+            card.dataset.selectedAmount = selectedAmount;
+
+            const amountBtns = card.querySelectorAll('.amount-btn');
+            amountBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    amountBtns.forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    selectedAmount = parseFloat(btn.dataset.amount);
+                    card.dataset.selectedAmount = selectedAmount;
+                    updatePayButton(card, selectedAmount);
+                });
+            });
+
+            const customInput = card.querySelector('.custom-amount');
+            customInput.addEventListener('input', (e) => {
+                if (e.target.value) {
+                    selectedAmount = parseFloat(e.target.value);
+                    amountBtns.forEach(b => b.classList.remove('selected'));
+                    card.dataset.selectedAmount = selectedAmount;
+                    updatePayButton(card, selectedAmount);
+                }
+            });
+
+            const payBtn = card.querySelector('.pay-btn');
+            updatePayButton(card, selectedAmount); // تحديث أولي
+
+            payBtn.addEventListener('click', async () => {
+                if (!selectedAmount || selectedAmount <= 0) {
+                    alert(currentLang === 'en' ? 'Please choose or enter a valid amount' : 'اختر أو أدخل مبلغ صحيح');
+                    return;
+                }
+
+                try {
+                    const user = await Pi.authenticate(['username', 'payments'], onIncompletePaymentFound);
+
+                    const memoBase = card.dataset[`memo${currentLang.charAt(0).toUpperCase() + currentLang.slice(1)}`];
+                    const paymentData = {
+                        amount: selectedAmount,
+                        memo: `${memoBase} - from ${user.username || 'anonymous'}`,
+                        metadata: { type: "donation", campaign: card.querySelector('h2').textContent, donor: user.uid },
+                    };
+
+                    const callbacks = {
+                        onReadyForServerApproval: async (paymentId) => {
+                            console.log("Payment ID ready for approval:", paymentId);
+                            try {
+                                const res = await fetch('/api/pi/approve', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ paymentId })
+                                });
+                                if (res.ok) {
+                                    console.log(currentLang === 'en' ? 'Approval successful' : 'تم الموافقة على الدفع');
+                                } else {
+                                    alert(currentLang === 'en' ? 'Approval failed' : 'فشل في الموافقة على الدفع');
+                                }
+                            } catch (err) {
+                                alert(currentLang === 'en' ? 'Server connection error' : 'خطأ في الاتصال بالسيرفر');
+                            }
+                        },
+                        onReadyForServerCompletion: async (paymentId, txid) => {
+                            console.log("Payment ready for completion:", paymentId, txid);
+                            try {
+                                const res = await fetch('/api/pi/complete', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ paymentId, txid })
+                                });
+                                if (res.ok) {
+                                    alert(currentLang === 'en' ? `Payment successful! TXID: ${txid}` : `تم الدفع بنجاح! TXID: ${txid}`);
+                                } else {
+                                    alert(currentLang === 'en' ? 'Completion failed' : 'فشل في إكمال الدفع');
+                                }
+                            } catch (err) {
+                                alert(currentLang === 'en' ? 'Server connection error' : 'خطأ في الاتصال بالسيرفر');
+                            }
+                        },
+                        onCancel: () => {
+                            alert(currentLang === 'en' ? 'Payment cancelled' : 'تم إلغاء الدفع');
+                        },
+                        onError: (error) => {
+                            alert(currentLang === 'en' ? 'Payment error: ' + error.message : 'خطأ في الدفع: ' + error.message);
+                        },
+                    };
+
+                    Pi.createPayment(paymentData, callbacks);
+
+                } catch (err) {
+                    alert(currentLang === 'en' ? 'Error: ' + err.message : 'خطأ: ' + err.message);
+                }
+            });
+        });
+
+        // معالجة دفعات غير مكتملة
+        function onIncompletePaymentFound(payment) {
+            console.log("Previous incomplete payment found:", payment);
+            alert(currentLang === 'en' ? 'Found a previous incomplete payment, try again or contact support' : 'وجدنا دفع غير مكتمل سابق، حاول تاني أو اتصل بالدعم');
+        }
+    </script>
+</body>
+</html>
