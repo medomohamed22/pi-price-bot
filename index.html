@@ -17,7 +17,7 @@
         .header {
             text-align: center;
             position: relative;
-            margin-bottom: 40px;
+            margin-bottom: 20px;
         }
         #lang-switch {
             position: absolute;
@@ -36,7 +36,12 @@
         }
         h1 {
             color: #6a0dad;
-            margin: 0;
+            margin: 0 0 10px;
+        }
+        #user-greeting {
+            font-size: 18px;
+            color: #6a0dad;
+            margin: 10px 0;
         }
         .campaigns {
             max-width: 1200px;
@@ -114,6 +119,7 @@
     <div class="header">
         <button id="lang-switch">Switch to Arabic</button>
         <h1 data-en="Pi Network Donations" data-ar="تبرعات بعملة Pi Network">Pi Network Donations</h1>
+        <p id="user-greeting" data-en="Donate as Guest" data-ar="تبرع كزائر">Donate as Guest</p>
     </div>
 
     <section class="campaigns">
@@ -188,9 +194,9 @@
             document.documentElement.dir = currentLang === 'en' ? 'ltr' : 'rtl';
             document.getElementById('lang-switch').textContent = currentLang === 'en' ? 'Switch to Arabic' : 'تبديل إلى الإنجليزية';
 
-            // تحديث النصوص
+            // تحديث النصوص العامة
             document.querySelectorAll('[data-en]').forEach(el => {
-                el.textContent = el.dataset[currentLang];
+                el.textContent = el.dataset[currentLang] || el.dataset.en;
             });
 
             // تحديث placeholders
@@ -198,12 +204,23 @@
                 input.placeholder = input.dataset['placeholder-' + currentLang];
             });
 
-            // تحديث أزرار الدفع
+            // تحديث أزرار الدفع وتحية المستخدم
             document.querySelectorAll('.campaign-card').forEach(card => {
                 const selected = parseFloat(card.dataset.selectedAmount) || 0;
                 updatePayButton(card, selected);
             });
+            updateUserGreeting();
         });
+
+        // دالة تحديث تحية المستخدم
+        function updateUserGreeting(username = null) {
+            const greetingEl = document.getElementById('user-greeting');
+            const name = username || 'Guest';
+            const arName = username || 'زائر';
+            greetingEl.dataset.en = `Donate as ${name}`;
+            greetingEl.dataset.ar = `تبرع كـ ${arName}`;
+            greetingEl.textContent = greetingEl.dataset[currentLang];
+        }
 
         // دالة تحديث زر الدفع
         function updatePayButton(card, amount) {
@@ -238,7 +255,7 @@
             });
 
             const payBtn = card.querySelector('.pay-btn');
-            updatePayButton(card, selectedAmount); // تحديث أولي
+            updatePayButton(card, selectedAmount);
 
             payBtn.addEventListener('click', async () => {
                 if (!selectedAmount || selectedAmount <= 0) {
@@ -247,7 +264,11 @@
                 }
 
                 try {
+                    // طلب صلاحيات (بما فيها username)
                     const user = await Pi.authenticate(['username', 'payments'], onIncompletePaymentFound);
+
+                    // تحديث تحية المستخدم باسمه بعد التعرف عليه
+                    updateUserGreeting(user.username);
 
                     const memoBase = card.dataset[`memo${currentLang.charAt(0).toUpperCase() + currentLang.slice(1)}`];
                     const paymentData = {
@@ -312,6 +333,9 @@
             console.log("Previous incomplete payment found:", payment);
             alert(currentLang === 'en' ? 'Found a previous incomplete payment, try again or contact support' : 'وجدنا دفع غير مكتمل سابق، حاول تاني أو اتصل بالدعم');
         }
+
+        // تحديث أولي لتحية المستخدم
+        updateUserGreeting();
     </script>
 </body>
 </html>
