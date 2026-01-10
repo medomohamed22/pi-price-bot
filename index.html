@@ -1,339 +1,253 @@
 <!DOCTYPE html>
 <html lang="en" dir="ltr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Donate Way - Donate with Pi Network</title>
-    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #f5f0ff 0%, #e6d9ff 100%);
-            margin: 0;
-            padding: 0;
-            min-height: 100vh;
-            color: #4a148c;
-        }
-
-        .container { max-width: 1100px; margin: 30px auto; padding: 20px; }
-        .header { text-align: center; margin-bottom: 50px; position: relative; }
-        #lang-switch {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: #7e57c2;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 50px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        #lang-switch:hover { background: #6a1b9a; }
-        .logo { font-size: 90px; margin-bottom: 10px; color: #7e57c2; animation: float 3s ease-in-out infinite; }
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-        h1 { font-size: 38px; color: #6a1b9a; margin: 10px 0; }
-        p.intro { font-size: 19px; color: #7b1fa2; opacity: 0.9; max-width: 800px; margin: 0 auto 30px; }
-        #user { font-size: 23px; font-weight: bold; color: #4a148c; margin: 20px 0; }
-
-        .campaigns { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
-
-        .campaign-card {
-            background: #fff;
-            border-radius: 24px;
-            box-shadow: 0 10px 30px rgba(126, 87, 194, 0.15);
-            padding: 35px 25px;
-            text-align: center;
-            transition: all 0.4s ease;
-            border: 1px solid rgba(126, 87, 194, 0.1);
-        }
-        .campaign-card:hover { transform: translateY(-15px); box-shadow: 0 20px 40px rgba(126, 87, 194, 0.25); }
-
-        .icon { font-size: 60px; margin-bottom: 20px; color: #9c27b0; }
-
-        .campaign-title { font-size: 26px; color: #6a1b9a; margin-bottom: 15px; font-weight: 600; }
-        .campaign-desc { font-size: 16px; color: #7b1fa2; line-height: 1.7; margin-bottom: 25px; }
-
-        .donate-options { display: flex; justify-content: center; gap: 12px; margin: 25px 0; flex-wrap: wrap; }
-        .amount-btn {
-            background: #ede7f6; border: 2px solid #b39ddb; color: #6a1b9a; padding: 10px 18px; font-size: 15px;
-            border-radius: 50px; cursor: pointer; transition: all 0.3s ease; min-width: 75px; font-weight: 500;
-        }
-        .amount-btn:hover { background: #b39ddb; color: white; transform: scale(1.1); }
-        .amount-btn.selected { background: #7e57c2; color: white; border-color: #7e57c2; box-shadow: 0 5px 15px rgba(126, 87, 194, 0.4); }
-
-        .custom-amount { display: flex; justify-content: center; gap: 12px; margin: 25px 0; flex-wrap: wrap; align-items: center; }
-        .custom-input {
-            padding: 12px 20px; font-size: 16px; border-radius: 50px; border: 2px solid #b39ddb;
-            width: 180px; text-align: center; background: white; color: #4a148c;
-        }
-        .custom-input::placeholder { color: #9575cd; }
-        .custom-input:focus { outline: none; border-color: #7e57c2; box-shadow: 0 0 0 3px rgba(126, 87, 194, 0.2); }
-
-        button.donate {
-            background: linear-gradient(135deg, #9c27b0, #7e57c2); color: white; border: none; padding: 16px 40px;
-            font-size: 18px; font-weight: bold; border-radius: 50px; cursor: pointer;
-            box-shadow: 0 10px 25px rgba(126, 87, 194, 0.3); transition: all 0.4s ease;
-            width: 100%; margin-top: 15px;
-        }
-        button.donate:hover { transform: translateY(-5px); box-shadow: 0 15px 35px rgba(126, 87, 194, 0.4); }
-
-        .note {
-            text-align: center; font-size: 15px; margin: 60px auto 0; max-width: 90%;
-            color: #6a1b9a; background: rgba(255, 255, 255, 0.7); padding: 20px;
-            border-radius: 20px; backdrop-filter: blur(10px); border: 1px solid rgba(126, 87, 194, 0.2);
-        }
-        footer { text-align: center; margin-top: 70px; font-size: 14px; color: #7b1fa2; opacity: 0.8; }
-
-        @media (max-width: 768px) {
-            .logo { font-size: 70px; } h1 { font-size: 32px; } p.intro { font-size: 17px; } #user { font-size: 21px; }
-            .campaign-title { font-size: 24px; } .campaign-desc { font-size: 15px; }
-            .custom-input { width: 150px; } button.donate { padding: 14px 30px; font-size: 17px; }
-            #lang-switch { position: static; margin-bottom: 20px; }
-        }
-        @media (max-width: 480px) {
-            .container { padding: 15px; } .donate-options { gap: 8px; }
-            .amount-btn { padding: 8px 14px; font-size: 14px; }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Donate Way - Donate with Pi Network</title>
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+<style>
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg,#f5f0ff 0%,#e6d9ff 100%); margin:0; padding:0; min-height:100vh; color:#4a148c;}
+.container { max-width:1100px; margin:30px auto; padding:20px; }
+.header { text-align:center; margin-bottom:50px; }
+.logo { font-size:90px; margin-bottom:10px; color:#7e57c2; animation: float 3s ease-in-out infinite;}
+@keyframes float {0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+h1{font-size:38px;color:#6a1b9a;margin:10px 0;}
+p.intro{font-size:19px;color:#7b1fa2;opacity:0.9;max-width:800px;margin:0 auto 30px;}
+#user{font-size:23px;font-weight:bold;color:#4a148c;margin:20px 0;}
+.campaigns{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:30px;}
+.campaign-card{background:#fff;border-radius:24px;box-shadow:0 10px 30px rgba(126,87,194,0.15);padding:35px 25px;text-align:center;transition:all 0.4s ease;border:1px solid rgba(126,87,194,0.1);}
+.campaign-card:hover{transform:translateY(-15px);box-shadow:0 20px 40px rgba(126,87,194,0.25);}
+.icon{font-size:60px;margin-bottom:20px;color:#9c27b0;}
+.campaign-title{font-size:26px;color:#6a1b9a;margin-bottom:15px;font-weight:600;}
+.campaign-desc{font-size:16px;color:#7b1fa2;line-height:1.7;margin-bottom:15px;}
+.progress-container{background:#ede7f6;border-radius:50px;overflow:hidden;height:20px;margin-bottom:15px;}
+.progress-bar{height:20px;background:#7e57c2;width:0%;color:white;font-weight:bold;display:flex;align-items:center;justify-content:center;font-size:13px;}
+.donate-options{display:flex;justify-content:center;gap:12px;margin:15px 0;flex-wrap:wrap;}
+.amount-btn{background:#ede7f6;border:2px solid #b39ddb;color:#6a1b9a;padding:10px 18px;font-size:15px;border-radius:50px;cursor:pointer;transition:all 0.3s ease;min-width:75px;font-weight:500;}
+.amount-btn:hover{background:#b39ddb;color:white;transform:scale(1.1);}
+.amount-btn.selected{background:#7e57c2;color:white;border-color:#7e57c2;box-shadow:0 5px 15px rgba(126,87,194,0.4);}
+.custom-amount{display:flex;justify-content:center;gap:12px;margin:15px 0;flex-wrap:wrap;align-items:center;}
+.custom-input{padding:12px 20px;font-size:16px;border-radius:50px;border:2px solid #b39ddb;width:180px;text-align:center;background:white;color:#4a148c;}
+.custom-input::placeholder{color:#9575cd;}
+.custom-input:focus{outline:none;border-color:#7e57c2;box-shadow:0 0 0 3px rgba(126,87,194,0.2);}
+button.donate{background:linear-gradient(135deg,#9c27b0,#7e57c2);color:white;border:none;padding:16px 40px;font-size:18px;font-weight:bold;border-radius:50px;cursor:pointer;box-shadow:0 10px 25px rgba(126,87,194,0.3);transition:all 0.4s ease;width:100%;margin-top:15px;}
+button.donate:hover{transform:translateY(-5px);box-shadow:0 15px 35px rgba(126,87,194,0.4);}
+.message-box{text-align:center;font-size:16px;margin:20px auto;padding:15px 20px;border-radius:20px;max-width:90%;display:none;}
+.message-success{background:#d1c4e9;color:#4a148c;border:1px solid #7e57c2;}
+.message-cancel{background:#f8bbd0;color:#880e4f;border:1px solid #e91e63;}
+.note{text-align:center;font-size:15px;margin:60px auto 0;max-width:90%;color:#6a1b9a;background:rgba(255,255,255,0.7);padding:20px;border-radius:20px;backdrop-filter:blur(10px);border:1px solid rgba(126,87,194,0.2);}
+footer{text-align:center;margin-top:70px;font-size:14px;color:#7b1fa2;opacity:0.8;}
+#dashboard{background:#f3e5f5;padding:20px;border-radius:20px;margin-top:40px;display:none;}
+#dashboard h2{color:#6a1b9a;margin-bottom:15px;text-align:center;}
+#donation-list{list-style:none;padding:0;margin:0;}
+#donation-list li{background:white;padding:12px 20px;margin-bottom:10px;border-radius:15px;box-shadow:0 5px 15px rgba(126,87,194,0.15);}
+.total-donations{font-weight:bold;color:#4a148c;text-align:center;margin-top:15px;font-size:18px;}
+@media(max-width:768px){.logo{font-size:70px;} h1{font-size:32px;} p.intro{font-size:17px;} #user{font-size:21px;} .campaign-title{font-size:24px;} .campaign-desc{font-size:15px;} .custom-input{width:150px;} button.donate{padding:14px 30px;font-size:17px;}}
+@media(max-width:480px){.container{padding:15px;} .donate-options{gap:8px;} .amount-btn{padding:8px 14px;font-size:14px;}}
+</style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <button id="lang-switch">Switch to Arabic</button>
-            <div class="logo">π</div>
-            <h1>Donate Way</h1>
-            <p class="intro"></p>
-            <div id="user"></div>
-        </div>
+<div class="container">
+<div class="header">
+    <div class="logo">π</div>
+    <h1>Donate Way</h1>
+    <p class="intro"></p>
+    <div id="user"></div>
+</div>
 
-        <div id="campaigns" class="campaigns"></div>
+<div id="campaigns" class="campaigns"></div>
 
-        <div class="note"></div>
+<div class="message-box" id="messageBox"></div>
+<div class="note"></div>
 
-        <footer></footer>
-    </div>
+<div id="dashboard">
+    <h2>Donor Dashboard</h2>
+    <ul id="donation-list"></ul>
+    <div class="total-donations"></div>
+</div>
 
-    <script>
-        // تهيئة Pi SDK
-        Pi.init({ version: "2.0" });
+<footer></footer>
+</div>
 
-        let currentLang = 'en';
-        let currentUsername = null;
+<script>
+Pi.init({ version: "2.0" });
 
-        // النصوص
-        const translations = {
-            en: {
-                intro: "Donate with Pi Network to support charitable and humanitarian campaigns",
-                userLoading: "Authenticating via Pi...",
-                userGuest: "Donate as Guest",
-                userGreeting: "Welcome, {name} 👋",
-                note: "<strong>Note:</strong> You can choose a fixed amount or enter a custom amount (e.g. 0.001 or 1.5 or 999 Pi).<br>Payment is made through the official Pi wallet.",
-                footer: "Donate Way © 2025 - Powered by Pi Network",
-                customPlaceholder: "Custom amount",
-                customButton: "Apply",
-                donateButton: "Donate Now {amount} Pi",
-                campaigns: [
-                    { title: "Food Aid for Needy Families", desc: "Contribute to providing meals for families in need in affected areas.", icon: "🍲" },
-                    { title: "Education for Deprived Children", desc: "Support education for children in remote areas by providing books and school supplies.", icon: "📚" },
-                    { title: "Medical Treatment for Patients", desc: "Help cover treatment costs for patients who cannot afford expenses.", icon: "🏥" },
-                    { title: "Clean Water Projects", desc: "Dig wells and provide clean drinking water to deprived villages.", icon: "💧" }
-                ]
-            },
-            ar: {
-                intro: "تبرع بعملة Pi Network لدعم الحملات الخيرية والإنسانية",
-                userLoading: "جاري التوثيق عبر Pi...",
-                userGuest: "تبرع كزائر",
-                userGreeting: "مرحباً، {name} 👋",
-                note: "<strong>ملاحظة:</strong> يمكنك اختيار مبلغ ثابت أو كتابة مبلغ مخصص (مثل 0.001 أو 1.5 أو 999 Pi).<br>الدفع يتم عبر محفظة Pi الرسمية.",
-                footer: "Donate Way © 2025 - مدعوم بتقنية Pi Network",
-                customPlaceholder: "مبلغ مخصص",
-                customButton: "تفعيل",
-                donateButton: "تبرع الآن بـ {amount} Pi",
-                campaigns: [
-                    { title: "مساعدة غذائية للأسر الفقيرة", desc: "ساهم في توفير وجبات غذائية للعائلات المحتاجة في المناطق المتضررة.", icon: "🍲" },
-                    { title: "تعليم الأطفال المحرومين", desc: "دعم تعليم الأطفال في المناطق النائية من خلال توفير الكتب والأدوات المدرسية.", icon: "📚" },
-                    { title: "علاج طبي للمرضى", desc: "مساعدة في تغطية تكاليف العلاج للمرضى غير القادرين على تحمل النفقات.", icon: "🏥" },
-                    { title: "مشاريع مياه نظيفة", desc: "حفر آبار وتوفير مياه شرب نظيفة للقرى المحرومة.", icon: "💧" }
-                ]
-            }
-        };
+const t = {
+    intro:"Donate with Pi Network to support charitable and humanitarian campaigns",
+    userLoading:"Authenticating via Pi...",
+    userGreeting:"Welcome,",
+    note:"<strong>Note:</strong> You can choose a fixed amount or enter a custom amount (e.g. 0.001 or 1.5 or 999 Pi).<br>Payment is made through the official Pi wallet.",
+    footer:"Donate Way © 2025 - Powered by Pi Network",
+    customPlaceholder:"Custom amount",
+    customButton:"Apply",
+    donateButton:"Donate Now with Pi",
+    memo:"Donation of {amount} Pi to {title} - Thank you for your support ❤️",
+    campaigns:[
+        { title:"Food Aid for Needy Families", desc:"Contribute to providing meals for families in need in affected areas.", icon:"🍲", goal:500 },
+        { title:"Education for Deprived Children", desc:"Support education for children in remote areas by providing books and school supplies.", icon:"📚", goal:800 },
+        { title:"Medical Treatment for Patients", desc:"Help cover treatment costs for patients who cannot afford expenses.", icon:"🏥", goal:600 },
+        { title:"Clean Water Projects", desc:"Dig wells and provide clean drinking water to deprived villages.", icon:"💧", goal:1000 }
+    ]
+};
 
-        // كشف اللغة الافتراضية
-        const userLang = (navigator.language || navigator.userLanguage || 'en').substr(0, 2);
-        currentLang = userLang === 'ar' ? 'ar' : 'en';
-        document.documentElement.lang = currentLang;
-        document.documentElement.dir = currentLang === 'en' ? 'ltr' : 'rtl';
-        document.getElementById('lang-switch').textContent = currentLang === 'en' ? 'Switch to Arabic' : 'تبديل إلى الإنجليزية';
+const userDisplay=document.getElementById('user');
+const messageBox=document.getElementById('messageBox');
+const dashboard=document.getElementById('dashboard');
+const donationList=document.getElementById('donation-list');
+const totalDonationsEl=document.querySelector('.total-donations');
+let currentUser="Guest";
+let selectedAmounts={};
+const campaigns=t.campaigns.map((camp,i)=>({id:`camp-${i}`,...camp}));
+campaigns.forEach(camp=>{selectedAmounts[camp.id]=10;});
 
-        const t = translations[currentLang];
+async function detectUser(){
+    try{
+        const authResult=await Pi.authenticate(['username','payments']);
+        if(authResult.user && authResult.user.username){
+            currentUser=authResult.user.username;
+            userDisplay.innerText=`${t.userGreeting} ${currentUser} 👋`;
+        }else{ userDisplay.innerText=currentUser; }
+    }catch(err){
+        console.log("Guest mode:",err);
+        userDisplay.innerText=currentUser;
+    }
+    loadDashboard();
+}
 
-        let selectedAmounts = {};
+function loadDashboard(){
+    const donations=JSON.parse(localStorage.getItem(`donations_${currentUser}`)||'[]');
+    donationList.innerHTML='';
+    let total=0;
+    campaigns.forEach(camp=>{
+        const campDonations = donations.filter(d=>d.title===camp.title);
+        const campTotal = campDonations.reduce((sum,d)=>sum+d.amount,0);
+        const li=document.createElement('li');
+        li.innerHTML=`<strong>${camp.title}</strong> - ${campTotal} Pi<br>` +
+            campDonations.map(d=>`${d.amount} Pi on ${d.date}`).join('<br>') +
+            `<div class="progress-container"><div class="progress-bar" id="bar-${camp.id}"></div></div>`;
+        donationList.appendChild(li);
 
-        // تحديث تحية المستخدم فوراً (جاري التوثيق)
-        document.getElementById('user').textContent = t.userLoading;
+        const bar=document.getElementById(`bar-${camp.id}`);
+        const percent=Math.min((campTotal/camp.goal)*100,100).toFixed(1);
+        bar.style.width=percent+'%';
+        bar.innerText=percent+'%';
+        total+=campTotal;
+    });
+    totalDonationsEl.innerText=`Total Donations: ${total} Pi`;
+    dashboard.style.display=donations.length?'block':'none';
+}
 
-        function updateUserGreeting() {
-            const greeting = document.getElementById('user');
-            if (currentUsername) {
-                greeting.textContent = t.userGreeting.replace('{name}', currentUsername);
-            } else {
-                greeting.textContent = t.userGuest;
-            }
+function selectAmount(campaignId,amount,event){
+    selectedAmounts[campaignId]=amount;
+    document.querySelectorAll(`.amount-btn[data-campaign="${campaignId}"]`).forEach(btn=>btn.classList.remove('selected'));
+    event.target.classList.add('selected');
+    const customInput=document.getElementById(`custom-${campaignId}`);
+    if(customInput) customInput.value='';
+}
+
+function useCustomAmount(campaignId){
+    const input=document.getElementById(`custom-${campaignId}`);
+    const value=parseFloat(input.value.replace(',','.'));
+    if(isNaN(value)||value<=0){ alert("Enter a valid amount greater than zero"); return; }
+    selectedAmounts[campaignId]=value;
+    document.querySelectorAll(`.amount-btn[data-campaign="${campaignId}"]`).forEach(btn=>btn.classList.remove('selected'));
+}
+
+async function donateWithPi(campaignId){
+    const amount=selectedAmounts[campaignId];
+    if(!amount || amount<=0){ alert("Choose or enter a valid donation amount"); return; }
+
+    const campaign=campaigns.find(c=>c.id===campaignId);
+    const now = new Date();
+    const dateString = now.toLocaleString();
+
+    const paymentData={
+        amount: amount,
+        memo: t.memo.replace('{amount}',amount).replace('{title}',campaign.title),
+        metadata:{campaign_id:campaign.id, amount:amount, donor:currentUser, date:dateString}
+    };
+
+    const callbacks={
+        onReadyForServerApproval:function(paymentId){
+            fetch('/.netlify/functions/approve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({paymentId,campaign_id:campaign.id})});
+        },
+        onReadyForServerCompletion:function(paymentId,txid){
+            fetch('/.netlify/functions/complete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({paymentId,txid,campaign_id:campaign.id})});
+            messageBox.innerText="✅ Donation successful! TXID: "+txid;
+            messageBox.className="message-box message-success";
+            messageBox.style.display="block";
+            setTimeout(()=>{messageBox.style.display='none';},5000);
+
+            const donations=JSON.parse(localStorage.getItem(`donations_${currentUser}`)||'[]');
+            donations.push({title:campaign.title,amount,date:dateString});
+            localStorage.setItem(`donations_${currentUser}`,JSON.stringify(donations));
+            loadDashboard();
+        },
+        onCancel:()=>{
+            messageBox.innerText="❌ Payment cancelled";
+            messageBox.className="message-box message-cancel";
+            messageBox.style.display="block";
+            setTimeout(()=>{messageBox.style.display='none';},5000);
+        },
+        onError:(error)=>{
+            console.error("Pi Error:",error);
+            messageBox.innerText="❌ Error: "+error.message;
+            messageBox.className="message-box message-cancel";
+            messageBox.style.display="block";
+            setTimeout(()=>{messageBox.style.display='none';},5000);
         }
+    };
 
-        function updateDonateButton(card, amount) {
-            const btn = card.querySelector('.donate');
-            const safeAmount = amount || 10;
-            btn.textContent = t.donateButton.replace('{amount}', safeAmount);
+    try{
+        const authResult=await Pi.authenticate(['username','payments']);
+        if(authResult.user && authResult.user.username){
+            currentUser=authResult.user.username;
+            userDisplay.innerText=`${t.userGreeting} ${currentUser} 👋`;
+            paymentData.metadata.donor=currentUser;
         }
+    }catch(err){ console.log("Guest mode during payment:",err); }
 
-        // التعرف على المستخدم فور تحميل الصفحة
-        async function authenticateOnLoad() {
-            try {
-                // نحاول نأخد username بدون prompt إذا كان موجود (في Pi Browser بيشتغل تلقائي)
-                const user = await Pi.authenticate(['username']);
-                currentUsername = user.username || null;
-                updateUserGreeting();
-            } catch (err) {
-                // لو فشل أو رفض، نبقى على "تبرع كزائر"
-                console.log('تعرف تلقائي فشل (طبيعي لو مش في Pi Browser):', err);
-                updateUserGreeting();
-            }
-        }
+    Pi.createPayment(paymentData,callbacks);
+}
 
-        // تبديل اللغة
-        document.getElementById('lang-switch').addEventListener('click', () => {
-            currentLang = currentLang === 'en' ? 'ar' : 'en';
-            document.documentElement.lang = currentLang;
-            document.documentElement.dir = currentLang === 'en' ? 'ltr' : 'rtl';
-            document.getElementById('lang-switch').textContent = currentLang === 'en' ? 'Switch to Arabic' : 'تبديل إلى الإنجليزية';
+window.onload=function(){
+    document.querySelector('p.intro').innerHTML=t.intro;
+    userDisplay.innerText=t.userLoading;
+    document.querySelector('.note').innerHTML=t.note;
+    document.querySelector('footer').innerText=t.footer;
 
-            updateTexts();
-            updateAllDonateButtons();
-            updateUserGreeting();
-        });
+    detectUser();
 
-        function updateTexts() {
-            document.querySelector('p.intro').textContent = translations[currentLang].intro;
-            document.querySelector('.note').innerHTML = translations[currentLang].note;
-            document.querySelector('footer').textContent = translations[currentLang].footer;
+    const container=document.getElementById('campaigns');
+    campaigns.forEach(camp=>{
+        const card=document.createElement('div');
+        card.className='campaign-card';
+        card.innerHTML=`
+            <div class="icon">${camp.icon}</div>
+            <h2 class="campaign-title">${camp.title}</h2>
+            <p class="campaign-desc">${camp.desc}</p>
+            
+            <div class="progress-container">
+                <div class="progress-bar" id="bar-${camp.id}">0%</div>
+            </div>
 
-            document.querySelectorAll('.campaign-title').forEach((el, i) => el.textContent = translations[currentLang].campaigns[i].title);
-            document.querySelectorAll('.campaign-desc').forEach((el, i) => el.textContent = translations[currentLang].campaigns[i].desc);
-            document.querySelectorAll('.custom-input').forEach(input => input.placeholder = translations[currentLang].customPlaceholder);
-            document.querySelectorAll('.custom-btn').forEach(btn => btn.textContent = translations[currentLang].customButton);
-        }
-
-        function updateAllDonateButtons() {
-            document.querySelectorAll('.campaign-card').forEach(card => {
-                const id = card.dataset.id;
-                const amount = selectedAmounts[id] || 10;
-                updateDonateButton(card, amount);
-            });
-        }
-
-        window.onload = function() {
-            updateTexts();
-
-            const container = document.getElementById('campaigns');
-            translations[currentLang].campaigns.forEach((camp, index) => {
-                const id = `camp-${index}`;
-                selectedAmounts[id] = 10;
-
-                const card = document.createElement('div');
-                card.className = 'campaign-card';
-                card.dataset.id = id;
-                card.innerHTML = `
-                    <div class="icon">${camp.icon}</div>
-                    <h2 class="campaign-title">${camp.title}</h2>
-                    <p class="campaign-desc">${camp.desc}</p>
-                    
-                    <div class="donate-options">
-                        <button class="amount-btn selected" data-amount="5">5 Pi</button>
-                        <button class="amount-btn" data-amount="10">10 Pi</button>
-                        <button class="amount-btn" data-amount="50">50 Pi</button>
-                        <button class="amount-btn" data-amount="100">100 Pi</button>
-                    </div>
-                    
-                    <div class="custom-amount">
-                        <input type="number" step="0.001" min="0.001" class="custom-input" placeholder="${translations[currentLang].customPlaceholder}">
-                        <button class="amount-btn custom-btn">${translations[currentLang].customButton}</button>
-                    </div>
-                    
-                    <button class="donate">${t.donateButton.replace('{amount}', '10')}</button>
-                `;
-                container.appendChild(card);
-
-                // Events
-                card.querySelectorAll('.amount-btn[data-amount]').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        card.querySelectorAll('.amount-btn[data-amount]').forEach(b => b.classList.remove('selected'));
-                        btn.classList.add('selected');
-                        selectedAmounts[id] = parseFloat(btn.dataset.amount);
-                        updateDonateButton(card, selectedAmounts[id]);
-                        card.querySelector('.custom-input').value = '';
-                    });
-                });
-
-                const customBtn = card.querySelector('.custom-btn');
-                const customInput = card.querySelector('.custom-input');
-                customBtn.addEventListener('click', () => {
-                    const val = parseFloat(customInput.value);
-                    if (val > 0) {
-                        selectedAmounts[id] = val;
-                        card.querySelectorAll('.amount-btn[data-amount]').forEach(b => b.classList.remove('selected'));
-                        updateDonateButton(card, val);
-                    }
-                });
-
-                card.querySelector('.donate').addEventListener('click', async () => {
-                    const amount = selectedAmounts[id];
-                    if (!amount || amount <= 0) {
-                        alert(currentLang === 'en' ? 'Choose a valid amount' : 'اختر مبلغ صحيح');
-                        return;
-                    }
-
-                    try {
-                        const scopes = currentUsername ? ['payments'] : ['username', 'payments'];
-                        const user = await Pi.authenticate(scopes, onIncompletePaymentFound);
-                        if (user.username && user.username !== currentUsername) {
-                            currentUsername = user.username;
-                            updateUserGreeting();
-                        }
-
-                        const paymentData = {
-                            amount,
-                            memo: `${camp.title} - ${amount} Pi donation from ${user.username || 'Guest'} ❤️`,
-                            metadata: { campaign: camp.title, donor: user.uid }
-                        };
-
-                        const callbacks = {
-                            onReadyForServerApproval: async (paymentId) => {
-                                await fetch('/api/pi/approve', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ paymentId }) });
-                            },
-                            onReadyForServerCompletion: async (paymentId, txid) => {
-                                await fetch('/api/pi/complete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ paymentId, txid }) });
-                                alert(currentLang === 'en' ? `Success! TXID: ${txid}` : `نجح الدفع! TXID: ${txid}`);
-                            },
-                            onCancel: () => alert(currentLang === 'en' ? 'Cancelled' : 'تم الإلغاء'),
-                            onError: (err) => alert('Error: ' + err.message)
-                        };
-
-                        Pi.createPayment(paymentData, callbacks);
-                    } catch (err) {
-                        alert('Error: ' + err.message);
-                    }
-                });
-            });
-
-            // التعرف على الاسم فور تحميل الصفحة
-            authenticateOnLoad();
-        };
-
-        function onIncompletePaymentFound(payment) {
-            console.log("Incomplete payment:", payment);
-        }
-    </script>
+            <div class="donate-options">
+                <button class="amount-btn selected" data-campaign="${camp.id}" onclick="selectAmount('${camp.id}',5,event)">5 Pi</button>
+                <button class="amount-btn" data-campaign="${camp.id}" onclick="selectAmount('${camp.id}',10,event)">10 Pi</button>
+                <button class="amount-btn" data-campaign="${camp.id}" onclick="selectAmount('${camp.id}',50,event)">50 Pi</button>
+                <button class="amount-btn" data-campaign="${camp.id}" onclick="selectAmount('${camp.id}',100,event)">100 Pi</button>
+            </div>
+            
+            <div class="custom-amount">
+                <input type="number" step="0.001" min="0.001" id="custom-${camp.id}" class="custom-input" placeholder="${t.customPlaceholder}">
+                <button class="amount-btn" onclick="useCustomAmount('${camp.id}')">${t.customButton}</button>
+            </div>
+            
+            <button class="donate" onclick="donateWithPi('${camp.id}')">${t.donateButton}</button>
+        `;
+        container.appendChild(card);
+    });
+};
+</script>
 </body>
 </html>
