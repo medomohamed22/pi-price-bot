@@ -11,7 +11,7 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: 'بيانات ناقصة' }) };
   }
   
-  const API_KEY = process.env.PI_API_KEY;
+  const API_KEY = process.env.PI_SECRET_KEY;
   const WALLET_PRIVATE_SEED = process.env.PI_WALLET_PRIVATE_SEED;
   
   if (!API_KEY || !WALLET_PRIVATE_SEED) {
