@@ -1,14 +1,12 @@
 {
   "name": "donate-way-pi",
   "version": "1.0.0",
-  "description": "Donate Way with Pi Network A2U support",
+  "description": "Donate Way with Pi Network",
   "main": "index.html",
+  "scripts": {
+    "build": ""  
+  },
   "dependencies": {
     "pi-nodejs": "^1.0.0"
-  },
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "",
-  "license": "ISC"
+  }
 }
