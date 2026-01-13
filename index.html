@@ -5,16 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Gemini AI Chat</title>
 
+<!-- Pi Network SDK -->
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+
 <style>
 :root{
   --primary:#7f5cff;
   --bg:#0f0f1a;
   --card:#1a1a2e;
   --ai:#2a2a40;
+  --user:#7f5cff;
 }
-
 *{box-sizing:border-box}
-
 body{
   margin:0;
   background:var(--bg);
@@ -25,7 +27,6 @@ body{
   align-items:center;
   color:#ffffff;
 }
-
 .chat{
   width:100%;
   max-width:420px;
@@ -33,15 +34,22 @@ body{
   background:var(--card);
   display:flex;
   flex-direction:column;
+  position:relative;
 }
-
 .header{
   padding:14px;
   text-align:center;
   background:linear-gradient(135deg,var(--primary),#b48cff);
   font-weight:bold;
+  position:relative;
 }
-
+#pointsDisplay{
+  position:absolute;
+  right:15px;
+  top:14px;
+  font-size:14px;
+  font-weight:normal;
+}
 .messages{
   flex:1;
   padding:12px;
@@ -50,7 +58,6 @@ body{
   flex-direction:column;
   gap:10px;
 }
-
 .msg{
   padding:12px 14px;
   border-radius:14px;
@@ -60,24 +67,14 @@ body{
   color:#ffffff;
   animation:fadeUp .25s ease;
 }
-
-.user{
-  background:var(--primary);
-  align-self:flex-end;
-}
-
-.ai{
-  background:var(--ai);
-  align-self:flex-start;
-}
-
+.user{background:var(--user);align-self:flex-end;}
+.ai{background:var(--ai);align-self:flex-start;}
 .input-box{
   display:flex;
   gap:8px;
   padding:10px;
   background:#141423;
 }
-
 input{
   flex:1;
   padding:12px;
@@ -88,11 +85,7 @@ input{
   color:#ffffff;
   background:#0f0f1a;
 }
-
-input::placeholder{
-  color:#cccccc;
-}
-
+input::placeholder{color:#cccccc;}
 button{
   padding:12px 16px;
   border-radius:12px;
@@ -101,36 +94,40 @@ button{
   color:#ffffff;
   font-weight:bold;
   cursor:pointer;
+  transition:0.2s;
 }
-
-.typing{
-  display:flex;
-  gap:6px;
+button:hover{
+  transform:scale(1.05);
 }
-
+.typing{display:flex;gap:6px;}
 .dot{
-  width:6px;
-  height:6px;
+  width:6px;height:6px;
   background:#ffffff;
   border-radius:50%;
   animation:blink 1.4s infinite both;
 }
-.dot:nth-child(2){animation-delay:.2s}
-.dot:nth-child(3){animation-delay:.4s}
-
+.dot:nth-child(2){animation-delay:.2s;}
+.dot:nth-child(3){animation-delay:.4s;}
 @keyframes blink{
   0%{opacity:.2}
   20%{opacity:1}
   100%{opacity:.2}
 }
-
 @keyframes fadeUp{
   from{opacity:0; transform:translateY(6px)}
   to{opacity:1; transform:translateY(0)}
 }
-
-@media(max-width:480px){
-  .msg{font-size:14px}
+/* Overlay الدفع */
+#payOverlay{
+  position:absolute;
+  top:0;left:0;width:100%;height:100%;
+  background:rgba(0,0,0,0.85);
+  display:none;flex-direction:column;
+  justify-content:center;align-items:center;color:white;
+  text-align:center;z-index:50;padding:20px;
+}
+#payOverlay button{
+  margin-top:10px;
 }
 </style>
 </head>
@@ -138,87 +135,118 @@ button{
 <body>
 
 <div class="chat">
-  <div class="header">Gemini AI</div>
+  <div class="header">Gemini AI
+    <span id="pointsDisplay"></span>
+  </div>
 
-  <div class="messages" id="messages"></div>
+  <div class="messages" id="messages">
+    <div class="msg ai">مرحباً بك! لديك 5 محاولات مجانية. اسألني أي شيء.</div>
+  </div>
+
+  <div id="payOverlay">
+    <h3>⚠️ انتهت نقاطك!</h3>
+    <p>اشحن الآن للمتابعة</p>
+    <p><b>1 Pi = 20 نقطة</b></p>
+    <button onclick="handlePayment()">اشحن 20 نقطة بواسطة Pi</button>
+  </div>
 
   <div class="input-box">
-    <input id="input" placeholder="اكتب رسالتك..." />
+    <input id="input" placeholder="اكتب رسالتك...">
     <button onclick="send()">➤</button>
   </div>
 </div>
 
-<script src="chat.js"></script>
-
 <script>
+Pi.init({version:"2.0"}); // تهيئة Pi SDK
+
 const messagesDiv = document.getElementById("messages");
 const input = document.getElementById("input");
+const payOverlay = document.getElementById("payOverlay");
 
-let history = JSON.parse(localStorage.getItem("chatHistory") || "[]");
+// نقاط المستخدم
+let userPoints = localStorage.getItem("chatPoints");
+if(userPoints===null){ userPoints=5; localStorage.setItem("chatPoints",userPoints); }
+else userPoints=parseInt(userPoints);
 
-/* تحميل المحادثة */
-history.forEach(m => addMsg(m.text, m.role));
+function updatePoints(){document.getElementById("pointsDisplay").innerText=`النقاط: ${userPoints}`;}
+updatePoints();
 
-function save(){
-  localStorage.setItem("chatHistory", JSON.stringify(history));
-}
+// حفظ المحادثة
+let history = JSON.parse(localStorage.getItem("chatHistory")||"[]");
+history.forEach(m=>addMsg(m.text,m.role));
+function save(){localStorage.setItem("chatHistory",JSON.stringify(history));}
 
-function addMsg(text, role){
-  const div = document.createElement("div");
-  div.className = `msg ${role}`;
-  div.innerText = format(text);
+// إضافة رسالة
+function addMsg(text,role){
+  const div=document.createElement("div");
+  div.className=`msg ${role}`;
+  div.innerText=text;
   messagesDiv.appendChild(div);
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  messagesDiv.scrollTop=messagesDiv.scrollHeight;
 }
 
+// تأثير انتظار
 function typing(){
-  const div = document.createElement("div");
+  const div=document.createElement("div");
   div.className="msg ai typing";
-  div.innerHTML=`
-    <div class="dot"></div>
-    <div class="dot"></div>
-    <div class="dot"></div>
-  `;
+  div.innerHTML=`<div class="dot"></div><div class="dot"></div><div class="dot"></div>`;
   messagesDiv.appendChild(div);
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  messagesDiv.scrollTop=messagesDiv.scrollHeight;
   return div;
 }
 
-function format(text){
-  return text
-    .replace(/•|\*/g,"")
-    .replace(/\n{2,}/g,"\n\n")
-    .trim();
-}
-
+// دالة إرسال الرسالة
 async function send(){
-  const text = input.value.trim();
+  if(userPoints<=0){payOverlay.style.display="flex"; return;}
+  const text=input.value.trim();
   if(!text) return;
-
   input.value="";
   addMsg(text,"user");
-  history.push({role:"user",text});
-  save();
+  history.push({role:"user",text}); save();
+  userPoints--; localStorage.setItem("chatPoints",userPoints); updatePoints();
 
   const loader = typing();
-
   try{
-    const reply = await sendMessage(text);
+    const res = await fetch("/api/gemini/chat",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({message:text})
+    });
+    const data = await res.json();
     loader.remove();
-
+    const reply = data.reply||"❌ لم يتم الحصول على رد من Gemini";
     addMsg(reply,"ai");
-    history.push({role:"ai",text:reply});
-    save();
-
+    history.push({role:"ai",text:reply}); save();
   }catch{
     loader.remove();
     addMsg("❌ خطأ في الاتصال","ai");
   }
 }
 
-input.addEventListener("keydown",e=>{
-  if(e.key==="Enter") send();
-});
+// الدفع بواسطة Pi
+async function handlePayment(){
+  try{
+    const user = await Pi.authenticate(["username","payments"]);
+    const paymentData = {amount:1,memo:"شراء 20 نقطة",metadata:{points:20}};
+    const callbacks = {
+      onReadyForServerApproval: async(paymentId)=>{
+        await fetch("/api/pi/approve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({paymentId})});
+      },
+      onReadyForServerCompletion: async(paymentId,txid)=>{
+        await fetch("/api/pi/complete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({paymentId,txid})});
+        userPoints+=20; localStorage.setItem("chatPoints",userPoints); updatePoints();
+        payOverlay.style.display="none";
+        addMsg("✅ تم شحن 20 نقطة بنجاح! 🎉","ai");
+      },
+      onCancel:()=>alert("تم إلغاء الدفع"),
+      onError:(err)=>alert("حدث خطأ أثناء الدفع")
+    };
+    Pi.createPayment(paymentData,callbacks);
+  }catch{alert("يجب فتح الموقع من داخل Pi Browser");}
+}
+
+// إرسال برسالة عند الضغط على Enter
+input.addEventListener("keydown",e=>{if(e.key==="Enter") send();});
 </script>
 
 </body>
