@@ -140,7 +140,7 @@ button:hover{
   </div>
 
   <div class="messages" id="messages">
-    <div class="msg ai">مرحباً بك! لديك 5 محاولات مجانية. اسألني أي شيء أو اطلب توليد صورة 😎</div>
+    <div class="msg ai">مرحباً بك! لديك 5 محاولات مجانية. اسألني أي شيء.</div>
   </div>
 
   <div id="payOverlay">
@@ -171,41 +171,18 @@ else userPoints=parseInt(userPoints);
 function updatePoints(){document.getElementById("pointsDisplay").innerText=`النقاط: ${userPoints}`;}
 updatePoints();
 
-// حفظ المحادثة (النص بس دلوقتي)
+// حفظ المحادثة
 let history = JSON.parse(localStorage.getItem("chatHistory")||"[]");
 history.forEach(m=>addMsg(m.text,m.role));
 function save(){localStorage.setItem("chatHistory",JSON.stringify(history));}
 
-// إضافة رسالة (تدعم نص + صور)
-function addMsg(content, role){
+// إضافة رسالة
+function addMsg(text,role){
   const div=document.createElement("div");
   div.className=`msg ${role}`;
-
-  if (typeof content === "string") {
-    div.innerText = content;
-  } else {
-    // object {text, images}
-    if (content.text) {
-      const p = document.createElement("p");
-      p.innerText = content.text;
-      p.style.margin = "0 0 10px 0";
-      div.appendChild(p);
-    }
-    if (content.images && content.images.length > 0) {
-      content.images.forEach(base64 => {
-        const img = document.createElement("img");
-        img.src = `data:image/png;base64,${base64}`;
-        img.style.maxWidth = "100%";
-        img.style.borderRadius = "12px";
-        img.style.marginTop = "8px";
-        img.style.display = "block";
-        div.appendChild(img);
-      });
-    }
-  }
-
+  div.innerText=text;
   messagesDiv.appendChild(div);
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  messagesDiv.scrollTop=messagesDiv.scrollHeight;
 }
 
 // تأثير انتظار
@@ -236,25 +213,17 @@ async function send(){
       body: JSON.stringify({message:text})
     });
     const data = await res.json();
-
     loader.remove();
-
-    const replyText = data.reply || "❌ لم يتم الحصول على رد";
-    const images = data.images || [];
-
-    const content = images.length > 0 
-      ? {text: replyText, images: images}
-      : replyText;
-
-    addMsg(content, "ai");
-    history.push({role:"ai", text: replyText}); save(); // حفظ النص بس
-  }catch(err){
+    const reply = data.reply||"❌ لم يتم الحصول على رد من Gemini";
+    addMsg(reply,"ai");
+    history.push({role:"ai",text:reply}); save();
+  }catch{
     loader.remove();
     addMsg("❌ خطأ في الاتصال","ai");
   }
 }
 
-// الدفع بواسطة Pi (بدون تغيير)
+// الدفع بواسطة Pi
 async function handlePayment(){
   try{
     const user = await Pi.authenticate(["username","payments"]);
