@@ -12,12 +12,11 @@ export async function handler(event) {
 بدون نقاط
 فقرات قصيرة
 متناسقة مع الموبايل
-أسلوب واضح ومباشر
-إذا طلب المستخدم توليد صورة، ولّد صورة عالية الجودة مباشرة دون كلام كتير.
+أسلوب واضح
 `;
 
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -32,39 +31,21 @@ export async function handler(event) {
       }
     );
 
-    if (!res.ok) {
-      const errorText = await res.text();
-      throw new Error(`API Error: ${res.status} - ${errorText}`);
-    }
-
     const data = await res.json();
 
-    let reply = "";
-    let images = [];
-
-    const parts = data.candidates?.[0]?.content?.parts || [];
-
-    parts.forEach(part => {
-      if (part.text) {
-        reply += part.text;
-      }
-      if (part.inlineData && part.inlineData.mimeType?.startsWith("image/")) {
-        images.push(part.inlineData.data); // base64 string
-      }
-    });
-
-    reply = reply.trim() || (images.length > 0 ? "تم توليد الصورة بنجاح!" : "لا يوجد رد");
+    const reply =
+      data.candidates?.[0]?.content?.parts?.[0]?.text ||
+      "لا يوجد رد";
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ reply, images })
+      body: JSON.stringify({ reply })
     };
 
   } catch (err) {
-    console.error("Error:", err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Server Error", details: err.mess&& age })
+      body: JSON.stringify({ error: "Server Error" })
     };
   }
 }
