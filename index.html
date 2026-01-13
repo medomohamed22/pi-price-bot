@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Gemini AI Chat</title>
 
+<!-- Pi SDK -->
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+<script>
+Pi.init({ version: "2.0" });
+</script>
+
 <style>
 :root{
   --primary:#7f5cff;
@@ -12,20 +18,17 @@
   --card:#1a1a2e;
   --ai:#2a2a40;
 }
-
 *{box-sizing:border-box}
-
 body{
   margin:0;
   background:var(--bg);
-  font-family: system-ui, -apple-system;
+  font-family:system-ui;
   height:100vh;
   display:flex;
   justify-content:center;
   align-items:center;
-  color:#ffffff;
+  color:#fff;
 }
-
 .chat{
   width:100%;
   max-width:420px;
@@ -34,14 +37,17 @@ body{
   display:flex;
   flex-direction:column;
 }
-
 .header{
   padding:14px;
-  text-align:center;
   background:linear-gradient(135deg,var(--primary),#b48cff);
+  text-align:center;
   font-weight:bold;
 }
-
+.points{
+  font-size:13px;
+  opacity:.9;
+  margin-top:4px;
+}
 .messages{
   flex:1;
   padding:12px;
@@ -50,87 +56,48 @@ body{
   flex-direction:column;
   gap:10px;
 }
-
 .msg{
   padding:12px 14px;
   border-radius:14px;
   max-width:90%;
   line-height:1.6;
-  word-wrap:break-word;
-  color:#ffffff;
-  animation:fadeUp .25s ease;
 }
-
-.user{
-  background:var(--primary);
-  align-self:flex-end;
-}
-
-.ai{
-  background:var(--ai);
-  align-self:flex-start;
-}
-
+.user{background:var(--primary); align-self:flex-end}
+.ai{background:var(--ai); align-self:flex-start}
 .input-box{
-  display:flex;
-  gap:8px;
   padding:10px;
   background:#141423;
+  display:flex;
+  gap:6px;
 }
-
 input{
   flex:1;
   padding:12px;
   border-radius:12px;
   border:none;
   outline:none;
-  font-size:15px;
-  color:#ffffff;
   background:#0f0f1a;
+  color:#fff;
 }
-
-input::placeholder{
-  color:#cccccc;
-}
-
 button{
-  padding:12px 16px;
+  padding:12px;
   border-radius:12px;
   border:none;
   background:var(--primary);
-  color:#ffffff;
+  color:#fff;
   font-weight:bold;
-  cursor:pointer;
 }
-
-.typing{
-  display:flex;
-  gap:6px;
-}
-
+.typing{display:flex; gap:6px}
 .dot{
-  width:6px;
-  height:6px;
-  background:#ffffff;
+  width:6px;height:6px;
+  background:#fff;
   border-radius:50%;
   animation:blink 1.4s infinite both;
 }
 .dot:nth-child(2){animation-delay:.2s}
 .dot:nth-child(3){animation-delay:.4s}
-
 @keyframes blink{
-  0%{opacity:.2}
-  20%{opacity:1}
-  100%{opacity:.2}
-}
-
-@keyframes fadeUp{
-  from{opacity:0; transform:translateY(6px)}
-  to{opacity:1; transform:translateY(0)}
-}
-
-@media(max-width:480px){
-  .msg{font-size:14px}
+  0%{opacity:.2}20%{opacity:1}100%{opacity:.2}
 }
 </style>
 </head>
@@ -138,81 +105,121 @@ button{
 <body>
 
 <div class="chat">
-  <div class="header">Gemini AI</div>
+  <div class="header">
+    Gemini AI
+    <div class="points">نقاطك: <span id="points"></span></div>
+  </div>
 
   <div class="messages" id="messages"></div>
 
   <div class="input-box">
-    <input id="input" placeholder="اكتب رسالتك..." />
+    <button onclick="payWithPi()">💰</button>
+    <input id="input" placeholder="اكتب سؤالك..." />
     <button onclick="send()">➤</button>
   </div>
 </div>
 
-<script src="chat.js"></script>
-
 <script>
+/* 🎁 النقاط */
+let points = Number(localStorage.getItem("points"));
+if (isNaN(points)) {
+  points = 5;
+  localStorage.setItem("points", points);
+}
+document.getElementById("points").innerText = points;
+
+function updatePoints(v){
+  points += v;
+  localStorage.setItem("points", points);
+  document.getElementById("points").innerText = points;
+}
+
 const messagesDiv = document.getElementById("messages");
 const input = document.getElementById("input");
 
-let history = JSON.parse(localStorage.getItem("chatHistory") || "[]");
-
-/* تحميل المحادثة */
-history.forEach(m => addMsg(m.text, m.role));
-
-function save(){
-  localStorage.setItem("chatHistory", JSON.stringify(history));
-}
-
 function addMsg(text, role){
-  const div = document.createElement("div");
-  div.className = `msg ${role}`;
-  div.innerText = format(text);
-  messagesDiv.appendChild(div);
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  const d=document.createElement("div");
+  d.className=`msg ${role}`;
+  d.innerText=text;
+  messagesDiv.appendChild(d);
+  messagesDiv.scrollTop=messagesDiv.scrollHeight;
 }
 
 function typing(){
-  const div = document.createElement("div");
-  div.className="msg ai typing";
-  div.innerHTML=`
-    <div class="dot"></div>
-    <div class="dot"></div>
-    <div class="dot"></div>
-  `;
-  messagesDiv.appendChild(div);
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
-  return div;
+  const d=document.createElement("div");
+  d.className="msg ai typing";
+  d.innerHTML='<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+  messagesDiv.appendChild(d);
+  return d;
 }
 
-function format(text){
-  return text
-    .replace(/•|\*/g,"")
-    .replace(/\n{2,}/g,"\n\n")
-    .trim();
+/* 🧠 Gemini Chat (عبر redirect) */
+async function sendMessage(message){
+  const res = await fetch("/api/gemini/chat", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ message })
+  });
+  const data = await res.json();
+  return data.reply;
 }
 
 async function send(){
-  const text = input.value.trim();
+  if(points <= 0){
+    alert("❌ لا يوجد نقاط، اشحن للمتابعة");
+    return;
+  }
+
+  const text=input.value.trim();
   if(!text) return;
 
+  updatePoints(-1);
   input.value="";
   addMsg(text,"user");
-  history.push({role:"user",text});
-  save();
 
-  const loader = typing();
-
+  const loader=typing();
   try{
-    const reply = await sendMessage(text);
+    const reply=await sendMessage(text);
     loader.remove();
-
     addMsg(reply,"ai");
-    history.push({role:"ai",text:reply});
-    save();
-
   }catch{
     loader.remove();
     addMsg("❌ خطأ في الاتصال","ai");
+  }
+}
+
+/* 💳 Pi Network Payment (عبر redirects) */
+async function payWithPi(){
+  try{
+    const payment = await Pi.createPayment({
+      amount: 1,
+      memo: "شحن 20 نقطة",
+      metadata: { points: 20 }
+    });
+
+    // approve
+    await fetch("/api/pi/approve", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ paymentId: payment.identifier })
+    });
+
+    // complete
+    await fetch("/api/pi/complete", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({
+        paymentId: payment.identifier,
+        txid: payment.transaction.txid
+      })
+    });
+
+    updatePoints(20);
+    alert("✅ تم شحن 20 نقطة");
+
+  }catch(err){
+    alert("❌ فشل الدفع");
+    console.error(err);
   }
 }
 
