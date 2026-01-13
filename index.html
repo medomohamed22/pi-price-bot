@@ -2,262 +2,224 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gemini AI Chat - نظام النقاط</title>
-<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Gemini AI Chat</title>
+
 <style>
-:root {
-  --main-color: #6a0dad;
-  --bg-color: #f4f4f9;
-  --ai-color: #e0e0e0;
-  --user-color: #6a0dad;
-  --overlay-color: rgba(255, 255, 255, 0.95);
-}
-body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: var(--bg-color);
-  margin: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
-}
-.chat-container {
-  width: 400px;
-  height: 600px;
-  background: white;
-  border-radius: 20px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  position: relative;
-}
-.header {
-  background: var(--main-color);
-  color: white;
-  font-weight: bold;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 20px;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.2);
-  border-bottom-left-radius: 20px;
-  border-bottom-right-radius: 20px;
-}
-#credits-display {
-  background: rgba(255,255,255,0.2);
-  padding: 5px 10px;
-  border-radius: 10px;
-  font-size: 14px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-}
-#chat-box {
-  flex: 1;
-  padding: 15px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  background: #fafafa;
-}
-.message {
-  padding: 12px 18px;
-  border-radius: 20px;
-  max-width: 80%;
-  font-size: 14px;
-  word-wrap: break-word;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  opacity: 0;
-  transform: translateY(10px);
-  animation: fadeInUp 0.4s forwards;
-}
-.user { background: var(--user-color); color: white; align-self: flex-end; }
-.ai { background: var(--ai-color); color: #333; align-self: flex-start; }
-
-/* تأثير نبض الرسالة الجديدة */
-.pulse {
-  animation: pulse 1s ease-in-out 0s 3;
-}
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
+:root{
+  --primary:#7f5cff;
+  --bg:#0f0f1a;
+  --card:#1a1a2e;
+  --ai:#2a2a40;
 }
 
-/* fade-in الرسائل */
-@keyframes fadeInUp {
-  to { opacity: 1; transform: translateY(0); }
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  background:var(--bg);
+  font-family: system-ui, -apple-system;
+  height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  color:#ffffff;
 }
 
-.input-area {
-  padding: 15px;
-  border-top: 1px solid #ddd;
-  display: flex;
-  gap: 5px;
-  background: #fff;
-}
-input {
-  flex: 1;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  outline: none;
-}
-button {
-  background: var(--main-color);
-  color: white;
-  border: none;
-  padding: 10px 15px;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-}
-button:hover {
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+.chat{
+  width:100%;
+  max-width:420px;
+  height:100vh;
+  background:var(--card);
+  display:flex;
+  flex-direction:column;
 }
 
-/* overlay الدفع */
-.pay-overlay {
-  position: absolute;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background: var(--overlay-color);
-  display: none;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  z-index: 10;
-  padding: 20px;
-  box-sizing: border-box;
-  border-radius: 20px;
-  backdrop-filter: blur(5px);
-  animation: fadeIn 0.4s ease-in-out;
+.header{
+  padding:14px;
+  text-align:center;
+  background:linear-gradient(135deg,var(--primary),#b48cff);
+  font-weight:bold;
 }
-.pay-overlay h3 { color: var(--main-color); margin-bottom: 10px; }
-.pay-overlay p { font-size: 14px; margin: 5px 0; }
-@keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
+
+.messages{
+  flex:1;
+  padding:12px;
+  overflow-y:auto;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.msg{
+  padding:12px 14px;
+  border-radius:14px;
+  max-width:90%;
+  line-height:1.6;
+  word-wrap:break-word;
+  color:#ffffff;
+  animation:fadeUp .25s ease;
+}
+
+.user{
+  background:var(--primary);
+  align-self:flex-end;
+}
+
+.ai{
+  background:var(--ai);
+  align-self:flex-start;
+}
+
+.input-box{
+  display:flex;
+  gap:8px;
+  padding:10px;
+  background:#141423;
+}
+
+input{
+  flex:1;
+  padding:12px;
+  border-radius:12px;
+  border:none;
+  outline:none;
+  font-size:15px;
+  color:#ffffff;
+  background:#0f0f1a;
+}
+
+input::placeholder{
+  color:#cccccc;
+}
+
+button{
+  padding:12px 16px;
+  border-radius:12px;
+  border:none;
+  background:var(--primary);
+  color:#ffffff;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+.typing{
+  display:flex;
+  gap:6px;
+}
+
+.dot{
+  width:6px;
+  height:6px;
+  background:#ffffff;
+  border-radius:50%;
+  animation:blink 1.4s infinite both;
+}
+.dot:nth-child(2){animation-delay:.2s}
+.dot:nth-child(3){animation-delay:.4s}
+
+@keyframes blink{
+  0%{opacity:.2}
+  20%{opacity:1}
+  100%{opacity:.2}
+}
+
+@keyframes fadeUp{
+  from{opacity:0; transform:translateY(6px)}
+  to{opacity:1; transform:translateY(0)}
+}
+
+@media(max-width:480px){
+  .msg{font-size:14px}
+}
 </style>
 </head>
 
 <body>
-<div class="chat-container">
-  <div class="header">
-    <span>Gemini AI</span>
-    <div id="credits-display">النقاط: <span id="points">0</span></div>
-  </div>
 
-  <div id="chat-box">
-    <div class="message ai">مرحباً بك! لديك 5 محاولات مجانية. اسألني أي شيء.</div>
-  </div>
+<div class="chat">
+  <div class="header">Gemini AI</div>
 
-  <div id="pay-overlay" class="pay-overlay">
-    <h3>⚠️ انتهت نقاطك!</h3>
-    <p>اشحن الآن للمتابعة:</p>
-    <p><b>1 Pi = 20 نقطة محادثة</b></p>
-    <button id="pay-btn" onclick="handlePayment()">اشحن 20 نقطة بواسطة Pi</button>
-  </div>
+  <div class="messages" id="messages"></div>
 
-  <div class="input-area" id="input-area">
-    <input type="text" id="user-input" placeholder="اكتب رسالتك هنا...">
-    <button onclick="askGemini()">إرسال</button>
+  <div class="input-box">
+    <input id="input" placeholder="اكتب رسالتك..." />
+    <button onclick="send()">➤</button>
   </div>
 </div>
 
+<script src="chat.js"></script>
+
 <script>
-Pi.init({ version: "2.0" });
+const messagesDiv = document.getElementById("messages");
+const input = document.getElementById("input");
 
-let userPoints = localStorage.getItem('chat_points');
-if (userPoints === null) {
-  userPoints = 5;
-  localStorage.setItem('chat_points', userPoints);
-} else userPoints = parseInt(userPoints);
+let history = JSON.parse(localStorage.getItem("chatHistory") || "[]");
 
-updateUI();
+/* تحميل المحادثة */
+history.forEach(m => addMsg(m.text, m.role));
 
-function updateUI() {
-  document.getElementById('points').innerText = userPoints;
-  const overlay = document.getElementById('pay-overlay');
-  const inputArea = document.getElementById('input-area');
-  
-  if (userPoints <= 0) {
-    overlay.style.display = 'flex';
-    inputArea.style.opacity = '0.5';
-    inputArea.querySelector('input').disabled = true;
-  } else {
-    overlay.style.display = 'none';
-    inputArea.style.opacity = '1';
-    inputArea.querySelector('input').disabled = false;
+function save(){
+  localStorage.setItem("chatHistory", JSON.stringify(history));
+}
+
+function addMsg(text, role){
+  const div = document.createElement("div");
+  div.className = `msg ${role}`;
+  div.innerText = format(text);
+  messagesDiv.appendChild(div);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+function typing(){
+  const div = document.createElement("div");
+  div.className="msg ai typing";
+  div.innerHTML=`
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+  `;
+  messagesDiv.appendChild(div);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  return div;
+}
+
+function format(text){
+  return text
+    .replace(/•|\*/g,"")
+    .replace(/\n{2,}/g,"\n\n")
+    .trim();
+}
+
+async function send(){
+  const text = input.value.trim();
+  if(!text) return;
+
+  input.value="";
+  addMsg(text,"user");
+  history.push({role:"user",text});
+  save();
+
+  const loader = typing();
+
+  try{
+    const reply = await sendMessage(text);
+    loader.remove();
+
+    addMsg(reply,"ai");
+    history.push({role:"ai",text:reply});
+    save();
+
+  }catch{
+    loader.remove();
+    addMsg("❌ خطأ في الاتصال","ai");
   }
 }
 
-async function handlePayment() {
-  try {
-    const user = await Pi.authenticate(['username', 'payments']);
-    const paymentData = { amount:1, memo:"شراء 20 نقطة", metadata:{points:20} };
-    const callbacks = {
-      onReadyForServerApproval: async (paymentId)=>{
-        await fetch('/api/pi/approve',{
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({paymentId})
-        });
-      },
-      onReadyForServerCompletion: async (paymentId, txid)=>{
-        await fetch('/api/pi/complete',{
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({paymentId, txid})
-        });
-        userPoints += 20;
-        localStorage.setItem('chat_points', userPoints);
-        updateUI();
-        // رسالة الشحن مع نبض Pulse
-        addMessage("✅ تم شحن 20 نقطة بنجاح! 🎉", "ai", true);
-      },
-      onCancel:()=>{ alert("تم إلغاء الدفع"); },
-      onError:(err)=>{ alert("حدث خطأ أثناء الدفع"); console.error(err); }
-    };
-    Pi.createPayment(paymentData, callbacks);
-  } catch(err){ alert("يجب فتح الموقع من داخل Pi Browser"); }
-}
-
-function addMessage(text, role, pulse=false){
-  const chatBox = document.getElementById('chat-box');
-  const div = document.createElement('div');
-  div.className = `message ${role}`;
-  if(pulse) div.classList.add('pulse');
-  div.innerText = text;
-  chatBox.appendChild(div);
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-async function askGemini() {
-  if (userPoints <= 0) { updateUI(); return; }
-
-  const input = document.getElementById('user-input');
-  const userText = input.value.trim();
-  if (!userText) return;
-  addMessage(userText,"user");
-  input.value = '';
-
-  userPoints--;
-  localStorage.setItem('chat_points', userPoints);
-  updateUI();
-
-  try {
-    const res = await fetch('/api/gemini/chat',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({prompt:userText})
-    });
-    const data = await res.json();
-    addMessage(data.reply,"ai");
-  } catch(e){
-    addMessage("حدث خطأ في الاتصال بالسيرفر.","ai");
-  }
-}
+input.addEventListener("keydown",e=>{
+  if(e.key==="Enter") send();
+});
 </script>
+
 </body>
 </html>
