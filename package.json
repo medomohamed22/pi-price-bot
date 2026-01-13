@@ -1,9 +1,0 @@
-{
-  "name": "pi-ai-chat",
-  "version": "1.0.0",
-  "description": "AI Chat with Pi Network Integration",
-  "main": "index.html",
-  "dependencies": {
-    "@google/generative-ai": "^0.21.0"
-  }
-}
