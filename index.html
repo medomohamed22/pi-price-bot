@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Gemini AI Chat</title>
 
-<!-- Pi SDK -->
+<!-- Pi Network SDK -->
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 <script>
 Pi.init({ version: "2.0" });
@@ -86,6 +86,7 @@ button{
   background:var(--primary);
   color:#fff;
   font-weight:bold;
+  cursor:pointer;
 }
 .typing{display:flex; gap:6px}
 .dot{
@@ -123,7 +124,7 @@ button{
 /* 🎁 النقاط */
 let points = Number(localStorage.getItem("points"));
 if (isNaN(points)) {
-  points = 5;
+  points = 5; // نقاط مجانية أول مرة
   localStorage.setItem("points", points);
 }
 document.getElementById("points").innerText = points;
@@ -134,6 +135,7 @@ function updatePoints(v){
   document.getElementById("points").innerText = points;
 }
 
+/* 💬 الشات */
 const messagesDiv = document.getElementById("messages");
 const input = document.getElementById("input");
 
@@ -153,7 +155,7 @@ function typing(){
   return d;
 }
 
-/* 🧠 Gemini Chat (عبر redirect) */
+/* 🧠 Gemini Chat (Backend عبر redirect) */
 async function sendMessage(message){
   const res = await fetch("/api/gemini/chat", {
     method:"POST",
@@ -188,39 +190,48 @@ async function send(){
   }
 }
 
-/* 💳 Pi Network Payment (عبر redirects) */
-async function payWithPi(){
-  try{
-    const payment = await Pi.createPayment({
+/* 💳 Pi Network Payment – الطريقة الصحيحة */
+function payWithPi(){
+  Pi.createPayment(
+    {
       amount: 1,
       memo: "شحن 20 نقطة",
       metadata: { points: 20 }
-    });
+    },
+    {
+      // المستخدم وافق
+      onReadyForServerApproval: async function (paymentId) {
+        await fetch("/api/pi/approve", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paymentId })
+        });
+      },
 
-    // approve
-    await fetch("/api/pi/approve", {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ paymentId: payment.identifier })
-    });
+      // المعاملة اكتملت
+      onReadyForServerCompletion: async function (paymentId, txid) {
+        await fetch("/api/pi/complete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paymentId, txid })
+        });
 
-    // complete
-    await fetch("/api/pi/complete", {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({
-        paymentId: payment.identifier,
-        txid: payment.transaction.txid
-      })
-    });
+        updatePoints(20);
+        alert("✅ تم شحن 20 نقطة بنجاح");
+      },
 
-    updatePoints(20);
-    alert("✅ تم شحن 20 نقطة");
+      // المستخدم لغى
+      onCancel: function () {
+        alert("❌ تم إلغاء الدفع");
+      },
 
-  }catch(err){
-    alert("❌ فشل الدفع");
-    console.error(err);
-  }
+      // خطأ
+      onError: function (err) {
+        console.error(err);
+        alert("❌ حدث خطأ أثناء الدفع");
+      }
+    }
+  );
 }
 
 input.addEventListener("keydown",e=>{
