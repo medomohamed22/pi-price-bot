@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI Water Sort | Fair Challenge</title>
+    <title>AI Water Sort | Auto-Login</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -30,31 +30,33 @@
         .stat-label { font-size: 0.65rem; color: #94a3b8; display: block; text-transform: uppercase; }
         .stat-value { font-size: 1.1rem; font-weight: 700; color: var(--accent); }
         
-        #usernameDisplay { color: var(--gold); font-size: 0.9rem; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        #usernameDisplay { color: var(--gold); font-size: 0.9rem; max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .moves-critical { color: var(--danger); animation: pulse 0.8s infinite; }
 
-        .game-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; }
+        .game-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; padding: 10px; }
         
         .bottles-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
-            gap: 20px; width: 90%; max-width: 450px; justify-items: center;
+            display: grid; gap: 15px; width: 95%; max-width: 500px; justify-items: center;
         }
 
         .bottle {
-            width: 50px; height: 160px; background: rgba(255,255,255,0.05);
+            width: 45px; height: 140px; background: rgba(255,255,255,0.05);
             border: 2px solid rgba(255,255,255,0.2); border-top: none;
-            border-bottom-left-radius: 25px; border-bottom-right-radius: 25px;
+            border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;
             position: relative; display: flex; flex-direction: column-reverse;
             cursor: pointer; transition: 0.3s;
         }
 
-        .bottle.selected { transform: translateY(-20px); border-color: var(--accent); box-shadow: 0 0 15px var(--accent); }
-        .liquid { width: 100%; height: 25%; transition: height 0.4s; }
+        .bottle.selected { transform: translateY(-15px); border-color: var(--accent); box-shadow: 0 0 15px var(--accent); }
+        .liquid { width: 100%; height: 25%; transition: height 0.4s; border-radius: 2px; }
 
         .c-1 { background: linear-gradient(90deg, #991b1b, #ef4444, #991b1b); }
         .c-2 { background: linear-gradient(90deg, #1e3a8a, #3b82f6, #1e3a8a); }
         .c-3 { background: linear-gradient(90deg, #166534, #22c55e, #166534); }
         .c-4 { background: linear-gradient(90deg, #854d0e, #eab308, #854d0e); }
+        .c-5 { background: linear-gradient(90deg, #5b21b6, #a855f7, #5b21b6); }
+        .c-6 { background: linear-gradient(90deg, #be185d, #ec4899, #be185d); }
+        .c-7 { background: linear-gradient(90deg, #374151, #9ca3af, #374151); }
 
         .footer { padding: 20px; display: flex; gap: 10px; width: 100%; justify-content: center; }
         button { padding: 12px 20px; border-radius: 12px; border: none; font-family: 'Poppins'; font-weight: bold; cursor: pointer; }
@@ -66,8 +68,7 @@
             z-index: 1000; align-items: center; justify-content: center; padding: 20px;
         }
         .modal-content { background: var(--panel); padding: 30px; border-radius: 25px; text-align: center; border: 1px solid var(--accent); width: 100%; max-width: 320px; }
-        .btn-pi { background: var(--pi-purple); color: white; width: 100%; margin: 10px 0; }
-
+        
         .loading-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -76,7 +77,7 @@
 <body>
 
     <div id="loading" class="loading-overlay">
-        <h3>AI Calculating Path...</h3>
+        <h3 id="loadingText">Connecting to Pi Network...</h3>
         <div style="width: 40px; height: 40px; border: 4px solid var(--accent); border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
     </div>
 
@@ -87,7 +88,7 @@
         </div>
         <div class="stat-card">
             <span class="stat-label">Player</span>
-            <span id="usernameDisplay" class="stat-value">...</span>
+            <span id="usernameDisplay" class="stat-value">Loading...</span>
         </div>
         <div class="stat-card">
             <span class="stat-label">Moves</span>
@@ -104,52 +105,66 @@
         <button class="btn-shop" onclick="ui.toggleShop(true)">🛒 Shop</button>
     </div>
 
-    <div id="gameOverModal" class="modal">
-        <div class="modal-content">
-            <h2 style="color:var(--danger)">No Moves Left!</h2>
-            <p>Don't give up! Get extra moves or try again.</p>
-            <button class="btn-pi" onclick="piPayment.buyMoves(10, 0.1)">Buy 10 Moves (0.1 Pi)</button>
-            <button onclick="game.resetLevel()" style="background:#475569; color:white; width:100%; margin-top:5px">Restart Level</button>
-        </div>
-    </div>
+    <div id="gameOverModal" class="modal"><div class="modal-content">
+        <h2 style="color:var(--danger)">No Moves!</h2>
+        <button class="btn-pi" style="background:var(--pi-purple);color:white;width:100%;padding:10px;border-radius:10px;margin-bottom:5px" onclick="piPayment.buyMoves(10, 0.1)">Get 10 Moves (0.1 Pi)</button>
+        <button onclick="game.resetLevel()" style="background:#475569; color:white; width:100%; padding:10px; border-radius:10px; border:none">Restart Level</button>
+    </div></div>
 
-    <div id="shopModal" class="modal">
-        <div class="modal-content">
-            <h2>Store</h2>
-            <button class="btn-pi" onclick="piPayment.buyMoves(10, 0.1)">Buy 10 Moves (0.1 Pi)</button>
-            <button onclick="ui.toggleShop(false)" style="background:transparent; color:white; border:none; margin-top:10px">Close</button>
-        </div>
-    </div>
+    <div id="shopModal" class="modal"><div class="modal-content">
+        <h2>Store</h2>
+        <button style="background:var(--pi-purple);color:white;width:100%;padding:10px;border-radius:10px;" onclick="piPayment.buyMoves(10, 0.1)">Buy 10 Moves (0.1 Pi)</button>
+        <button onclick="ui.toggleShop(false)" style="background:none; color:white; border:none; margin-top:10px">Close</button>
+    </div></div>
 
-    <div id="msgModal" class="modal">
-        <div class="modal-content">
-            <h2 id="msgTitle"></h2>
-            <p id="msgBody"></p>
-            <button id="msgBtn" style="background:var(--accent); width:100%; border:none; padding:10px; border-radius:10px; font-weight:bold; color:white;"></button>
-        </div>
-    </div>
+    <div id="msgModal" class="modal"><div class="modal-content"><h2 id="msgTitle"></h2><p id="msgBody"></p><button id="msgBtn" style="background:var(--accent); width:100%; border:none; padding:10px; border-radius:10px; font-weight:bold; color:white;"></button></div></div>
 
     <script>
         const Pi = window.Pi;
+        // Sandbox is true for testing, change to false for production
         Pi.init({ version: "2.0", sandbox: false });
 
         const game = {
             level: 1, moves: 0, initialMoves: 0,
             bottles: [], initialState: null, selected: null,
+            currentUser: null,
 
-            async auth() {
+            // التحقق المباشر من المستخدم
+            async authenticateUser() {
                 try {
                     const scopes = ['username', 'payments'];
-                    const auth = await Pi.authenticate(scopes, (p) => {});
+                    // هذه الدالة تفتح نافذة تسجيل الدخول مرة واحدة فقط في البداية
+                    const auth = await Pi.authenticate(scopes, (payment) => {
+                        console.log("Payment pulse", payment);
+                    });
+                    this.currentUser = auth.user;
                     document.getElementById('usernameDisplay').innerText = auth.user.username;
-                } catch (e) { document.getElementById('usernameDisplay').innerText = "Guest"; }
+                    return true;
+                } catch (err) {
+                    console.error("Auth Error:", err);
+                    document.getElementById('usernameDisplay').innerText = "Guest Mode";
+                    return false;
+                }
             },
 
-            async init() {
-                await this.auth();
+            getColorCount() {
+                if (this.level <= 10) return 3;
+                if (this.level <= 20) return 4;
+                if (this.level <= 30) return 5;
+                return 6;
+            },
+
+            async start() {
+                // 1. التعرف على المستخدم أولاً
+                await this.authenticateUser();
+                // 2. بناء المستوى
+                await this.initLevel();
+            },
+
+            async initLevel() {
                 document.getElementById('loading').style.display = 'flex';
                 this.selected = null;
-                let colorCount = Math.min(3 + Math.floor(this.level / 5), 4);
+                let colorCount = this.getColorCount();
                 let solved = false;
                 let minMoves = 0;
 
@@ -159,8 +174,7 @@
                     if (minMoves >= 5) solved = true;
                 }
 
-                // AI Moves + 1 Fair Chance
-                this.initialMoves = minMoves + 1;
+                this.initialMoves = minMoves + 2; // AI + 2 moves
                 this.moves = this.initialMoves;
                 this.initialState = JSON.stringify(this.bottles);
                 
@@ -186,7 +200,6 @@
                     const [currStr, dist] = queue.shift();
                     const curr = JSON.parse(currStr);
                     if (this.isWon(curr)) return dist;
-
                     for (let i = 0; i < curr.length; i++) {
                         for (let j = 0; j < curr.length; j++) {
                             if (i === j) continue;
@@ -236,7 +249,7 @@
                     ui.update();
                     if(this.isWon(this.bottles)) {
                         this.level++;
-                        ui.showMsg("Level Complete! 🎉", "You are as smart as the AI.", "Next", () => this.init());
+                        ui.showMsg("Victory!", `Level ${this.level-1} complete!`, "Next Level", () => this.initLevel());
                     } else if(this.moves <= 0) setTimeout(() => ui.toggleGameOver(true), 400);
                 }
             },
@@ -252,15 +265,15 @@
         const piPayment = {
             async buyMoves(count, amount) {
                 try {
-                    await Pi.createPayment({ amount, memo: `Add ${count} Moves`, metadata: { moves: count } }, {
+                    await Pi.createPayment({ amount, memo: `Get ${count} moves`, metadata: { moves: count } }, {
                         onReadyForServerApproval: (id) => fetch('/api/pi/approve', { method: 'POST', body: JSON.stringify({ paymentId: id }) }),
                         onReadyForServerCompletion: async (id, txid) => {
                             await fetch('/api/pi/complete', { method: 'POST', body: JSON.stringify({ paymentId: id, txid: txid }) });
                             game.moves += count; ui.update(); ui.toggleGameOver(false); ui.toggleShop(false);
                         },
-                        onCancel: () => {}, onError: () => alert("Payment Failed")
+                        onCancel: () => {}, onError: () => alert("Payment Error")
                     });
-                } catch (e) {}
+                } catch (e) { alert("Action requires Pi Browser"); }
             }
         };
 
@@ -269,10 +282,12 @@
                 document.getElementById('lvlDisplay').innerText = game.level;
                 const mDisp = document.getElementById('movesDisplay');
                 mDisp.innerText = game.moves;
-                mDisp.className = game.moves <= 2 ? 'stat-value moves-critical' : 'stat-value';
+                mDisp.className = game.moves <= 3 ? 'stat-value moves-critical' : 'stat-value';
             },
             render() {
                 const grid = document.getElementById('mainGrid'); grid.innerHTML = '';
+                const cols = game.bottles.length > 6 ? 4 : 3;
+                grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
                 game.bottles.forEach((b, i) => {
                     const div = document.createElement('div');
                     div.className = `bottle ${game.selected === i ? 'selected' : ''}`;
@@ -294,7 +309,8 @@
             }
         };
 
-        game.init();
+        // بدء اللعبة مباشرة
+        game.start();
     </script>
 </body>
 </html>
