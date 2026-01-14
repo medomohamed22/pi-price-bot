@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI-Powered Water Sort | Pi Network</title>
+    <title>Extreme AI Water Sort | Pi Network</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -28,7 +28,7 @@
         .stat-card { text-align: center; }
         .stat-label { font-size: 0.7rem; color: #94a3b8; display: block; }
         .stat-value { font-size: 1.2rem; font-weight: 700; color: var(--accent); }
-        .moves-count { color: #10b981; } /* لون أخضر للحركات الذكية */
+        .moves-critical { color: var(--danger); animation: pulse 0.8s infinite; }
 
         .game-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; }
         
@@ -38,47 +38,45 @@
         }
 
         .bottle {
-            width: 50px; height: 160px; background: rgba(255,255,255,0.1);
+            width: 50px; height: 160px; background: rgba(255,255,255,0.05);
             border: 2px solid rgba(255,255,255,0.2); border-top: none;
             border-bottom-left-radius: 25px; border-bottom-right-radius: 25px;
             position: relative; display: flex; flex-direction: column-reverse;
-            cursor: pointer; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer; transition: 0.3s;
         }
 
-        .bottle.selected { transform: translateY(-30px); border-color: var(--accent); }
-        .liquid { width: 100%; height: 25%; transition: height 0.4s; box-shadow: inset 0 4px 10px rgba(0,0,0,0.2); }
+        .bottle.selected { transform: translateY(-25px); border-color: var(--accent); box-shadow: 0 0 15px var(--accent); }
+        .liquid { width: 100%; height: 25%; transition: height 0.4s; }
 
-        /* ألوان السوائل */
+        /* تدرجات 3D للألوان */
         .c-1 { background: linear-gradient(90deg, #991b1b, #ef4444, #991b1b); }
         .c-2 { background: linear-gradient(90deg, #1e3a8a, #3b82f6, #1e3a8a); }
         .c-3 { background: linear-gradient(90deg, #166534, #22c55e, #166534); }
         .c-4 { background: linear-gradient(90deg, #854d0e, #eab308, #854d0e); }
-        .c-5 { background: linear-gradient(90deg, #5b21b6, #a855f7, #5b21b6); }
+
+        .footer { padding: 20px; display: flex; gap: 10px; width: 100%; justify-content: center; }
+        button { padding: 12px 20px; border-radius: 12px; border: none; font-family: 'Cairo'; font-weight: bold; cursor: pointer; }
+        .btn-restart { background: #475569; color: white; }
+        .btn-shop { background: var(--gold); }
 
         .modal {
             display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95);
             z-index: 1000; align-items: center; justify-content: center; padding: 20px;
         }
-        .modal-content {
-            background: var(--panel); padding: 30px; border-radius: 25px;
-            text-align: center; border: 1px solid var(--accent); width: 100%; max-width: 320px;
-        }
-
-        button { padding: 12px 20px; border-radius: 12px; border: none; font-family: 'Cairo'; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .modal-content { background: var(--panel); padding: 30px; border-radius: 25px; text-align: center; border: 1px solid var(--accent); width: 100%; max-width: 320px; }
         .btn-pi { background: var(--pi-purple); color: white; width: 100%; margin: 10px 0; }
-        button:active { transform: scale(0.95); }
 
-        .loading-overlay {
-            position: fixed; inset: 0; background: var(--bg); z-index: 2000;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
+        .loading-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
     <div id="loading" class="loading-overlay">
-        <h2>الذكاء الاصطناعي يجهز المستوى...</h2>
-        <div style="width: 50px; height: 50px; border: 5px solid var(--accent); border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+        <h3>الذكاء الاصطناعي يحل المستوى...</h3>
+        <div style="width: 40px; height: 40px; border: 4px solid var(--accent); border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
     </div>
 
     <div class="top-bar">
@@ -87,8 +85,8 @@
             <span id="lvlDisplay" class="stat-value">1</span>
         </div>
         <div class="stat-card">
-            <span class="stat-label">حركات الذكاء</span>
-            <span id="movesDisplay" class="stat-value moves-count">0</span>
+            <span class="stat-label">الحركات المتبقية</span>
+            <span id="movesDisplay" class="stat-value">0</span>
         </div>
     </div>
 
@@ -96,147 +94,137 @@
         <div class="bottles-grid" id="mainGrid"></div>
     </div>
 
+    <div class="footer">
+        <button class="btn-restart" onclick="game.resetLevel()">🔄 إعادة المستوى</button>
+        <button class="btn-shop" onclick="ui.toggleShop(true)">🛒 المتجر</button>
+    </div>
+
     <div id="gameOverModal" class="modal">
         <div class="modal-content">
-            <h2 style="color:var(--danger)">فشلت في تحدي الذكاء! 🛑</h2>
-            <p>لقد استهلكت حركات أكثر من اللازم.</p>
-            <button class="btn-pi" onclick="piPayment.buyMoves(10, 0.1)">شراء 10 حركات بـ 0.1 Pi</button>
-            <button onclick="game.init()" style="background:#475569; color:white; width:100%; margin-top:5px">إعادة المحاولة مجاناً</button>
+            <h2 style="color:var(--danger)">انتهت الحركات! 🛑</h2>
+            <p>لقد استهلكت حركات أكثر من حل الذكاء الاصطناعي.</p>
+            <button class="btn-pi" onclick="piPayment.buyMoves(5, 0.1)">شراء 5 حركات إضافية بـ 0.1 Pi</button>
+            <button onclick="game.resetLevel()" style="background:#475569; color:white; width:100%; margin-top:5px">إعادة المحاولة من جديد</button>
         </div>
     </div>
 
-    <div id="msgModal" class="modal">
+    <div id="shopModal" class="modal">
         <div class="modal-content">
-            <h2 id="msgTitle"></h2>
-            <p id="msgBody"></p>
-            <button id="msgBtn" style="background:var(--accent); width:100%"></button>
+            <h2>متجر الحركات</h2>
+            <button class="btn-pi" onclick="piPayment.buyMoves(10, 0.1)">شراء 10 حركات بـ 0.1 Pi</button>
+            <button onclick="ui.toggleShop(false)" style="background:transparent; color:white; border:none; margin-top:10px">إغلاق</button>
         </div>
     </div>
+
+    <div id="msgModal" class="modal"><div class="modal-content"><h2 id="msgTitle"></h2><p id="msgBody"></p><button id="msgBtn" style="background:var(--accent); width:100%"></button></div></div>
 
     <script>
         const Pi = window.Pi;
         Pi.init({ version: "2.0", sandbox: false });
 
         const game = {
-            level: 1,
-            moves: 0,
-            bottles: [],
-            selected: null,
-            capacity: 4,
+            level: 1, moves: 0, initialMoves: 0,
+            bottles: [], initialState: null, selected: null,
 
             async init() {
                 document.getElementById('loading').style.display = 'flex';
                 this.selected = null;
-                
-                // 1. توليد مستوى عشوائي
-                let colorCount = Math.min(3 + Math.floor(this.level / 5), 5);
+                let colorCount = Math.min(3 + Math.floor(this.level / 5), 4);
                 let solved = false;
                 let minMoves = 0;
 
-                // محاولة توليد مستوى قابل للحل حتى تجد الخوارزمية حلاً
                 while (!solved) {
-                    this.generateRandomLevel(colorCount);
+                    this.generateLevel(colorCount);
                     minMoves = this.solveBFS(this.bottles);
-                    if (minMoves > 0) solved = true;
+                    if (minMoves >= 5) solved = true; // لضمان مستوى ليس سهلاً جداً
                 }
 
-                // 2. تعيين عدد الحركات (حل الذكاء + هامش بسيط 20%)
-                this.moves = Math.ceil(minMoves * 1.2); 
+                this.initialMoves = minMoves;
+                this.moves = minMoves;
+                this.initialState = JSON.stringify(this.bottles);
                 
                 document.getElementById('loading').style.display = 'none';
-                ui.update();
-                ui.render();
+                ui.update(); ui.render();
             },
 
-            generateRandomLevel(colorCount) {
+            generateLevel(colorCount) {
                 let pool = [];
-                for(let i=1; i<=colorCount; i++) {
-                    for(let j=0; j<this.capacity; j++) pool.push(i);
-                }
+                for(let i=1; i<=colorCount; i++) for(let j=0; j<4; j++) pool.push(i);
                 pool.sort(() => Math.random() - 0.5);
                 this.bottles = [];
                 for(let i=0; i<colorCount; i++) this.bottles.push(pool.slice(i*4, (i+1)*4));
                 this.bottles.push([], []);
             },
 
-            // خوارزمية BFS لحساب أقل عدد حركات للحل
             solveBFS(initialState) {
                 const start = JSON.stringify(initialState);
-                const queue = [[start, 0]];
-                const visited = new Set([start]);
+                const queue = [[start, 0]], visited = new Set([start]);
+                let count = 0;
+                while (queue.length > 0 && count < 3000) {
+                    count++;
+                    const [currStr, dist] = queue.shift();
+                    const curr = JSON.parse(currStr);
+                    if (this.isWon(curr)) return dist;
 
-                let safetyCounter = 0;
-                while (queue.length > 0 && safetyCounter < 2000) {
-                    safetyCounter++;
-                    const [currentStr, dist] = queue.shift();
-                    const current = JSON.parse(currentStr);
-
-                    if (this.isStateWon(current)) return dist;
-
-                    for (let i = 0; i < current.length; i++) {
-                        for (let j = 0; j < current.length; j++) {
+                    for (let i = 0; i < curr.length; i++) {
+                        for (let j = 0; j < curr.length; j++) {
                             if (i === j) continue;
-                            const nextState = this.tryMove(current, i, j);
-                            if (nextState) {
-                                const nextStr = JSON.stringify(nextState);
-                                if (!visited.has(nextStr)) {
-                                    visited.add(nextStr);
-                                    queue.push([nextStr, dist + 1]);
-                                }
+                            const next = this.simMove(curr, i, j);
+                            if (next) {
+                                const s = JSON.stringify(next);
+                                if (!visited.has(s)) { visited.add(s); queue.push([s, dist + 1]); }
                             }
                         }
                     }
                 }
-                return 0; // لم يجد حلاً في الوقت المحدد
+                return 0;
             },
 
-            tryMove(state, from, to) {
-                const newState = state.map(b => [...b]);
-                const b1 = newState[from], b2 = newState[to];
+            simMove(state, from, to) {
+                const ns = state.map(b => [...b]);
+                const b1 = ns[from], b2 = ns[to];
                 if (b1.length === 0) return null;
-                const color = b1[b1.length - 1];
-                if (b2.length < 4 && (b2.length === 0 || b2[b2.length - 1] === color)) {
-                    while (b1.length > 0 && b1[b1.length - 1] === color && b2.length < 4) {
-                        b2.push(b1.pop());
-                    }
-                    return newState;
+                const c = b1[b1.length - 1];
+                if (b2.length < 4 && (b2.length === 0 || b2[b2.length - 1] === c)) {
+                    while (b1.length > 0 && b1[b1.length - 1] === c && b2.length < 4) b2.push(b1.pop());
+                    return ns;
                 }
                 return null;
             },
 
-            isStateWon(state) {
-                return state.every(b => b.length === 0 || (b.length === 4 && b.every(c => c === b[0])));
-            },
+            isWon(state) { return state.every(b => b.length === 0 || (b.length === 4 && b.every(c => c === b[0]))); },
 
             handleSelect(i) {
                 if(this.moves <= 0) { ui.toggleGameOver(true); return; }
                 if(this.selected === null) {
                     if(this.bottles[i].length > 0) this.selected = i;
                 } else {
-                    if(this.selected !== i) this.applyUserMove(this.selected, i);
+                    if(this.selected !== i) this.applyMove(this.selected, i);
                     this.selected = null;
                 }
                 ui.render();
             },
 
-            applyUserMove(from, to) {
+            applyMove(from, to) {
                 const b1 = this.bottles[from], b2 = this.bottles[to];
                 if(b1.length === 0) return;
-                const color = b1[b1.length-1];
-
-                if(b2.length < this.capacity && (b2.length === 0 || b2[b2.length-1] === color)) {
+                const c = b1[b1.length-1];
+                if(b2.length < 4 && (b2.length === 0 || b2[b2.length-1] === c)) {
                     this.moves--;
-                    while(b1.length > 0 && b1[b1.length-1] === color && b2.length < this.capacity) {
-                        b2.push(b1.pop());
-                    }
+                    while(b1.length > 0 && b1[b1.length-1] === c && b2.length < 4) b2.push(b1.pop());
                     ui.update();
-                    if(this.isStateWon(this.bottles)) {
+                    if(this.isWon(this.bottles)) {
                         this.level++;
-                        ui.showMsg("عبقري! 🎉", "تفوقت على الذكاء الاصطناعي", "المستوى التالي", () => this.init());
-                    } else if(this.moves <= 0) {
-                        setTimeout(() => ui.toggleGameOver(true), 500);
-                    }
+                        ui.showMsg("رائع! 🎉", "لقد حللت التحدي بأقل عدد حركات.", "المستوى التالي", () => this.init());
+                    } else if(this.moves <= 0) setTimeout(() => ui.toggleGameOver(true), 400);
                 }
+            },
+
+            resetLevel() {
+                this.bottles = JSON.parse(this.initialState);
+                this.moves = this.initialMoves;
+                this.selected = null;
+                ui.toggleGameOver(false); ui.update(); ui.render();
             }
         };
 
@@ -244,21 +232,15 @@
             async buyMoves(count, amount) {
                 try {
                     await Pi.authenticate(['payments'], (p) => {});
-                    await Pi.createPayment({
-                        amount: amount, memo: `شراء ${count} حركات`, metadata: { moves: count }
-                    }, {
+                    await Pi.createPayment({ amount, memo: `شراء ${count} حركات`, metadata: { moves: count } }, {
                         onReadyForServerApproval: (id) => fetch('/api/pi/approve', { method: 'POST', body: JSON.stringify({ paymentId: id }) }),
                         onReadyForServerCompletion: async (id, txid) => {
-                            const res = await fetch('/api/pi/complete', { method: 'POST', body: JSON.stringify({ paymentId: id, txid: txid }) });
-                            const data = await res.json();
-                            if(data.completed) {
-                                game.moves += count;
-                                ui.update(); ui.toggleGameOver(false);
-                            }
+                            await fetch('/api/pi/complete', { method: 'POST', body: JSON.stringify({ paymentId: id, txid: txid }) });
+                            game.moves += count; ui.update(); ui.toggleGameOver(false); ui.toggleShop(false);
                         },
                         onCancel: () => {}, onError: () => alert("فشل الدفع")
                     });
-                } catch (e) { alert("خطأ في الاتصال"); }
+                } catch (e) {}
             }
         };
 
@@ -267,7 +249,7 @@
                 document.getElementById('lvlDisplay').innerText = game.level;
                 const mDisp = document.getElementById('movesDisplay');
                 mDisp.innerText = game.moves;
-                mDisp.style.color = game.moves <= 2 ? 'var(--danger)' : '#10b981';
+                mDisp.className = game.moves <= 2 ? 'stat-value moves-critical' : 'stat-value';
             },
             render() {
                 const grid = document.getElementById('mainGrid'); grid.innerHTML = '';
@@ -283,17 +265,16 @@
                 });
             },
             toggleGameOver(s) { document.getElementById('gameOverModal').style.display = s ? 'flex' : 'none'; },
+            toggleShop(s) { document.getElementById('shopModal').style.display = s ? 'flex' : 'none'; },
             showMsg(t, b, btn, act) {
-                document.getElementById('msgTitle').innerText = t;
-                document.getElementById('msgBody').innerText = b;
-                const mBtn = document.getElementById('msgBtn');
-                mBtn.innerText = btn; mBtn.onclick = () => { document.getElementById('msgModal').style.display='none'; act(); };
+                document.getElementById('msgTitle').innerText = t; document.getElementById('msgBody').innerText = b;
+                const mBtn = document.getElementById('msgBtn'); mBtn.innerText = btn;
+                mBtn.onclick = () => { document.getElementById('msgModal').style.display='none'; act(); };
                 document.getElementById('msgModal').style.display = 'flex';
             }
         };
 
         game.init();
     </script>
-    <style> @keyframes spin { to { transform: rotate(360deg); } } </style>
 </body>
 </html>
