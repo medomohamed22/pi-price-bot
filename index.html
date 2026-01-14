@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Extreme AI Water Sort | 10 Moves Pack</title>
+    <title>Extreme AI Water Sort | Pi Network</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #0f172a; --panel: #1e293b; --accent: #38bdf8;
@@ -13,23 +13,28 @@
         }
 
         body {
-            font-family: 'Cairo', sans-serif;
+            font-family: 'Poppins', sans-serif;
             background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
             color: white; margin: 0; display: flex; flex-direction: column;
             align-items: center; min-height: 100vh; touch-action: manipulation;
         }
 
+        /* Top Bar Navigation */
         .top-bar {
             width: 100%; padding: 15px 0; background: var(--panel);
-            display: flex; justify-content: space-around; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            display: flex; justify-content: space-around; align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
             position: sticky; top: 0; z-index: 100;
         }
 
-        .stat-card { text-align: center; }
-        .stat-label { font-size: 0.7rem; color: #94a3b8; display: block; }
-        .stat-value { font-size: 1.2rem; font-weight: 700; color: var(--accent); }
+        .stat-card { text-align: center; flex: 1; }
+        .stat-label { font-size: 0.65rem; color: #94a3b8; display: block; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-value { font-size: 1.1rem; font-weight: 700; color: var(--accent); }
+        
+        #usernameDisplay { color: var(--gold); font-size: 0.9rem; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .moves-critical { color: var(--danger); animation: pulse 0.8s infinite; }
 
+        /* Game Layout */
         .game-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; }
         
         .bottles-grid {
@@ -48,16 +53,19 @@
         .bottle.selected { transform: translateY(-25px); border-color: var(--accent); box-shadow: 0 0 15px var(--accent); }
         .liquid { width: 100%; height: 25%; transition: height 0.4s; }
 
+        /* Liquid Colors */
         .c-1 { background: linear-gradient(90deg, #991b1b, #ef4444, #991b1b); }
         .c-2 { background: linear-gradient(90deg, #1e3a8a, #3b82f6, #1e3a8a); }
         .c-3 { background: linear-gradient(90deg, #166534, #22c55e, #166534); }
         .c-4 { background: linear-gradient(90deg, #854d0e, #eab308, #854d0e); }
 
         .footer { padding: 20px; display: flex; gap: 10px; width: 100%; justify-content: center; }
-        button { padding: 12px 20px; border-radius: 12px; border: none; font-family: 'Cairo'; font-weight: bold; cursor: pointer; }
+        button { padding: 12px 20px; border-radius: 12px; border: none; font-family: 'Poppins'; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .btn-restart { background: #475569; color: white; }
-        .btn-shop { background: var(--gold); }
+        .btn-shop { background: var(--gold); color: #000; }
+        button:active { transform: scale(0.95); }
 
+        /* Modals */
         .modal {
             display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95);
             z-index: 1000; align-items: center; justify-content: center; padding: 20px;
@@ -74,17 +82,21 @@
 <body>
 
     <div id="loading" class="loading-overlay">
-        <h3>الذكاء الاصطناعي يحل المستوى...</h3>
+        <h3>AI Solving Puzzle...</h3>
         <div style="width: 40px; height: 40px; border: 4px solid var(--accent); border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
     </div>
 
     <div class="top-bar">
         <div class="stat-card">
-            <span class="stat-label">المستوى</span>
+            <span class="stat-label">Level</span>
             <span id="lvlDisplay" class="stat-value">1</span>
         </div>
         <div class="stat-card">
-            <span class="stat-label">الحركات المتبقية</span>
+            <span class="stat-label">User</span>
+            <span id="usernameDisplay" class="stat-value">Guest</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Moves</span>
             <span id="movesDisplay" class="stat-value">0</span>
         </div>
     </div>
@@ -94,29 +106,35 @@
     </div>
 
     <div class="footer">
-        <button class="btn-restart" onclick="game.resetLevel()">🔄 إعادة المستوى</button>
-        <button class="btn-shop" onclick="ui.toggleShop(true)">🛒 المتجر</button>
+        <button class="btn-restart" onclick="game.resetLevel()">🔄 Restart</button>
+        <button class="btn-shop" onclick="ui.toggleShop(true)">🛒 Shop</button>
     </div>
 
     <div id="gameOverModal" class="modal">
         <div class="modal-content">
-            <h2 style="color:var(--danger)">انتهت الحركات! 🛑</h2>
-            <p>لقد استهلكت جميع الحركات المسموحة.</p>
-            <button class="btn-pi" onclick="piPayment.buyMoves(10, 0.1)">استكمال: شراء 10 حركات بـ 0.1 Pi</button>
-            <button onclick="game.resetLevel()" style="background:#475569; color:white; width:100%; margin-top:5px">إعادة المستوى من الصفر</button>
+            <h2 style="color:var(--danger)">Out of Moves! 🛑</h2>
+            <p>You used more moves than the AI solution.</p>
+            <button class="btn-pi" onclick="piPayment.buyMoves(10, 0.1)">Continue: Buy 10 Moves for 0.1 Pi</button>
+            <button onclick="game.resetLevel()" style="background:#475569; color:white; width:100%; margin-top:5px">Restart Level</button>
         </div>
     </div>
 
     <div id="shopModal" class="modal">
         <div class="modal-content">
-            <h2>متجر الحركات</h2>
-            <p>اشحن رصيدك لتجنب الخسارة</p>
-            <button class="btn-pi" onclick="piPayment.buyMoves(10, 0.1)">شراء 10 حركات بـ 0.1 Pi</button>
-            <button onclick="ui.toggleShop(false)" style="background:transparent; color:white; border:none; margin-top:10px; cursor:pointer">إغلاق</button>
+            <h2>Move Store</h2>
+            <p>Boost your moves to win!</p>
+            <button class="btn-pi" onclick="piPayment.buyMoves(10, 0.1)">Buy 10 Moves for 0.1 Pi</button>
+            <button onclick="ui.toggleShop(false)" style="background:transparent; color:white; border:none; margin-top:10px; cursor:pointer">Close</button>
         </div>
     </div>
 
-    <div id="msgModal" class="modal"><div class="modal-content"><h2 id="msgTitle"></h2><p id="msgBody"></p><button id="msgBtn" style="background:var(--accent); width:100%"></button></div></div>
+    <div id="msgModal" class="modal">
+        <div class="modal-content">
+            <h2 id="msgTitle"></h2>
+            <p id="msgBody"></p>
+            <button id="msgBtn" style="background:var(--accent); width:100%"></button>
+        </div>
+    </div>
 
     <script>
         const Pi = window.Pi;
@@ -126,7 +144,18 @@
             level: 1, moves: 0, initialMoves: 0,
             bottles: [], initialState: null, selected: null,
 
+            async auth() {
+                try {
+                    const scopes = ['username', 'payments'];
+                    const auth = await Pi.authenticate(scopes, (p) => {});
+                    document.getElementById('usernameDisplay').innerText = auth.user.username;
+                } catch (err) {
+                    console.log("Auth failed or outside Pi Browser");
+                }
+            },
+
             async init() {
+                await this.auth();
                 document.getElementById('loading').style.display = 'flex';
                 this.selected = null;
                 let colorCount = Math.min(3 + Math.floor(this.level / 5), 4);
@@ -215,7 +244,7 @@
                     ui.update();
                     if(this.isWon(this.bottles)) {
                         this.level++;
-                        ui.showMsg("رائع! 🎉", "لقد حللت التحدي بنجاح", "المستوى التالي", () => this.init());
+                        ui.showMsg("Excellent! 🎉", "You matched the AI efficiency.", "Next Level", () => this.init());
                     } else if(this.moves <= 0) setTimeout(() => ui.toggleGameOver(true), 400);
                 }
             },
@@ -231,15 +260,13 @@
         const piPayment = {
             async buyMoves(count, amount) {
                 try {
-                    await Pi.authenticate(['payments'], (p) => {});
-                    await Pi.createPayment({ amount, memo: `شراء ${count} حركات إضافية`, metadata: { moves: count } }, {
+                    await Pi.createPayment({ amount, memo: `Purchase ${count} extra moves`, metadata: { moves: count } }, {
                         onReadyForServerApproval: (id) => fetch('/api/pi/approve', { method: 'POST', body: JSON.stringify({ paymentId: id }) }),
                         onReadyForServerCompletion: async (id, txid) => {
                             await fetch('/api/pi/complete', { method: 'POST', body: JSON.stringify({ paymentId: id, txid: txid }) });
-                            game.moves += count; // سيتم دائماً إضافة 10 حركات هنا
-                            ui.update(); ui.toggleGameOver(false); ui.toggleShop(false);
+                            game.moves += count; ui.update(); ui.toggleGameOver(false); ui.toggleShop(false);
                         },
-                        onCancel: () => {}, onError: () => alert("فشل الدفع")
+                        onCancel: () => {}, onError: () => alert("Payment Failed")
                     });
                 } catch (e) {}
             }
