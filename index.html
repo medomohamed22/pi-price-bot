@@ -1,262 +1,414 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BNPi</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Master Water Sort | Pi Network Edition</title>
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0f172a;
+            --panel: #1e293b;
+            --accent: #38bdf8;
+            --gold: #f59e0b;
+            --pi-purple: #6d28d9;
+            --glass: rgba(255, 255, 255, 0.1);
+        }
 
-<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            color: white;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+            touch-action: manipulation;
+        }
 
-<style>
-:root{
-  --primary:#7f5cff;
-  --bg:#0b0b14;
-  --card:#141428;
-  --text:#ffffff;
-  --muted:#a0a0c0;
-}
+        /* الشريط العلوي */
+        .top-bar {
+            width: 100%;
+            padding: 15px 0;
+            background: var(--panel);
+            display: flex;
+            justify-content: space-around;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
 
-*{
-  box-sizing:border-box;
-  font-family:Inter, Arial, sans-serif;
-}
+        .stat-card { text-align: center; }
+        .stat-label { font-size: 0.7rem; color: #94a3b8; display: block; text-transform: uppercase; }
+        .stat-value { font-size: 1.2rem; font-weight: 700; color: var(--accent); }
+        .lives { color: #ef4444; }
+        .coins { color: var(--gold); }
 
-body{
-  margin:0;
-  min-height:100vh;
-  background:
-    radial-gradient(circle at top,#1b1045,transparent 60%),
-    var(--bg);
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  color:var(--text);
-}
+        /* حاوية اللعب */
+        .game-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 20px 0;
+        }
 
-.app{
-  width:100%;
-  max-width:460px;
-  padding:20px;
-}
+        .level-indicator {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px var(--accent);
+        }
 
-.header{
-  text-align:center;
-  margin-bottom:28px;
-}
+        .bottles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+            gap: 20px;
+            width: 90%;
+            max-width: 450px;
+            justify-items: center;
+        }
 
-.logo{
-  font-size:32px;
-  font-weight:700;
-  color:var(--primary);
-}
+        /* الزجاجة 3D */
+        .bottle {
+            width: 50px;
+            height: 160px;
+            background: var(--glass);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-top: none;
+            border-bottom-left-radius: 25px;
+            border-bottom-right-radius: 25px;
+            position: relative;
+            display: flex;
+            flex-direction: column-reverse;
+            cursor: pointer;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: inset 0 0 15px rgba(255,255,255,0.05), 0 10px 20px rgba(0,0,0,0.3);
+        }
 
-.subtitle{
-  color:var(--muted);
-  margin-top:6px;
-}
+        .bottle.selected {
+            transform: translateY(-30px);
+            border-color: var(--accent);
+            box-shadow: 0 0 30px rgba(56, 189, 248, 0.4);
+        }
 
-.card{
-  background:linear-gradient(180deg,#181832,#111126);
-  border-radius:22px;
-  padding:26px;
-  box-shadow:0 20px 50px rgba(0,0,0,.6);
-}
+        /* لمعة الزجاج */
+        .bottle::before {
+            content: '';
+            position: absolute;
+            top: 10%; left: 15%; width: 15%; height: 80%;
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            pointer-events: none;
+        }
 
-label{
-  display:block;
-  margin-top:16px;
-  color:var(--muted);
-}
+        .liquid {
+            width: 100%;
+            height: 25%;
+            transition: height 0.4s ease-in-out;
+            box-shadow: inset 0 4px 10px rgba(0,0,0,0.2);
+        }
 
-input{
-  width:100%;
-  padding:15px;
-  margin-top:8px;
-  border-radius:14px;
-  border:none;
-  background:#0d0d1f;
-  color:#fff;
-}
+        /* ألوان السوائل بتدرج 3D */
+        .c-1 { background: linear-gradient(90deg, #991b1b, #ef4444, #991b1b); }
+        .c-2 { background: linear-gradient(90deg, #1e3a8a, #3b82f6, #1e3a8a); }
+        .c-3 { background: linear-gradient(90deg, #166534, #22c55e, #166534); }
+        .c-4 { background: linear-gradient(90deg, #854d0e, #eab308, #854d0e); }
+        .c-5 { background: linear-gradient(90deg, #5b21b6, #a855f7, #5b21b6); }
+        .c-6 { background: linear-gradient(90deg, #9d174d, #ec4899, #9d174d); }
+        .c-7 { background: linear-gradient(90deg, #115e59, #14b8a6, #115e59); }
 
-button{
-  width:100%;
-  padding:16px;
-  margin-top:18px;
-  border:none;
-  border-radius:16px;
-  font-size:16px;
-  font-weight:600;
-  cursor:pointer;
-}
+        /* التحكم */
+        .footer-controls {
+            padding: 20px;
+            display: flex;
+            gap: 15px;
+            width: 100%;
+            justify-content: center;
+        }
 
-.login{
-  background:#24244a;
-}
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 15px;
+            font-family: 'Cairo';
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
 
-.pay{
-  background:linear-gradient(135deg,#7f5cff,#9a7bff);
-}
+        button:active { transform: scale(0.95); }
+        .btn-undo { background: #475569; color: white; }
+        .btn-shop { background: var(--gold); color: #000; }
 
-.status{
-  margin-top:18px;
-  text-align:center;
-  font-size:14px;
-  color:var(--muted);
-}
+        /* النوافذ المنبثقة */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
 
-.loader{
-  display:none;
-  text-align:center;
-  margin-top:12px;
-}
+        .modal-content {
+            background: var(--panel);
+            padding: 30px;
+            border-radius: 25px;
+            text-align: center;
+            border: 1px solid var(--accent);
+            max-width: 320px;
+            width: 100%;
+        }
 
-.loader span{
-  width:8px;
-  height:8px;
-  background:var(--primary);
-  border-radius:50%;
-  display:inline-block;
-  margin:0 3px;
-  animation:bounce 1.2s infinite ease-in-out;
-}
+        .btn-pi-pay {
+            background: var(--pi-purple);
+            color: white;
+            width: 100%;
+            justify-content: center;
+            margin: 15px 0;
+            font-size: 1.1rem;
+        }
 
-.loader span:nth-child(2){animation-delay:.15s}
-.loader span:nth-child(3){animation-delay:.3s}
-
-@keyframes bounce{
-  0%,80%,100%{transform:scale(0)}
-  40%{transform:scale(1)}
-}
-
-.footer{
-  text-align:center;
-  margin-top:20px;
-  font-size:12px;
-  color:#666;
-}
-</style>
+        .hidden { display: none; }
+    </style>
 </head>
-
 <body>
 
-<div class="app">
-
-  <div class="header">
-    <div class="logo">BNPi</div>
-    <div class="subtitle">Instant Pi Network Payments</div>
-  </div>
-
-  <div class="card">
-
-    <button class="login" onclick="login()">Login with Pi</button>
-
-    <label>Amount (Pi)</label>
-    <input id="amount" type="number" min="0.1" step="0.1" value="1">
-
-    <button class="pay" onclick="pay()">Pay with Pi</button>
-
-    <div class="loader" id="loader">
-      <span></span><span></span><span></span>
+    <div class="top-bar">
+        <div class="stat-card">
+            <span class="stat-label">المستوى</span>
+            <span id="lvlDisplay" class="stat-value">1</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">المحاولات</span>
+            <span id="livesDisplay" class="stat-value lives">5</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">النقاط</span>
+            <span id="coinsDisplay" class="stat-value coins">0</span>
+        </div>
     </div>
 
-    <div id="status" class="status"></div>
+    <div class="game-area">
+        <div class="level-indicator" id="levelTitle">المستوى 1</div>
+        <div class="bottles-grid" id="mainGrid"></div>
+    </div>
 
-  </div>
+    <div class="footer-controls">
+        <button class="btn-undo" onclick="game.undo()">↩️ تراجع</button>
+        <button class="btn-shop" onclick="ui.toggleShop(true)">🛒 المتجر</button>
+    </div>
 
-  <div class="footer">
-    Powered by Pi Network
-  </div>
+    <div id="shopModal" class="modal">
+        <div class="modal-content">
+            <h2 style="margin-top:0">متجر Pi</h2>
+            <p>نفدت المحاولات؟ اشحن الآن</p>
+            <button class="btn-pi-pay" onclick="piPayment.buy(10, 0.1)">
+                 شراء 10 ❤️ بـ 0.1 Pi
+            </button>
+            <button style="background:var(--accent); width:100%; justify-content:center" onclick="game.buyLifeWithCoins()">
+                1 ❤️ بـ 50 🪙
+            </button>
+            <button onclick="ui.toggleShop(false)" style="background:transparent; color:#94a3b8; margin-top:10px">إغلاق</button>
+        </div>
+    </div>
 
-</div>
+    <div id="msgModal" class="modal">
+        <div class="modal-content">
+            <h2 id="msgTitle">رائع!</h2>
+            <p id="msgBody"></p>
+            <button id="msgBtn" style="background:var(--accent); width:100%; justify-content:center"></button>
+        </div>
+    </div>
 
-<script>
-const Pi = window.Pi;
-Pi.init({ version:"2.0" });
+    <script>
+        // 1. إعدادات Pi SDK
+        const Pi = window.Pi;
+        Pi.init({ version: "2.0", sandbox: true });
 
-function setStatus(msg){
-  document.getElementById("status").innerText = msg;
-}
+        // 2. كائن اللعبة (Logic)
+        const game = {
+            level: 1,
+            lives: 5,
+            coins: 0,
+            bottles: [],
+            history: [],
+            selected: null,
+            capacity: 4,
 
-function loading(state){
-  document.getElementById("loader").style.display = state ? "block" : "none";
-}
+            init() {
+                this.history = [];
+                this.selected = null;
+                
+                // صعوبة ديناميكية
+                let colorCount = Math.min(3 + Math.floor(this.level / 3), 7);
+                let pool = [];
+                for(let i=1; i<=colorCount; i++) {
+                    for(let j=0; j<this.capacity; j++) pool.push(i);
+                }
+                pool.sort(() => Math.random() - 0.5);
 
-/* LOGIN */
-async function login(){
-  try{
-    const user = await Pi.authenticate(
-      ["username","payments"],
-      onIncompletePaymentFound
-    );
-    setStatus("Welcome, " + user.user.username);
-  }catch{
-    setStatus("Login cancelled");
-  }
-}
+                this.bottles = [];
+                for(let i=0; i<colorCount; i++) {
+                    this.bottles.push(pool.slice(i*4, (i+1)*4));
+                }
+                this.bottles.push([], []); // زجاجات فارغة
 
-/* PAY */
-async function pay(){
-  const amount = document.getElementById("amount").value;
-  if(!amount || amount <= 0) return alert("Invalid amount");
+                ui.update();
+                ui.render();
+            },
 
-  try{
-    loading(true);
-    setStatus("Waiting for Pi confirmation...");
+            handleSelect(i) {
+                if(this.lives <= 0) {
+                    ui.showMsg("توقف!", "ليس لديك محاولات كافية.", "اذهب للمتجر", () => ui.toggleShop(true));
+                    return;
+                }
 
-    await Pi.createPayment({
-      amount: amount,
-      memo: "BNPi Payment",
-      metadata: { orderId: Date.now() },
+                if(this.selected === null) {
+                    if(this.bottles[i].length > 0) this.selected = i;
+                } else {
+                    if(this.selected !== i) this.pour(this.selected, i);
+                    this.selected = null;
+                }
+                ui.render();
+            },
 
-      /* 🔗 USING REDIRECT PATHS */
-      onReadyForServerApproval: async (paymentId) => {
-        await fetch("/api/pi/approve", {
-          method: "POST",
-          headers: {"Content-Type":"application/json"},
-          body: JSON.stringify({ paymentId })
-        });
-      },
+            pour(from, to) {
+                const b1 = this.bottles[from];
+                const b2 = this.bottles[to];
+                const color = b1[b1.length-1];
 
-      onReadyForServerCompletion: async (paymentId, txid) => {
-        const res = await fetch("/api/pi/complete", {
-          method: "POST",
-          headers: {"Content-Type":"application/json"},
-          body: JSON.stringify({ paymentId, txid })
-        });
+                if(b2.length < this.capacity && (b2.length === 0 || b2[b2.length-1] === color)) {
+                    this.history.push(JSON.stringify(this.bottles));
+                    while(b1.length > 0 && b1[b1.length-1] === color && b2.length < this.capacity) {
+                        b2.push(b1.pop());
+                    }
+                    this.checkWin();
+                }
+            },
 
-        const data = await res.json();
-        loading(false);
+            undo() {
+                if(this.history.length > 0 && this.lives > 0) {
+                    this.bottles = JSON.parse(this.history.pop());
+                    this.lives--;
+                    ui.update();
+                    ui.render();
+                }
+            },
 
-        if(data.completed){
-          setStatus("✅ Payment completed successfully");
-        }else{
-          setStatus("⚠️ Payment not completed");
-        }
-      },
+            buyLifeWithCoins() {
+                if(this.coins >= 50) {
+                    this.coins -= 50;
+                    this.lives += 1;
+                    ui.update();
+                    ui.toggleShop(false);
+                } else {
+                    alert("نقاطك غير كافية");
+                }
+            },
 
-      onCancel: () => {
-        loading(false);
-        setStatus("❌ Payment cancelled");
-      },
+            checkWin() {
+                const win = this.bottles.every(b => b.length === 0 || (b.length === this.capacity && b.every(c => c === b[0])));
+                if(win) {
+                    this.coins += 20;
+                    this.level++;
+                    ui.showMsg("مستوى مكتمل! 🎉", "حصلت على 20 نقطة إضافية.", "المستوى التالي", () => this.init());
+                }
+            }
+        };
 
-      onError: (err) => {
-        console.error(err);
-        loading(false);
-        setStatus("❌ Payment error");
-      }
-    });
+        // 3. كائن الدفع (Pi Integration)
+        const piPayment = {
+            async buy(livesToAdd, amount) {
+                try {
+                    const scopes = ['payments'];
+                    await Pi.authenticate(scopes, (pay) => console.log("Unfinished:", pay));
 
-  }catch(err){
-    console.error(err);
-    loading(false);
-    setStatus("❌ Payment failed");
-  }
-}
+                    await Pi.createPayment({
+                        amount: amount,
+                        memo: `شراء ${livesToAdd} محاولات`,
+                        metadata: { amount: livesToAdd }
+                    }, {
+                        onReadyForServerApproval: async (id) => {
+                            await fetch('/api/pi/approve', {
+                                method: 'POST',
+                                body: JSON.stringify({ paymentId: id })
+                            });
+                        },
+                        onReadyForServerCompletion: async (id, txid) => {
+                            await fetch('/api/pi/complete', {
+                                method: 'POST',
+                                body: JSON.stringify({ paymentId: id, txid: txid })
+                            });
+                            game.lives += livesToAdd;
+                            ui.update();
+                            ui.toggleShop(false);
+                            ui.showMsg("تم الدفع!", "تمت إضافة المحاولات لمحفظتك.", "استمرار", () => {});
+                        },
+                        onCancel: (id) => {},
+                        onError: (error) => alert("خطأ في الدفع")
+                    });
+                } catch (err) {
+                    console.error(err);
+                }
+            }
+        };
 
-function onIncompletePaymentFound(payment){
-  console.log("Incomplete payment:", payment);
-}
-</script>
+        // 4. كائن الواجهة (UI)
+        const ui = {
+            update() {
+                document.getElementById('lvlDisplay').innerText = game.level;
+                document.getElementById('livesDisplay').innerText = game.lives;
+                document.getElementById('coinsDisplay').innerText = game.coins;
+                document.getElementById('levelTitle').innerText = `المستوى ${game.level}`;
+            },
 
+            render() {
+                const grid = document.getElementById('mainGrid');
+                grid.innerHTML = '';
+                game.bottles.forEach((b, i) => {
+                    const div = document.createElement('div');
+                    div.className = `bottle ${game.selected === i ? 'selected' : ''}`;
+                    div.onclick = () => game.handleSelect(i);
+                    b.forEach(c => {
+                        const l = document.createElement('div');
+                        l.className = `liquid c-${c}`;
+                        div.appendChild(l);
+                    });
+                    grid.appendChild(div);
+                });
+            },
+
+            toggleShop(show) {
+                document.getElementById('shopModal').style.display = show ? 'flex' : 'none';
+            },
+
+            showMsg(title, body, btn, action) {
+                document.getElementById('msgTitle').innerText = title;
+                document.getElementById('msgBody').innerText = body;
+                const b = document.getElementById('msgBtn');
+                b.innerText = btn;
+                b.onclick = () => {
+                    document.getElementById('msgModal').style.display = 'none';
+                    action();
+                };
+                document.getElementById('msgModal').style.display = 'flex';
+            }
+        };
+
+        // التشغيل الأولي
+        game.init();
+    </script>
 </body>
 </html>
