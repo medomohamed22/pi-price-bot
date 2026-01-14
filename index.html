@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pi Water Sort | Moves Challenge</title>
+    <title>AI-Powered Water Sort | Pi Network</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -28,7 +28,7 @@
         .stat-card { text-align: center; }
         .stat-label { font-size: 0.7rem; color: #94a3b8; display: block; }
         .stat-value { font-size: 1.2rem; font-weight: 700; color: var(--accent); }
-        .moves-danger { color: var(--danger); animation: shake 0.5s infinite; }
+        .moves-count { color: #10b981; } /* لون أخضر للحركات الذكية */
 
         .game-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; }
         
@@ -48,6 +48,7 @@
         .bottle.selected { transform: translateY(-30px); border-color: var(--accent); }
         .liquid { width: 100%; height: 25%; transition: height 0.4s; box-shadow: inset 0 4px 10px rgba(0,0,0,0.2); }
 
+        /* ألوان السوائل */
         .c-1 { background: linear-gradient(90deg, #991b1b, #ef4444, #991b1b); }
         .c-2 { background: linear-gradient(90deg, #1e3a8a, #3b82f6, #1e3a8a); }
         .c-3 { background: linear-gradient(90deg, #166534, #22c55e, #166534); }
@@ -63,17 +64,22 @@
             text-align: center; border: 1px solid var(--accent); width: 100%; max-width: 320px;
         }
 
-        button { padding: 12px 20px; border-radius: 12px; border: none; font-family: 'Cairo'; font-weight: bold; cursor: pointer; }
+        button { padding: 12px 20px; border-radius: 12px; border: none; font-family: 'Cairo'; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .btn-pi { background: var(--pi-purple); color: white; width: 100%; margin: 10px 0; }
-        
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-2px); }
-            75% { transform: translateX(2px); }
+        button:active { transform: scale(0.95); }
+
+        .loading-overlay {
+            position: fixed; inset: 0; background: var(--bg); z-index: 2000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
     </style>
 </head>
 <body>
+
+    <div id="loading" class="loading-overlay">
+        <h2>الذكاء الاصطناعي يجهز المستوى...</h2>
+        <div style="width: 50px; height: 50px; border: 5px solid var(--accent); border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+    </div>
 
     <div class="top-bar">
         <div class="stat-card">
@@ -81,12 +87,8 @@
             <span id="lvlDisplay" class="stat-value">1</span>
         </div>
         <div class="stat-card">
-            <span class="stat-label">الحركات المتبقية</span>
-            <span id="movesDisplay" class="stat-value">10</span>
-        </div>
-        <div class="stat-card">
-            <span class="stat-label">نقاط $Pi</span>
-            <span id="coinsDisplay" class="stat-value" style="color:var(--gold)">0</span>
+            <span class="stat-label">حركات الذكاء</span>
+            <span id="movesDisplay" class="stat-value moves-count">0</span>
         </div>
     </div>
 
@@ -96,10 +98,10 @@
 
     <div id="gameOverModal" class="modal">
         <div class="modal-content">
-            <h2 style="color:var(--danger)">انتهت الحركات! 🛑</h2>
-            <p>لإكمال هذا المستوى تحتاج لحركات إضافية</p>
-            <button class="btn-pi" onclick="piPayment.buyMoves(5, 0.1)">شراء 5 حركات بـ 0.1 Pi</button>
-            <button onclick="game.resetLevel()" style="background:#475569; color:white; width:100%; margin-top:5px">إعادة المستوى من الصفر</button>
+            <h2 style="color:var(--danger)">فشلت في تحدي الذكاء! 🛑</h2>
+            <p>لقد استهلكت حركات أكثر من اللازم.</p>
+            <button class="btn-pi" onclick="piPayment.buyMoves(10, 0.1)">شراء 10 حركات بـ 0.1 Pi</button>
+            <button onclick="game.init()" style="background:#475569; color:white; width:100%; margin-top:5px">إعادة المحاولة مجاناً</button>
         </div>
     </div>
 
@@ -116,78 +118,125 @@
         Pi.init({ version: "2.0", sandbox: false });
 
         const game = {
-            level: 1, moves: 10, coins: 0,
-            bottles: [], selected: null, capacity: 4,
+            level: 1,
+            moves: 0,
+            bottles: [],
+            selected: null,
+            capacity: 4,
 
-            init() {
-                this.moves = 10;
+            async init() {
+                document.getElementById('loading').style.display = 'flex';
                 this.selected = null;
-                let colorCount = Math.min(3 + Math.floor(this.level / 4), 5);
                 
-                // توليد الألوان
+                // 1. توليد مستوى عشوائي
+                let colorCount = Math.min(3 + Math.floor(this.level / 5), 5);
+                let solved = false;
+                let minMoves = 0;
+
+                // محاولة توليد مستوى قابل للحل حتى تجد الخوارزمية حلاً
+                while (!solved) {
+                    this.generateRandomLevel(colorCount);
+                    minMoves = this.solveBFS(this.bottles);
+                    if (minMoves > 0) solved = true;
+                }
+
+                // 2. تعيين عدد الحركات (حل الذكاء + هامش بسيط 20%)
+                this.moves = Math.ceil(minMoves * 1.2); 
+                
+                document.getElementById('loading').style.display = 'none';
+                ui.update();
+                ui.render();
+            },
+
+            generateRandomLevel(colorCount) {
                 let pool = [];
                 for(let i=1; i<=colorCount; i++) {
                     for(let j=0; j<this.capacity; j++) pool.push(i);
                 }
                 pool.sort(() => Math.random() - 0.5);
-                
                 this.bottles = [];
                 for(let i=0; i<colorCount; i++) this.bottles.push(pool.slice(i*4, (i+1)*4));
                 this.bottles.push([], []);
-                
-                ui.update();
-                ui.render();
+            },
+
+            // خوارزمية BFS لحساب أقل عدد حركات للحل
+            solveBFS(initialState) {
+                const start = JSON.stringify(initialState);
+                const queue = [[start, 0]];
+                const visited = new Set([start]);
+
+                let safetyCounter = 0;
+                while (queue.length > 0 && safetyCounter < 2000) {
+                    safetyCounter++;
+                    const [currentStr, dist] = queue.shift();
+                    const current = JSON.parse(currentStr);
+
+                    if (this.isStateWon(current)) return dist;
+
+                    for (let i = 0; i < current.length; i++) {
+                        for (let j = 0; j < current.length; j++) {
+                            if (i === j) continue;
+                            const nextState = this.tryMove(current, i, j);
+                            if (nextState) {
+                                const nextStr = JSON.stringify(nextState);
+                                if (!visited.has(nextStr)) {
+                                    visited.add(nextStr);
+                                    queue.push([nextStr, dist + 1]);
+                                }
+                            }
+                        }
+                    }
+                }
+                return 0; // لم يجد حلاً في الوقت المحدد
+            },
+
+            tryMove(state, from, to) {
+                const newState = state.map(b => [...b]);
+                const b1 = newState[from], b2 = newState[to];
+                if (b1.length === 0) return null;
+                const color = b1[b1.length - 1];
+                if (b2.length < 4 && (b2.length === 0 || b2[b2.length - 1] === color)) {
+                    while (b1.length > 0 && b1[b1.length - 1] === color && b2.length < 4) {
+                        b2.push(b1.pop());
+                    }
+                    return newState;
+                }
+                return null;
+            },
+
+            isStateWon(state) {
+                return state.every(b => b.length === 0 || (b.length === 4 && b.every(c => c === b[0])));
             },
 
             handleSelect(i) {
-                if(this.moves <= 0) {
-                    ui.toggleGameOver(true);
-                    return;
-                }
-
+                if(this.moves <= 0) { ui.toggleGameOver(true); return; }
                 if(this.selected === null) {
                     if(this.bottles[i].length > 0) this.selected = i;
                 } else {
-                    if(this.selected !== i) this.pour(this.selected, i);
+                    if(this.selected !== i) this.applyUserMove(this.selected, i);
                     this.selected = null;
                 }
                 ui.render();
             },
 
-            pour(from, to) {
+            applyUserMove(from, to) {
                 const b1 = this.bottles[from], b2 = this.bottles[to];
                 if(b1.length === 0) return;
                 const color = b1[b1.length-1];
 
                 if(b2.length < this.capacity && (b2.length === 0 || b2[b2.length-1] === color)) {
-                    // خصم حركة عند كل صب ناجح
                     this.moves--;
                     while(b1.length > 0 && b1[b1.length-1] === color && b2.length < this.capacity) {
                         b2.push(b1.pop());
                     }
                     ui.update();
-                    this.checkWin();
-                    
-                    if(this.moves <= 0) {
-                        setTimeout(() => { if(!this.isWon()) ui.toggleGameOver(true); }, 500);
+                    if(this.isStateWon(this.bottles)) {
+                        this.level++;
+                        ui.showMsg("عبقري! 🎉", "تفوقت على الذكاء الاصطناعي", "المستوى التالي", () => this.init());
+                    } else if(this.moves <= 0) {
+                        setTimeout(() => ui.toggleGameOver(true), 500);
                     }
                 }
-            },
-
-            isWon() {
-                return this.bottles.every(b => b.length === 0 || (b.length === this.capacity && b.every(c => c === b[0])));
-            },
-
-            checkWin() {
-                if(this.isWon()) {
-                    this.level++;
-                    ui.showMsg("رائع! 🎉", "تم اجتياز المستوى بنجاح", "المستوى التالي", () => this.init());
-                }
-            },
-
-            resetLevel() {
-                ui.toggleGameOver(false);
-                this.init();
             }
         };
 
@@ -196,7 +245,7 @@
                 try {
                     await Pi.authenticate(['payments'], (p) => {});
                     await Pi.createPayment({
-                        amount: amount, memo: `شراء ${count} حركات إضافية`, metadata: { moves: count }
+                        amount: amount, memo: `شراء ${count} حركات`, metadata: { moves: count }
                     }, {
                         onReadyForServerApproval: (id) => fetch('/api/pi/approve', { method: 'POST', body: JSON.stringify({ paymentId: id }) }),
                         onReadyForServerCompletion: async (id, txid) => {
@@ -204,14 +253,12 @@
                             const data = await res.json();
                             if(data.completed) {
                                 game.moves += count;
-                                ui.update();
-                                ui.toggleGameOver(false);
-                                ui.showMsg("تم الشحن! ✅", `تم إضافة ${count} حركات لرصيدك`, "اكمل اللعب", () => {});
+                                ui.update(); ui.toggleGameOver(false);
                             }
                         },
                         onCancel: () => {}, onError: () => alert("فشل الدفع")
                     });
-                } catch (e) { alert("خطأ في الاتصال بـ Pi"); }
+                } catch (e) { alert("خطأ في الاتصال"); }
             }
         };
 
@@ -220,7 +267,7 @@
                 document.getElementById('lvlDisplay').innerText = game.level;
                 const mDisp = document.getElementById('movesDisplay');
                 mDisp.innerText = game.moves;
-                mDisp.className = game.moves <= 3 ? 'stat-value moves-danger' : 'stat-value';
+                mDisp.style.color = game.moves <= 2 ? 'var(--danger)' : '#10b981';
             },
             render() {
                 const grid = document.getElementById('mainGrid'); grid.innerHTML = '';
@@ -247,5 +294,6 @@
 
         game.init();
     </script>
+    <style> @keyframes spin { to { transform: rotate(360deg); } } </style>
 </body>
 </html>
