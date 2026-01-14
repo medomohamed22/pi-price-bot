@@ -1,174 +1,252 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مساعد ذكاء اصطناعي Pi</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
-    
-    <style>
-        :root {
-            --primary-color: #673ab7;
-            --bg-color: #f0f2f5;
-            --text-color: #333;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Gemini AI Chat</title>
 
-        * { box-sizing: border-box; font-family: 'Cairo', sans-serif; }
+<!-- Pi Network SDK -->
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
-        body { 
-            background-color: var(--bg-color); 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            min-height: 100vh; 
-            margin: 0;
-            padding: 15px;
-        }
-
-        .card {
-            background: white;
-            width: 100%;
-            max-width: 500px;
-            padding: 25px;
-            border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-
-        h2 { color: var(--primary-color); margin-bottom: 20px; font-size: 24px; }
-
-        textarea {
-            width: 100%;
-            height: 120px;
-            padding: 15px;
-            border: 2px solid #ddd;
-            border-radius: 12px;
-            resize: none;
-            font-size: 16px;
-            transition: border-color 0.3s;
-            margin-bottom: 15px;
-        }
-
-        textarea:focus {
-            outline: none;
-            border-color: var(--primary-color);
-        }
-
-        button {
-            width: 100%;
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 10px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: transform 0.2s, background 0.3s;
-        }
-
-        button:active { transform: scale(0.98); }
-        button:disabled { background-color: #aaa; cursor: not-allowed; }
-
-        .status-box {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 10px;
-            min-height: 60px;
-            text-align: right;
-            font-size: 15px;
-            line-height: 1.6;
-        }
-
-        .waiting { background: #e3f2fd; color: #0d47a1; border-right: 5px solid #2196f3; }
-        .success { background: #e8f5e9; color: #1b5e20; border-right: 5px solid #4caf50; }
-        .error { background: #ffebee; color: #b71c1c; border-right: 5px solid #f44336; }
-
-        .error-code { font-family: monospace; font-size: 12px; display: block; margin-top: 5px; color: #666; }
-    </style>
+<style>
+:root{
+  --primary:#7f5cff;
+  --bg:#0f0f1a;
+  --card:#1a1a2e;
+  --ai:#2a2a40;
+  --user:#7f5cff;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--bg);
+  font-family: system-ui, -apple-system;
+  height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  color:#ffffff;
+}
+.chat{
+  width:100%;
+  max-width:420px;
+  height:100vh;
+  background:var(--card);
+  display:flex;
+  flex-direction:column;
+  position:relative;
+}
+.header{
+  padding:14px;
+  text-align:center;
+  background:linear-gradient(135deg,var(--primary),#b48cff);
+  font-weight:bold;
+  position:relative;
+}
+#pointsDisplay{
+  position:absolute;
+  right:15px;
+  top:14px;
+  font-size:14px;
+  font-weight:normal;
+}
+.messages{
+  flex:1;
+  padding:12px;
+  overflow-y:auto;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.msg{
+  padding:12px 14px;
+  border-radius:14px;
+  max-width:90%;
+  line-height:1.6;
+  word-wrap:break-word;
+  color:#ffffff;
+  animation:fadeUp .25s ease;
+}
+.user{background:var(--user);align-self:flex-end;}
+.ai{background:var(--ai);align-self:flex-start;}
+.input-box{
+  display:flex;
+  gap:8px;
+  padding:10px;
+  background:#141423;
+}
+input{
+  flex:1;
+  padding:12px;
+  border-radius:12px;
+  border:none;
+  outline:none;
+  font-size:15px;
+  color:#ffffff;
+  background:#0f0f1a;
+}
+input::placeholder{color:#cccccc;}
+button{
+  padding:12px 16px;
+  border-radius:12px;
+  border:none;
+  background:var(--primary);
+  color:#ffffff;
+  font-weight:bold;
+  cursor:pointer;
+  transition:0.2s;
+}
+button:hover{
+  transform:scale(1.05);
+}
+.typing{display:flex;gap:6px;}
+.dot{
+  width:6px;height:6px;
+  background:#ffffff;
+  border-radius:50%;
+  animation:blink 1.4s infinite both;
+}
+.dot:nth-child(2){animation-delay:.2s;}
+.dot:nth-child(3){animation-delay:.4s;}
+@keyframes blink{
+  0%{opacity:.2}
+  20%{opacity:1}
+  100%{opacity:.2}
+}
+@keyframes fadeUp{
+  from{opacity:0; transform:translateY(6px)}
+  to{opacity:1; transform:translateY(0)}
+}
+/* Overlay الدفع */
+#payOverlay{
+  position:absolute;
+  top:0;left:0;width:100%;height:100%;
+  background:rgba(0,0,0,0.85);
+  display:none;flex-direction:column;
+  justify-content:center;align-items:center;color:white;
+  text-align:center;z-index:50;padding:20px;
+}
+#payOverlay button{
+  margin-top:10px;
+}
+</style>
 </head>
+
 <body>
 
-<div class="card">
-    <h2>الذكاء الاصطناعي (Pi App)</h2>
-    <textarea id="userInput" placeholder="اسألني أي شيء..."></textarea>
-    <button id="sendBtn" onclick="askAI()">إرسال الطلب</button>
-    
-    <div id="statusBox" class="status-box" style="display: none;"></div>
+<div class="chat">
+  <div class="header">Gemini AI
+    <span id="pointsDisplay"></span>
+  </div>
+
+  <div class="messages" id="messages">
+    <div class="msg ai">مرحباً بك! لديك 5 محاولات مجانية. اسألني أي شيء.</div>
+  </div>
+
+  <div id="payOverlay">
+    <h3>⚠️ انتهت نقاطك!</h3>
+    <p>اشحن الآن للمتابعة</p>
+    <p><b>1 Pi = 20 نقطة</b></p>
+    <button onclick="handlePayment()">اشحن 20 نقطة بواسطة Pi</button>
+  </div>
+
+  <div class="input-box">
+    <input id="input" placeholder="اكتب رسالتك...">
+    <button onclick="send()">➤</button>
+  </div>
 </div>
 
 <script>
-    async function askAI() {
-        const input = document.getElementById('userInput').value.trim();
-        const statusBox = document.getElementById('statusBox');
-        const btn = document.getElementById('sendBtn');
+Pi.init({version:"2.0"}); // تهيئة Pi SDK
 
-        if (!input) {
-            updateStatus("من فضلك اكتب سؤالاً أولاً", "error");
-            return;
-        }
+const messagesDiv = document.getElementById("messages");
+const input = document.getElementById("input");
+const payOverlay = document.getElementById("payOverlay");
 
-        // إعداد الواجهة
-        updateStatus("جاري الاتصال بالخادم وتوليد الإجابة...", "waiting");
-        btn.disabled = true;
+// نقاط المستخدم
+let userPoints = localStorage.getItem("chatPoints");
+if(userPoints===null){ userPoints=5; localStorage.setItem("chatPoints",userPoints); }
+else userPoints=parseInt(userPoints);
 
-        const API_KEY = "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"; // ضع كود الـ API الخاص بك هنا
-        const MODEL_URL = "https://api-inference.huggingface.co/models/facebook/blenderbot-400M-distill";
+function updatePoints(){document.getElementById("pointsDisplay").innerText=`النقاط: ${userPoints}`;}
+updatePoints();
 
-        try {
-            const response = await fetch(MODEL_URL, {
-                headers: { 
-                    "Authorization": `Bearer ${API_KEY}`,
-                    "Content-Type": "application/json" 
-                },
-                method: "POST",
-                body: JSON.stringify({ inputs: input }),
-            });
+// حفظ المحادثة
+let history = JSON.parse(localStorage.getItem("chatHistory")||"[]");
+history.forEach(m=>addMsg(m.text,m.role));
+function save(){localStorage.setItem("chatHistory",JSON.stringify(history));}
 
-            const result = await response.json();
+// إضافة رسالة
+function addMsg(text,role){
+  const div=document.createElement("div");
+  div.className=`msg ${role}`;
+  div.innerText=text;
+  messagesDiv.appendChild(div);
+  messagesDiv.scrollTop=messagesDiv.scrollHeight;
+}
 
-            if (response.ok) {
-                // نجاح العملية
-                let reply = "";
-                if (Array.isArray(result)) {
-                    reply = result[0].generated_text || result[0].summary_text;
-                } else {
-                    reply = result.generated_text;
-                }
-                updateStatus(reply, "success");
-            } else {
-                // معالجة أخطاء الـ API المعروفة
-                handleAPIError(response.status, result);
-            }
+// تأثير انتظار
+function typing(){
+  const div=document.createElement("div");
+  div.className="msg ai typing";
+  div.innerHTML=`<div class="dot"></div><div class="dot"></div><div class="dot"></div>`;
+  messagesDiv.appendChild(div);
+  messagesDiv.scrollTop=messagesDiv.scrollHeight;
+  return div;
+}
 
-        } catch (error) {
-            // خطأ في الإنترنت أو عطل مفاجئ
-            updateStatus("فشل الاتصال: تأكد من اتصالك بالإنترنت أو تحقق من كود الـ API.", "error");
-            console.error("Fetch Error:", error);
-        } finally {
-            btn.disabled = false;
-        }
-    }
+// دالة إرسال الرسالة
+async function send(){
+  if(userPoints<=0){payOverlay.style.display="flex"; return;}
+  const text=input.value.trim();
+  if(!text) return;
+  input.value="";
+  addMsg(text,"user");
+  history.push({role:"user",text}); save();
+  userPoints--; localStorage.setItem("chatPoints",userPoints); updatePoints();
 
-    function updateStatus(message, type) {
-        const statusBox = document.getElementById('statusBox');
-        statusBox.style.display = "block";
-        statusBox.className = "status-box " + type;
-        statusBox.innerText = message;
-    }
+  const loader = typing();
+  try{
+    const res = await fetch("/api/gemini/chat",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({message:text})
+    });
+    const data = await res.json();
+    loader.remove();
+    const reply = data.reply||"❌ لم يتم الحصول على رد من Gemini";
+    addMsg(reply,"ai");
+    history.push({role:"ai",text:reply}); save();
+  }catch{
+    loader.remove();
+    addMsg("❌ خطأ في الاتصال","ai");
+  }
+}
 
-    function handleAPIError(status, result) {
-        let msg = "حدث خطأ غير متوقع.";
-        if (status === 401) {
-            msg = "خطأ في الصلاحيات: تأكد من أن الـ API Key صحيح ومفعل.";
-        } else if (status === 503) {
-            msg = "الموديل قيد التحميل الآن في سيرفرات Hugging Face.. حاول مرة أخرى بعد 30 ثانية.";
-        } else if (result && result.error) {
-            msg = "خطأ من الخادم: " + result.error;
-        }
-        updateStatus(msg, "error");
-        console.log("Error Detail:", result);
-    }
+// الدفع بواسطة Pi
+async function handlePayment(){
+  try{
+    const user = await Pi.authenticate(["username","payments"]);
+    const paymentData = {amount:1,memo:"شراء 20 نقطة",metadata:{points:20}};
+    const callbacks = {
+      onReadyForServerApproval: async(paymentId)=>{
+        await fetch("/api/pi/approve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({paymentId})});
+      },
+      onReadyForServerCompletion: async(paymentId,txid)=>{
+        await fetch("/api/pi/complete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({paymentId,txid})});
+        userPoints+=20; localStorage.setItem("chatPoints",userPoints); updatePoints();
+        payOverlay.style.display="none";
+        addMsg("✅ تم شحن 20 نقطة بنجاح! 🎉","ai");
+      },
+      onCancel:()=>alert("تم إلغاء الدفع"),
+      onError:(err)=>alert("حدث خطأ أثناء الدفع")
+    };
+    Pi.createPayment(paymentData,callbacks);
+  }catch{alert("يجب فتح الموقع من داخل Pi Browser");}
+}
+
+// إرسال برسالة عند الضغط على Enter
+input.addEventListener("keydown",e=>{if(e.key==="Enter") send();});
 </script>
 
 </body>
