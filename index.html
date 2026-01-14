@@ -3,42 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI Water Sort | Play to Earn Pi</title>
+    <title>AI Water Sort | 100 Levels Challenge</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #0f172a; --panel: #1e293b; --accent: #38bdf8;
-            --gold: #f59e0b; --pi-purple: #6d28d9; --danger: #ef4444; --success: #22c55e;
+            --gold: #f59e0b; --pi-purple: #6d28d9; --danger: #ef4444;
         }
 
         body {
             font-family: 'Poppins', sans-serif;
             background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
             color: white; margin: 0; display: flex; flex-direction: column;
-            align-items: center; min-height: 100vh; touch-action: manipulation;
+            align-items: center; min-height: 100vh; touch-action: manipulation; overflow-x: hidden;
         }
 
-        /* شريط المعلومات العلوي المطور */
         .top-bar {
-            width: 100%; padding: 10px 0; background: var(--panel);
-            display: flex; flex-wrap: wrap; justify-content: space-around; align-items: center;
+            width: 100%; padding: 15px 0; background: var(--panel);
+            display: flex; justify-content: space-around; align-items: center;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5); position: sticky; top: 0; z-index: 100;
         }
 
-        .stat-card { text-align: center; padding: 5px 10px; min-width: 80px; }
-        .stat-label { font-size: 0.6rem; color: #94a3b8; display: block; text-transform: uppercase; font-weight: bold; }
-        .stat-value { font-size: 1rem; font-weight: 700; color: var(--accent); }
+        .stat-card { text-align: center; flex: 1; }
+        .stat-label { font-size: 0.65rem; color: #94a3b8; display: block; text-transform: uppercase; }
+        .stat-value { font-size: 1.1rem; font-weight: 700; color: var(--accent); }
         
-        .points-box { border: 1px dashed var(--gold); border-radius: 8px; padding: 5px 15px; }
-        .points-value { color: var(--gold); }
-        .exchange-rate { font-size: 0.55rem; color: #64748b; display: block; margin-top: 2px; }
+        #usernameDisplay { color: var(--gold); font-size: 0.9rem; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .moves-critical { color: var(--danger); animation: pulse 0.8s infinite; }
 
-        #usernameDisplay { color: #fff; font-size: 0.8rem; max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-        .game-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; padding: 15px; box-sizing: border-box; }
+        .game-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; padding: 10px; box-sizing: border-box; }
         
-        .bottles-grid { display: grid; gap: 12px; justify-items: center; margin: auto; }
+        .bottles-grid {
+            display: grid; gap: 12px; width: 100%; max-width: 500px; justify-items: center; margin: auto;
+        }
 
         .bottle {
             width: 42px; height: 130px; background: rgba(255,255,255,0.05);
@@ -49,15 +47,22 @@
         }
 
         .bottle.selected { transform: translateY(-15px); border-color: var(--accent); box-shadow: 0 0 15px var(--accent); }
-        .liquid { width: 100%; height: 25%; transition: height 0.4s; }
+        .liquid { width: 100%; height: 25%; transition: height 0.4s; border-radius: 1px; }
 
-        /* ألوان السوائل */
-        .c-1 { background: #ef4444; } .c-2 { background: #3b82f6; } .c-3 { background: #22c55e; }
-        .c-4 { background: #eab308; } .c-5 { background: #a855f7; } .c-6 { background: #ec4899; }
-        .c-7 { background: #06b6d4; } .c-8 { background: #94a3b8; } .c-9 { background: #f97316; } .c-10 { background: #10b981; }
+        /* تدرجات ألوان موسعة لـ 10 ألوان محتملة في المستويات العليا */
+        .c-1 { background: linear-gradient(90deg, #991b1b, #ef4444); }
+        .c-2 { background: linear-gradient(90deg, #1e3a8a, #3b82f6); }
+        .c-3 { background: linear-gradient(90deg, #166534, #22c55e); }
+        .c-4 { background: linear-gradient(90deg, #854d0e, #eab308); }
+        .c-5 { background: linear-gradient(90deg, #5b21b6, #a855f7); }
+        .c-6 { background: linear-gradient(90deg, #be185d, #ec4899); }
+        .c-7 { background: linear-gradient(90deg, #155e75, #06b6d4); }
+        .c-8 { background: linear-gradient(90deg, #374151, #9ca3af); }
+        .c-9 { background: linear-gradient(90deg, #7c2d12, #f97316); }
+        .c-10 { background: linear-gradient(90deg, #14532d, #4ade80); }
 
         .footer { padding: 15px; display: flex; gap: 10px; width: 100%; justify-content: center; }
-        button { padding: 10px 15px; border-radius: 10px; border: none; font-family: 'Poppins'; font-weight: bold; cursor: pointer; font-size: 0.9rem; }
+        button { padding: 10px 18px; border-radius: 10px; border: none; font-family: 'Poppins'; font-weight: bold; cursor: pointer; }
         .btn-restart { background: #475569; color: white; }
         .btn-shop { background: var(--gold); color: #000; }
 
@@ -68,13 +73,14 @@
         .modal-content { background: var(--panel); padding: 25px; border-radius: 20px; text-align: center; border: 1px solid var(--accent); width: 100%; max-width: 300px; }
         
         .loading-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
     <div id="loading" class="loading-overlay">
-        <h3 id="loadingText">Loading Pi Wallet...</h3>
+        <h3 id="loadingText">Authenticating Player...</h3>
         <div style="width: 40px; height: 40px; border: 4px solid var(--accent); border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
     </div>
 
@@ -83,20 +89,12 @@
             <span class="stat-label">Level</span>
             <span id="lvlDisplay" class="stat-value">1</span>
         </div>
-        
-        <div class="stat-card points-box">
-            <span class="stat-label">Earnings</span>
-            <span id="pointsDisplay" class="stat-value points-value">0</span> <span style="font-size: 0.7rem; color: var(--gold);">PTS</span>
-            <span class="exchange-rate">100 PTS = 1 Pi</span>
-        </div>
-
         <div class="stat-card">
-            <span class="stat-label">Player</span>
+            <span class="stat-label">Miners ID</span>
             <span id="usernameDisplay" class="stat-value">...</span>
         </div>
-
         <div class="stat-card">
-            <span class="stat-label">Moves</span>
+            <span class="stat-label">Moves Left</span>
             <span id="movesDisplay" class="stat-value">0</span>
         </div>
     </div>
@@ -112,26 +110,26 @@
 
     <div id="gameOverModal" class="modal"><div class="modal-content">
         <h2 style="color:var(--danger)">Out of Moves!</h2>
-        <p>Win more points by finishing this level.</p>
-        <button style="background:var(--pi-purple);color:white;width:100%;padding:12px;border-radius:10px;border:none;margin-bottom:10px;font-weight:bold" onclick="piPayment.buyMoves(10, 0.1)">Buy 10 Moves (0.1 Pi)</button>
+        <p>This level is tricky. Get more moves to finish it.</p>
+        <button style="background:var(--pi-purple);color:white;width:100%;padding:12px;border-radius:10px;border:none;margin-bottom:10px;font-weight:bold" onclick="piPayment.buyMoves(10, 0.1)">Get 10 Moves (0.1 Pi)</button>
         <button onclick="game.resetLevel()" style="background:#475569; color:white; width:100%; padding:10px; border-radius:10px; border:none">Restart Level</button>
     </div></div>
 
     <div id="shopModal" class="modal"><div class="modal-content">
-        <h2>Shop</h2>
+        <h2>Move Store</h2>
         <button style="background:var(--pi-purple);color:white;width:100%;padding:12px;border-radius:10px;font-weight:bold;border:none" onclick="piPayment.buyMoves(10, 0.1)">Buy 10 Moves (0.1 Pi)</button>
-        <button onclick="ui.toggleShop(false)" style="background:none; color:white; border:none; margin-top:10px">Close</button>
+        <button onclick="ui.toggleShop(false)" style="background:none; color:white; border:none; margin-top:10px; cursor:pointer">Close</button>
     </div></div>
 
     <div id="msgModal" class="modal"><div class="modal-content"><h2 id="msgTitle"></h2><p id="msgBody"></p><button id="msgBtn" style="background:var(--accent); width:100%; border:none; padding:12px; border-radius:10px; font-weight:bold; color:white;"></button></div></div>
 
     <script>
         const Pi = window.Pi;
-        Pi.init({ version: "2.0", sandbox: false });
+        Pi.init({ version: "2.0", sandbox: true });
 
         const game = {
             level: 1, 
-            points: 0,
+            maxLevel: 100,
             moves: 0, 
             initialMoves: 0,
             bottles: [], 
@@ -147,25 +145,41 @@
                 this.initLevel();
             },
 
+            // خوارزمية تحديد الصعوبة لـ 100 مستوى
             getDifficultyConfig() {
                 let colorCount;
                 if (this.level <= 10) colorCount = 3; 
-                else if (this.level <= 30) colorCount = 4;
-                else if (this.level <= 60) colorCount = 6;
-                else colorCount = Math.min(7 + Math.floor(this.level/20), 10);
+                else if (this.level <= 25) colorCount = 4;
+                else if (this.level <= 45) colorCount = 5;
+                else if (this.level <= 70) colorCount = 7;
+                else if (this.level < 100) colorCount = 8;
+                else colorCount = 10; // المستوى 100 هو الأقصى
+
+                // زجاجات فارغة: 2 دائماً للمساعدة، لكن في المستويات الأخيرة تصبح المناورة أصعب
                 return { colors: colorCount, empty: 2 };
             },
 
             async initLevel() {
+                if(this.level > this.maxLevel) {
+                    ui.showMsg("Champion! 🏆", "You have conquered all 100 levels!", "Restart Journey", () => { this.level = 1; this.initLevel(); });
+                    return;
+                }
+
                 document.getElementById('loading').style.display = 'flex';
+                document.getElementById('loadingText').innerText = `Generating Level ${this.level}...`;
+                
                 this.selected = null;
                 const config = this.getDifficultyConfig();
-                let solved = false, minMoves = 0;
+                let solved = false;
+                let minMoves = 0;
 
-                while (!solved) {
+                // محاكاة الذكاء الاصطناعي لضمان قابلية الحل وتقدير الحركات
+                let attempts = 0;
+                while (!solved && attempts < 50) {
+                    attempts++;
                     this.generateLevel(config.colors, config.empty);
                     minMoves = this.solveBFS(this.bottles);
-                    if (minMoves >= 5) solved = true; 
+                    if (minMoves >= (this.level / 2) + 4) solved = true; 
                 }
 
                 this.initialMoves = minMoves + 2; 
@@ -189,7 +203,7 @@
                 const start = JSON.stringify(initialState);
                 const queue = [[start, 0]], visited = new Set([start]);
                 let nodes = 0;
-                while (queue.length > 0 && nodes < 3000) {
+                while (queue.length > 0 && nodes < 3500) {
                     nodes++;
                     const [currStr, dist] = queue.shift();
                     const curr = JSON.parse(currStr);
@@ -205,7 +219,7 @@
                         }
                     }
                 }
-                return 5;
+                return 0;
             },
 
             simMove(state, from, to) {
@@ -243,8 +257,7 @@
                     ui.update();
                     if(this.isWon(this.bottles)) {
                         this.level++;
-                        this.points += 5; // إضافة 5 نقاط عند الفوز
-                        ui.showMsg("Level Clear! 🌟", "You earned +5 Points!", "Next Level", () => this.initLevel());
+                        ui.showMsg("Victory!", `You mastered Level ${this.level-1}! Ready for more?`, "Next Level", () => this.initLevel());
                     } else if(this.moves <= 0) setTimeout(() => ui.toggleGameOver(true), 400);
                 }
             },
@@ -260,30 +273,32 @@
         const piPayment = {
             async buyMoves(count, amount) {
                 try {
-                    await Pi.createPayment({ amount, memo: `Refill 10 moves`, metadata: { moves: count } }, {
+                    await Pi.createPayment({ amount, memo: `Buy ${count} moves`, metadata: { moves: count } }, {
                         onReadyForServerApproval: (id) => fetch('/api/pi/approve', { method: 'POST', body: JSON.stringify({ paymentId: id }) }),
                         onReadyForServerCompletion: (id, txid) => {
                             game.moves += count; ui.update(); ui.toggleGameOver(false); ui.toggleShop(false);
                         },
                         onCancel: () => {}, onError: () => {}
                     });
-                } catch (e) {}
+                } catch (e) { alert("Pi Browser required for payments."); }
             }
         };
 
         const ui = {
             update() {
                 document.getElementById('lvlDisplay').innerText = game.level;
-                document.getElementById('pointsDisplay').innerText = game.points;
                 const mDisp = document.getElementById('movesDisplay');
                 mDisp.innerText = game.moves;
-                mDisp.className = game.moves <= 2 ? 'stat-value moves-critical' : 'stat-value';
+                mDisp.className = game.moves <= 3 ? 'stat-value moves-critical' : 'stat-value';
             },
             render() {
                 const grid = document.getElementById('mainGrid'); 
                 grid.innerHTML = '';
+                // ضبط الشبكة بناءً على عدد الزجاجات (تصبح 4 أو 5 أعمدة في المستويات الصعبة)
                 const count = game.bottles.length;
-                let cols = count > 8 ? 5 : (count > 5 ? 4 : 3);
+                let cols = 3;
+                if(count > 6) cols = 4;
+                if(count > 9) cols = 5;
                 grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
 
                 game.bottles.forEach((b, i) => {
