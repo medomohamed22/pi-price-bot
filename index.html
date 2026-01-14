@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI Water Sort | Auto-Login & Fixed Payments</title>
+    <title>AI Water Sort | Auto-Login</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -77,7 +77,7 @@
 <body>
 
     <div id="loading" class="loading-overlay">
-        <h3 id="loadingText">Syncing Wallet...</h3>
+        <h3 id="loadingText">Connecting to Pi Network...</h3>
         <div style="width: 40px; height: 40px; border: 4px solid var(--accent); border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
     </div>
 
@@ -107,13 +107,13 @@
 
     <div id="gameOverModal" class="modal"><div class="modal-content">
         <h2 style="color:var(--danger)">No Moves!</h2>
-        <button style="background:var(--pi-purple);color:white;width:100%;padding:10px;border-radius:10px;margin-bottom:5px;border:none;font-weight:bold;" onclick="piPayment.buyMoves(10, 0.1)">Get 10 Moves (0.1 Pi)</button>
+        <button class="btn-pi" style="background:var(--pi-purple);color:white;width:100%;padding:10px;border-radius:10px;margin-bottom:5px" onclick="piPayment.buyMoves(10, 0.1)">Get 10 Moves (0.1 Pi)</button>
         <button onclick="game.resetLevel()" style="background:#475569; color:white; width:100%; padding:10px; border-radius:10px; border:none">Restart Level</button>
     </div></div>
 
     <div id="shopModal" class="modal"><div class="modal-content">
         <h2>Store</h2>
-        <button style="background:var(--pi-purple);color:white;width:100%;padding:10px;border-radius:10px;border:none;font-weight:bold;" onclick="piPayment.buyMoves(10, 0.1)">Buy 10 Moves (0.1 Pi)</button>
+        <button style="background:var(--pi-purple);color:white;width:100%;padding:10px;border-radius:10px;" onclick="piPayment.buyMoves(10, 0.1)">Buy 10 Moves (0.1 Pi)</button>
         <button onclick="ui.toggleShop(false)" style="background:none; color:white; border:none; margin-top:10px">Close</button>
     </div></div>
 
@@ -121,6 +121,7 @@
 
     <script>
         const Pi = window.Pi;
+        // Sandbox is true for testing, change to false for production
         Pi.init({ version: "2.0", sandbox: false });
 
         const game = {
@@ -128,24 +129,19 @@
             bottles: [], initialState: null, selected: null,
             currentUser: null,
 
+            // التحقق المباشر من المستخدم
             async authenticateUser() {
                 try {
                     const scopes = ['username', 'payments'];
+                    // هذه الدالة تفتح نافذة تسجيل الدخول مرة واحدة فقط في البداية
                     const auth = await Pi.authenticate(scopes, (payment) => {
                         console.log("Payment pulse", payment);
-                    }, (incompletePayment) => {
-                        // الحل الجذري للمشكلة: التعامل مع المدفوعات المعلقة
-                        console.log("Incomplete payment found:", incompletePayment);
-                        // إرسال المعرف للسيرفر لإغلاقه أو إلغائه
-                        fetch('/api/pi/incomplete', { 
-                            method: 'POST', 
-                            body: JSON.stringify({ payment: incompletePayment }) 
-                        });
                     });
                     this.currentUser = auth.user;
                     document.getElementById('usernameDisplay').innerText = auth.user.username;
                     return true;
                 } catch (err) {
+                    console.error("Auth Error:", err);
                     document.getElementById('usernameDisplay').innerText = "Guest Mode";
                     return false;
                 }
@@ -159,7 +155,9 @@
             },
 
             async start() {
+                // 1. التعرف على المستخدم أولاً
                 await this.authenticateUser();
+                // 2. بناء المستوى
                 await this.initLevel();
             },
 
@@ -176,7 +174,7 @@
                     if (minMoves >= 5) solved = true;
                 }
 
-                this.initialMoves = minMoves + 2; 
+                this.initialMoves = minMoves + 2; // AI + 2 moves
                 this.moves = this.initialMoves;
                 this.initialState = JSON.stringify(this.bottles);
                 
@@ -197,7 +195,7 @@
                 const start = JSON.stringify(initialState);
                 const queue = [[start, 0]], visited = new Set([start]);
                 let count = 0;
-                while (queue.length > 0 && count < 2000) {
+                while (queue.length > 0 && count < 3000) {
                     count++;
                     const [currStr, dist] = queue.shift();
                     const curr = JSON.parse(currStr);
@@ -213,7 +211,7 @@
                         }
                     }
                 }
-                return 5;
+                return 0;
             },
 
             simMove(state, from, to) {
@@ -267,29 +265,15 @@
         const piPayment = {
             async buyMoves(count, amount) {
                 try {
-                    await Pi.createPayment({
-                        amount: amount,
-                        memo: `Purchase ${count} moves`,
-                        metadata: { moves: count }
-                    }, {
-                        onReadyForServerApproval: (paymentId) => {
-                            console.log("Approve ID:", paymentId);
-                            return fetch('/api/pi/approve', { method: 'POST', body: JSON.stringify({ paymentId }) });
+                    await Pi.createPayment({ amount, memo: `Get ${count} moves`, metadata: { moves: count } }, {
+                        onReadyForServerApproval: (id) => fetch('/api/pi/approve', { method: 'POST', body: JSON.stringify({ paymentId: id }) }),
+                        onReadyForServerCompletion: async (id, txid) => {
+                            await fetch('/api/pi/complete', { method: 'POST', body: JSON.stringify({ paymentId: id, txid: txid }) });
+                            game.moves += count; ui.update(); ui.toggleGameOver(false); ui.toggleShop(false);
                         },
-                        onReadyForServerCompletion: (paymentId, txid) => {
-                            console.log("Complete TX:", txid);
-                            game.moves += count; 
-                            ui.update(); 
-                            ui.toggleGameOver(false); 
-                            ui.toggleShop(false);
-                            return fetch('/api/pi/complete', { method: 'POST', body: JSON.stringify({ paymentId, txid }) });
-                        },
-                        onCancel: (paymentId) => { console.log("Cancelled", paymentId); },
-                        onError: (error, paymentId) => { console.error("Error", error); }
+                        onCancel: () => {}, onError: () => alert("Payment Error")
                     });
-                } catch (e) {
-                    alert("Pi Payment failed. Use Pi Browser.");
-                }
+                } catch (e) { alert("Action requires Pi Browser"); }
             }
         };
 
@@ -325,6 +309,7 @@
             }
         };
 
+        // بدء اللعبة مباشرة
         game.start();
     </script>
 </body>
