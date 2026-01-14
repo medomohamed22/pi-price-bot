@@ -15,10 +15,9 @@
         body {
             font-family: 'Poppins', sans-serif; background: var(--bg); color: white;
             margin: 0; display: flex; flex-direction: column; align-items: center;
-            min-height: 100vh; touch-action: manipulation; overflow: hidden;
+            min-height: 100vh; touch-action: manipulation; overflow-x: hidden;
         }
 
-        /* Top Bar Professional */
         .top-bar {
             width: 100%; padding: 10px 0; background: var(--panel);
             display: flex; justify-content: space-around; align-items: center;
@@ -30,7 +29,6 @@
         .stat-value { font-size: 0.9rem; font-weight: 700; color: var(--accent); }
         .pi-balance { color: var(--gold); font-size: 1.1rem; }
 
-        /* Game Area */
         .game-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; padding: 10px; box-sizing: border-box; }
         .bottles-grid { display: grid; gap: 10px; justify-items: center; transition: all 0.5s ease; }
 
@@ -45,7 +43,6 @@
         .bottle.selected { transform: translateY(-15px); border-color: var(--accent); box-shadow: 0 0 20px var(--accent); }
         .liquid { width: 100%; height: 25%; transition: height 0.4s ease-in-out; border-radius: 2px; }
 
-        /* Action Buttons */
         .action-bar { display: flex; gap: 10px; margin-bottom: 20px; }
         .btn-action { 
             background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
@@ -60,11 +57,10 @@
         .btn-restart { background: #475569; color: white; }
         .btn-shop { background: var(--gold); color: #000; }
 
-        /* Modals */
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center; }
         .modal-content { background: var(--panel); padding: 25px; border-radius: 20px; text-align: center; border: 1px solid var(--accent); width: 85%; max-width: 300px; }
 
-        /* Liquids Colors */
+        /* Liquids */
         .c-1 { background: #ef4444; } .c-2 { background: #3b82f6; } .c-3 { background: #22c55e; }
         .c-4 { background: #eab308; } .c-5 { background: #a855f7; } .c-6 { background: #ec4899; }
         .c-7 { background: #06b6d4; } .c-8 { background: #f97316; } .c-9 { background: #10b981; } .c-10 { background: #6366f1; }
@@ -76,7 +72,7 @@
 <body>
 
     <div id="loading" class="loading-overlay">
-        <h3>Pi SDK Pro Connecting...</h3>
+        <h3 id="loadingText">Connecting to Pi Network...</h3>
         <div style="width: 40px; height: 40px; border: 4px solid var(--accent); border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
     </div>
 
@@ -86,8 +82,9 @@
             <span id="lvlDisplay" class="stat-value">1</span>
         </div>
         <div class="stat-card">
-            <span class="stat-label">Balance</span>
-            <span id="piDisplay" class="stat-value pi-balance">0.00</span> <span style="font-size:0.6rem; color:var(--gold)">Pi</span>
+            <span class="stat-label">Earnings (Pi)</span>
+            <span id="piDisplay" class="stat-value pi-balance">0.00</span>
+            <span id="pointsDisplay" style="font-size:0.6rem; display:block; color:#94a3b8">0 PTS</span>
         </div>
         <div class="stat-card">
             <span class="stat-label">Moves</span>
@@ -99,26 +96,25 @@
         <div class="action-bar">
             <button class="btn-action" onclick="game.undo()" id="undoBtn">↩ Undo <span>-1 PTS</span></button>
             <button class="btn-action" onclick="game.getHint()" id="hintBtn">💡 Hint <span>-2 PTS</span></button>
-            <div class="btn-action">⭐ Bonus <span>Level 10</span></div>
+            <div class="btn-action">⭐ 100 PTS = 1 Pi</div>
         </div>
         <div class="bottles-grid" id="mainGrid"></div>
     </div>
 
     <div class="footer">
         <button class="main-btn btn-restart" onclick="game.resetLevel()">🔄 Restart</button>
-        <button class="main-btn btn-shop" onclick="ui.toggleShop(true)">🛒 Store</button>
+        <button class="main-btn btn-shop" onclick="ui.toggleShop(true)">🛒 Shop</button>
     </div>
 
     <div id="gameOverModal" class="modal"><div class="modal-content">
-        <h2 style="color:var(--danger)">Out of Moves!</h2>
-        <p>Refill to keep your progress and earn points.</p>
-        <button onclick="piPayment.createRefillPayment()" style="background:var(--pi-purple);color:white;width:100%;padding:15px;border-radius:12px;border:none;font-weight:bold;margin-bottom:10px">Buy 10 Moves (0.1 Pi)</button>
-        <button onclick="game.resetLevel()" style="background:none; color:white; border:none; cursor:pointer">Or Restart Level</button>
+        <h2 style="color:var(--danger)">No Moves!</h2>
+        <button onclick="piPayment.buyMoves(10, 0.1)" style="background:var(--pi-purple);color:white;width:100%;padding:15px;border-radius:12px;border:none;font-weight:bold;margin-bottom:10px">Buy 10 Moves (0.1 Pi)</button>
+        <button onclick="game.resetLevel()" style="background:none; color:white; border:none; cursor:pointer">Restart Level</button>
     </div></div>
 
     <div id="shopModal" class="modal"><div class="modal-content">
         <h2>Pi Store</h2>
-        <button onclick="piPayment.createRefillPayment()" style="background:var(--pi-purple);color:white;width:100%;padding:15px;border-radius:12px;border:none;font-weight:bold">Refill 10 Moves (0.1 Pi)</button>
+        <button onclick="piPayment.buyMoves(10, 0.1)" style="background:var(--pi-purple);color:white;width:100%;padding:15px;border-radius:12px;border:none;font-weight:bold">Refill 10 Moves (0.1 Pi)</button>
         <button onclick="ui.toggleShop(false)" style="margin-top:15px; background:none; border:none; color:#94a3b8; cursor:pointer">Close</button>
     </div></div>
 
@@ -135,16 +131,23 @@
             async start() {
                 try {
                     const scopes = ['username', 'payments'];
-                    const auth = await Pi.authenticate(scopes, (p) => { console.log("Payment pulse", p); });
-                    console.log("Welcome", auth.user.username);
-                } catch (e) { console.log("Guest Mode"); }
+                    const auth = await Pi.authenticate(scopes, (payment) => {
+                        console.log("Payment ongoing", payment);
+                    });
+                    document.getElementById('usernameDisplay') ? document.getElementById('usernameDisplay').innerText = auth.user.username : null;
+                } catch (e) { console.error("Auth failed"); }
                 this.initLevel();
+            },
+
+            getDifficulty() {
+                let colors = (this.level <= 10) ? 3 : (this.level <= 30 ? 4 : (this.level <= 60 ? 6 : 8));
+                if(this.level >= 100) colors = 10;
+                return { colors, empty: 2 };
             },
 
             async initLevel() {
                 document.getElementById('loading').style.display = 'flex';
-                this.selected = null;
-                this.history = [];
+                this.selected = null; this.history = [];
                 const config = this.getDifficulty();
                 let solved = false, minMoves = 0;
 
@@ -154,16 +157,11 @@
                     if (minMoves >= 5) solved = true; 
                 }
 
+                // الحركات: مستوى 1-10 (+2)، بعد ذلك (نفس ذكاء الآلة)
                 this.moves = (this.level <= 10) ? minMoves + 2 : minMoves;
                 this.initialState = JSON.stringify(this.bottles);
                 document.getElementById('loading').style.display = 'none';
                 ui.update(); ui.render();
-            },
-
-            getDifficulty() {
-                let colors = (this.level <= 5) ? 3 : (this.level <= 15 ? 4 : (this.level <= 40 ? 6 : 8));
-                if(this.level >= 100) colors = 10;
-                return { colors, empty: 2 };
             },
 
             generateLevel(colors, empty) {
@@ -175,7 +173,6 @@
                 for(let i=0; i<empty; i++) this.bottles.push([]);
             },
 
-            // Undo logic
             undo() {
                 if(this.history.length > 0 && this.points >= 1) {
                     this.points -= 1;
@@ -185,22 +182,21 @@
                 }
             },
 
-            // AI Hint logic
             getHint() {
                 if(this.points >= 2) {
-                    const nextMove = this.findNextBestMove(this.bottles);
-                    if(nextMove) {
+                    const next = this.findHintMove(this.bottles);
+                    if(next) {
                         this.points -= 2;
-                        this.applyMove(nextMove.from, nextMove.to);
+                        this.applyMove(next.from, next.to);
                     }
                 }
             },
 
-            findNextBestMove(state) {
-                for (let i = 0; i < state.length; i++) {
-                    for (let j = 0; j < state.length; j++) {
-                        if (i === j) continue;
-                        if (this.canMove(state, i, j)) return {from: i, to: j};
+            findHintMove(state) {
+                for(let i=0; i<state.length; i++) {
+                    for(let j=0; j<state.length; j++) {
+                        if(i===j) continue;
+                        if(this.canMove(state, i, j)) return {from:i, to:j};
                     }
                 }
                 return null;
@@ -208,9 +204,9 @@
 
             canMove(state, from, to) {
                 const b1 = state[from], b2 = state[to];
-                if (b1.length === 0) return false;
-                const c = b1[b1.length - 1];
-                return b2.length < 4 && (b2.length === 0 || b2[b2.length - 1] === c);
+                if(b1.length === 0) return false;
+                const c = b1[b1.length-1];
+                return b2.length < 4 && (b2.length === 0 || b2[b2.length-1] === c);
             },
 
             handleSelect(i) {
@@ -228,17 +224,16 @@
             },
 
             applyMove(from, to) {
-                const b1 = this.bottles[from], b2 = this.bottles[to];
                 if(!this.canMove(this.bottles, from, to)) return;
-                
+                const b1 = this.bottles[from], b2 = this.bottles[to];
+                const c = b1[b1.length-1];
                 this.moves--;
-                const c = b1[b1.length - 1];
-                while(b1.length > 0 && b1[b1.length - 1] === c && b2.length < 4) b2.push(b1.pop());
+                while(b1.length > 0 && b1[b1.length-1] === c && b2.length < 4) b2.push(b1.pop());
                 
                 ui.update();
                 if(this.isWon(this.bottles)) {
                     this.level++; this.points += 5;
-                    ui.showMsg("Excellent! 🏆", `Level ${this.level-1} solved. +5 Points (0.05 Pi)`, "Next Level", () => this.initLevel());
+                    ui.showMsg("Level Complete! 🌟", `You earned 5 Points (${(5/100).toFixed(2)} Pi)`, "Next Level", () => this.initLevel());
                 } else if(this.moves <= 0) setTimeout(() => ui.toggleGameOver(true), 400);
             },
 
@@ -256,9 +251,9 @@
                     for (let i = 0; i < curr.length; i++) {
                         for (let j = 0; j < curr.length; j++) {
                             if (i === j) continue;
-                            const next = this.simMove(curr, i, j);
-                            if (next) {
-                                const s = JSON.stringify(next);
+                            const ns = this.simMove(curr, i, j);
+                            if (ns) {
+                                const s = JSON.stringify(ns);
                                 if (!visited.has(s)) { visited.add(s); queue.push([s, dist + 1]); }
                             }
                         }
@@ -268,68 +263,57 @@
             },
 
             simMove(state, from, to) {
+                if(!this.canMove(state, from, to)) return null;
                 const ns = state.map(b => [...b]);
                 const b1 = ns[from], b2 = ns[to];
-                if (!this.canMove(state, from, to)) return null;
-                const c = b1[b1.length - 1];
-                while (b1.length > 0 && b1[b1.length - 1] === c && b2.length < 4) b2.push(b1.pop());
+                const c = b1[b1.length-1];
+                while(b1.length > 0 && b1[b1.length-1] === c && b2.length < 4) b2.push(b1.pop());
                 return ns;
             },
 
             resetLevel() {
                 this.bottles = JSON.parse(this.initialState);
+                this.history = [];
                 this.moves = (this.level <= 10) ? this.solveBFS(this.bottles) + 2 : this.solveBFS(this.bottles);
-                this.selected = null; this.history = [];
                 ui.toggleGameOver(false); ui.update(); ui.render();
             }
         };
 
-        // --- FIXED PI PAYMENT SYSTEM ---
         const piPayment = {
-            async createRefillPayment() {
+            async buyMoves(count, amount) {
                 try {
-                    const paymentData = {
-                        amount: 0.1,
-                        memo: "Refill 10 Moves",
-                        metadata: { item: "moves_10" }
-                    };
-
-                    const callbacks = {
-                        onReadyForServerApproval: (id) => this.onApprove(id),
-                        onReadyForServerCompletion: (id, txid) => this.onComplete(id, txid),
-                        onCancel: (id) => console.log("Payment Cancelled", id),
-                        onError: (error, id) => console.error("Payment Error", error, id)
-                    };
-
-                    await Pi.createPayment(paymentData, callbacks);
+                    await Pi.createPayment({
+                        amount: amount,
+                        memo: `Purchase ${count} extra moves`,
+                        metadata: { moves: count }
+                    }, {
+                        onReadyForServerApproval: (paymentId) => {
+                            // إرسال المعرف إلى السيرفر الخاص بك للموافقة
+                            console.log("Ready for approval:", paymentId);
+                            // ملاحظة: في Sandbox يمكنك محاكاة الطلب بـ fetch وهمي أو تركه وسيعمل
+                            return fetch('/api/approve', { method: 'POST', body: JSON.stringify({ paymentId }) });
+                        },
+                        onReadyForServerCompletion: (paymentId, txid) => {
+                            console.log("Payment Complete!", txid);
+                            game.moves += count;
+                            ui.update();
+                            ui.toggleGameOver(false);
+                            ui.toggleShop(false);
+                            return fetch('/api/complete', { method: 'POST', body: JSON.stringify({ paymentId, txid }) });
+                        },
+                        onCancel: (paymentId) => { console.log("Cancelled", paymentId); },
+                        onError: (error, paymentId) => { console.error("Error", error); }
+                    });
                 } catch (err) {
-                    alert("Pi Payment failed. Make sure you are in Pi Browser.");
+                    alert("Please open this game inside Pi Browser to use Pi Payments.");
                 }
-            },
-
-            async onApprove(paymentId) {
-                console.log("Approving on Server...", paymentId);
-                // هنا يتم إرسال المعرف لخادمك (Backend) للموافقة
-                // للتبسيط في الساندبوكس، سنفترض الموافقة فورية
-                return fetch('https://your-api.com/approve', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ paymentId })
-                });
-            },
-
-            async onComplete(paymentId, txid) {
-                console.log("Payment Success!", txid);
-                game.moves += 10;
-                ui.update();
-                ui.toggleGameOver(false);
-                ui.toggleShop(false);
             }
         };
 
         const ui = {
             update() {
                 document.getElementById('lvlDisplay').innerText = game.level;
+                document.getElementById('pointsDisplay').innerText = `${game.points} PTS`;
                 document.getElementById('piDisplay').innerText = (game.points / 100).toFixed(2);
                 document.getElementById('movesDisplay').innerText = game.moves;
                 document.getElementById('undoBtn').disabled = (game.history.length === 0 || game.points < 1);
