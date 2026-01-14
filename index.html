@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI Water Sort | Play 2 Earn Pi</title>
+    <title>AI Water Sort PRO | Play 2 Earn</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #0f172a; --panel: #1e293b; --accent: #38bdf8;
@@ -13,57 +13,62 @@
         }
 
         body {
-            font-family: 'Poppins', sans-serif;
-            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
-            color: white; margin: 0; display: flex; flex-direction: column;
-            align-items: center; min-height: 100vh; touch-action: manipulation;
+            font-family: 'Poppins', sans-serif; background: var(--bg); color: white;
+            margin: 0; display: flex; flex-direction: column; align-items: center;
+            min-height: 100vh; touch-action: manipulation; overflow: hidden;
         }
 
+        /* Top Bar Professional */
         .top-bar {
             width: 100%; padding: 10px 0; background: var(--panel);
-            display: flex; flex-wrap: wrap; justify-content: space-around; align-items: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5); position: sticky; top: 0; z-index: 100;
+            display: flex; justify-content: space-around; align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 100;
         }
 
-        .stat-card { text-align: center; padding: 5px 10px; min-width: 70px; }
-        .stat-label { font-size: 0.6rem; color: #94a3b8; display: block; text-transform: uppercase; font-weight: bold; }
-        .stat-value { font-size: 1rem; font-weight: 700; color: var(--accent); }
-        
-        .earnings-card { border-left: 2px solid var(--gold); border-right: 2px solid var(--gold); padding: 0 15px; }
-        .pi-value { color: var(--gold); font-size: 1.1rem; }
-        .rate-hint { font-size: 0.5rem; color: #64748b; display: block; }
+        .stat-card { text-align: center; }
+        .stat-label { font-size: 0.55rem; color: #94a3b8; display: block; text-transform: uppercase; }
+        .stat-value { font-size: 0.9rem; font-weight: 700; color: var(--accent); }
+        .pi-balance { color: var(--gold); font-size: 1.1rem; }
 
-        #usernameDisplay { color: #fff; font-size: 0.8rem; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-        .game-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; padding: 15px; box-sizing: border-box; }
-        .bottles-grid { display: grid; gap: 12px; justify-items: center; margin: auto; }
+        /* Game Area */
+        .game-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; padding: 10px; box-sizing: border-box; }
+        .bottles-grid { display: grid; gap: 10px; justify-items: center; transition: all 0.5s ease; }
 
         .bottle {
-            width: 42px; height: 130px; background: rgba(255,255,255,0.05);
+            width: 40px; height: 120px; background: rgba(255,255,255,0.05);
             border: 2px solid rgba(255,255,255,0.2); border-top: none;
-            border-bottom-left-radius: 18px; border-bottom-right-radius: 18px;
+            border-bottom-left-radius: 15px; border-bottom-right-radius: 15px;
             position: relative; display: flex; flex-direction: column-reverse;
-            cursor: pointer; transition: 0.3s;
+            cursor: pointer; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        .bottle.selected { transform: translateY(-15px); border-color: var(--accent); box-shadow: 0 0 15px var(--accent); }
-        .liquid { width: 100%; height: 25%; transition: height 0.4s; }
+        .bottle.selected { transform: translateY(-15px); border-color: var(--accent); box-shadow: 0 0 20px var(--accent); }
+        .liquid { width: 100%; height: 25%; transition: height 0.4s ease-in-out; border-radius: 2px; }
 
-        .c-1 { background: #ef4444; } .c-2 { background: #3b82f6; } .c-3 { background: #22c55e; }
-        .c-4 { background: #eab308; } .c-5 { background: #a855f7; } .c-6 { background: #ec4899; }
-        .c-7 { background: #06b6d4; } .c-8 { background: #94a3b8; } .c-9 { background: #f97316; } .c-10 { background: #10b981; }
+        /* Action Buttons */
+        .action-bar { display: flex; gap: 10px; margin-bottom: 20px; }
+        .btn-action { 
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: white; padding: 8px 12px; border-radius: 8px; font-size: 0.75rem;
+            display: flex; flex-direction: column; align-items: center; cursor: pointer;
+        }
+        .btn-action:disabled { opacity: 0.3; cursor: not-allowed; }
+        .btn-action span { font-size: 0.6rem; color: var(--gold); }
 
         .footer { padding: 15px; display: flex; gap: 10px; width: 100%; justify-content: center; }
-        button { padding: 10px 15px; border-radius: 10px; border: none; font-family: 'Poppins'; font-weight: bold; cursor: pointer; }
+        button.main-btn { padding: 12px 20px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .btn-restart { background: #475569; color: white; }
         .btn-shop { background: var(--gold); color: #000; }
 
-        .modal {
-            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95);
-            z-index: 1000; align-items: center; justify-content: center; padding: 20px;
-        }
-        .modal-content { background: var(--panel); padding: 25px; border-radius: 20px; text-align: center; border: 1px solid var(--accent); width: 100%; max-width: 300px; }
-        
+        /* Modals */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-content { background: var(--panel); padding: 25px; border-radius: 20px; text-align: center; border: 1px solid var(--accent); width: 85%; max-width: 300px; }
+
+        /* Liquids Colors */
+        .c-1 { background: #ef4444; } .c-2 { background: #3b82f6; } .c-3 { background: #22c55e; }
+        .c-4 { background: #eab308; } .c-5 { background: #a855f7; } .c-6 { background: #ec4899; }
+        .c-7 { background: #06b6d4; } .c-8 { background: #f97316; } .c-9 { background: #10b981; } .c-10 { background: #6366f1; }
+
         .loading-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         @keyframes spin { to { transform: rotate(360deg); } }
     </style>
@@ -71,7 +76,7 @@
 <body>
 
     <div id="loading" class="loading-overlay">
-        <h3 id="loadingText">Syncing Pi SDK...</h3>
+        <h3>Pi SDK Pro Connecting...</h3>
         <div style="width: 40px; height: 40px; border: 4px solid var(--accent); border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
     </div>
 
@@ -80,18 +85,10 @@
             <span class="stat-label">Level</span>
             <span id="lvlDisplay" class="stat-value">1</span>
         </div>
-        
-        <div class="stat-card earnings-card">
-            <span class="stat-label">Total Balance</span>
-            <span id="piDisplay" class="stat-value pi-value">0.00</span> <span style="font-size: 0.7rem; color: var(--gold);">Pi</span>
-            <span id="pointsDisplay" style="font-size: 0.65rem; color: #94a3b8; display: block;">(0 PTS)</span>
-        </div>
-
         <div class="stat-card">
-            <span class="stat-label">Player</span>
-            <span id="usernameDisplay" class="stat-value">...</span>
+            <span class="stat-label">Balance</span>
+            <span id="piDisplay" class="stat-value pi-balance">0.00</span> <span style="font-size:0.6rem; color:var(--gold)">Pi</span>
         </div>
-
         <div class="stat-card">
             <span class="stat-label">Moves</span>
             <span id="movesDisplay" class="stat-value">0</span>
@@ -99,18 +96,30 @@
     </div>
 
     <div class="game-area">
+        <div class="action-bar">
+            <button class="btn-action" onclick="game.undo()" id="undoBtn">↩ Undo <span>-1 PTS</span></button>
+            <button class="btn-action" onclick="game.getHint()" id="hintBtn">💡 Hint <span>-2 PTS</span></button>
+            <div class="btn-action">⭐ Bonus <span>Level 10</span></div>
+        </div>
         <div class="bottles-grid" id="mainGrid"></div>
     </div>
 
     <div class="footer">
-        <button class="btn-restart" onclick="game.resetLevel()">🔄 Restart</button>
-        <button class="btn-shop" onclick="ui.toggleShop(true)">🛒 Shop</button>
+        <button class="main-btn btn-restart" onclick="game.resetLevel()">🔄 Restart</button>
+        <button class="main-btn btn-shop" onclick="ui.toggleShop(true)">🛒 Store</button>
     </div>
 
     <div id="gameOverModal" class="modal"><div class="modal-content">
-        <h2 style="color:var(--danger)">No Moves Left!</h2>
-        <button style="background:var(--pi-purple);color:white;width:100%;padding:12px;border-radius:10px;border:none;margin-bottom:10px;font-weight:bold" onclick="piPayment.buyMoves(10, 0.1)">Refill Moves (0.1 Pi)</button>
-        <button onclick="game.resetLevel()" style="background:#475569; color:white; width:100%; padding:10px; border-radius:10px; border:none">Try Again</button>
+        <h2 style="color:var(--danger)">Out of Moves!</h2>
+        <p>Refill to keep your progress and earn points.</p>
+        <button onclick="piPayment.createRefillPayment()" style="background:var(--pi-purple);color:white;width:100%;padding:15px;border-radius:12px;border:none;font-weight:bold;margin-bottom:10px">Buy 10 Moves (0.1 Pi)</button>
+        <button onclick="game.resetLevel()" style="background:none; color:white; border:none; cursor:pointer">Or Restart Level</button>
+    </div></div>
+
+    <div id="shopModal" class="modal"><div class="modal-content">
+        <h2>Pi Store</h2>
+        <button onclick="piPayment.createRefillPayment()" style="background:var(--pi-purple);color:white;width:100%;padding:15px;border-radius:12px;border:none;font-weight:bold">Refill 10 Moves (0.1 Pi)</button>
+        <button onclick="ui.toggleShop(false)" style="margin-top:15px; background:none; border:none; color:#94a3b8; cursor:pointer">Close</button>
     </div></div>
 
     <div id="msgModal" class="modal"><div class="modal-content"><h2 id="msgTitle"></h2><p id="msgBody"></p><button id="msgBtn" style="background:var(--accent); width:100%; border:none; padding:12px; border-radius:10px; font-weight:bold; color:white;"></button></div></div>
@@ -120,25 +129,23 @@
         Pi.init({ version: "2.0", sandbox: false });
 
         const game = {
-            level: 1, 
-            points: 0,
-            moves: 0, 
-            initialMoves: 0,
-            bottles: [], initialState: null, selected: null,
+            level: 1, points: 0, moves: 0,
+            bottles: [], history: [], initialState: null, selected: null,
 
             async start() {
                 try {
                     const scopes = ['username', 'payments'];
-                    const auth = await Pi.authenticate(scopes, (p) => {});
-                    document.getElementById('usernameDisplay').innerText = auth.user.username;
-                } catch (e) { document.getElementById('usernameDisplay').innerText = "Guest"; }
+                    const auth = await Pi.authenticate(scopes, (p) => { console.log("Payment pulse", p); });
+                    console.log("Welcome", auth.user.username);
+                } catch (e) { console.log("Guest Mode"); }
                 this.initLevel();
             },
 
             async initLevel() {
                 document.getElementById('loading').style.display = 'flex';
                 this.selected = null;
-                const config = this.getDifficultyConfig();
+                this.history = [];
+                const config = this.getDifficulty();
                 let solved = false, minMoves = 0;
 
                 while (!solved) {
@@ -147,19 +154,16 @@
                     if (minMoves >= 5) solved = true; 
                 }
 
-                // الحركات بناءً على المستوى
-                this.initialMoves = (this.level <= 10) ? minMoves + 2 : minMoves;
-                this.moves = this.initialMoves;
+                this.moves = (this.level <= 10) ? minMoves + 2 : minMoves;
                 this.initialState = JSON.stringify(this.bottles);
-                
                 document.getElementById('loading').style.display = 'none';
                 ui.update(); ui.render();
             },
 
-            getDifficultyConfig() {
-                let colorCount = (this.level <= 10) ? 3 : (this.level <= 30 ? 4 : (this.level <= 60 ? 6 : 8));
-                if(this.level >= 100) colorCount = 10;
-                return { colors: colorCount, empty: 2 };
+            getDifficulty() {
+                let colors = (this.level <= 5) ? 3 : (this.level <= 15 ? 4 : (this.level <= 40 ? 6 : 8));
+                if(this.level >= 100) colors = 10;
+                return { colors, empty: 2 };
             },
 
             generateLevel(colors, empty) {
@@ -171,11 +175,80 @@
                 for(let i=0; i<empty; i++) this.bottles.push([]);
             },
 
+            // Undo logic
+            undo() {
+                if(this.history.length > 0 && this.points >= 1) {
+                    this.points -= 1;
+                    this.bottles = JSON.parse(this.history.pop());
+                    this.moves++;
+                    ui.update(); ui.render();
+                }
+            },
+
+            // AI Hint logic
+            getHint() {
+                if(this.points >= 2) {
+                    const nextMove = this.findNextBestMove(this.bottles);
+                    if(nextMove) {
+                        this.points -= 2;
+                        this.applyMove(nextMove.from, nextMove.to);
+                    }
+                }
+            },
+
+            findNextBestMove(state) {
+                for (let i = 0; i < state.length; i++) {
+                    for (let j = 0; j < state.length; j++) {
+                        if (i === j) continue;
+                        if (this.canMove(state, i, j)) return {from: i, to: j};
+                    }
+                }
+                return null;
+            },
+
+            canMove(state, from, to) {
+                const b1 = state[from], b2 = state[to];
+                if (b1.length === 0) return false;
+                const c = b1[b1.length - 1];
+                return b2.length < 4 && (b2.length === 0 || b2[b2.length - 1] === c);
+            },
+
+            handleSelect(i) {
+                if(this.moves <= 0) { ui.toggleGameOver(true); return; }
+                if(this.selected === null) {
+                    if(this.bottles[i].length > 0) this.selected = i;
+                } else {
+                    if(this.selected !== i) {
+                        this.history.push(JSON.stringify(this.bottles));
+                        this.applyMove(this.selected, i);
+                    }
+                    this.selected = null;
+                }
+                ui.render();
+            },
+
+            applyMove(from, to) {
+                const b1 = this.bottles[from], b2 = this.bottles[to];
+                if(!this.canMove(this.bottles, from, to)) return;
+                
+                this.moves--;
+                const c = b1[b1.length - 1];
+                while(b1.length > 0 && b1[b1.length - 1] === c && b2.length < 4) b2.push(b1.pop());
+                
+                ui.update();
+                if(this.isWon(this.bottles)) {
+                    this.level++; this.points += 5;
+                    ui.showMsg("Excellent! 🏆", `Level ${this.level-1} solved. +5 Points (0.05 Pi)`, "Next Level", () => this.initLevel());
+                } else if(this.moves <= 0) setTimeout(() => ui.toggleGameOver(true), 400);
+            },
+
+            isWon(s) { return s.every(b => b.length === 0 || (b.length === 4 && b.every(c => c === b[0]))); },
+
             solveBFS(initialState) {
                 const start = JSON.stringify(initialState);
                 const queue = [[start, 0]], visited = new Set([start]);
                 let nodes = 0;
-                while (queue.length > 0 && nodes < 3000) {
+                while (queue.length > 0 && nodes < 2000) {
                     nodes++;
                     const [currStr, dist] = queue.shift();
                     const curr = JSON.parse(currStr);
@@ -197,72 +270,75 @@
             simMove(state, from, to) {
                 const ns = state.map(b => [...b]);
                 const b1 = ns[from], b2 = ns[to];
-                if (b1.length === 0) return null;
+                if (!this.canMove(state, from, to)) return null;
                 const c = b1[b1.length - 1];
-                if (b2.length < 4 && (b2.length === 0 || b2[b2.length - 1] === c)) {
-                    while (b1.length > 0 && b1[b1.length - 1] === c && b2.length < 4) b2.push(b1.pop());
-                    return ns;
-                }
-                return null;
-            },
-
-            isWon(state) { return state.every(b => b.length === 0 || (b.length === 4 && b.every(c => c === b[0]))); },
-
-            handleSelect(i) {
-                if(this.moves <= 0) { ui.toggleGameOver(true); return; }
-                if(this.selected === null) {
-                    if(this.bottles[i].length > 0) this.selected = i;
-                } else {
-                    if(this.selected !== i) this.applyMove(this.selected, i);
-                    this.selected = null;
-                }
-                ui.render();
-            },
-
-            applyMove(from, to) {
-                const b1 = this.bottles[from], b2 = this.bottles[to];
-                if(b1.length === 0) return;
-                const c = b1[b1.length-1];
-                if(b2.length < 4 && (b2.length === 0 || b2[b2.length-1] === c)) {
-                    this.moves--;
-                    while(b1.length > 0 && b1[b1.length - 1] === c && b2.length < 4) b2.push(b1.pop());
-                    ui.update();
-                    if(this.isWon(this.bottles)) {
-                        this.level++;
-                        this.points += 5;
-                        const piEarned = (5 / 100).toFixed(2);
-                        ui.showMsg("Level Complete! 🌟", `You earned 5 Points (${piEarned} Pi)`, "Claim & Next", () => this.initLevel());
-                    } else if(this.moves <= 0) setTimeout(() => ui.toggleGameOver(true), 400);
-                }
+                while (b1.length > 0 && b1[b1.length - 1] === c && b2.length < 4) b2.push(b1.pop());
+                return ns;
             },
 
             resetLevel() {
                 this.bottles = JSON.parse(this.initialState);
-                this.moves = this.initialMoves;
-                this.selected = null;
+                this.moves = (this.level <= 10) ? this.solveBFS(this.bottles) + 2 : this.solveBFS(this.bottles);
+                this.selected = null; this.history = [];
                 ui.toggleGameOver(false); ui.update(); ui.render();
+            }
+        };
+
+        // --- FIXED PI PAYMENT SYSTEM ---
+        const piPayment = {
+            async createRefillPayment() {
+                try {
+                    const paymentData = {
+                        amount: 0.1,
+                        memo: "Refill 10 Moves",
+                        metadata: { item: "moves_10" }
+                    };
+
+                    const callbacks = {
+                        onReadyForServerApproval: (id) => this.onApprove(id),
+                        onReadyForServerCompletion: (id, txid) => this.onComplete(id, txid),
+                        onCancel: (id) => console.log("Payment Cancelled", id),
+                        onError: (error, id) => console.error("Payment Error", error, id)
+                    };
+
+                    await Pi.createPayment(paymentData, callbacks);
+                } catch (err) {
+                    alert("Pi Payment failed. Make sure you are in Pi Browser.");
+                }
+            },
+
+            async onApprove(paymentId) {
+                console.log("Approving on Server...", paymentId);
+                // هنا يتم إرسال المعرف لخادمك (Backend) للموافقة
+                // للتبسيط في الساندبوكس، سنفترض الموافقة فورية
+                return fetch('https://your-api.com/approve', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ paymentId })
+                });
+            },
+
+            async onComplete(paymentId, txid) {
+                console.log("Payment Success!", txid);
+                game.moves += 10;
+                ui.update();
+                ui.toggleGameOver(false);
+                ui.toggleShop(false);
             }
         };
 
         const ui = {
             update() {
                 document.getElementById('lvlDisplay').innerText = game.level;
-                document.getElementById('pointsDisplay').innerText = `(${game.points} PTS)`;
-                // حساب القيمة بالـ Pi وعرضها
-                const totalPi = (game.points / 100).toFixed(2);
-                document.getElementById('piDisplay').innerText = totalPi;
-                
-                const mDisp = document.getElementById('movesDisplay');
-                mDisp.innerText = game.moves;
-                mDisp.className = game.moves <= 2 ? 'stat-value moves-critical' : 'stat-value';
+                document.getElementById('piDisplay').innerText = (game.points / 100).toFixed(2);
+                document.getElementById('movesDisplay').innerText = game.moves;
+                document.getElementById('undoBtn').disabled = (game.history.length === 0 || game.points < 1);
+                document.getElementById('hintBtn').disabled = (game.points < 2);
             },
             render() {
-                const grid = document.getElementById('mainGrid'); 
-                grid.innerHTML = '';
+                const grid = document.getElementById('mainGrid'); grid.innerHTML = '';
                 const count = game.bottles.length;
-                let cols = count > 8 ? 5 : (count > 5 ? 4 : 3);
-                grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-
+                grid.style.gridTemplateColumns = `repeat(${count > 6 ? (count > 9 ? 5 : 4) : 3}, 1fr)`;
                 game.bottles.forEach((b, i) => {
                     const div = document.createElement('div');
                     div.className = `bottle ${game.selected === i ? 'selected' : ''}`;
