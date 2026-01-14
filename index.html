@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Extreme AI Water Sort | Pi Network</title>
+    <title>Extreme AI Water Sort | 10 Moves Pack</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -48,7 +48,6 @@
         .bottle.selected { transform: translateY(-25px); border-color: var(--accent); box-shadow: 0 0 15px var(--accent); }
         .liquid { width: 100%; height: 25%; transition: height 0.4s; }
 
-        /* تدرجات 3D للألوان */
         .c-1 { background: linear-gradient(90deg, #991b1b, #ef4444, #991b1b); }
         .c-2 { background: linear-gradient(90deg, #1e3a8a, #3b82f6, #1e3a8a); }
         .c-3 { background: linear-gradient(90deg, #166534, #22c55e, #166534); }
@@ -102,17 +101,18 @@
     <div id="gameOverModal" class="modal">
         <div class="modal-content">
             <h2 style="color:var(--danger)">انتهت الحركات! 🛑</h2>
-            <p>لقد استهلكت حركات أكثر من حل الذكاء الاصطناعي.</p>
-            <button class="btn-pi" onclick="piPayment.buyMoves(5, 0.1)">شراء 5 حركات إضافية بـ 0.1 Pi</button>
-            <button onclick="game.resetLevel()" style="background:#475569; color:white; width:100%; margin-top:5px">إعادة المحاولة من جديد</button>
+            <p>لقد استهلكت جميع الحركات المسموحة.</p>
+            <button class="btn-pi" onclick="piPayment.buyMoves(10, 0.1)">استكمال: شراء 10 حركات بـ 0.1 Pi</button>
+            <button onclick="game.resetLevel()" style="background:#475569; color:white; width:100%; margin-top:5px">إعادة المستوى من الصفر</button>
         </div>
     </div>
 
     <div id="shopModal" class="modal">
         <div class="modal-content">
             <h2>متجر الحركات</h2>
+            <p>اشحن رصيدك لتجنب الخسارة</p>
             <button class="btn-pi" onclick="piPayment.buyMoves(10, 0.1)">شراء 10 حركات بـ 0.1 Pi</button>
-            <button onclick="ui.toggleShop(false)" style="background:transparent; color:white; border:none; margin-top:10px">إغلاق</button>
+            <button onclick="ui.toggleShop(false)" style="background:transparent; color:white; border:none; margin-top:10px; cursor:pointer">إغلاق</button>
         </div>
     </div>
 
@@ -136,7 +136,7 @@
                 while (!solved) {
                     this.generateLevel(colorCount);
                     minMoves = this.solveBFS(this.bottles);
-                    if (minMoves >= 5) solved = true; // لضمان مستوى ليس سهلاً جداً
+                    if (minMoves >= 5) solved = true;
                 }
 
                 this.initialMoves = minMoves;
@@ -215,7 +215,7 @@
                     ui.update();
                     if(this.isWon(this.bottles)) {
                         this.level++;
-                        ui.showMsg("رائع! 🎉", "لقد حللت التحدي بأقل عدد حركات.", "المستوى التالي", () => this.init());
+                        ui.showMsg("رائع! 🎉", "لقد حللت التحدي بنجاح", "المستوى التالي", () => this.init());
                     } else if(this.moves <= 0) setTimeout(() => ui.toggleGameOver(true), 400);
                 }
             },
@@ -232,11 +232,12 @@
             async buyMoves(count, amount) {
                 try {
                     await Pi.authenticate(['payments'], (p) => {});
-                    await Pi.createPayment({ amount, memo: `شراء ${count} حركات`, metadata: { moves: count } }, {
+                    await Pi.createPayment({ amount, memo: `شراء ${count} حركات إضافية`, metadata: { moves: count } }, {
                         onReadyForServerApproval: (id) => fetch('/api/pi/approve', { method: 'POST', body: JSON.stringify({ paymentId: id }) }),
                         onReadyForServerCompletion: async (id, txid) => {
                             await fetch('/api/pi/complete', { method: 'POST', body: JSON.stringify({ paymentId: id, txid: txid }) });
-                            game.moves += count; ui.update(); ui.toggleGameOver(false); ui.toggleShop(false);
+                            game.moves += count; // سيتم دائماً إضافة 10 حركات هنا
+                            ui.update(); ui.toggleGameOver(false); ui.toggleShop(false);
                         },
                         onCancel: () => {}, onError: () => alert("فشل الدفع")
                     });
