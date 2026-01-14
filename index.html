@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI Water Sort | Play 2 Earn Pi</title>
+    <title>AI Water Sort | Play to Earn Pi</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -19,23 +19,25 @@
             align-items: center; min-height: 100vh; touch-action: manipulation;
         }
 
+        /* شريط المعلومات العلوي المطور */
         .top-bar {
             width: 100%; padding: 10px 0; background: var(--panel);
             display: flex; flex-wrap: wrap; justify-content: space-around; align-items: center;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5); position: sticky; top: 0; z-index: 100;
         }
 
-        .stat-card { text-align: center; padding: 5px 10px; min-width: 70px; }
+        .stat-card { text-align: center; padding: 5px 10px; min-width: 80px; }
         .stat-label { font-size: 0.6rem; color: #94a3b8; display: block; text-transform: uppercase; font-weight: bold; }
         .stat-value { font-size: 1rem; font-weight: 700; color: var(--accent); }
         
-        .earnings-card { border-left: 2px solid var(--gold); border-right: 2px solid var(--gold); padding: 0 15px; }
-        .pi-value { color: var(--gold); font-size: 1.1rem; }
-        .rate-hint { font-size: 0.5rem; color: #64748b; display: block; }
+        .points-box { border: 1px dashed var(--gold); border-radius: 8px; padding: 5px 15px; }
+        .points-value { color: var(--gold); }
+        .exchange-rate { font-size: 0.55rem; color: #64748b; display: block; margin-top: 2px; }
 
-        #usernameDisplay { color: #fff; font-size: 0.8rem; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        #usernameDisplay { color: #fff; font-size: 0.8rem; max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         .game-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; padding: 15px; box-sizing: border-box; }
+        
         .bottles-grid { display: grid; gap: 12px; justify-items: center; margin: auto; }
 
         .bottle {
@@ -49,12 +51,13 @@
         .bottle.selected { transform: translateY(-15px); border-color: var(--accent); box-shadow: 0 0 15px var(--accent); }
         .liquid { width: 100%; height: 25%; transition: height 0.4s; }
 
+        /* ألوان السوائل */
         .c-1 { background: #ef4444; } .c-2 { background: #3b82f6; } .c-3 { background: #22c55e; }
         .c-4 { background: #eab308; } .c-5 { background: #a855f7; } .c-6 { background: #ec4899; }
         .c-7 { background: #06b6d4; } .c-8 { background: #94a3b8; } .c-9 { background: #f97316; } .c-10 { background: #10b981; }
 
         .footer { padding: 15px; display: flex; gap: 10px; width: 100%; justify-content: center; }
-        button { padding: 10px 15px; border-radius: 10px; border: none; font-family: 'Poppins'; font-weight: bold; cursor: pointer; }
+        button { padding: 10px 15px; border-radius: 10px; border: none; font-family: 'Poppins'; font-weight: bold; cursor: pointer; font-size: 0.9rem; }
         .btn-restart { background: #475569; color: white; }
         .btn-shop { background: var(--gold); color: #000; }
 
@@ -71,7 +74,7 @@
 <body>
 
     <div id="loading" class="loading-overlay">
-        <h3 id="loadingText">Syncing Pi SDK...</h3>
+        <h3 id="loadingText">Loading Pi Wallet...</h3>
         <div style="width: 40px; height: 40px; border: 4px solid var(--accent); border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
     </div>
 
@@ -81,10 +84,10 @@
             <span id="lvlDisplay" class="stat-value">1</span>
         </div>
         
-        <div class="stat-card earnings-card">
-            <span class="stat-label">Total Balance</span>
-            <span id="piDisplay" class="stat-value pi-value">0.00</span> <span style="font-size: 0.7rem; color: var(--gold);">Pi</span>
-            <span id="pointsDisplay" style="font-size: 0.65rem; color: #94a3b8; display: block;">(0 PTS)</span>
+        <div class="stat-card points-box">
+            <span class="stat-label">Earnings</span>
+            <span id="pointsDisplay" class="stat-value points-value">0</span> <span style="font-size: 0.7rem; color: var(--gold);">PTS</span>
+            <span class="exchange-rate">100 PTS = 1 Pi</span>
         </div>
 
         <div class="stat-card">
@@ -108,9 +111,16 @@
     </div>
 
     <div id="gameOverModal" class="modal"><div class="modal-content">
-        <h2 style="color:var(--danger)">No Moves Left!</h2>
-        <button style="background:var(--pi-purple);color:white;width:100%;padding:12px;border-radius:10px;border:none;margin-bottom:10px;font-weight:bold" onclick="piPayment.buyMoves(10, 0.1)">Refill Moves (0.1 Pi)</button>
-        <button onclick="game.resetLevel()" style="background:#475569; color:white; width:100%; padding:10px; border-radius:10px; border:none">Try Again</button>
+        <h2 style="color:var(--danger)">Out of Moves!</h2>
+        <p>Win more points by finishing this level.</p>
+        <button style="background:var(--pi-purple);color:white;width:100%;padding:12px;border-radius:10px;border:none;margin-bottom:10px;font-weight:bold" onclick="piPayment.buyMoves(10, 0.1)">Buy 10 Moves (0.1 Pi)</button>
+        <button onclick="game.resetLevel()" style="background:#475569; color:white; width:100%; padding:10px; border-radius:10px; border:none">Restart Level</button>
+    </div></div>
+
+    <div id="shopModal" class="modal"><div class="modal-content">
+        <h2>Shop</h2>
+        <button style="background:var(--pi-purple);color:white;width:100%;padding:12px;border-radius:10px;font-weight:bold;border:none" onclick="piPayment.buyMoves(10, 0.1)">Buy 10 Moves (0.1 Pi)</button>
+        <button onclick="ui.toggleShop(false)" style="background:none; color:white; border:none; margin-top:10px">Close</button>
     </div></div>
 
     <div id="msgModal" class="modal"><div class="modal-content"><h2 id="msgTitle"></h2><p id="msgBody"></p><button id="msgBtn" style="background:var(--accent); width:100%; border:none; padding:12px; border-radius:10px; font-weight:bold; color:white;"></button></div></div>
@@ -124,7 +134,9 @@
             points: 0,
             moves: 0, 
             initialMoves: 0,
-            bottles: [], initialState: null, selected: null,
+            bottles: [], 
+            initialState: null, 
+            selected: null,
 
             async start() {
                 try {
@@ -133,6 +145,15 @@
                     document.getElementById('usernameDisplay').innerText = auth.user.username;
                 } catch (e) { document.getElementById('usernameDisplay').innerText = "Guest"; }
                 this.initLevel();
+            },
+
+            getDifficultyConfig() {
+                let colorCount;
+                if (this.level <= 10) colorCount = 3; 
+                else if (this.level <= 30) colorCount = 4;
+                else if (this.level <= 60) colorCount = 6;
+                else colorCount = Math.min(7 + Math.floor(this.level/20), 10);
+                return { colors: colorCount, empty: 2 };
             },
 
             async initLevel() {
@@ -147,19 +168,12 @@
                     if (minMoves >= 5) solved = true; 
                 }
 
-                // الحركات بناءً على المستوى
-                this.initialMoves = (this.level <= 10) ? minMoves + 2 : minMoves;
+                this.initialMoves = minMoves + 2; 
                 this.moves = this.initialMoves;
                 this.initialState = JSON.stringify(this.bottles);
                 
                 document.getElementById('loading').style.display = 'none';
                 ui.update(); ui.render();
-            },
-
-            getDifficultyConfig() {
-                let colorCount = (this.level <= 10) ? 3 : (this.level <= 30 ? 4 : (this.level <= 60 ? 6 : 8));
-                if(this.level >= 100) colorCount = 10;
-                return { colors: colorCount, empty: 2 };
             },
 
             generateLevel(colors, empty) {
@@ -229,9 +243,8 @@
                     ui.update();
                     if(this.isWon(this.bottles)) {
                         this.level++;
-                        this.points += 5;
-                        const piEarned = (5 / 100).toFixed(2);
-                        ui.showMsg("Level Complete! 🌟", `You earned 5 Points (${piEarned} Pi)`, "Claim & Next", () => this.initLevel());
+                        this.points += 5; // إضافة 5 نقاط عند الفوز
+                        ui.showMsg("Level Clear! 🌟", "You earned +5 Points!", "Next Level", () => this.initLevel());
                     } else if(this.moves <= 0) setTimeout(() => ui.toggleGameOver(true), 400);
                 }
             },
@@ -244,14 +257,24 @@
             }
         };
 
+        const piPayment = {
+            async buyMoves(count, amount) {
+                try {
+                    await Pi.createPayment({ amount, memo: `Refill 10 moves`, metadata: { moves: count } }, {
+                        onReadyForServerApproval: (id) => fetch('/api/pi/approve', { method: 'POST', body: JSON.stringify({ paymentId: id }) }),
+                        onReadyForServerCompletion: (id, txid) => {
+                            game.moves += count; ui.update(); ui.toggleGameOver(false); ui.toggleShop(false);
+                        },
+                        onCancel: () => {}, onError: () => {}
+                    });
+                } catch (e) {}
+            }
+        };
+
         const ui = {
             update() {
                 document.getElementById('lvlDisplay').innerText = game.level;
-                document.getElementById('pointsDisplay').innerText = `(${game.points} PTS)`;
-                // حساب القيمة بالـ Pi وعرضها
-                const totalPi = (game.points / 100).toFixed(2);
-                document.getElementById('piDisplay').innerText = totalPi;
-                
+                document.getElementById('pointsDisplay').innerText = game.points;
                 const mDisp = document.getElementById('movesDisplay');
                 mDisp.innerText = game.moves;
                 mDisp.className = game.moves <= 2 ? 'stat-value moves-critical' : 'stat-value';
