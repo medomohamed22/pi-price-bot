@@ -1,316 +1,119 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI Water Sort | Auto-Login</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بوابة دفع Pi الرسمية</title>
+    
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <style>
-        :root {
-            --bg: #0f172a; --panel: #1e293b; --accent: #38bdf8;
-            --gold: #f59e0b; --pi-purple: #6d28d9; --danger: #ef4444;
-        }
-
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
-            color: white; margin: 0; display: flex; flex-direction: column;
-            align-items: center; min-height: 100vh; touch-action: manipulation;
-        }
-
-        .top-bar {
-            width: 100%; padding: 15px 0; background: var(--panel);
-            display: flex; justify-content: space-around; align-items: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            position: sticky; top: 0; z-index: 100;
-        }
-
-        .stat-card { text-align: center; flex: 1; }
-        .stat-label { font-size: 0.65rem; color: #94a3b8; display: block; text-transform: uppercase; }
-        .stat-value { font-size: 1.1rem; font-weight: 700; color: var(--accent); }
-        
-        #usernameDisplay { color: var(--gold); font-size: 0.9rem; max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .moves-critical { color: var(--danger); animation: pulse 0.8s infinite; }
-
-        .game-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; padding: 10px; }
-        
-        .bottles-grid {
-            display: grid; gap: 15px; width: 95%; max-width: 500px; justify-items: center;
-        }
-
-        .bottle {
-            width: 45px; height: 140px; background: rgba(255,255,255,0.05);
-            border: 2px solid rgba(255,255,255,0.2); border-top: none;
-            border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;
-            position: relative; display: flex; flex-direction: column-reverse;
-            cursor: pointer; transition: 0.3s;
-        }
-
-        .bottle.selected { transform: translateY(-15px); border-color: var(--accent); box-shadow: 0 0 15px var(--accent); }
-        .liquid { width: 100%; height: 25%; transition: height 0.4s; border-radius: 2px; }
-
-        .c-1 { background: linear-gradient(90deg, #991b1b, #ef4444, #991b1b); }
-        .c-2 { background: linear-gradient(90deg, #1e3a8a, #3b82f6, #1e3a8a); }
-        .c-3 { background: linear-gradient(90deg, #166534, #22c55e, #166534); }
-        .c-4 { background: linear-gradient(90deg, #854d0e, #eab308, #854d0e); }
-        .c-5 { background: linear-gradient(90deg, #5b21b6, #a855f7, #5b21b6); }
-        .c-6 { background: linear-gradient(90deg, #be185d, #ec4899, #be185d); }
-        .c-7 { background: linear-gradient(90deg, #374151, #9ca3af, #374151); }
-
-        .footer { padding: 20px; display: flex; gap: 10px; width: 100%; justify-content: center; }
-        button { padding: 12px 20px; border-radius: 12px; border: none; font-family: 'Poppins'; font-weight: bold; cursor: pointer; }
-        .btn-restart { background: #475569; color: white; }
-        .btn-shop { background: var(--gold); color: #000; }
-
-        .modal {
-            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95);
-            z-index: 1000; align-items: center; justify-content: center; padding: 20px;
-        }
-        .modal-content { background: var(--panel); padding: 30px; border-radius: 25px; text-align: center; border: 1px solid var(--accent); width: 100%; max-width: 320px; }
-        
-        .loading-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        :root { --primary: #6d28d9; --accent: #f59e0b; --bg: #0f172a; --card: #1e293b; }
+        body { margin: 0; font-family: sans-serif; background: var(--bg); color: white; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .container { background: var(--card); padding: 2rem; border-radius: 20px; text-align: center; width: 350px; border: 1px solid rgba(255,255,255,0.1); }
+        .pi-btn { background: linear-gradient(135deg, var(--primary), #4f46e5); color: white; border: none; width: 100%; padding: 1rem; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 1rem; }
+        .pi-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        #status { margin-top: 1rem; font-size: 0.8rem; color: var(--accent); }
     </style>
 </head>
 <body>
 
-    <div id="loading" class="loading-overlay">
-        <h3 id="loadingText">Connecting to Pi Network...</h3>
-        <div style="width: 40px; height: 40px; border: 4px solid var(--accent); border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+    <div class="container">
+        <h2 id="user-name">تحميل...</h2>
+        <p>ادفع 1 Pi ليتم تسجيلك في قاعدة البيانات</p>
+        <button id="payButton" class="pi-btn" onclick="initiatePayment()">ادفع الآن 1 Pi</button>
+        <div id="status">جاهز</div>
     </div>
-
-    <div class="top-bar">
-        <div class="stat-card">
-            <span class="stat-label">Level</span>
-            <span id="lvlDisplay" class="stat-value">1</span>
-        </div>
-        <div class="stat-card">
-            <span class="stat-label">Player</span>
-            <span id="usernameDisplay" class="stat-value">Loading...</span>
-        </div>
-        <div class="stat-card">
-            <span class="stat-label">Moves</span>
-            <span id="movesDisplay" class="stat-value">0</span>
-        </div>
-    </div>
-
-    <div class="game-area">
-        <div class="bottles-grid" id="mainGrid"></div>
-    </div>
-
-    <div class="footer">
-        <button class="btn-restart" onclick="game.resetLevel()">🔄 Restart</button>
-        <button class="btn-shop" onclick="ui.toggleShop(true)">🛒 Shop</button>
-    </div>
-
-    <div id="gameOverModal" class="modal"><div class="modal-content">
-        <h2 style="color:var(--danger)">No Moves!</h2>
-        <button class="btn-pi" style="background:var(--pi-purple);color:white;width:100%;padding:10px;border-radius:10px;margin-bottom:5px" onclick="piPayment.buyMoves(10, 0.1)">Get 10 Moves (0.1 Pi)</button>
-        <button onclick="game.resetLevel()" style="background:#475569; color:white; width:100%; padding:10px; border-radius:10px; border:none">Restart Level</button>
-    </div></div>
-
-    <div id="shopModal" class="modal"><div class="modal-content">
-        <h2>Store</h2>
-        <button style="background:var(--pi-purple);color:white;width:100%;padding:10px;border-radius:10px;" onclick="piPayment.buyMoves(10, 0.1)">Buy 10 Moves (0.1 Pi)</button>
-        <button onclick="ui.toggleShop(false)" style="background:none; color:white; border:none; margin-top:10px">Close</button>
-    </div></div>
-
-    <div id="msgModal" class="modal"><div class="modal-content"><h2 id="msgTitle"></h2><p id="msgBody"></p><button id="msgBtn" style="background:var(--accent); width:100%; border:none; padding:10px; border-radius:10px; font-weight:bold; color:white;"></button></div></div>
 
     <script>
+        // 1. إعداد Supabase (استخدم مفتاح anon المتاح للعامة)
+        const supabaseUrl = 'https://xncapmzlwuisupkjlftb.supabase.co';
+        const supabaseKey = 'xncapmzlwuisupkjlftb'; 
+        const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+        // 2. إعداد Pi SDK
         const Pi = window.Pi;
-        // Sandbox is true for testing, change to false for production
         Pi.init({ version: "2.0", sandbox: false });
 
-        const game = {
-            level: 1, moves: 0, initialMoves: 0,
-            bottles: [], initialState: null, selected: null,
-            currentUser: null,
+        let currentUser = null;
 
-            // التحقق المباشر من المستخدم
-            async authenticateUser() {
-                try {
-                    const scopes = ['username', 'payments'];
-                    // هذه الدالة تفتح نافذة تسجيل الدخول مرة واحدة فقط في البداية
-                    const auth = await Pi.authenticate(scopes, (payment) => {
-                        console.log("Payment pulse", payment);
-                    });
-                    this.currentUser = auth.user;
-                    document.getElementById('usernameDisplay').innerText = auth.user.username;
-                    return true;
-                } catch (err) {
-                    console.error("Auth Error:", err);
-                    document.getElementById('usernameDisplay').innerText = "Guest Mode";
-                    return false;
-                }
-            },
+        async function onStart() {
+            try {
+                const auth = await Pi.authenticate(['username', 'payments'], onIncompletePayment);
+                currentUser = auth.user;
+                document.getElementById('user-name').innerText = `أهلاً ${currentUser.username}`;
+            } catch (e) {
+                updateStatus("افتح الموقع من متصفح Pi", "red");
+            }
+        }
 
-            getColorCount() {
-                if (this.level <= 10) return 3;
-                if (this.level <= 20) return 4;
-                if (this.level <= 30) return 5;
-                return 6;
-            },
+        async function initiatePayment() {
+            const btn = document.getElementById('payButton');
+            btn.disabled = true;
+            updateStatus("جاري تحضير العملية...");
 
-            async start() {
-                // 1. التعرف على المستخدم أولاً
-                await this.authenticateUser();
-                // 2. بناء المستوى
-                await this.initLevel();
-            },
-
-            async initLevel() {
-                document.getElementById('loading').style.display = 'flex';
-                this.selected = null;
-                let colorCount = this.getColorCount();
-                let solved = false;
-                let minMoves = 0;
-
-                while (!solved) {
-                    this.generateLevel(colorCount);
-                    minMoves = this.solveBFS(this.bottles);
-                    if (minMoves >= 5) solved = true;
-                }
-
-                this.initialMoves = minMoves + 2; // AI + 2 moves
-                this.moves = this.initialMoves;
-                this.initialState = JSON.stringify(this.bottles);
-                
-                document.getElementById('loading').style.display = 'none';
-                ui.update(); ui.render();
-            },
-
-            generateLevel(colorCount) {
-                let pool = [];
-                for(let i=1; i<=colorCount; i++) for(let j=0; j<4; j++) pool.push(i);
-                pool.sort(() => Math.random() - 0.5);
-                this.bottles = [];
-                for(let i=0; i<colorCount; i++) this.bottles.push(pool.slice(i*4, (i+1)*4));
-                this.bottles.push([], []);
-            },
-
-            solveBFS(initialState) {
-                const start = JSON.stringify(initialState);
-                const queue = [[start, 0]], visited = new Set([start]);
-                let count = 0;
-                while (queue.length > 0 && count < 3000) {
-                    count++;
-                    const [currStr, dist] = queue.shift();
-                    const curr = JSON.parse(currStr);
-                    if (this.isWon(curr)) return dist;
-                    for (let i = 0; i < curr.length; i++) {
-                        for (let j = 0; j < curr.length; j++) {
-                            if (i === j) continue;
-                            const next = this.simMove(curr, i, j);
-                            if (next) {
-                                const s = JSON.stringify(next);
-                                if (!visited.has(s)) { visited.add(s); queue.push([s, dist + 1]); }
-                            }
+            try {
+                const payment = await Pi.createPayment({
+                    amount: 1.0,
+                    memo: "تسجيل في قاعدة البيانات",
+                    metadata: { type: "user_registration" }
+                }, {
+                    // الربط مع Netlify Function: Approve
+                    onReadyForServerApproval: async (paymentId) => {
+                        updateStatus("جاري الموافقة من السيرفر...");
+                        const response = await fetch('/api/pi/approve', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ paymentId })
+                        });
+                        return response.json();
+                    },
+                    // الربط مع Netlify Function: Complete
+                    onReadyForServerCompletion: async (paymentId, txid) => {
+                        updateStatus("جاري إنهاء المعاملة...");
+                        const response = await fetch('/api/pi/complete', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ paymentId, txid })
+                        });
+                        
+                        if (response.ok) {
+                            // 3. الخطوة الأخيرة: الحفظ في Supabase
+                            await saveUserToDatabase(txid);
+                            updateStatus("تم الدفع والحفظ بنجاح! ✅", "#22c55e");
                         }
-                    }
-                }
-                return 0;
-            },
-
-            simMove(state, from, to) {
-                const ns = state.map(b => [...b]);
-                const b1 = ns[from], b2 = ns[to];
-                if (b1.length === 0) return null;
-                const c = b1[b1.length - 1];
-                if (b2.length < 4 && (b2.length === 0 || b2[b2.length - 1] === c)) {
-                    while (b1.length > 0 && b1[b1.length - 1] === c && b2.length < 4) b2.push(b1.pop());
-                    return ns;
-                }
-                return null;
-            },
-
-            isWon(state) { return state.every(b => b.length === 0 || (b.length === 4 && b.every(c => c === b[0]))); },
-
-            handleSelect(i) {
-                if(this.moves <= 0) { ui.toggleGameOver(true); return; }
-                if(this.selected === null) {
-                    if(this.bottles[i].length > 0) this.selected = i;
-                } else {
-                    if(this.selected !== i) this.applyMove(this.selected, i);
-                    this.selected = null;
-                }
-                ui.render();
-            },
-
-            applyMove(from, to) {
-                const b1 = this.bottles[from], b2 = this.bottles[to];
-                if(b1.length === 0) return;
-                const c = b1[b1.length-1];
-                if(b2.length < 4 && (b2.length === 0 || b2[b2.length-1] === c)) {
-                    this.moves--;
-                    while(b1.length > 0 && b1[b1.length - 1] === c && b2.length < 4) b2.push(b1.pop());
-                    ui.update();
-                    if(this.isWon(this.bottles)) {
-                        this.level++;
-                        ui.showMsg("Victory!", `Level ${this.level-1} complete!`, "Next Level", () => this.initLevel());
-                    } else if(this.moves <= 0) setTimeout(() => ui.toggleGameOver(true), 400);
-                }
-            },
-
-            resetLevel() {
-                this.bottles = JSON.parse(this.initialState);
-                this.moves = this.initialMoves;
-                this.selected = null;
-                ui.toggleGameOver(false); ui.update(); ui.render();
-            }
-        };
-
-        const piPayment = {
-            async buyMoves(count, amount) {
-                try {
-                    await Pi.createPayment({ amount, memo: `Get ${count} moves`, metadata: { moves: count } }, {
-                        onReadyForServerApproval: (id) => fetch('/api/pi/approve', { method: 'POST', body: JSON.stringify({ paymentId: id }) }),
-                        onReadyForServerCompletion: async (id, txid) => {
-                            await fetch('/api/pi/complete', { method: 'POST', body: JSON.stringify({ paymentId: id, txid: txid }) });
-                            game.moves += count; ui.update(); ui.toggleGameOver(false); ui.toggleShop(false);
-                        },
-                        onCancel: () => {}, onError: () => alert("Payment Error")
-                    });
-                } catch (e) { alert("Action requires Pi Browser"); }
-            }
-        };
-
-        const ui = {
-            update() {
-                document.getElementById('lvlDisplay').innerText = game.level;
-                const mDisp = document.getElementById('movesDisplay');
-                mDisp.innerText = game.moves;
-                mDisp.className = game.moves <= 3 ? 'stat-value moves-critical' : 'stat-value';
-            },
-            render() {
-                const grid = document.getElementById('mainGrid'); grid.innerHTML = '';
-                const cols = game.bottles.length > 6 ? 4 : 3;
-                grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-                game.bottles.forEach((b, i) => {
-                    const div = document.createElement('div');
-                    div.className = `bottle ${game.selected === i ? 'selected' : ''}`;
-                    div.onclick = () => game.handleSelect(i);
-                    b.forEach(c => {
-                        const l = document.createElement('div'); l.className = `liquid c-${c}`;
-                        div.appendChild(l);
-                    });
-                    grid.appendChild(div);
+                    },
+                    onCancel: () => { updateStatus("تم الإلغاء"); btn.disabled = false; },
+                    onError: (err) => { updateStatus("خطأ في العملية"); btn.disabled = false; }
                 });
-            },
-            toggleGameOver(s) { document.getElementById('gameOverModal').style.display = s ? 'flex' : 'none'; },
-            toggleShop(s) { document.getElementById('shopModal').style.display = s ? 'flex' : 'none'; },
-            showMsg(t, b, btn, act) {
-                document.getElementById('msgTitle').innerText = t; document.getElementById('msgBody').innerText = b;
-                const mBtn = document.getElementById('msgBtn'); mBtn.innerText = btn;
-                mBtn.onclick = () => { document.getElementById('msgModal').style.display='none'; act(); };
-                document.getElementById('msgModal').style.display = 'flex';
+            } catch (err) {
+                updateStatus("حدث خطأ غير متوقع");
+                btn.disabled = false;
             }
-        };
+        }
 
-        // بدء اللعبة مباشرة
-        game.start();
+        async function saveUserToDatabase(txid) {
+            const { error } = await _supabase
+                .from('payments')
+                .insert([{ 
+                    username: currentUser.username, 
+                    amount: 1.0, 
+                    txid: txid 
+                }]);
+            if (error) console.error("Database Save Error:", error);
+        }
+
+        function onIncompletePayment(payment) {
+            // يمكن استدعاء /api/pi/complete هنا إذا وجدت دفع معلق
+        }
+
+        function updateStatus(msg, color = "#f59e0b") {
+            const s = document.getElementById('status');
+            s.innerText = msg; s.style.color = color;
+        }
+
+        onStart();
     </script>
 </body>
 </html>
