@@ -15,44 +15,49 @@
         
         /* Header */
         header { background: var(--card); padding: 15px 5%; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
-        .logo { font-size: 1.6rem; font-weight: bold; color: var(--text); text-decoration: none; display: flex; align-items: center; gap: 10px; }
-        .lang-btn { background: linear-gradient(135deg, var(--p), var(--s)); color: white; border: none; padding: 10px 20px; border-radius: 25px; cursor: pointer; font-weight: bold; }
+        .logo { font-size: 1.4rem; font-weight: bold; color: var(--text); text-decoration: none; }
+        .nav-btns { display: flex; gap: 10px; align-items: center; }
+        .btn-sm { padding: 8px 15px; border-radius: 20px; cursor: pointer; font-weight: bold; border: none; font-size: 0.85rem; }
+        .lang-btn { background: #334155; color: white; }
+        .orders-btn { background: var(--accent); color: #000; }
 
         /* Main Content */
-        .container { padding: 30px 5%; max-width: 1300px; margin: auto; }
-        .section-title { margin-bottom: 30px; font-size: 1.8rem; border-right: 5px solid var(--p); padding-right: 15px; }
+        .container { padding: 20px 5%; max-width: 1300px; margin: auto; }
+        .section-title { margin-bottom: 25px; font-size: 1.5rem; border-right: 5px solid var(--p); padding-right: 15px; }
         [dir="ltr"] .section-title { border-right: none; border-left: 5px solid var(--p); padding-left: 15px; }
 
-        /* Product Grid - Responsive */
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; }
-        @media (min-width: 768px) { .grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); } }
+        /* Product Grid */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
+        @media (min-width: 768px) { .grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); } }
         
-        .card { background: var(--card); border-radius: 25px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; height: 100%; position: relative; }
-        .card:hover { transform: translateY(-8px); border-color: var(--p); box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
-        
-        /* Image Display Fix (No Cropping) */
-        .img-container { width: 100%; height: 220px; background: #fff; display: flex; align-items: center; justify-content: center; padding: 15px; }
+        .card { background: var(--card); border-radius: 20px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; height: 100%; }
+        .img-container { width: 100%; height: 180px; background: #fff; display: flex; align-items: center; justify-content: center; padding: 10px; }
         .card img { max-width: 100%; max-height: 100%; object-fit: contain; }
-        
-        .info { padding: 20px; text-align: center; flex-grow: 1; }
-        .info h3 { margin: 0 0 10px; font-size: 1.2rem; }
-        .price { color: var(--accent); font-weight: bold; font-size: 1.3rem; margin-bottom: 15px; display: block; }
-        .buy-btn { background: var(--p); color: white; border: none; width: 100%; padding: 14px; cursor: pointer; font-weight: bold; font-size: 1rem; border-radius: 0 0 20px 20px; }
-        .buy-btn:hover { background: var(--s); }
+        .info { padding: 15px; text-align: center; flex-grow: 1; }
+        .price { color: var(--accent); font-weight: bold; display: block; margin-top: 5px; }
+        .buy-btn { background: var(--p); color: white; border: none; width: 100%; padding: 12px; cursor: pointer; font-weight: bold; border-radius: 0 0 20px 20px; }
 
-        /* Modal */
+        /* Modals */
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; z-index: 2000; padding: 20px; backdrop-filter: blur(5px); }
-        .modal-content { background: var(--card); padding: 30px; border-radius: 30px; width: 100%; max-width: 450px; border: 1px solid rgba(255,255,255,0.1); }
-        input { width: 100%; padding: 14px; margin: 10px 0; border-radius: 12px; border: 1px solid #334155; background: #0f172a; color: white; text-align: inherit; }
-        .actions { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
-        #status-msg { text-align: center; margin-top: 15px; font-size: 0.9rem; min-height: 1.2rem; }
+        .modal-content { background: var(--card); padding: 25px; border-radius: 25px; width: 100%; max-width: 450px; position: relative; max-height: 90vh; overflow-y: auto; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: white; text-align: inherit; }
+        
+        /* Orders List Styling */
+        .order-item { background: #0f172a; padding: 15px; border-radius: 15px; margin-bottom: 10px; border-right: 4px solid var(--accent); }
+        .order-item h4 { margin: 0 0 5px 0; color: white; }
+        .status-tag { background: var(--p); color: white; padding: 2px 8px; border-radius: 5px; font-size: 0.8rem; }
+        .close-modal { position: absolute; top: 15px; left: 15px; cursor: pointer; font-size: 1.5rem; }
+        [dir="ltr"] .close-modal { left: auto; right: 15px; }
     </style>
 </head>
 <body>
 
     <header>
-        <a href="index.html" class="logo">🛒 Shopping</a>
-        <button class="lang-btn" id="langSwitcher" onclick="toggleLanguage()">English</button>
+        <a href="#" class="logo">🛒 Shopping</a>
+        <div class="nav-btns">
+            <button class="btn-sm orders-btn" id="ui-my-orders" onclick="showMyOrders()">طلباتي</button>
+            <button class="btn-sm lang-btn" id="langSwitcher" onclick="toggleLanguage()">English</button>
+        </div>
     </header>
 
     <div class="container">
@@ -66,16 +71,23 @@
             <input type="text" id="custName" placeholder="الاسم الكامل">
             <input type="text" id="custPhone" placeholder="رقم الهاتف">
             <input type="text" id="custAddr" placeholder="العنوان بالتفصيل">
-            <div class="actions">
-                <button class="buy-btn" style="border-radius:12px" id="ui-pay-btn" onclick="initiatePiPayment()">تأكيد ودفع</button>
-                <button class="buy-btn" style="background:#475569; border-radius:12px" id="ui-cancel-btn" onclick="closeModal()">إلغاء</button>
-            </div>
-            <div id="status-msg"></div>
+            <button class="buy-btn" style="border-radius:12px; margin-top:10px;" id="ui-pay-btn" onclick="initiatePiPayment()">تأكيد ودفع</button>
+            <button class="buy-btn" style="background:#475569; border-radius:12px; margin-top:10px" onclick="closeModal('buyModal')">إلغاء</button>
+            <div id="status-msg" style="text-align:center; margin-top:10px;"></div>
+        </div>
+    </div>
+
+    <div id="ordersModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('ordersModal')">&times;</span>
+            <h3 id="ui-orders-head" style="text-align:center; color:var(--accent);">قائمة طلباتي</h3>
+            <div id="myOrdersList" style="margin-top:20px;">
+                </div>
         </div>
     </div>
 
     <script>
-        // 1. إعدادات سوبابيس (استبدل القيم ببياناتك)
+        // 1. إعدادات سوبابيس
         const SB_URL = 'https://xncapmzlwuisupkjlftb.supabase.co';
         const SB_KEY = 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS'; 
         const _supabase = supabase.createClient(SB_URL, SB_KEY);
@@ -86,21 +98,21 @@
             ar: {
                 title: "أحدث المنتجات", buy: "شراء الآن", head: "بيانات التوصيل",
                 name: "الاسم الكامل", phone: "رقم الهاتف", addr: "العنوان بالتفصيل",
-                pay: "تأكيد والدفع بـ Pi", cancel: "إلغاء", langBtn: "English",
-                loading: "جاري التحميل...", success: "تم بنجاح! يتم توجيهك...", error: "فشل في الدفع"
+                pay: "تأكيد والدفع بـ Pi", myOrders: "طلباتي", ordersHead: "قائمة طلباتي",
+                noOrders: "لا توجد طلبات سابقة", langBtn: "English", loading: "جاري التحميل..."
             },
             en: {
                 title: "Latest Products", buy: "Buy Now", head: "Shipping Details",
                 name: "Full Name", phone: "Phone Number", addr: "Detailed Address",
-                pay: "Confirm & Pay", cancel: "Cancel", langBtn: "عربي",
-                loading: "Loading...", success: "Success! Redirecting...", error: "Payment failed"
+                pay: "Confirm & Pay", myOrders: "My Orders", ordersHead: "My Order List",
+                noOrders: "No orders found", langBtn: "عربي", loading: "Loading..."
             }
         };
 
         // 3. Pi SDK
         const Pi = window.Pi;
         Pi.init({ version: "2.0", sandbox: false });
-        let userAccount = null;
+        let userAccount = { username: "Guest" }; 
         let activeProduct = null;
 
         async function init() {
@@ -123,9 +135,10 @@
             const t = content[currentLang];
             document.getElementById('ui-title').innerText = t.title;
             document.getElementById('langSwitcher').innerText = t.langBtn;
+            document.getElementById('ui-my-orders').innerText = t.myOrders;
             document.getElementById('ui-modal-head').innerText = t.head;
             document.getElementById('ui-pay-btn').innerText = t.pay;
-            document.getElementById('ui-cancel-btn').innerText = t.cancel;
+            document.getElementById('ui-orders-head').innerText = t.ordersHead;
             document.getElementById('custName').placeholder = t.name;
             document.getElementById('custPhone').placeholder = t.phone;
             document.getElementById('custAddr').placeholder = t.addr;
@@ -141,23 +154,58 @@
                         <h3>${p.name}</h3>
                         <span class="price">${p.price} Pi</span>
                     </div>
-                    <button class="buy-btn" onclick='openModal(${JSON.stringify(p)})'>${content[currentLang].buy}</button>
+                    <button class="buy-btn" onclick='openModal("buyModal", ${JSON.stringify(p)})'>${content[currentLang].buy}</button>
                 </div>
             `).join('');
         }
 
-        function openModal(p) { activeProduct = p; document.getElementById('buyModal').style.display='flex'; }
-        function closeModal() { document.getElementById('buyModal').style.display='none'; }
+        // --- ميزة عرض الطلبات ---
+        async function showMyOrders() {
+            const listDiv = document.getElementById('myOrdersList');
+            listDiv.innerHTML = `<p style="text-align:center">${content[currentLang].loading}</p>`;
+            document.getElementById('ordersModal').style.display = 'flex';
+
+            const { data, error } = await _supabase
+                .from('orders')
+                .select('*')
+                .eq('pi_user', userAccount.username)
+                .order('created_at', { ascending: false });
+
+            if (!data || data.length === 0) {
+                listDiv.innerHTML = `<p style="text-align:center">${content[currentLang].noOrders}</p>`;
+                return;
+            }
+
+            listDiv.innerHTML = data.map(o => `
+                <div class="order-item">
+                    <h4>${o.product_name}</h4>
+                    <div style="font-size:0.85rem; color:#cbd5e1;">
+                        <span>الحالة: <b class="status-tag">${o.status || 'قيد المراجعة'}</b></span><br>
+                        <span>التاريخ: ${new Date(o.created_at).toLocaleDateString(currentLang === 'ar' ? 'ar-EG' : 'en-US')}</span><br>
+                        <small style="color:var(--accent)">TXID: ${o.txid.substring(0,12)}...</small>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openModal(id, p = null) { 
+            if(p) activeProduct = p;
+            document.getElementById(id).style.display='flex'; 
+        }
+        
+        function closeModal(id) { 
+            document.getElementById(id).style.display='none'; 
+            if(id === 'buyModal') document.getElementById('status-msg').innerText = "";
+        }
 
         async function initiatePiPayment() {
             const name = document.getElementById('custName').value;
             const phone = document.getElementById('custPhone').value;
             const addr = document.getElementById('custAddr').value;
-            if(!name || !phone || !addr) return alert("Fill all fields");
+            if(!name || !phone || !addr) return alert(currentLang === 'ar' ? "أكمل البيانات" : "Complete data");
 
             const btn = document.getElementById('ui-pay-btn');
             btn.disabled = true;
-            setStatus("Wait...", "orange");
 
             try {
                 await Pi.createPayment({
@@ -176,19 +224,19 @@
                             await _supabase.from('orders').insert([{
                                 pi_user: userAccount.username, product_name: activeProduct.name,
                                 amount: activeProduct.price, customer_name: name,
-                                customer_phone: phone, address: addr, txid: txid, status: "Pending"
+                                customer_phone: phone, address: addr, txid: txid, status: "قيد المراجعة"
                             }]);
-                            setStatus(content[currentLang].success, "#22c55e");
-                            setTimeout(() => { window.location.href = `update.html?txid=${txid}`; }, 2000);
+                            alert(currentLang === 'ar' ? "تم الشراء بنجاح!" : "Purchase successful!");
+                            closeModal('buyModal');
+                            showMyOrders(); // تحديث القائمة تلقائياً
                         }
                     },
-                    onCancel: () => { setStatus("Cancelled", "gray"); btn.disabled = false; },
-                    onError: () => { setStatus("Error", "red"); btn.disabled = false; }
+                    onCancel: () => { btn.disabled = false; },
+                    onError: () => { btn.disabled = false; }
                 });
-            } catch (e) { setStatus("Error", "red"); btn.disabled = false; }
+            } catch (e) { btn.disabled = false; }
         }
 
-        function setStatus(m, c) { const s = document.getElementById('status-msg'); s.innerText = m; s.style.color = c; }
         init();
     </script>
 </body>
