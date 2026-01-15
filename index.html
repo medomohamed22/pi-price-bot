@@ -3,136 +3,280 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>منصة الخير | تبرع بـ Pi</title>
-    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <title>سوبر طلبات | النسخة النهائية المتكاملة</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
     
     <style>
-        :root { --primary: #6d28d9; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --accent: #fbbf24; }
-        * { box-sizing: border-box; font-family: 'Cairo', sans-serif; transition: all 0.3s ease; }
-        body { background: var(--bg); color: var(--text); margin: 0; padding: 0; }
-        header { background: var(--card); padding: 30px 5%; text-align: center; border-bottom: 3px solid var(--primary); }
-        .container { padding: 40px 5%; max-width: 1200px; margin: auto; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; }
-        .card { background: var(--card); border-radius: 25px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; }
-        .card-icon { font-size: 4rem; text-align: center; padding: 20px; background: rgba(255,255,255,0.03); }
-        .info { padding: 20px; flex-grow: 1; }
-        .progress-container { background: #334155; height: 12px; border-radius: 10px; margin: 15px 0; overflow: hidden; }
-        .progress-fill { background: linear-gradient(90deg, var(--primary), #a855f7); height: 100%; transition: width 1s; }
-        .donate-btn { background: var(--primary); color: white; border: none; width: 100%; padding: 15px; cursor: pointer; font-weight: bold; border-radius: 0 0 25px 25px; }
-        #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 15px 30px; border-radius: 30px; display: none; z-index: 2000; }
+        :root {
+            --primary: #6c5ce7;
+            --dark: #4834d4;
+            --bg: #f4f4fb;
+            --white: #ffffff;
+            --gray: #b2bec3;
+        }
+
+        * { box-sizing: border-box; font-family: 'Cairo', sans-serif; transition: 0.3s; }
+        body { background: var(--bg); margin: 0; padding: 0; display: flex; justify-content: center; }
+
+        .app-shell {
+            width: 100%;
+            max-width: 500px;
+            background: var(--white);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 30px rgba(0,0,0,0.1);
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--dark));
+            color: white;
+            padding: 35px 20px;
+            text-align: center;
+            border-bottom-left-radius: 40px;
+            border-bottom-right-radius: 40px;
+        }
+
+        /* نظام التبويبات */
+        .tabs {
+            display: flex;
+            background: #eee;
+            margin: -25px 40px 15px;
+            border-radius: 50px;
+            padding: 5px;
+            z-index: 10;
+        }
+        .tab-btn {
+            flex: 1; border: none; padding: 12px; border-radius: 50px;
+            cursor: pointer; font-weight: bold; background: none; color: #666;
+        }
+        .tab-btn.active { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(108, 92, 231, 0.3); }
+
+        .container { padding: 20px; flex: 1; }
+        .card { background: white; border: 1px solid #f0f0f0; border-radius: 25px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
+
+        /* شريط التتبع */
+        .stepper {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+            position: relative;
+        }
+        .step {
+            flex: 1;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--gray);
+            position: relative;
+            z-index: 2;
+        }
+        .step.active { color: var(--primary); font-weight: bold; }
+        .dot {
+            width: 15px; height: 15px; background: #dfe6e9; border-radius: 50%;
+            margin: 0 auto 8px; border: 3px solid #fff; box-shadow: 0 0 0 2px #dfe6e9;
+        }
+        .step.active .dot { background: var(--primary); box-shadow: 0 0 0 2px var(--primary); }
+
+        /* الشات المباشر */
+        .chat-wrap {
+            border: 2px solid #f1f2f6;
+            border-radius: 20px;
+            height: 300px;
+            display: flex;
+            flex-direction: column;
+            background: #fcfcfc;
+        }
+        .chat-msgs { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .m { padding: 10px 15px; border-radius: 18px; max-width: 80%; font-size: 0.9rem; line-height: 1.4; }
+        .m.c { background: var(--primary); color: white; align-self: flex-start; border-bottom-right-radius: 4px; } /* العميل */
+        .m.d { background: #eee; color: #333; align-self: flex-end; border-bottom-left-radius: 4px; } /* المندوب */
+
+        .chat-in-box { display: flex; padding: 10px; gap: 8px; border-top: 1px solid #eee; }
+        .chat-in-box input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 12px; outline: none; }
+        .send-btn { background: var(--primary); color: white; border: none; padding: 0 20px; border-radius: 12px; cursor: pointer; }
+
+        /* أزرار وحقول */
+        input, textarea { width: 100%; padding: 15px; border-radius: 15px; border: 2px solid #f1f2f6; margin-top: 10px; outline: none; }
+        .btn { width: 100%; padding: 16px; border: none; border-radius: 18px; font-weight: 800; cursor: pointer; margin-top: 10px; }
+        .btn-p { background: var(--primary); color: white; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
+<div class="app-shell">
     <header>
-        <h1>💎 منصة التبرع الرقمي</h1>
-        <p>ساهم باستخدام عملة Pi لدعم المحتاجين</p>
+        <h2 style="margin:0">سوبر طلبات 🚀</h2>
+        <p style="margin:5px 0 0; opacity:0.8; font-size:0.8rem;">تتبع لحظي وشات مباشر</p>
     </header>
 
-    <div class="container">
-        <div class="grid" id="campaignsGrid">
-            <p style="text-align:center; width:100%">جاري تحميل الحملات...</p>
-        </div>
+    <div class="tabs">
+        <button class="tab-btn active" id="u-tab" onclick="switchPage('user')">أطلب الآن</button>
+        <button class="tab-btn" id="d-tab" onclick="switchPage('delivery')">أنا مندوب</button>
     </div>
 
-    <div id="toast"></div>
+    <div class="container">
+        <div id="page-user">
+            <div class="card" id="user-form">
+                <label>📍 موقع التوصيل</label>
+                <input type="text" id="u-addr" placeholder="العنوان بالتفصيل...">
+                <label style="display:block; margin-top:15px;">🛒 ماذا تريد أن نشتري؟</label>
+                <textarea id="u-items" rows="3" placeholder="اكتب طلباتك هنا..."></textarea>
+                <button class="btn btn-p" onclick="placeOrder()">إرسال الطلب للمناديب</button>
+            </div>
 
-    <script>
-        // 1. إعداد Supabase
-        const SB_URL = 'https://xncapmzlwuisupkjlftb.supabase.co';
-        const SB_KEY = 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS'; 
-        const _supabase = supabase.createClient(SB_URL, SB_KEY);
-
-        // 2. إعداد Pi SDK
-        const Pi = window.Pi;
-        Pi.init({ version: "2.0", sandbox: false });
-
-        // 3. جلب الحملات من Supabase
-        async function loadCampaigns() {
-            const { data, error } = await _supabase.from('campaigns').select('*');
-            if (error) {
-                console.error(error);
-                return;
-            }
-            const grid = document.getElementById('campaignsGrid');
-            grid.innerHTML = data.map(c => {
-                const percent = Math.min((c.current / c.target) * 100, 100);
-                return `
-                    <div class="card">
-                        <div class="card-icon">${c.icon || '❤️'}</div>
-                        <div class="info">
-                            <h3>${c.title}</h3>
-                            <p style="color:#94a3b8; font-size:0.9rem;">${c.desc}</p>
-                            <div class="progress-container"><div class="progress-fill" style="width:${percent}%"></div></div>
-                            <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
-                                <span>${c.current} Pi</span>
-                                <span>الهدف: ${c.target} Pi</span>
-                            </div>
+            <div class="card hidden" id="user-tracking">
+                <div class="stepper">
+                    <div id="us-1" class="step"><div class="dot"></div>إرسال</div>
+                    <div id="us-2" class="step"><div class="dot"></div>تجهيز</div>
+                    <div id="us-3" class="step"><div class="dot"></div>توصيل</div>
+                </div>
+                
+                <div id="u-chat-area" class="hidden">
+                    <h5 style="margin:0 0 10px">💬 دردشة مباشرة</h5>
+                    <div class="chat-wrap">
+                        <div id="u-msgs" class="chat-msgs"></div>
+                        <div class="chat-in-box">
+                            <input type="text" id="u-input" placeholder="اكتب رسالة...">
+                            <button class="send-btn" onclick="sendMessage('c')">إرسال</button>
                         </div>
-                        <button class="donate-btn" onclick="startDonation('${c.id}', '${c.title}', ${c.amount})">
-                            تبرع بـ ${c.amount} Pi
-                        </button>
                     </div>
-                `;
-            }).join('');
-        }
+                </div>
+            </div>
+        </div>
 
-        // 4. منطق الدفع المربوط بالـ Back-end (Netlify Functions)
-        async function startDonation(id, title, amount) {
-            showToast("جاري المعالجة...", "#6d28d9");
+        <div id="page-delivery" class="hidden">
+            <div id="delivery-orders-list">
+                <p style="text-align:center; color:#999; margin-top:50px;">بانتظار طلبات جديدة في منطقتك...</p>
+            </div>
+
+            <div class="card hidden" id="delivery-active-panel">
+                <div class="stepper">
+                    <div id="ds-1" class="step"><div class="dot"></div>إرسال</div>
+                    <div id="ds-2" class="step"><div class="dot"></div>تجهيز</div>
+                    <div id="ds-3" class="step"><div class="dot"></div>توصيل</div>
+                </div>
+                <button class="btn btn-p" id="status-btn" onclick="updateStatus()">تحديث الحالة: في الطريق</button>
+                
+                <div class="chat-wrap" style="margin-top:15px;">
+                    <div id="d-msgs" class="chat-msgs"></div>
+                    <div class="chat-in-box">
+                        <input type="text" id="d-input" placeholder="رسالة للعميل...">
+                        <button class="send-btn" onclick="sendMessage('d')">إرسال</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // تهيئة Supabase
+    const SB_URL = 'https://xncapmzlwuisupkjlftb.supabase.co';
+    const SB_KEY = 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS';
+    const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
+
+    let activeOrderId = null;
+    let chatLog = [];
+
+    // --- العميل: تقديم طلب ---
+    async function placeOrder() {
+        const addr = document.getElementById('u-addr').value;
+        const items = document.getElementById('u-items').value;
+        if(!addr || !items) return alert("اكمل البيانات أولاً");
+
+        const { data } = await supabaseClient.from('orders').insert([{
+            address: addr, items: items, status: 1, chat_messages: []
+        }]).select();
+
+        if (data) {
+            activeOrderId = data[0].id;
+            document.getElementById('user-form').classList.add('hidden');
+            document.getElementById('user-tracking').classList.remove('hidden');
+            document.getElementById('us-1').classList.add('active');
+            startRealtimeSync();
+        }
+    }
+
+    // --- المندوب: قبول الطلب ---
+    async function loadAvailableOrders() {
+        const { data } = await supabaseClient.from('orders').select('*').eq('status', 1);
+        const list = document.getElementById('delivery-orders-list');
+        list.innerHTML = data.length ? '' : '<p style="text-align:center; margin-top:50px;">لا توجد طلبات حالياً</p>';
+        data.forEach(o => {
+            list.innerHTML += `<div class="card">
+                <p>📦 <strong>الطلب:</strong> ${o.items}</p>
+                <button class="btn btn-p" onclick="acceptByDelivery(${o.id})">قبول وفتح الشات</button>
+            </div>`;
+        });
+    }
+
+    async function acceptByDelivery(id) {
+        activeOrderId = id;
+        await supabaseClient.from('orders').update({ status: 2 }).eq('id', id);
+        document.getElementById('delivery-orders-list').classList.add('hidden');
+        document.getElementById('delivery-active-panel').classList.remove('hidden');
+        startRealtimeSync();
+    }
+
+    async function updateStatus() {
+        const { data } = await supabaseClient.from('orders').select('status').eq('id', activeOrderId).single();
+        const nextStatus = data.status + 1;
+        await supabaseClient.from('orders').update({ status: nextStatus }).eq('id', activeOrderId);
+        if(nextStatus === 4) { alert("تم التوصيل! شكراً لك."); location.reload(); }
+    }
+
+    // --- الربط اللحظي المتكامل ---
+    function startRealtimeSync() {
+        supabaseClient.channel('sync_channel').on('postgres_changes', 
+        { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${activeOrderId}` }, 
+        (payload) => {
+            const status = payload.new.status;
+            chatLog = payload.new.chat_messages || [];
             
-            try {
-                const payment = await Pi.createPayment({
-                    amount: amount,
-                    memo: `تبرع لحملة: ${title}`,
-                    metadata: { campaignId: id }
-                }, {
-                    onReadyForServerApproval: async (paymentId) => {
-                        // طلب الموافقة من الـ Function الخاص بك
-                        const response = await fetch('/api/pi/approve', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ paymentId })
-                        });
-                        return response.ok;
-                    },
-                    onReadyForServerCompletion: async (paymentId, txid) => {
-                        // طلب إكمال الدفع من الـ Function الخاص بك
-                        const response = await fetch('/api/pi/complete', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ paymentId, txid })
-                        });
-
-                        if (response.ok) {
-                            // تحديث Supabase بعد نجاح الدفع
-                            await updateCampaignInSupabase(id, amount);
-                            showToast("تم التبرع بنجاح! شكراً لك.", "#10b981");
-                            setTimeout(() => location.reload(), 2000);
-                        }
-                    },
-                    onCancel: () => showToast("تم إلغاء العملية", "#f59e0b"),
-                    onError: (err) => showToast("خطأ في الدفع", "#ef4444")
-                });
-            } catch (e) {
-                console.error(e);
+            // تحديث شريط التتبع للعميل والمندوب
+            for(let i=1; i<=3; i++) {
+                if(document.getElementById(`us-${i}`)) document.getElementById(`us-${i}`).classList.toggle('active', i <= status);
+                if(document.getElementById(`ds-${i}`)) document.getElementById(`ds-${i}`).classList.toggle('active', i <= status);
             }
-        }
 
-        async function updateCampaignInSupabase(id, amount) {
-            // ملاحظة: يفضل استخدام RPC (Function في Supabase) لزيادة القيمة بشكل آمن
-            await _supabase.rpc('increment_campaign', { row_id: id, inc_amount: amount });
-        }
+            // إظهار الشات للعميل بمجرد قبول المندوب (حالة 2)
+            if(status >= 2) document.getElementById('u-chat-area').classList.remove('hidden');
+            
+            // تحديث نص زر المندوب
+            const btn = document.getElementById('status-btn');
+            if(status === 2) btn.innerText = "تحديث الحالة: في الطريق";
+            if(status === 3) btn.innerText = "تحديث الحالة: تم التسليم";
 
-        function showToast(msg, color) {
-            const t = document.getElementById('toast');
-            t.innerText = msg; t.style.background = color; t.style.display = 'block';
-            setTimeout(() => t.style.display = 'none', 3000);
-        }
+            renderMessages();
+        }).subscribe();
+    }
 
-        window.onload = loadCampaigns;
-    </script>
+    async function sendMessage(role) {
+        const inputId = role === 'c' ? 'u-input' : 'd-input';
+        const msgText = document.getElementById(inputId).value;
+        if(!msgText) return;
+
+        chatLog.push({ role: role, text: msgText });
+        await supabaseClient.from('orders').update({ chat_messages: chatLog }).eq('id', activeOrderId);
+        document.getElementById(inputId).value = '';
+    }
+
+    function renderMessages() {
+        const html = chatLog.map(m => `<div class="m ${m.role}">${m.text}</div>`).join('');
+        document.getElementById('u-msgs').innerHTML = html;
+        document.getElementById('d-msgs').innerHTML = html;
+        document.querySelectorAll('.chat-msgs').forEach(c => c.scrollTop = c.scrollHeight);
+    }
+
+    function switchPage(p) {
+        document.getElementById('page-user').classList.toggle('hidden', p !== 'user');
+        document.getElementById('page-delivery').classList.toggle('hidden', p !== 'delivery');
+        document.getElementById('u-tab').classList.toggle('active', p === 'user');
+        document.getElementById('d-tab').classList.toggle('active', p === 'delivery');
+        if(p === 'delivery' && !activeOrderId) loadAvailableOrders();
+    }
+</script>
 </body>
 </html>
