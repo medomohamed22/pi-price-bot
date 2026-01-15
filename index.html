@@ -22,7 +22,6 @@
         .progress-fill { background: linear-gradient(90deg, var(--primary), #a855f7); height: 100%; transition: width 1s; }
         .donate-btn { background: var(--primary); color: white; border: none; width: 100%; padding: 15px; cursor: pointer; font-weight: bold; border-radius: 0 0 25px 25px; }
         #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 15px 30px; border-radius: 30px; display: none; z-index: 2000; }
-        .loading-text { text-align: center; font-size: 1.2rem; color: var(--accent); width: 100%; }
     </style>
 </head>
 <body>
@@ -34,80 +33,105 @@
 
     <div class="container">
         <div class="grid" id="campaignsGrid">
-            <p class="loading-text">جاري تحميل الحملات...</p>
+            <p style="text-align:center; width:100%">جاري تحميل الحملات...</p>
         </div>
     </div>
 
     <div id="toast"></div>
 
     <script>
-        // إعدادات الربط - تأكد من مطابقة الـ Key و الـ URL
+        // 1. إعداد Supabase
         const SB_URL = 'https://xncapmzlwuisupkjlftb.supabase.co';
         const SB_KEY = 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS'; 
         const _supabase = supabase.createClient(SB_URL, SB_KEY);
 
-        // جلب الحملات من قاعدة البيانات
+        // 2. إعداد Pi SDK
+        const Pi = window.Pi;
+        Pi.init({ version: "2.0", sandbox: false });
+
+        // 3. جلب الحملات من Supabase
         async function loadCampaigns() {
-            try {
-                const { data, error } = await _supabase
-                    .from('campaigns')
-                    .select('*');
-
-                if (error) throw error;
-
-                const grid = document.getElementById('campaignsGrid');
-                
-                if (!data || data.length === 0) {
-                    grid.innerHTML = '<p class="loading-text">لا توجد حملات نشطة حالياً.</p>';
-                    return;
-                }
-
-                grid.innerHTML = data.map(c => {
-                    const percent = Math.min((c.current / c.target) * 100, 100);
-                    return `
-                        <div class="card">
-                            <div class="card-icon">${c.icon || '📝'}</div>
-                            <div class="info">
-                                <h3 style="margin:0">${c.title}</h3>
-                                <p style="color:#94a3b8; font-size:0.9rem; height:40px; overflow:hidden;">${c.desc}</p>
-                                <div class="progress-container">
-                                    <div class="progress-fill" style="width: ${percent}%"></div>
-                                </div>
-                                <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
-                                    <span>${c.current} Pi</span>
-                                    <span>الهدف: ${c.target} Pi</span>
-                                </div>
+            const { data, error } = await _supabase.from('campaigns').select('*');
+            if (error) {
+                console.error(error);
+                return;
+            }
+            const grid = document.getElementById('campaignsGrid');
+            grid.innerHTML = data.map(c => {
+                const percent = Math.min((c.current / c.target) * 100, 100);
+                return `
+                    <div class="card">
+                        <div class="card-icon">${c.icon || '❤️'}</div>
+                        <div class="info">
+                            <h3>${c.title}</h3>
+                            <p style="color:#94a3b8; font-size:0.9rem;">${c.desc}</p>
+                            <div class="progress-container"><div class="progress-fill" style="width:${percent}%"></div></div>
+                            <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
+                                <span>${c.current} Pi</span>
+                                <span>الهدف: ${c.target} Pi</span>
                             </div>
-                            <button class="donate-btn" onclick="handleDonate('${c.title}', ${c.amount}, '${c.id}')">
-                                تبرع الآن (${c.amount} Pi)
-                            </button>
                         </div>
-                    `;
-                }).join('');
+                        <button class="donate-btn" onclick="startDonation('${c.id}', '${c.title}', ${c.amount})">
+                            تبرع بـ ${c.amount} Pi
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
 
-            } catch (err) {
-                console.error("خطأ في جلب البيانات:", err);
-                document.getElementById('campaignsGrid').innerHTML = '<p class="loading-text" style="color:red">فشل تحميل البيانات. تأكد من سياسات RLS في Supabase.</p>';
+        // 4. منطق الدفع المربوط بالـ Back-end (Netlify Functions)
+        async function startDonation(id, title, amount) {
+            showToast("جاري المعالجة...", "#6d28d9");
+            
+            try {
+                const payment = await Pi.createPayment({
+                    amount: amount,
+                    memo: `تبرع لحملة: ${title}`,
+                    metadata: { campaignId: id }
+                }, {
+                    onReadyForServerApproval: async (paymentId) => {
+                        // طلب الموافقة من الـ Function الخاص بك
+                        const response = await fetch('/api/pi/approve', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ paymentId })
+                        });
+                        return response.ok;
+                    },
+                    onReadyForServerCompletion: async (paymentId, txid) => {
+                        // طلب إكمال الدفع من الـ Function الخاص بك
+                        const response = await fetch('/api/pi/complete', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ paymentId, txid })
+                        });
+
+                        if (response.ok) {
+                            // تحديث Supabase بعد نجاح الدفع
+                            await updateCampaignInSupabase(id, amount);
+                            showToast("تم التبرع بنجاح! شكراً لك.", "#10b981");
+                            setTimeout(() => location.reload(), 2000);
+                        }
+                    },
+                    onCancel: () => showToast("تم إلغاء العملية", "#f59e0b"),
+                    onError: (err) => showToast("خطأ في الدفع", "#ef4444")
+                });
+            } catch (e) {
+                console.error(e);
             }
         }
 
-        // إعداد Pi SDK
-        try {
-            window.Pi.init({ version: "2.0", sandbox: false });
-        } catch(e) { console.error("Pi SDK Error"); }
-
-        async function handleDonate(title, amount, id) {
-            showToast("جاري المعالجة...", "#6d28d9");
-            // ... (كود الدفع المذكور سابقاً) ...
+        async function updateCampaignInSupabase(id, amount) {
+            // ملاحظة: يفضل استخدام RPC (Function في Supabase) لزيادة القيمة بشكل آمن
+            await _supabase.rpc('increment_campaign', { row_id: id, inc_amount: amount });
         }
 
         function showToast(msg, color) {
             const t = document.getElementById('toast');
             t.innerText = msg; t.style.background = color; t.style.display = 'block';
-            setTimeout(() => t.style.display = 'none', 4000);
+            setTimeout(() => t.style.display = 'none', 3000);
         }
 
-        // تشغيل الجلب فور تحميل الصفحة
         window.onload = loadCampaigns;
     </script>
 </body>
