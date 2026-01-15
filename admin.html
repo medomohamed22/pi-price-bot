@@ -2,127 +2,212 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>لوحة التحكم - Shopping Admin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارة التسوق - Shopping Admin</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Cairo', sans-serif; background: #f1f5f9; margin: 0; padding: 20px; color: #1e293b; }
-        .admin-container { max-width: 1100px; margin: auto; }
-        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 30px; }
-        h2 { border-bottom: 2px solid #6d28d9; padding-bottom: 10px; color: #6d28d9; }
+        :root { --p: #6d28d9; --s: #4f46e5; --bg: #f1f5f9; --card: #ffffff; --text: #1e293b; }
+        * { box-sizing: border-box; font-family: 'Cairo', sans-serif; transition: 0.3s; }
+        body { background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
         
-        /* Form Styling */
-        .form-group { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        input { padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; }
-        .btn-save { background: #6d28d9; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-
-        /* Tables Styling */
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
+        /* شاشة الدخول */
+        #loginBox { background: var(--card); padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; max-width: 400px; margin: 100px auto; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #cbd5e1; border-radius: 8px; }
+        
+        /* محتوى الإدارة */
+        #adminContent { display: none; max-width: 1200px; margin: auto; }
+        .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .card { background: var(--card); padding: 25px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 25px; }
+        
+        /* الجداول */
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th, td { padding: 12px; text-align: right; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; }
         th { background: #f8fafc; color: #64748b; }
         
-        .status-select { padding: 5px; border-radius: 5px; border: 1px solid #cbd5e1; background: #fff; }
-        .btn-update { background: #22c55e; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.8rem; }
-        .badge { padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; background: #fbbf24; }
+        /* الأزرار */
+        .btn { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; color: white; }
+        .btn-p { background: var(--p); width: 100%; }
+        .btn-edit { background: #fbbf24; color: #000; }
+        .btn-del { background: #ef4444; }
+        .btn-logout { background: #475569; padding: 8px 15px; }
+        .img-thumb { width: 50px; height: 50px; object-fit: contain; background: #eee; border-radius: 5px; }
     </style>
 </head>
 <body>
 
-    <div class="admin-container">
-        <h1>🛠 لوحة تحكم المتجر</h1>
+    <div id="loginBox">
+        <h2 style="color:var(--p)">قفل الإدارة 🔐</h2>
+        <p>تحقق الهوية عبر خادم Netlify</p>
+        <input type="password" id="adminPass" placeholder="كلمة المرور">
+        <button class="btn btn-p" onclick="checkPass()" id="loginBtn">دخول</button>
+    </div>
+
+    <div id="adminContent">
+        <div class="header-actions">
+            <h1>🛠 لوحة التحكم - Shopping</h1>
+            <button class="btn btn-logout" onclick="logout()">تسجيل خروج</button>
+        </div>
 
         <div class="card">
-            <h2>📦 إضافة منتج جديد</h2>
-            <div class="form-group">
+            <h3>📦 إضافة منتج جديد</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
                 <input type="text" id="pName" placeholder="اسم المنتج">
                 <input type="number" id="pPrice" placeholder="السعر بـ Pi">
                 <input type="text" id="pImg" placeholder="رابط الصورة">
             </div>
-            <button class="btn-save" onclick="addProduct()">حفظ المنتج في المتجر</button>
+            <button class="btn btn-p" style="margin-top:10px" onclick="addProduct()">إضافة للمتجر</button>
         </div>
 
         <div class="card">
-            <h2>🛒 طلبات الشراء الواردة</h2>
+            <h3>🏷️ قائمة المنتجات الحالية</h3>
             <div style="overflow-x: auto;">
-                <table id="ordersTable">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>الصورة</th>
+                            <th>المنتج</th>
+                            <th>السعر</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productsList"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>🛒 طلبات العملاء المباشرة</h3>
+            <div style="overflow-x: auto;">
+                <table>
                     <thead>
                         <tr>
                             <th>العميل</th>
                             <th>المنتج</th>
-                            <th>الهاتف</th>
-                            <th>العنوان</th>
-                            <th>رقم العملية (TXID)</th>
                             <th>الحالة</th>
-                            <th>إجراء</th>
+                            <th>تحديث</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        </tbody>
+                    <tbody id="ordersList"></tbody>
                 </table>
             </div>
         </div>
     </div>
 
     <script>
+        // إعدادات Supabase
         const SB_URL = 'https://xncapmzlwuisupkjlftb.supabase.co';
-        const SB_KEY = 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS';
+        const SB_KEY = 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS'; // استبدله بمفتاحك
         const _supabase = supabase.createClient(SB_URL, SB_KEY);
 
-        // إضافة منتج
-        async function addProduct() {
-            const name = document.getElementById('pName').value;
-            const price = document.getElementById('pPrice').value;
-            const img = document.getElementById('pImg').value;
-            if(!name || !price || !img) return alert("اكمل البيانات");
+        // --- نظام تسجيل الدخول المؤمن عبر Netlify ---
+        async function checkPass() {
+            const pass = document.getElementById('adminPass').value;
+            const btn = document.getElementById('loginBtn');
+            btn.innerText = "جاري التحقق...";
+            btn.disabled = true;
 
-            await _supabase.from('products').insert([{ name, price: parseFloat(price), image_url: img }]);
-            alert("تمت الإضافة!");
+            try {
+                const response = await fetch('/.netlify/functions/check-auth', {
+                    method: 'POST',
+                    body: JSON.stringify({ password: pass })
+                });
+                const res = await response.json();
+
+                if (response.ok && res.authorized) {
+                    sessionStorage.setItem('isAdmin', 'true');
+                    showAdmin();
+                } else {
+                    alert("كلمة المرور خاطئة!");
+                    btn.innerText = "دخول";
+                    btn.disabled = false;
+                }
+            } catch (e) {
+                alert("خطأ في الاتصال بالخادم");
+                btn.disabled = false;
+            }
+        }
+
+        function showAdmin() {
+            document.getElementById('loginBox').style.display = 'none';
+            document.getElementById('adminContent').style.display = 'block';
+            loadData();
+        }
+
+        function logout() {
+            sessionStorage.removeItem('isAdmin');
             location.reload();
         }
 
-        // جلب الطلبات من الداتابيز
-        async function loadOrders() {
-            const { data, error } = await _supabase
-                .from('orders')
-                .select('*')
-                .order('created_at', { ascending: false });
+        // --- إدارة البيانات ---
+        function loadData() {
+            loadProducts();
+            loadOrders();
+        }
 
-            const tbody = document.querySelector('#ordersTable tbody');
-            tbody.innerHTML = data.map(o => `
-                <tr>
-                    <td><b>${o.customer_name}</b><br><small>${o.pi_user}</small></td>
-                    <td>${o.product_name}<br><small>${o.amount} Pi</small></td>
-                    <td>${o.customer_phone}</td>
-                    <td>${o.address}</td>
-                    <td><small>${o.txid.substring(0,8)}...</small></td>
+        async function loadProducts() {
+            const { data } = await _supabase.from('products').select('*').order('created_at', {ascending: false});
+            document.getElementById('productsList').innerHTML = data.map(p => `
+                <tr id="p-${p.id}">
+                    <td><img src="${p.image_url}" class="img-thumb"></td>
+                    <td><input type="text" id="name-${p.id}" value="${p.name}" style="border:none; background:transparent"></td>
+                    <td><input type="number" id="price-${p.id}" value="${p.price}" style="width:70px"></td>
                     <td>
-                        <select id="status-${o.id}" class="status-select">
-                            <option value="قيد المراجعة" ${o.status === 'قيد المراجعة' ? 'selected' : ''}>قيد المراجعة</option>
-                            <option value="تم الشحن" ${o.status === 'تم الشحن' ? 'selected' : ''}>تم الشحن</option>
-                            <option value="تم التوصيل" ${o.status === 'تم التوصيل' ? 'selected' : ''}>تم التوصيل</option>
-                            <option value="ملغي" ${o.status === 'ملغي' ? 'selected' : ''}>ملغي</option>
-                        </select>
-                    </td>
-                    <td>
-                        <button class="btn-update" onclick="updateOrderStatus(${o.id})">تحديث</button>
+                        <button class="btn btn-edit" onclick="updateProduct(${p.id})">حفظ</button>
+                        <button class="btn btn-del" onclick="deleteProduct(${p.id})">حذف</button>
                     </td>
                 </tr>
             `).join('');
         }
 
-        // تحديث حالة الطلب لكي يراها المستخدم في صفحة التتبع
-        async function updateOrderStatus(orderId) {
-            const newStatus = document.getElementById(`status-${orderId}`).value;
-            const { error } = await _supabase
-                .from('orders')
-                .update({ status: newStatus })
-                .eq('id', orderId);
-
-            if (error) alert("حدث خطأ");
-            else alert("تم تحديث حالة الطلب بنجاح!");
+        async function addProduct() {
+            const name = document.getElementById('pName').value;
+            const price = document.getElementById('pPrice').value;
+            const image_url = document.getElementById('pImg').value;
+            if(!name || !price || !image_url) return alert("أكمل البيانات");
+            await _supabase.from('products').insert([{ name, price: parseFloat(price), image_url }]);
+            loadProducts();
         }
 
-        window.onload = loadOrders;
+        async function updateProduct(id) {
+            const name = document.getElementById(`name-${id}`).value;
+            const price = document.getElementById(`price-${id}`).value;
+            await _supabase.from('products').update({ name, price: parseFloat(price) }).eq('id', id);
+            alert("تم التحديث");
+        }
+
+        async function deleteProduct(id) {
+            if(confirm("حذف المنتج؟")) {
+                await _supabase.from('products').delete().eq('id', id);
+                loadProducts();
+            }
+        }
+
+        async function loadOrders() {
+            const { data } = await _supabase.from('orders').select('*').order('created_at', {ascending: false});
+            document.getElementById('ordersList').innerHTML = data.map(o => `
+                <tr>
+                    <td><b>${o.customer_name}</b><br><small>${o.pi_user}</small></td>
+                    <td>${o.product_name}</td>
+                    <td>
+                        <select id="st-${o.id}">
+                            <option value="قيد المراجعة" ${o.status==='قيد المراجعة'?'selected':''}>قيد المراجعة</option>
+                            <option value="تم الشحن" ${o.status==='تم الشحن'?'selected':''}>تم الشحن</option>
+                            <option value="تم التوصيل" ${o.status==='تم التوصيل'?'selected':''}>تم التوصيل</option>
+                        </select>
+                    </td>
+                    <td><button class="btn btn-edit" onclick="updateOrderStatus(${o.id})">تحديث</button></td>
+                </tr>
+            `).join('');
+        }
+
+        async function updateOrderStatus(id) {
+            const status = document.getElementById(`st-${id}`).value;
+            await _supabase.from('orders').update({ status }).eq('id', id);
+            alert("تم تحديث الطلب");
+        }
+
+        window.onload = () => { if(sessionStorage.getItem('isAdmin')==='true') showAdmin(); };
     </script>
 </body>
 </html>
