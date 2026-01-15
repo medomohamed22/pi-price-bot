@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
-        :root { --p: #6d28d9; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --accent: #fbbf24; }
+        :root { --p: #6d28d9; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --accent: #fbbf24; --success: #22c55e; }
         * { box-sizing: border-box; font-family: 'Cairo', sans-serif; transition: all 0.3s ease; }
         body { background: var(--bg); color: var(--text); margin: 0; padding: 0; min-height: 100vh; }
         
@@ -35,12 +35,26 @@
         .modal-content { background: var(--card); padding: 25px; border-radius: 25px; width: 100%; max-width: 450px; position: relative; max-height: 90vh; overflow-y: auto; border: 1px solid var(--p); }
         input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: white; }
         
-        /* تصميم عنصر الطلب في المتابعة */
         .order-item { background: #1e293b; padding: 15px; border-radius: 15px; margin-bottom: 12px; border: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
         .status-badge { background: var(--p); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
+
+        /* نظام التنبيهات الجديد (Toast) */
+        #custom-toast {
+            position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%);
+            background: var(--p); color: white; padding: 15px 30px; border-radius: 50px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 9999; font-weight: bold;
+            display: flex; align-items: center; gap: 10px; border: 1px solid rgba(255,255,255,0.2);
+        }
+        #custom-toast.show { bottom: 30px; }
+        .toast-icon { background: rgba(255,255,255,0.2); width: 25px; height: 25px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; }
     </style>
 </head>
 <body>
+
+    <div id="custom-toast">
+        <span class="toast-icon">✓</span>
+        <span id="toast-text">تمت العملية بنجاح</span>
+    </div>
 
     <header>
         <div style="font-size: 1.4rem; font-weight: bold; color: var(--accent);">🛒 Shopping</div>
@@ -82,9 +96,17 @@
 
         let currentLang = 'ar';
         const content = {
-            ar: { title: "أحدث المنتجات", buy: "شراء الآن", head: "بيانات التوصيل", name: "الاسم الكامل", phone: "رقم الهاتف", addr: "العنوان بالتفصيل", pay: "تأكيد والدفع بـ Pi", myOrders: "طلباتي", ordersHead: "متابعة الطلبات", loading: "جاري التحميل..." },
-            en: { title: "Latest Products", buy: "Buy Now", head: "Shipping Details", name: "Full Name", phone: "Phone Number", addr: "Detailed Address", pay: "Confirm & Pay", myOrders: "My Orders", ordersHead: "Order Tracking", loading: "Loading..." }
+            ar: { title: "أحدث المنتجات", buy: "شراء الآن", head: "بيانات التوصيل", name: "الاسم الكامل", phone: "رقم الهاتف", addr: "العنوان بالتفصيل", pay: "تأكيد والدفع بـ Pi", myOrders: "طلباتي", ordersHead: "متابعة الطلبات", loading: "جاري التحميل...", successPay: "✅ تم الدفع والطلب بنجاح!" },
+            en: { title: "Latest Products", buy: "Buy Now", head: "Shipping Details", name: "Full Name", phone: "Phone Number", addr: "Detailed Address", pay: "Confirm & Pay", myOrders: "My Orders", ordersHead: "Order Tracking", loading: "Loading...", successPay: "✅ Payment Successful!" }
         };
+
+        // دالة لإظهار التنبيه الجمالي
+        function showNotification(msg) {
+            const toast = document.getElementById('custom-toast');
+            document.getElementById('toast-text').innerText = msg;
+            toast.classList.add('show');
+            setTimeout(() => { toast.classList.remove('show'); }, 4000);
+        }
 
         const Pi = window.Pi;
         Pi.init({ version: "2.0", sandbox: false });
@@ -136,7 +158,6 @@
             `).join('');
         }
 
-        // --- نظام عرض طلباتي (الحالة والتاريخ فقط) ---
         async function showMyOrders() {
             const listDiv = document.getElementById('myOrdersList');
             listDiv.innerHTML = `<p style="text-align:center">${content[currentLang].loading}</p>`;
@@ -167,14 +188,13 @@
             }).join('');
         }
 
-        // --- نظام الدفع ---
         async function initiatePiPayment() {
             const name = document.getElementById('custName').value;
             const phone = document.getElementById('custPhone').value;
             const addr = document.getElementById('custAddr').value;
             const statusMsg = document.getElementById('status-msg');
 
-            if(!name || !phone || !addr) return alert("أكمل البيانات");
+            if(!name || !phone || !addr) return showNotification(currentLang === 'ar' ? "يرجى إكمال جميع الحقول" : "Please fill all fields");
             statusMsg.innerText = "جاري الاتصال بالمحفظة...";
 
             try {
@@ -194,7 +214,8 @@
                                 amount: activeProduct.price, customer_name: name,
                                 customer_phone: phone, address: addr, txid: txid, status: "قيد المراجعة"
                             }]);
-                            alert("تم الدفع بنجاح!"); closeModal('buyModal');
+                            closeModal('buyModal');
+                            showNotification(content[currentLang].successPay);
                         }
                     },
                     onCancel: () => { statusMsg.innerText = ""; },
