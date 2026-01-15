@@ -3,167 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سوبر طلبات | النسخة النهائية المتكاملة</title>
+    <title>سوبر طلبات برو | الإصدار الاحترافي</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
-    
     <style>
-        :root {
-            --primary: #6c5ce7;
-            --dark: #4834d4;
-            --bg: #f4f4fb;
-            --white: #ffffff;
-            --gray: #b2bec3;
-        }
-
+        :root { --primary: #6c5ce7; --dark: #4834d4; --bg: #f8f9fd; --white: #ffffff; --success: #00b894; }
         * { box-sizing: border-box; font-family: 'Cairo', sans-serif; transition: 0.3s; }
-        body { background: var(--bg); margin: 0; padding: 0; display: flex; justify-content: center; }
+        body { background: var(--bg); margin: 0; display: flex; justify-content: center; overflow-x: hidden; }
+        
+        .app-shell { width: 100%; max-width: 500px; background: var(--white); min-height: 100vh; display: flex; flex-direction: column; box-shadow: 0 0 40px rgba(0,0,0,0.1); }
+        
+        header { background: linear-gradient(135deg, var(--primary), var(--dark)); color: white; padding: 30px; text-align: center; border-radius: 0 0 40px 40px; }
+        
+        /* نظام التبويبات المطور */
+        .tabs { display: flex; background: rgba(0,0,0,0.05); margin: -20px 40px 10px; border-radius: 50px; padding: 5px; backdrop-filter: blur(10px); }
+        .tab-btn { flex: 1; border: none; padding: 12px; border-radius: 50px; cursor: pointer; font-weight: bold; background: none; color: #666; }
+        .tab-btn.active { background: var(--primary); color: white; box-shadow: 0 5px 15px rgba(108, 92, 231, 0.4); }
 
-        .app-shell {
-            width: 100%;
-            max-width: 500px;
-            background: var(--white);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 0 30px rgba(0,0,0,0.1);
-        }
+        .content { padding: 20px; flex: 1; overflow-y: auto; }
+        .card { background: white; border-radius: 25px; padding: 20px; margin-bottom: 20px; border: 1px solid #f0f0f0; position: relative; overflow: hidden; }
+        
+        /* شريط التتبع الاحترافي */
+        .stepper { display: flex; justify-content: space-between; margin: 25px 0; position: relative; }
+        .step { flex: 1; text-align: center; font-size: 0.75rem; color: #ccc; z-index: 2; }
+        .step.active { color: var(--primary); font-weight: 900; }
+        .dot { width: 14px; height: 14px; background: #eee; border-radius: 50%; margin: 0 auto 8px; border: 3px solid #fff; box-shadow: 0 0 0 1px #eee; }
+        .step.active .dot { background: var(--primary); box-shadow: 0 0 0 2px var(--primary); animation: pulse 2s infinite; }
+        
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(108, 92, 231, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(108, 92, 231, 0); } 100% { box-shadow: 0 0 0 0 rgba(108, 92, 231, 0); } }
 
-        header {
-            background: linear-gradient(135deg, var(--primary), var(--dark));
-            color: white;
-            padding: 35px 20px;
-            text-align: center;
-            border-bottom-left-radius: 40px;
-            border-bottom-right-radius: 40px;
-        }
+        /* الشات الفقاعي */
+        .chat-area { border-radius: 20px; height: 280px; background: #f9f9ff; display: flex; flex-direction: column; border: 1px solid #eee; }
+        .msgs { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .m { padding: 10px 15px; border-radius: 20px; max-width: 85%; font-size: 0.9rem; position: relative; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .m.c { background: var(--primary); color: white; align-self: flex-start; border-bottom-right-radius: 5px; }
+        .m.d { background: white; color: #333; align-self: flex-end; border-bottom-left-radius: 5px; border: 1px solid #eee; }
+        
+        .input-group { display: flex; padding: 10px; gap: 8px; background: white; border-top: 1px solid #eee; }
+        input { flex: 1; padding: 12px; border-radius: 15px; border: 1px solid #eee; outline: none; background: #f8f9fd; }
+        .btn-send { background: var(--primary); color: white; border: none; width: 45px; height: 45px; border-radius: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
-        /* نظام التبويبات */
-        .tabs {
-            display: flex;
-            background: #eee;
-            margin: -25px 40px 15px;
-            border-radius: 50px;
-            padding: 5px;
-            z-index: 10;
-        }
-        .tab-btn {
-            flex: 1; border: none; padding: 12px; border-radius: 50px;
-            cursor: pointer; font-weight: bold; background: none; color: #666;
-        }
-        .tab-btn.active { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(108, 92, 231, 0.3); }
-
-        .container { padding: 20px; flex: 1; }
-        .card { background: white; border: 1px solid #f0f0f0; border-radius: 25px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
-
-        /* شريط التتبع */
-        .stepper {
-            display: flex;
-            justify-content: space-between;
-            margin: 20px 0;
-            position: relative;
-        }
-        .step {
-            flex: 1;
-            text-align: center;
-            font-size: 0.8rem;
-            color: var(--gray);
-            position: relative;
-            z-index: 2;
-        }
-        .step.active { color: var(--primary); font-weight: bold; }
-        .dot {
-            width: 15px; height: 15px; background: #dfe6e9; border-radius: 50%;
-            margin: 0 auto 8px; border: 3px solid #fff; box-shadow: 0 0 0 2px #dfe6e9;
-        }
-        .step.active .dot { background: var(--primary); box-shadow: 0 0 0 2px var(--primary); }
-
-        /* الشات المباشر */
-        .chat-wrap {
-            border: 2px solid #f1f2f6;
-            border-radius: 20px;
-            height: 300px;
-            display: flex;
-            flex-direction: column;
-            background: #fcfcfc;
-        }
-        .chat-msgs { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
-        .m { padding: 10px 15px; border-radius: 18px; max-width: 80%; font-size: 0.9rem; line-height: 1.4; }
-        .m.c { background: var(--primary); color: white; align-self: flex-start; border-bottom-right-radius: 4px; } /* العميل */
-        .m.d { background: #eee; color: #333; align-self: flex-end; border-bottom-left-radius: 4px; } /* المندوب */
-
-        .chat-in-box { display: flex; padding: 10px; gap: 8px; border-top: 1px solid #eee; }
-        .chat-in-box input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 12px; outline: none; }
-        .send-btn { background: var(--primary); color: white; border: none; padding: 0 20px; border-radius: 12px; cursor: pointer; }
-
-        /* أزرار وحقول */
-        input, textarea { width: 100%; padding: 15px; border-radius: 15px; border: 2px solid #f1f2f6; margin-top: 10px; outline: none; }
-        .btn { width: 100%; padding: 16px; border: none; border-radius: 18px; font-weight: 800; cursor: pointer; margin-top: 10px; }
-        .btn-p { background: var(--primary); color: white; }
+        .btn-action { width: 100%; padding: 16px; border: none; border-radius: 18px; font-weight: 800; cursor: pointer; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn-main { background: var(--primary); color: white; }
         .hidden { display: none; }
+        
+        /* ملخص الفاتورة */
+        .bill-tag { background: #fff9db; border: 1px dashed #fab005; padding: 10px; border-radius: 10px; font-size: 0.8rem; margin-top: 10px; }
     </style>
 </head>
 <body>
 
 <div class="app-shell">
     <header>
-        <h2 style="margin:0">سوبر طلبات 🚀</h2>
-        <p style="margin:5px 0 0; opacity:0.8; font-size:0.8rem;">تتبع لحظي وشات مباشر</p>
+        <h2 style="margin:0">سوبر طلبات برو ⚡</h2>
+        <div id="status-label" style="font-size: 0.8rem; opacity: 0.8; margin-top: 5px;">جاهز لاستلام طلبك</div>
     </header>
 
     <div class="tabs">
-        <button class="tab-btn active" id="u-tab" onclick="switchPage('user')">أطلب الآن</button>
-        <button class="tab-btn" id="d-tab" onclick="switchPage('delivery')">أنا مندوب</button>
+        <button class="tab-btn active" id="u-tab" onclick="switchPage('user')">طلب جديد</button>
+        <button class="tab-btn" id="d-tab" onclick="switchPage('delivery')">كابتن التوصيل</button>
     </div>
 
-    <div class="container">
+    <div class="content">
         <div id="page-user">
             <div class="card" id="user-form">
-                <label>📍 موقع التوصيل</label>
-                <input type="text" id="u-addr" placeholder="العنوان بالتفصيل...">
-                <label style="display:block; margin-top:15px;">🛒 ماذا تريد أن نشتري؟</label>
-                <textarea id="u-items" rows="3" placeholder="اكتب طلباتك هنا..."></textarea>
-                <button class="btn btn-p" onclick="placeOrder()">إرسال الطلب للمناديب</button>
+                <label>📍 وجهة التوصيل</label>
+                <input type="text" id="u-addr" placeholder="أين أنت الآن؟">
+                <label style="display:block; margin-top:15px;">🛍️ ماذا تريد أن نرسل لك؟</label>
+                <textarea id="u-items" style="width:100%; padding:12px; border-radius:15px; border:1px solid #eee; margin-top:5px;" rows="3" placeholder="مثال: وجبة كينج، صيدلية، بقالة..."></textarea>
+                <button class="btn-action btn-main" onclick="placeOrder()">إرسال الطلب الآن 🚀</button>
             </div>
 
             <div class="card hidden" id="user-tracking">
                 <div class="stepper">
-                    <div id="us-1" class="step"><div class="dot"></div>إرسال</div>
+                    <div id="us-1" class="step"><div class="dot"></div>تأكيد</div>
                     <div id="us-2" class="step"><div class="dot"></div>تجهيز</div>
                     <div id="us-3" class="step"><div class="dot"></div>توصيل</div>
                 </div>
                 
-                <div id="u-chat-area" class="hidden">
-                    <h5 style="margin:0 0 10px">💬 دردشة مباشرة</h5>
-                    <div class="chat-wrap">
-                        <div id="u-msgs" class="chat-msgs"></div>
-                        <div class="chat-in-box">
-                            <input type="text" id="u-input" placeholder="اكتب رسالة...">
-                            <button class="send-btn" onclick="sendMessage('c')">إرسال</button>
-                        </div>
+                <div class="chat-area hidden" id="u-chat-box">
+                    <div id="u-msgs" class="msgs"></div>
+                    <div class="input-group">
+                        <input type="text" id="u-in" placeholder="رسالة للكابتن...">
+                        <button class="btn-send" onclick="sendMessage('c')">🕊️</button>
                     </div>
                 </div>
             </div>
         </div>
 
         <div id="page-delivery" class="hidden">
-            <div id="delivery-orders-list">
-                <p style="text-align:center; color:#999; margin-top:50px;">بانتظار طلبات جديدة في منطقتك...</p>
-            </div>
-
-            <div class="card hidden" id="delivery-active-panel">
-                <div class="stepper">
-                    <div id="ds-1" class="step"><div class="dot"></div>إرسال</div>
-                    <div id="ds-2" class="step"><div class="dot"></div>تجهيز</div>
-                    <div id="ds-3" class="step"><div class="dot"></div>توصيل</div>
-                </div>
-                <button class="btn btn-p" id="status-btn" onclick="updateStatus()">تحديث الحالة: في الطريق</button>
+            <div id="delivery-feed"></div>
+            
+            <div class="card hidden" id="delivery-panel">
+                <div class="bill-tag">📦 طلب نشط: <span id="d-order-info"></span></div>
+                <button class="btn-action btn-main" id="status-btn" onclick="advanceStatus()">تحديث الحالة: قيد التجهيز</button>
                 
-                <div class="chat-wrap" style="margin-top:15px;">
-                    <div id="d-msgs" class="chat-msgs"></div>
-                    <div class="chat-in-box">
-                        <input type="text" id="d-input" placeholder="رسالة للعميل...">
-                        <button class="send-btn" onclick="sendMessage('d')">إرسال</button>
+                <div class="chat-area" style="margin-top:15px;">
+                    <div id="d-msgs" class="msgs"></div>
+                    <div class="input-group">
+                        <input type="text" id="d-in" placeholder="تواصل مع العميل...">
+                        <button class="btn-send" onclick="sendMessage('d')">🕊️</button>
                     </div>
                 </div>
             </div>
@@ -172,102 +111,103 @@
 </div>
 
 <script>
-    // تهيئة Supabase
     const SB_URL = 'https://xncapmzlwuisupkjlftb.supabase.co';
     const SB_KEY = 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS';
     const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
-    let activeOrderId = null;
-    let chatLog = [];
+    let currentOrderId = null;
+    let chatHistory = [];
 
-    // --- العميل: تقديم طلب ---
+    // --- منطق العميل ---
     async function placeOrder() {
         const addr = document.getElementById('u-addr').value;
         const items = document.getElementById('u-items').value;
-        if(!addr || !items) return alert("اكمل البيانات أولاً");
+        if(!addr || !items) return alert("يرجى ملء البيانات");
 
-        const { data } = await supabaseClient.from('orders').insert([{
+        const { data, error } = await supabaseClient.from('orders').insert([{
             address: addr, items: items, status: 1, chat_messages: []
         }]).select();
 
         if (data) {
-            activeOrderId = data[0].id;
+            currentOrderId = data[0].id;
             document.getElementById('user-form').classList.add('hidden');
             document.getElementById('user-tracking').classList.remove('hidden');
-            document.getElementById('us-1').classList.add('active');
-            startRealtimeSync();
+            document.getElementById('status-label').innerText = "جاري البحث عن كابتن...";
+            startSync();
         }
     }
 
-    // --- المندوب: قبول الطلب ---
-    async function loadAvailableOrders() {
+    // --- منطق المندوب ---
+    async function loadFeed() {
         const { data } = await supabaseClient.from('orders').select('*').eq('status', 1);
-        const list = document.getElementById('delivery-orders-list');
-        list.innerHTML = data.length ? '' : '<p style="text-align:center; margin-top:50px;">لا توجد طلبات حالياً</p>';
+        const feed = document.getElementById('delivery-feed');
+        feed.innerHTML = data.length ? '' : '<p style="text-align:center; opacity:0.5; margin-top:50px;">لا توجد طلبات قريبة حالياً</p>';
         data.forEach(o => {
-            list.innerHTML += `<div class="card">
-                <p>📦 <strong>الطلب:</strong> ${o.items}</p>
-                <button class="btn btn-p" onclick="acceptByDelivery(${o.id})">قبول وفتح الشات</button>
-            </div>`;
+            feed.innerHTML += `
+                <div class="card">
+                    <div style="font-weight:900; color:var(--primary)">📍 طلب جديد</div>
+                    <p style="font-size:0.9rem; margin:10px 0;">${o.items}</p>
+                    <button class="btn-action btn-main" onclick="acceptOrder(${o.id}, '${o.items}')">قبول الطلب ✅</button>
+                </div>`;
         });
     }
 
-    async function acceptByDelivery(id) {
-        activeOrderId = id;
+    async function acceptOrder(id, items) {
+        currentOrderId = id;
         await supabaseClient.from('orders').update({ status: 2 }).eq('id', id);
-        document.getElementById('delivery-orders-list').classList.add('hidden');
-        document.getElementById('delivery-active-panel').classList.remove('hidden');
-        startRealtimeSync();
+        document.getElementById('delivery-feed').classList.add('hidden');
+        document.getElementById('delivery-panel').classList.remove('hidden');
+        document.getElementById('d-order-info').innerText = items;
+        startSync();
     }
 
-    async function updateStatus() {
-        const { data } = await supabaseClient.from('orders').select('status').eq('id', activeOrderId).single();
-        const nextStatus = data.status + 1;
-        await supabaseClient.from('orders').update({ status: nextStatus }).eq('id', activeOrderId);
-        if(nextStatus === 4) { alert("تم التوصيل! شكراً لك."); location.reload(); }
+    async function advanceStatus() {
+        const { data } = await supabaseClient.from('orders').select('status').eq('id', currentOrderId).single();
+        const next = data.status + 1;
+        await supabaseClient.from('orders').update({ status: next }).eq('id', currentOrderId);
+        if(next === 4) { alert("تمت المهمة! 🎉"); location.reload(); }
     }
 
-    // --- الربط اللحظي المتكامل ---
-    function startRealtimeSync() {
-        supabaseClient.channel('sync_channel').on('postgres_changes', 
-        { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${activeOrderId}` }, 
-        (payload) => {
-            const status = payload.new.status;
-            chatLog = payload.new.chat_messages || [];
+    // --- الربط اللحظي ---
+    function startSync() {
+        supabaseClient.channel('live').on('postgres_changes', 
+        { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${currentOrderId}` }, 
+        payload => {
+            const s = payload.new.status;
+            chatHistory = payload.new.chat_messages || [];
             
-            // تحديث شريط التتبع للعميل والمندوب
+            // تحديث التتبع
             for(let i=1; i<=3; i++) {
-                if(document.getElementById(`us-${i}`)) document.getElementById(`us-${i}`).classList.toggle('active', i <= status);
-                if(document.getElementById(`ds-${i}`)) document.getElementById(`ds-${i}`).classList.toggle('active', i <= status);
+                if(document.getElementById(`us-${i}`)) document.getElementById(`us-${i}`).classList.toggle('active', i <= s);
+            }
+            
+            if(s === 2) {
+                document.getElementById('status-label').innerText = "الكابتن يجهز طلبك الآن";
+                document.getElementById('u-chat-box').classList.remove('hidden');
+                document.getElementById('status-btn').innerText = "تحديث: أنا في الطريق 🚴";
+            }
+            if(s === 3) {
+                document.getElementById('status-label').innerText = "الكابتن في الطريق إليك";
+                document.getElementById('status-btn').innerText = "تحديث: تم التسليم ✅";
             }
 
-            // إظهار الشات للعميل بمجرد قبول المندوب (حالة 2)
-            if(status >= 2) document.getElementById('u-chat-area').classList.remove('hidden');
-            
-            // تحديث نص زر المندوب
-            const btn = document.getElementById('status-btn');
-            if(status === 2) btn.innerText = "تحديث الحالة: في الطريق";
-            if(status === 3) btn.innerText = "تحديث الحالة: تم التسليم";
-
-            renderMessages();
+            renderChat();
         }).subscribe();
     }
 
     async function sendMessage(role) {
-        const inputId = role === 'c' ? 'u-input' : 'd-input';
-        const msgText = document.getElementById(inputId).value;
-        if(!msgText) return;
-
-        chatLog.push({ role: role, text: msgText });
-        await supabaseClient.from('orders').update({ chat_messages: chatLog }).eq('id', activeOrderId);
-        document.getElementById(inputId).value = '';
+        const input = document.getElementById(role === 'c' ? 'u-in' : 'd-in');
+        if(!input.value) return;
+        chatHistory.push({ r: role, t: input.value });
+        await supabaseClient.from('orders').update({ chat_messages: chatHistory }).eq('id', currentOrderId);
+        input.value = '';
     }
 
-    function renderMessages() {
-        const html = chatLog.map(m => `<div class="m ${m.role}">${m.text}</div>`).join('');
-        document.getElementById('u-msgs').innerHTML = html;
-        document.getElementById('d-msgs').innerHTML = html;
-        document.querySelectorAll('.chat-msgs').forEach(c => c.scrollTop = c.scrollHeight);
+    function renderChat() {
+        const h = chatHistory.map(m => `<div class="m ${m.r}">${m.t}</div>`).join('');
+        document.getElementById('u-msgs').innerHTML = h;
+        document.getElementById('d-msgs').innerHTML = h;
+        document.querySelectorAll('.msgs').forEach(el => el.scrollTop = el.scrollHeight);
     }
 
     function switchPage(p) {
@@ -275,7 +215,7 @@
         document.getElementById('page-delivery').classList.toggle('hidden', p !== 'delivery');
         document.getElementById('u-tab').classList.toggle('active', p === 'user');
         document.getElementById('d-tab').classList.toggle('active', p === 'delivery');
-        if(p === 'delivery' && !activeOrderId) loadAvailableOrders();
+        if(p === 'delivery' && !currentOrderId) loadFeed();
     }
 </script>
 </body>
