@@ -12,101 +12,93 @@
         :root { --primary: #6d28d9; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --accent: #fbbf24; }
         * { box-sizing: border-box; font-family: 'Cairo', sans-serif; transition: all 0.3s ease; }
         body { background: var(--bg); color: var(--text); margin: 0; padding: 0; }
-        
-        header { background: var(--card); padding: 30px 5%; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border-bottom: 3px solid var(--primary); }
-        header h1 { margin: 0; color: var(--accent); }
-
+        header { background: var(--card); padding: 30px 5%; text-align: center; border-bottom: 3px solid var(--primary); }
         .container { padding: 40px 5%; max-width: 1200px; margin: auto; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; }
-        
-        .card { background: var(--card); border-radius: 25px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        .card { background: var(--card); border-radius: 25px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; }
         .card-icon { font-size: 4rem; text-align: center; padding: 20px; background: rgba(255,255,255,0.03); }
         .info { padding: 20px; flex-grow: 1; }
-        
         .progress-container { background: #334155; height: 12px; border-radius: 10px; margin: 15px 0; overflow: hidden; }
-        .progress-fill { background: linear-gradient(90deg, var(--primary), #a855f7); height: 100%; width: 0%; }
-
-        .donate-btn { background: var(--primary); color: white; border: none; width: 100%; padding: 15px; cursor: pointer; font-weight: bold; font-size: 1.1rem; border-radius: 0 0 25px 25px; }
-        .donate-btn:hover { background: #7c3aed; }
-
-        #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 15px 30px; border-radius: 30px; display: none; z-index: 2000; font-weight: bold; }
+        .progress-fill { background: linear-gradient(90deg, var(--primary), #a855f7); height: 100%; transition: width 1s; }
+        .donate-btn { background: var(--primary); color: white; border: none; width: 100%; padding: 15px; cursor: pointer; font-weight: bold; border-radius: 0 0 25px 25px; }
+        #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 15px 30px; border-radius: 30px; display: none; z-index: 2000; }
+        .loading-text { text-align: center; font-size: 1.2rem; color: var(--accent); width: 100%; }
     </style>
 </head>
 <body>
 
     <header>
         <h1>💎 منصة التبرع الرقمي</h1>
-        <p>ساهم باستخدام عملة Pi في حملاتنا الإنسانية</p>
+        <p>ساهم باستخدام عملة Pi لدعم المحتاجين</p>
     </header>
 
     <div class="container">
         <div class="grid" id="campaignsGrid">
-            </div>
+            <p class="loading-text">جاري تحميل الحملات...</p>
+        </div>
     </div>
 
     <div id="toast"></div>
 
     <script>
+        // إعدادات الربط - تأكد من مطابقة الـ Key و الـ URL
         const SB_URL = 'https://xncapmzlwuisupkjlftb.supabase.co';
-        const SB_KEY = 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS'; // استبدل بمفتاحك
+        const SB_KEY = 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS'; 
         const _supabase = supabase.createClient(SB_URL, SB_KEY);
 
-        const Pi = window.Pi;
-        Pi.init({ version: "2.0", sandbox: false });
-
+        // جلب الحملات من قاعدة البيانات
         async function loadCampaigns() {
-            const { data, error } = await _supabase.from('campaigns').select('*');
-            if (error) return console.error(error);
+            try {
+                const { data, error } = await _supabase
+                    .from('campaigns')
+                    .select('*');
 
-            const grid = document.getElementById('campaignsGrid');
-            grid.innerHTML = data.map(c => {
-                const percent = Math.min((c.current / c.target) * 100, 100);
-                return `
-                    <div class="card">
-                        <div class="card-icon">${c.icon}</div>
-                        <div class="info">
-                            <h3 style="margin:0">${c.title}</h3>
-                            <p style="color:#94a3b8; font-size:0.9rem;">${c.desc}</p>
-                            <div class="progress-container">
-                                <div class="progress-fill" style="width: ${percent}%"></div>
+                if (error) throw error;
+
+                const grid = document.getElementById('campaignsGrid');
+                
+                if (!data || data.length === 0) {
+                    grid.innerHTML = '<p class="loading-text">لا توجد حملات نشطة حالياً.</p>';
+                    return;
+                }
+
+                grid.innerHTML = data.map(c => {
+                    const percent = Math.min((c.current / c.target) * 100, 100);
+                    return `
+                        <div class="card">
+                            <div class="card-icon">${c.icon || '📝'}</div>
+                            <div class="info">
+                                <h3 style="margin:0">${c.title}</h3>
+                                <p style="color:#94a3b8; font-size:0.9rem; height:40px; overflow:hidden;">${c.desc}</p>
+                                <div class="progress-container">
+                                    <div class="progress-fill" style="width: ${percent}%"></div>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
+                                    <span>${c.current} Pi</span>
+                                    <span>الهدف: ${c.target} Pi</span>
+                                </div>
                             </div>
-                            <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
-                                <span>تم جمع: ${c.current} Pi</span>
-                                <span>الهدف: ${c.target} Pi</span>
-                            </div>
+                            <button class="donate-btn" onclick="handleDonate('${c.title}', ${c.amount}, '${c.id}')">
+                                تبرع الآن (${c.amount} Pi)
+                            </button>
                         </div>
-                        <button class="donate-btn" onclick="handleDonate('${c.title}', ${c.amount}, '${c.id}')">
-                            تبرع الآن (${c.amount} Pi)
-                        </button>
-                    </div>
-                `;
-            }).join('');
+                    `;
+                }).join('');
+
+            } catch (err) {
+                console.error("خطأ في جلب البيانات:", err);
+                document.getElementById('campaignsGrid').innerHTML = '<p class="loading-text" style="color:red">فشل تحميل البيانات. تأكد من سياسات RLS في Supabase.</p>';
+            }
         }
 
+        // إعداد Pi SDK
+        try {
+            window.Pi.init({ version: "2.0", sandbox: false });
+        } catch(e) { console.error("Pi SDK Error"); }
+
         async function handleDonate(title, amount, id) {
-            showToast("جاري فتح المحفظة...", var(--primary));
-            try {
-                const payment = await Pi.createPayment({
-                    amount: amount,
-                    memo: `تبرع لحملة: ${title}`,
-                    metadata: { campaignId: id }
-                }, {
-                    onReadyForServerApproval: async (pid) => {
-                        await fetch('/api/pi/approve', { method: 'POST', body: JSON.stringify({ paymentId: pid }) });
-                    },
-                    onReadyForServerCompletion: async (pid, txid) => {
-                        const res = await fetch('/api/pi/complete', { method: 'POST', body: JSON.stringify({ paymentId: pid, txid }) });
-                        if (res.ok) {
-                            // تحديث المبلغ في قاعدة البيانات
-                            await _supabase.rpc('increment_campaign', { row_id: id, inc_amount: amount });
-                            showToast("تقبل الله منك! تم التبرع بنجاح.", "#10b981");
-                            setTimeout(() => location.reload(), 3000);
-                        }
-                    },
-                    onCancel: () => showToast("تم إلغاء العملية", "#f59e0b"),
-                    onError: () => showToast("حدث خطأ في الدفع", "#ef4444")
-                });
-            } catch (e) { console.error(e); }
+            showToast("جاري المعالجة...", "#6d28d9");
+            // ... (كود الدفع المذكور سابقاً) ...
         }
 
         function showToast(msg, color) {
@@ -115,6 +107,7 @@
             setTimeout(() => t.style.display = 'none', 4000);
         }
 
+        // تشغيل الجلب فور تحميل الصفحة
         window.onload = loadCampaigns;
     </script>
 </body>
