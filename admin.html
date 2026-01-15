@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>لوحة التحكم - إضافة منتجات</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: sans-serif; background: #f8fafc; padding: 20px; }
+        .form-box { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        button { background: #6d28d9; color: white; border: none; width: 100%; padding: 12px; border-radius: 5px; cursor: pointer; }
+        table { width: 100%; margin-top: 20px; border-collapse: collapse; }
+        th, td { padding: 10px; border-bottom: 1px solid #ddd; text-align: right; }
+    </style>
+</head>
+<body>
+    <div class="form-box">
+        <h2>إضافة منتج جديد</h2>
+        <input type="text" id="pName" placeholder="اسم المنتج">
+        <input type="number" id="pPrice" placeholder="السعر بـ Pi">
+        <input type="text" id="pImg" placeholder="رابط صورة المنتج">
+        <button onclick="addProduct()">حفظ المنتج</button>
+    </div>
+
+    <div class="form-box" style="margin-top: 20px; max-width: 800px;">
+        <h2>المنتجات الحالية</h2>
+        <table id="productsTable">
+            <thead><tr><th>المنتج</th><th>السعر</th><th>إجراء</th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script>
+        const supabaseUrl = 'https://xncapmzlwuisupkjlftb.supabase.co';
+        const supabaseKey = 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS';
+        const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+        async function addProduct() {
+            const name = document.getElementById('pName').value;
+            const price = document.getElementById('pPrice').value;
+            const img = document.getElementById('pImg').value;
+
+            const { error } = await _supabase.from('products').insert([{ name, price: parseFloat(price), image_url: img }]);
+            if (error) alert("خطأ!"); else { alert("تم الإضافة"); location.reload(); }
+        }
+
+        async function loadAdminProducts() {
+            const { data } = await _supabase.from('products').select('*');
+            const tbody = document.querySelector('#productsTable tbody');
+            tbody.innerHTML = data.map(p => `
+                <tr>
+                    <td>${p.name}</td>
+                    <td>${p.price} Pi</td>
+                    <td><button style="background:red; width:auto; padding:5px 10px" onclick="deleteProduct(${p.id})">حذف</button></td>
+                </tr>
+            `).join('');
+        }
+
+        async function deleteProduct(id) {
+            if(confirm("هل أنت متأكد؟")) {
+                await _supabase.from('products').delete().eq('id', id);
+                location.reload();
+            }
+        }
+        loadAdminProducts();
+    </script>
+</body>
+</html>
