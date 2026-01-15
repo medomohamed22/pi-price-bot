@@ -31,30 +31,23 @@
         .price { color: var(--accent); font-weight: bold; display: block; margin-top: 5px; font-size: 1.2rem; }
         .buy-btn { background: var(--p); color: white; border: none; width: 100%; padding: 12px; cursor: pointer; font-weight: bold; border-radius: 0 0 20px 20px; }
 
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; z-index: 2000; padding: 20px; backdrop-filter: blur(5px); }
-        .modal-content { background: var(--card); padding: 25px; border-radius: 25px; width: 100%; max-width: 450px; position: relative; max-height: 90vh; overflow-y: auto; border: 1px solid var(--p); }
+        /* نوافذ المودال */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; z-index: 2000; padding: 20px; backdrop-filter: blur(8px); }
+        .modal-content { background: var(--card); padding: 25px; border-radius: 25px; width: 100%; max-width: 450px; position: relative; max-height: 90vh; overflow-y: auto; border: 1px solid var(--p); animation: zoomIn 0.3s ease; }
+        @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
         input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: white; }
         
         .order-item { background: #1e293b; padding: 15px; border-radius: 15px; margin-bottom: 12px; border: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
         .status-badge { background: var(--p); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
 
-        /* نظام التنبيهات الجديد (Toast) */
-        #custom-toast {
-            position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%);
-            background: var(--p); color: white; padding: 15px 30px; border-radius: 50px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 9999; font-weight: bold;
-            display: flex; align-items: center; gap: 10px; border: 1px solid rgba(255,255,255,0.2);
-        }
-        #custom-toast.show { bottom: 30px; }
-        .toast-icon { background: rgba(255,255,255,0.2); width: 25px; height: 25px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; }
+        /* تصميم بطاقة النجاح الجديدة */
+        .success-card { text-align: center; padding: 40px 20px; }
+        .success-icon { width: 80px; height: 80px; background: var(--success); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin: 0 auto 20px; box-shadow: 0 0 20px rgba(34, 197, 94, 0.4); }
+        .ok-btn { background: var(--success); color: white; border: none; padding: 12px 40px; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 20px; width: 100%; font-size: 1.1rem; }
     </style>
 </head>
 <body>
-
-    <div id="custom-toast">
-        <span class="toast-icon">✓</span>
-        <span id="toast-text">تمت العملية بنجاح</span>
-    </div>
 
     <header>
         <div style="font-size: 1.4rem; font-weight: bold; color: var(--accent);">🛒 Shopping</div>
@@ -89,6 +82,15 @@
         </div>
     </div>
 
+    <div id="successModal" class="modal">
+        <div class="modal-content success-card">
+            <div class="success-icon">✓</div>
+            <h2 id="ui-success-title" style="margin-bottom:10px;">تم الدفع بنجاح!</h2>
+            <p id="ui-success-msg" style="color:#94a3b8; line-height:1.6;">تم استلام طلبك وهو الآن قيد المراجعة. يمكنك متابعة حالة الشحن من قسم "طلباتي".</p>
+            <button class="ok-btn" onclick="closeModal('successModal')">موافق</button>
+        </div>
+    </div>
+
     <script>
         const SB_URL = 'https://xncapmzlwuisupkjlftb.supabase.co';
         const SB_KEY = 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS'; 
@@ -96,17 +98,19 @@
 
         let currentLang = 'ar';
         const content = {
-            ar: { title: "أحدث المنتجات", buy: "شراء الآن", head: "بيانات التوصيل", name: "الاسم الكامل", phone: "رقم الهاتف", addr: "العنوان بالتفصيل", pay: "تأكيد والدفع بـ Pi", myOrders: "طلباتي", ordersHead: "متابعة الطلبات", loading: "جاري التحميل...", successPay: "✅ تم الدفع والطلب بنجاح!" },
-            en: { title: "Latest Products", buy: "Buy Now", head: "Shipping Details", name: "Full Name", phone: "Phone Number", addr: "Detailed Address", pay: "Confirm & Pay", myOrders: "My Orders", ordersHead: "Order Tracking", loading: "Loading...", successPay: "✅ Payment Successful!" }
+            ar: { 
+                title: "أحدث المنتجات", buy: "شراء الآن", head: "بيانات التوصيل", name: "الاسم الكامل", 
+                phone: "رقم الهاتف", addr: "العنوان بالتفصيل", pay: "تأكيد والدفع بـ Pi", 
+                myOrders: "طلباتي", ordersHead: "متابعة الطلبات", loading: "جاري التحميل...",
+                successTitle: "تم الدفع بنجاح!", successMsg: "تم استلام طلبك وهو الآن قيد المراجعة. يمكنك متابعة حالة الشحن من قسم 'طلباتي'."
+            },
+            en: { 
+                title: "Latest Products", buy: "Buy Now", head: "Shipping Details", name: "Full Name", 
+                phone: "Phone Number", addr: "Detailed Address", pay: "Confirm & Pay", 
+                myOrders: "My Orders", ordersHead: "Order Tracking", loading: "Loading...",
+                successTitle: "Payment Successful!", successMsg: "Your order has been received and is under review. You can track it in 'My Orders'."
+            }
         };
-
-        // دالة لإظهار التنبيه الجمالي
-        function showNotification(msg) {
-            const toast = document.getElementById('custom-toast');
-            document.getElementById('toast-text').innerText = msg;
-            toast.classList.add('show');
-            setTimeout(() => { toast.classList.remove('show'); }, 4000);
-        }
 
         const Pi = window.Pi;
         Pi.init({ version: "2.0", sandbox: false });
@@ -141,6 +145,9 @@
             document.getElementById('custName').placeholder = t.name;
             document.getElementById('custPhone').placeholder = t.phone;
             document.getElementById('custAddr').placeholder = t.addr;
+            // تحديث بطاقة النجاح
+            document.getElementById('ui-success-title').innerText = t.successTitle;
+            document.getElementById('ui-success-msg').innerText = t.successMsg;
         }
 
         async function loadProducts() {
@@ -194,7 +201,7 @@
             const addr = document.getElementById('custAddr').value;
             const statusMsg = document.getElementById('status-msg');
 
-            if(!name || !phone || !addr) return showNotification(currentLang === 'ar' ? "يرجى إكمال جميع الحقول" : "Please fill all fields");
+            if(!name || !phone || !addr) return;
             statusMsg.innerText = "جاري الاتصال بالمحفظة...";
 
             try {
@@ -215,7 +222,7 @@
                                 customer_phone: phone, address: addr, txid: txid, status: "قيد المراجعة"
                             }]);
                             closeModal('buyModal');
-                            showNotification(content[currentLang].successPay);
+                            openModal('successModal'); // إظهار بطاقة النجاح
                         }
                     },
                     onCancel: () => { statusMsg.innerText = ""; },
