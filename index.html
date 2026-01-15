@@ -3,117 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>بوابة دفع Pi الرسمية</title>
-    
+    <title>متجر Pi الإلكتروني</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
     <style>
-        :root { --primary: #6d28d9; --accent: #f59e0b; --bg: #0f172a; --card: #1e293b; }
-        body { margin: 0; font-family: sans-serif; background: var(--bg); color: white; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        .container { background: var(--card); padding: 2rem; border-radius: 20px; text-align: center; width: 350px; border: 1px solid rgba(255,255,255,0.1); }
-        .pi-btn { background: linear-gradient(135deg, var(--primary), #4f46e5); color: white; border: none; width: 100%; padding: 1rem; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 1rem; }
-        .pi-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        #status { margin-top: 1rem; font-size: 0.8rem; color: var(--accent); }
+        :root { --p: #6d28d9; --a: #f59e0b; --bg: #0f172a; --c: #1e293b; }
+        body { font-family: sans-serif; background: var(--bg); color: white; margin: 0; padding: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+        .card { background: var(--c); padding: 15px; border-radius: 15px; border: 1px solid #334155; text-align: center; }
+        .card img { width: 100%; height: 150px; object-fit: cover; border-radius: 10px; }
+        .btn { background: var(--p); color: white; border: none; width: 100%; padding: 10px; border-radius: 8px; cursor: pointer; margin-top: 10px; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; z-index: 100; }
+        .modal-content { background: var(--c); padding: 20px; border-radius: 15px; width: 90%; max-width: 400px; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #475569; background: #0f172a; color: white; box-sizing: border-box; }
     </style>
 </head>
 <body>
+    <h1>منتجاتنا</h1>
+    <div class="grid" id="productsGrid">جاري تحميل المنتجات...</div>
 
-    <div class="container">
-        <h2 id="user-name">تحميل...</h2>
-        <p>ادفع 1 Pi ليتم تسجيلك في قاعدة البيانات</p>
-        <button id="payButton" class="pi-btn" onclick="initiatePayment()">ادفع الآن 1 Pi</button>
-        <div id="status">جاهز</div>
+    <div id="orderModal" class="modal">
+        <div class="modal-content">
+            <h3>بيانات التوصيل</h3>
+            <input type="text" id="custName" placeholder="الاسم الكامل">
+            <input type="text" id="custPhone" placeholder="رقم الهاتف">
+            <input type="text" id="custAddress" placeholder="العنوان بالتفصيل">
+            <button class="btn" onclick="processPayment()">تأكيد ودفع عبر Pi</button>
+            <button class="btn" style="background:#475569" onclick="closeModal()">إلغاء</button>
+        </div>
     </div>
 
     <script>
-        // 1. إعداد Supabase (استخدم مفتاح anon المتاح للعامة)
+        const Pi = window.Pi; Pi.init({ version: "2.0", sandbox: false });
         const supabaseUrl = 'https://xncapmzlwuisupkjlftb.supabase.co';
-        const supabaseKey = 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS'; 
+        const supabaseKey = 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS';
         const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-        // 2. إعداد Pi SDK
-        const Pi = window.Pi;
-        Pi.init({ version: "2.0", sandbox: false });
-
+        let selectedProduct = null;
         let currentUser = null;
 
-        async function onStart() {
-            try {
-                const auth = await Pi.authenticate(['username', 'payments'], onIncompletePayment);
-                currentUser = auth.user;
-                document.getElementById('user-name').innerText = `أهلاً ${currentUser.username}`;
-            } catch (e) {
-                updateStatus("افتح الموقع من متصفح Pi", "red");
-            }
+        async function init() {
+            const auth = await Pi.authenticate(['username', 'payments'], (p) => {});
+            currentUser = auth.user;
+            loadProducts();
         }
 
-        async function initiatePayment() {
-            const btn = document.getElementById('payButton');
-            btn.disabled = true;
-            updateStatus("جاري تحضير العملية...");
+        async function loadProducts() {
+            const { data } = await _supabase.from('products').select('*');
+            const grid = document.getElementById('productsGrid');
+            grid.innerHTML = data.map(p => `
+                <div class="card">
+                    <img src="${p.image_url}" alt="${p.name}">
+                    <h3>${p.name}</h3>
+                    <p>السعر: ${p.price} Pi</p>
+                    <button class="btn" onclick="openOrderModal(${JSON.stringify(p).replace(/"/g, '&quot;')})">شراء الآن</button>
+                </div>
+            `).join('');
+        }
+
+        function openOrderModal(product) {
+            selectedProduct = product;
+            document.getElementById('orderModal').style.display = 'flex';
+        }
+
+        function closeModal() { document.getElementById('orderModal').style.display = 'none'; }
+
+        async function processPayment() {
+            const name = document.getElementById('custName').value;
+            const phone = document.getElementById('custPhone').value;
+            const addr = document.getElementById('custAddress').value;
+
+            if(!name || !phone || !addr) return alert("يرجى ملء البيانات");
 
             try {
-                const payment = await Pi.createPayment({
-                    amount: 1.0,
-                    memo: "تسجيل في قاعدة البيانات",
-                    metadata: { type: "user_registration" }
+                await Pi.createPayment({
+                    amount: selectedProduct.price,
+                    memo: `شراء ${selectedProduct.name}`,
+                    metadata: { productId: selectedProduct.id }
                 }, {
-                    // الربط مع Netlify Function: Approve
-                    onReadyForServerApproval: async (paymentId) => {
-                        updateStatus("جاري الموافقة من السيرفر...");
-                        const response = await fetch('/api/pi/approve', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ paymentId })
-                        });
-                        return response.json();
-                    },
-                    // الربط مع Netlify Function: Complete
-                    onReadyForServerCompletion: async (paymentId, txid) => {
-                        updateStatus("جاري إنهاء المعاملة...");
-                        const response = await fetch('/api/pi/complete', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ paymentId, txid })
-                        });
-                        
-                        if (response.ok) {
-                            // 3. الخطوة الأخيرة: الحفظ في Supabase
-                            await saveUserToDatabase(txid);
-                            updateStatus("تم الدفع والحفظ بنجاح! ✅", "#22c55e");
-                        }
-                    },
-                    onCancel: () => { updateStatus("تم الإلغاء"); btn.disabled = false; },
-                    onError: (err) => { updateStatus("خطأ في العملية"); btn.disabled = false; }
+                    onReadyForServerApproval: (id) => fetch('/api/pi/approve', { method: 'POST', body: JSON.stringify({ paymentId: id }) }),
+                    onReadyForServerCompletion: async (id, txid) => {
+                        await fetch('/api/pi/complete', { method: 'POST', body: JSON.stringify({ paymentId: id, txid }) });
+                        await saveOrder(txid, name, phone, addr);
+                        alert("تم طلبك بنجاح!");
+                        closeModal();
+                    }
                 });
-            } catch (err) {
-                updateStatus("حدث خطأ غير متوقع");
-                btn.disabled = false;
-            }
+            } catch (e) { alert("خطأ في الدفع"); }
         }
 
-        async function saveUserToDatabase(txid) {
-            const { error } = await _supabase
-                .from('payments')
-                .insert([{ 
-                    username: currentUser.username, 
-                    amount: 1.0, 
-                    txid: txid 
-                }]);
-            if (error) console.error("Database Save Error:", error);
+        async function saveOrder(txid, name, phone, addr) {
+            await _supabase.from('orders').insert([{
+                pi_user: currentUser.username,
+                product_name: selectedProduct.name,
+                amount: selectedProduct.price,
+                customer_name: name,
+                customer_phone: phone,
+                address: addr,
+                txid: txid
+            }]);
         }
-
-        function onIncompletePayment(payment) {
-            // يمكن استدعاء /api/pi/complete هنا إذا وجدت دفع معلق
-        }
-
-        function updateStatus(msg, color = "#f59e0b") {
-            const s = document.getElementById('status');
-            s.innerText = msg; s.style.color = color;
-        }
-
-        onStart();
+        init();
     </script>
 </body>
 </html>
