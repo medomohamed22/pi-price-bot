@@ -3,89 +3,251 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سوبر طلبات برو | الإصدار الاحترافي</title>
+    <title>سوبر طلبات برو | التجربة الفاخرة</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800;900&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #6c5ce7; --dark: #4834d4; --bg: #f8f9fd; --white: #ffffff; --success: #00b894; }
-        * { box-sizing: border-box; font-family: 'Cairo', sans-serif; transition: 0.3s; }
-        body { background: var(--bg); margin: 0; display: flex; justify-content: center; overflow-x: hidden; }
-        
-        .app-shell { width: 100%; max-width: 500px; background: var(--white); min-height: 100vh; display: flex; flex-direction: column; box-shadow: 0 0 40px rgba(0,0,0,0.1); }
-        
-        header { background: linear-gradient(135deg, var(--primary), var(--dark)); color: white; padding: 30px; text-align: center; border-radius: 0 0 40px 40px; }
-        
-        /* نظام التبويبات المطور */
-        .tabs { display: flex; background: rgba(0,0,0,0.05); margin: -20px 40px 10px; border-radius: 50px; padding: 5px; backdrop-filter: blur(10px); }
-        .tab-btn { flex: 1; border: none; padding: 12px; border-radius: 50px; cursor: pointer; font-weight: bold; background: none; color: #666; }
-        .tab-btn.active { background: var(--primary); color: white; box-shadow: 0 5px 15px rgba(108, 92, 231, 0.4); }
+        :root {
+            --primary: #6c5ce7;
+            --secondary: #a29bfe;
+            --dark: #2d3436;
+            --bg: #f0f3f7;
+            --white: #ffffff;
+            --accent: #ff7675;
+            --glass: rgba(255, 255, 255, 0.9);
+        }
 
-        .content { padding: 20px; flex: 1; overflow-y: auto; }
-        .card { background: white; border-radius: 25px; padding: 20px; margin-bottom: 20px; border: 1px solid #f0f0f0; position: relative; overflow: hidden; }
+        * { box-sizing: border-box; font-family: 'Cairo', sans-serif; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         
-        /* شريط التتبع الاحترافي */
-        .stepper { display: flex; justify-content: space-between; margin: 25px 0; position: relative; }
-        .step { flex: 1; text-align: center; font-size: 0.75rem; color: #ccc; z-index: 2; }
-        .step.active { color: var(--primary); font-weight: 900; }
-        .dot { width: 14px; height: 14px; background: #eee; border-radius: 50%; margin: 0 auto 8px; border: 3px solid #fff; box-shadow: 0 0 0 1px #eee; }
-        .step.active .dot { background: var(--primary); box-shadow: 0 0 0 2px var(--primary); animation: pulse 2s infinite; }
-        
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(108, 92, 231, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(108, 92, 231, 0); } 100% { box-shadow: 0 0 0 0 rgba(108, 92, 231, 0); } }
+        body { 
+            background: var(--bg); 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            color: var(--dark);
+        }
 
-        /* الشات الفقاعي */
-        .chat-area { border-radius: 20px; height: 280px; background: #f9f9ff; display: flex; flex-direction: column; border: 1px solid #eee; }
-        .msgs { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
-        .m { padding: 10px 15px; border-radius: 20px; max-width: 85%; font-size: 0.9rem; position: relative; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
-        .m.c { background: var(--primary); color: white; align-self: flex-start; border-bottom-right-radius: 5px; }
-        .m.d { background: white; color: #333; align-self: flex-end; border-bottom-left-radius: 5px; border: 1px solid #eee; }
-        
-        .input-group { display: flex; padding: 10px; gap: 8px; background: white; border-top: 1px solid #eee; }
-        input { flex: 1; padding: 12px; border-radius: 15px; border: 1px solid #eee; outline: none; background: #f8f9fd; }
-        .btn-send { background: var(--primary); color: white; border: none; width: 45px; height: 45px; border-radius: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .app-shell {
+            width: 100%;
+            max-width: 480px;
+            background: var(--white);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.05);
+        }
 
-        .btn-action { width: 100%; padding: 16px; border: none; border-radius: 18px; font-weight: 800; cursor: pointer; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; }
-        .btn-main { background: var(--primary); color: white; }
+        /* هيدر عصري */
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--dark));
+            color: white;
+            padding: 40px 25px 60px;
+            text-align: right;
+            border-radius: 0 0 40px 40px;
+            position: relative;
+        }
+
+        header h2 { margin: 0; font-weight: 900; font-size: 1.8rem; letter-spacing: -1px; }
+        header p { margin: 5px 0 0; opacity: 0.8; font-size: 0.9rem; }
+
+        /* تبويبات أنيقة */
+        .tabs {
+            display: flex;
+            background: var(--white);
+            margin: -30px 30px 20px;
+            border-radius: 20px;
+            padding: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            z-index: 10;
+        }
+
+        .tab-btn {
+            flex: 1;
+            border: none;
+            padding: 14px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-weight: 700;
+            background: transparent;
+            color: #b2bec3;
+            font-size: 1rem;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 8px 20px rgba(108, 92, 231, 0.3);
+        }
+
+        /* كروت المحتوى */
+        .content { padding: 10px 20px 100px; flex: 1; }
+        
+        .card {
+            background: var(--white);
+            border-radius: 30px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(0,0,0,0.03);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.02);
+        }
+
+        /* تصميم المؤقت الجديد */
+        .timer-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--accent);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            animation: slideDown 0.5s ease;
+        }
+
+        @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        /* نظام التتبع المطور */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+            padding: 0 10px;
+        }
+
+        .step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            opacity: 0.3;
+        }
+
+        .step.active { opacity: 1; transform: scale(1.1); }
+        
+        .step-icon {
+            width: 45px;
+            height: 45px;
+            background: #f1f2f6;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .step.active .step-icon {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 5px 15px rgba(108, 92, 231, 0.4);
+        }
+
+        /* الشات الاحترافي */
+        .chat-box {
+            background: #f8f9fd;
+            border-radius: 25px;
+            height: 320px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid #f1f2f6;
+        }
+
+        .msgs { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+        
+        .m {
+            padding: 12px 18px;
+            border-radius: 20px;
+            max-width: 80%;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.02);
+        }
+
+        .m.c { background: var(--primary); color: white; align-self: flex-start; border-bottom-right-radius: 4px; }
+        .m.d { background: white; color: var(--dark); align-self: flex-end; border-bottom-left-radius: 4px; border: 1px solid #eee; }
+
+        .input-group {
+            padding: 15px;
+            background: white;
+            display: flex;
+            gap: 10px;
+            border-top: 1px solid #eee;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 16px;
+            border-radius: 18px;
+            border: 1.5px solid #eee;
+            outline: none;
+            background: #f9f9f9;
+            font-size: 1rem;
+        }
+
+        input:focus { border-color: var(--primary); background: white; }
+
+        .btn-main {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 18px;
+            font-weight: 800;
+            width: 100%;
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(108, 92, 231, 0.2);
+        }
+
+        .btn-main:active { transform: scale(0.98); }
+
         .hidden { display: none; }
         
-        /* ملخص الفاتورة */
-        .bill-tag { background: #fff9db; border: 1px dashed #fab005; padding: 10px; border-radius: 10px; font-size: 0.8rem; margin-top: 10px; }
+        .pulse { animation: pulse-red 2s infinite; }
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(255, 118, 117, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(255, 118, 117, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 118, 117, 0); } }
     </style>
 </head>
 <body>
 
 <div class="app-shell">
     <header>
-        <h2 style="margin:0">سوبر طلبات برو ⚡</h2>
-        <div id="status-label" style="font-size: 0.8rem; opacity: 0.8; margin-top: 5px;">جاهز لاستلام طلبك</div>
+        <h2>سوبر طلبات</h2>
+        <p>التوصيل الأسرع في مدينتك ⚡</p>
     </header>
 
     <div class="tabs">
-        <button class="tab-btn active" id="u-tab" onclick="switchPage('user')">طلب جديد</button>
+        <button class="tab-btn active" id="u-tab" onclick="switchPage('user')">أطلب الآن</button>
         <button class="tab-btn" id="d-tab" onclick="switchPage('delivery')">كابتن التوصيل</button>
     </div>
 
     <div class="content">
         <div id="page-user">
-            <div class="card" id="user-form">
-                <label>📍 وجهة التوصيل</label>
-                <input type="text" id="u-addr" placeholder="أين أنت الآن؟">
-                <label style="display:block; margin-top:15px;">🛍️ ماذا تريد أن نرسل لك؟</label>
-                <textarea id="u-items" style="width:100%; padding:12px; border-radius:15px; border:1px solid #eee; margin-top:5px;" rows="3" placeholder="مثال: وجبة كينج، صيدلية، بقالة..."></textarea>
-                <button class="btn-action btn-main" onclick="placeOrder()">إرسال الطلب الآن 🚀</button>
+            <div id="timer-ui" class="timer-card hidden pulse">
+                <span>⏱️ جاري تنفيذ طلبك منذ:</span>
+                <b id="timer-val" style="font-size: 1.2rem;">00:00</b>
             </div>
 
-            <div class="card hidden" id="user-tracking">
-                <div class="stepper">
-                    <div id="us-1" class="step"><div class="dot"></div>تأكيد</div>
-                    <div id="us-2" class="step"><div class="dot"></div>تجهيز</div>
-                    <div id="us-3" class="step"><div class="dot"></div>توصيل</div>
+            <div class="card" id="user-form">
+                <h3 style="margin-top:0">أرسل طلبك 🛒</h3>
+                <input type="text" id="u-addr" placeholder="عنوان التوصيل بالتفصيل...">
+                <textarea id="u-items" rows="3" placeholder="اكتب قائمة طلباتك هنا..." style="margin-top:10px"></textarea>
+                <button class="btn-main" style="margin-top:20px" onclick="placeOrder()">تأكيد الطلب 🚀</button>
+            </div>
+
+            <div id="user-tracking" class="hidden">
+                <div class="card">
+                    <div class="status-bar">
+                        <div id="us-1" class="step"><div class="step-icon">📝</div><span>تأكيد</span></div>
+                        <div id="us-2" class="step"><div class="step-icon">👨‍🍳</div><span>تجهيز</span></div>
+                        <div id="us-3" class="step"><div class="step-icon">🚴</div><span>توصيل</span></div>
+                    </div>
                 </div>
-                
-                <div class="chat-area hidden" id="u-chat-box">
+
+                <div class="chat-box hidden" id="u-chat-box">
                     <div id="u-msgs" class="msgs"></div>
                     <div class="input-group">
-                        <input type="text" id="u-in" placeholder="رسالة للكابتن...">
-                        <button class="btn-send" onclick="sendMessage('c')">🕊️</button>
+                        <input type="text" id="u-in" placeholder="اكتب رسالة للكابتن...">
+                        <button class="btn-main" style="width:60px; padding:0" onclick="chat('c')">➤</button>
                     </div>
                 </div>
             </div>
@@ -94,15 +256,19 @@
         <div id="page-delivery" class="hidden">
             <div id="delivery-feed"></div>
             
-            <div class="card hidden" id="delivery-panel">
-                <div class="bill-tag">📦 طلب نشط: <span id="d-order-info"></span></div>
-                <button class="btn-action btn-main" id="status-btn" onclick="advanceStatus()">تحديث الحالة: قيد التجهيز</button>
+            <div id="delivery-active" class="hidden">
+                <div id="d-timer-ui" class="timer-card pulse">
+                    <span>⏱️ الوقت المنقضي:</span>
+                    <b id="d-timer-val">00:00</b>
+                </div>
                 
-                <div class="chat-area" style="margin-top:15px;">
+                <button class="btn-main" id="status-btn" onclick="nextStatus()" style="margin-bottom:20px">تحديث حالة الطلب</button>
+                
+                <div class="chat-box">
                     <div id="d-msgs" class="msgs"></div>
                     <div class="input-group">
                         <input type="text" id="d-in" placeholder="تواصل مع العميل...">
-                        <button class="btn-send" onclick="sendMessage('d')">🕊️</button>
+                        <button class="btn-main" style="width:60px; padding:0" onclick="chat('d')">➤</button>
                     </div>
                 </div>
             </div>
@@ -111,103 +277,97 @@
 </div>
 
 <script>
+    // الإعدادات وقاعدة البيانات (نفس الكود السابق لضمان العمل)
     const SB_URL = 'https://xncapmzlwuisupkjlftb.supabase.co';
     const SB_KEY = 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS';
     const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
-    let currentOrderId = null;
-    let chatHistory = [];
+    let activeId = null;
+    let chatLog = [];
+    let timerInt = null;
 
-    // --- منطق العميل ---
+    function startTimer() {
+        document.getElementById('timer-ui').classList.remove('hidden');
+        document.getElementById('d-timer-ui').classList.remove('hidden');
+        let start = Date.now();
+        timerInt = setInterval(() => {
+            let diff = Date.now() - start;
+            let m = Math.floor(diff/60000).toString().padStart(2,'0');
+            let s = Math.floor((diff%60000)/1000).toString().padStart(2,'0');
+            document.getElementById('timer-val').innerText = `${m}:${s}`;
+            document.getElementById('d-timer-val').innerText = `${m}:${s}`;
+        }, 1000);
+    }
+
     async function placeOrder() {
         const addr = document.getElementById('u-addr').value;
         const items = document.getElementById('u-items').value;
-        if(!addr || !items) return alert("يرجى ملء البيانات");
+        if(!addr || !items) return;
 
-        const { data, error } = await supabaseClient.from('orders').insert([{
-            address: addr, items: items, status: 1, chat_messages: []
-        }]).select();
-
+        const { data } = await supabaseClient.from('orders').insert([{ address: addr, items: items, status: 1, chat_messages: [] }]).select();
         if (data) {
-            currentOrderId = data[0].id;
+            activeId = data[0].id;
             document.getElementById('user-form').classList.add('hidden');
             document.getElementById('user-tracking').classList.remove('hidden');
-            document.getElementById('status-label').innerText = "جاري البحث عن كابتن...";
-            startSync();
+            sync();
         }
     }
 
-    // --- منطق المندوب ---
-    async function loadFeed() {
+    async function loadOrders() {
         const { data } = await supabaseClient.from('orders').select('*').eq('status', 1);
-        const feed = document.getElementById('delivery-feed');
-        feed.innerHTML = data.length ? '' : '<p style="text-align:center; opacity:0.5; margin-top:50px;">لا توجد طلبات قريبة حالياً</p>';
-        data.forEach(o => {
-            feed.innerHTML += `
-                <div class="card">
-                    <div style="font-weight:900; color:var(--primary)">📍 طلب جديد</div>
-                    <p style="font-size:0.9rem; margin:10px 0;">${o.items}</p>
-                    <button class="btn-action btn-main" onclick="acceptOrder(${o.id}, '${o.items}')">قبول الطلب ✅</button>
-                </div>`;
-        });
+        document.getElementById('delivery-feed').innerHTML = data.map(o => `
+            <div class="card">
+                <h3>طلب متاح ✨</h3>
+                <p>${o.items}</p>
+                <button class="btn-main" onclick="acceptOrder(${o.id})">قبول وتوصيل ✅</button>
+            </div>
+        `).join('');
     }
 
-    async function acceptOrder(id, items) {
-        currentOrderId = id;
+    async function acceptOrder(id) {
+        activeId = id;
         await supabaseClient.from('orders').update({ status: 2 }).eq('id', id);
         document.getElementById('delivery-feed').classList.add('hidden');
-        document.getElementById('delivery-panel').classList.remove('hidden');
-        document.getElementById('d-order-info').innerText = items;
-        startSync();
+        document.getElementById('delivery-active').classList.remove('hidden');
+        startTimer();
+        sync();
     }
 
-    async function advanceStatus() {
-        const { data } = await supabaseClient.from('orders').select('status').eq('id', currentOrderId).single();
+    async function nextStatus() {
+        const { data } = await supabaseClient.from('orders').select('status').eq('id', activeId).single();
         const next = data.status + 1;
-        await supabaseClient.from('orders').update({ status: next }).eq('id', currentOrderId);
-        if(next === 4) { alert("تمت المهمة! 🎉"); location.reload(); }
+        await supabaseClient.from('orders').update({ status: next }).eq('id', activeId);
+        if(next === 4) location.reload();
     }
 
-    // --- الربط اللحظي ---
-    function startSync() {
-        supabaseClient.channel('live').on('postgres_changes', 
-        { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${currentOrderId}` }, 
+    function sync() {
+        supabaseClient.channel('orders').on('postgres_changes', 
+        { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${activeId}` }, 
         payload => {
             const s = payload.new.status;
-            chatHistory = payload.new.chat_messages || [];
-            
-            // تحديث التتبع
-            for(let i=1; i<=3; i++) {
-                if(document.getElementById(`us-${i}`)) document.getElementById(`us-${i}`).classList.toggle('active', i <= s);
-            }
-            
-            if(s === 2) {
-                document.getElementById('status-label').innerText = "الكابتن يجهز طلبك الآن";
+            chatLog = payload.new.chat_messages || [];
+            if(s === 2) { 
                 document.getElementById('u-chat-box').classList.remove('hidden');
-                document.getElementById('status-btn').innerText = "تحديث: أنا في الطريق 🚴";
+                if(!timerInt) startTimer();
             }
-            if(s === 3) {
-                document.getElementById('status-label').innerText = "الكابتن في الطريق إليك";
-                document.getElementById('status-btn').innerText = "تحديث: تم التسليم ✅";
-            }
-
+            for(let i=1; i<=3; i++) document.getElementById(`us-${i}`).classList.toggle('active', i <= s);
             renderChat();
         }).subscribe();
     }
 
-    async function sendMessage(role) {
+    async function chat(role) {
         const input = document.getElementById(role === 'c' ? 'u-in' : 'd-in');
         if(!input.value) return;
-        chatHistory.push({ r: role, t: input.value });
-        await supabaseClient.from('orders').update({ chat_messages: chatHistory }).eq('id', currentOrderId);
+        chatLog.push({ r: role, t: input.value });
+        await supabaseClient.from('orders').update({ chat_messages: chatLog }).eq('id', activeId);
         input.value = '';
     }
 
     function renderChat() {
-        const h = chatHistory.map(m => `<div class="m ${m.r}">${m.t}</div>`).join('');
+        const h = chatLog.map(m => `<div class="m ${m.r}">${m.t}</div>`).join('');
         document.getElementById('u-msgs').innerHTML = h;
         document.getElementById('d-msgs').innerHTML = h;
-        document.querySelectorAll('.msgs').forEach(el => el.scrollTop = el.scrollHeight);
+        document.querySelectorAll('.msgs').forEach(e => e.scrollTop = e.scrollHeight);
     }
 
     function switchPage(p) {
@@ -215,7 +375,7 @@
         document.getElementById('page-delivery').classList.toggle('hidden', p !== 'delivery');
         document.getElementById('u-tab').classList.toggle('active', p === 'user');
         document.getElementById('d-tab').classList.toggle('active', p === 'delivery');
-        if(p === 'delivery' && !currentOrderId) loadFeed();
+        if(p === 'delivery' && !activeId) loadOrders();
     }
 </script>
 </body>
