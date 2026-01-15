@@ -13,20 +13,15 @@
         * { box-sizing: border-box; font-family: 'Cairo', sans-serif; transition: all 0.3s ease; }
         body { background: var(--bg); color: var(--text); margin: 0; padding: 0; min-height: 100vh; }
         
-        /* Header */
         header { background: var(--card); padding: 15px 5%; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
-        .logo { font-size: 1.4rem; font-weight: bold; color: var(--text); text-decoration: none; }
         .nav-btns { display: flex; gap: 10px; align-items: center; }
         .btn-sm { padding: 8px 15px; border-radius: 20px; cursor: pointer; font-weight: bold; border: none; font-size: 0.85rem; }
         .lang-btn { background: #334155; color: white; }
         .orders-btn { background: var(--accent); color: #000; }
 
-        /* Main Content */
         .container { padding: 20px 5%; max-width: 1300px; margin: auto; }
         .section-title { margin-bottom: 25px; font-size: 1.5rem; border-right: 5px solid var(--p); padding-right: 15px; }
-        [dir="ltr"] .section-title { border-right: none; border-left: 5px solid var(--p); padding-left: 15px; }
 
-        /* Product Grid */
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
         @media (min-width: 768px) { .grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); } }
         
@@ -37,23 +32,17 @@
         .price { color: var(--accent); font-weight: bold; display: block; margin-top: 5px; }
         .buy-btn { background: var(--p); color: white; border: none; width: 100%; padding: 12px; cursor: pointer; font-weight: bold; border-radius: 0 0 20px 20px; }
 
-        /* Modals */
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; z-index: 2000; padding: 20px; backdrop-filter: blur(5px); }
         .modal-content { background: var(--card); padding: 25px; border-radius: 25px; width: 100%; max-width: 450px; position: relative; max-height: 90vh; overflow-y: auto; }
         input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: white; text-align: inherit; }
         
-        /* Orders List Styling */
         .order-item { background: #0f172a; padding: 15px; border-radius: 15px; margin-bottom: 10px; border-right: 4px solid var(--accent); }
-        .order-item h4 { margin: 0 0 5px 0; color: white; }
-        .status-tag { background: var(--p); color: white; padding: 2px 8px; border-radius: 5px; font-size: 0.8rem; }
-        .close-modal { position: absolute; top: 15px; left: 15px; cursor: pointer; font-size: 1.5rem; }
-        [dir="ltr"] .close-modal { left: auto; right: 15px; }
     </style>
 </head>
 <body>
 
     <header>
-        <a href="#" class="logo">🛒 Shopping</a>
+        <a href="#" class="logo" style="text-decoration:none; color:white; font-weight:bold;">🛒 Shopping</a>
         <div class="nav-btns">
             <button class="btn-sm orders-btn" id="ui-my-orders" onclick="showMyOrders()">طلباتي</button>
             <button class="btn-sm lang-btn" id="langSwitcher" onclick="toggleLanguage()">English</button>
@@ -69,7 +58,13 @@
         <div class="modal-content">
             <h3 id="ui-modal-head" style="text-align:center; color:var(--accent);">تفاصيل الشحن</h3>
             <input type="text" id="custName" placeholder="الاسم الكامل">
-            <input type="text" id="custPhone" placeholder="رقم الهاتف">
+            
+            <input type="tel" id="custPhone" 
+                   placeholder="رقم الهاتف" 
+                   oninput="this.value = this.value.replace(/[^0-9]/g, '');" 
+                   pattern="[0-9]*" 
+                   inputmode="numeric">
+            
             <input type="text" id="custAddr" placeholder="العنوان بالتفصيل">
             <button class="buy-btn" style="border-radius:12px; margin-top:10px;" id="ui-pay-btn" onclick="initiatePiPayment()">تأكيد ودفع</button>
             <button class="buy-btn" style="background:#475569; border-radius:12px; margin-top:10px" onclick="closeModal('buyModal')">إلغاء</button>
@@ -79,37 +74,23 @@
 
     <div id="ordersModal" class="modal">
         <div class="modal-content">
-            <span class="close-modal" onclick="closeModal('ordersModal')">&times;</span>
+            <span style="position:absolute; top:15px; left:15px; cursor:pointer; font-size:1.5rem;" onclick="closeModal('ordersModal')">&times;</span>
             <h3 id="ui-orders-head" style="text-align:center; color:var(--accent);">قائمة طلباتي</h3>
-            <div id="myOrdersList" style="margin-top:20px;">
-                </div>
+            <div id="myOrdersList" style="margin-top:20px;"></div>
         </div>
     </div>
 
     <script>
-        // 1. إعدادات سوبابيس
         const SB_URL = 'https://xncapmzlwuisupkjlftb.supabase.co';
         const SB_KEY = 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS'; 
         const _supabase = supabase.createClient(SB_URL, SB_KEY);
 
-        // 2. نظام اللغات
         let currentLang = 'ar';
         const content = {
-            ar: {
-                title: "أحدث المنتجات", buy: "شراء الآن", head: "بيانات التوصيل",
-                name: "الاسم الكامل", phone: "رقم الهاتف", addr: "العنوان بالتفصيل",
-                pay: "تأكيد والدفع بـ Pi", myOrders: "طلباتي", ordersHead: "قائمة طلباتي",
-                noOrders: "لا توجد طلبات سابقة", langBtn: "English", loading: "جاري التحميل..."
-            },
-            en: {
-                title: "Latest Products", buy: "Buy Now", head: "Shipping Details",
-                name: "Full Name", phone: "Phone Number", addr: "Detailed Address",
-                pay: "Confirm & Pay", myOrders: "My Orders", ordersHead: "My Order List",
-                noOrders: "No orders found", langBtn: "عربي", loading: "Loading..."
-            }
+            ar: { title: "أحدث المنتجات", buy: "شراء الآن", head: "بيانات التوصيل", name: "الاسم الكامل", phone: "رقم الهاتف", addr: "العنوان بالتفصيل", pay: "تأكيد والدفع بـ Pi", myOrders: "طلباتي", ordersHead: "قائمة طلباتي", loading: "جاري التحميل..." },
+            en: { title: "Latest Products", buy: "Buy Now", head: "Shipping Details", name: "Full Name", phone: "Phone Number", addr: "Detailed Address", pay: "Confirm & Pay", myOrders: "My Orders", ordersHead: "My Order List", loading: "Loading..." }
         };
 
-        // 3. Pi SDK
         const Pi = window.Pi;
         Pi.init({ version: "2.0", sandbox: false });
         let userAccount = { username: "Guest" }; 
@@ -134,7 +115,7 @@
         function updateUI() {
             const t = content[currentLang];
             document.getElementById('ui-title').innerText = t.title;
-            document.getElementById('langSwitcher').innerText = t.langBtn;
+            document.getElementById('langSwitcher').innerText = currentLang === 'ar' ? "English" : "عربي";
             document.getElementById('ui-my-orders').innerText = t.myOrders;
             document.getElementById('ui-modal-head').innerText = t.head;
             document.getElementById('ui-pay-btn').innerText = t.pay;
@@ -147,7 +128,7 @@
         async function loadProducts() {
             const { data } = await _supabase.from('products').select('*');
             const grid = document.getElementById('productsGrid');
-            grid.innerHTML = data.map(p => `
+            grid.innerHTML = (data || []).map(p => `
                 <div class="card">
                     <div class="img-container"><img src="${p.image_url}"></div>
                     <div class="info">
@@ -159,84 +140,53 @@
             `).join('');
         }
 
-        // --- ميزة عرض الطلبات ---
         async function showMyOrders() {
             const listDiv = document.getElementById('myOrdersList');
             listDiv.innerHTML = `<p style="text-align:center">${content[currentLang].loading}</p>`;
             document.getElementById('ordersModal').style.display = 'flex';
-
-            const { data, error } = await _supabase
-                .from('orders')
-                .select('*')
-                .eq('pi_user', userAccount.username)
-                .order('created_at', { ascending: false });
-
-            if (!data || data.length === 0) {
-                listDiv.innerHTML = `<p style="text-align:center">${content[currentLang].noOrders}</p>`;
-                return;
-            }
-
+            const { data } = await _supabase.from('orders').select('*').eq('pi_user', userAccount.username).order('created_at', { ascending: false });
+            if (!data || data.length === 0) { listDiv.innerHTML = "<p style='text-align:center'>لا توجد طلبات</p>"; return; }
             listDiv.innerHTML = data.map(o => `
                 <div class="order-item">
                     <h4>${o.product_name}</h4>
                     <div style="font-size:0.85rem; color:#cbd5e1;">
-                        <span>الحالة: <b class="status-tag">${o.status || 'قيد المراجعة'}</b></span><br>
-                        <span>التاريخ: ${new Date(o.created_at).toLocaleDateString(currentLang === 'ar' ? 'ar-EG' : 'en-US')}</span><br>
-                        <small style="color:var(--accent)">TXID: ${o.txid.substring(0,12)}...</small>
+                        <span>الحالة: <b style="color:var(--accent)">${o.status || 'قيد المراجعة'}</b></span><br>
+                        <small>TXID: ${o.txid.substring(0,10)}...</small>
                     </div>
                 </div>
             `).join('');
         }
 
-        function openModal(id, p = null) { 
-            if(p) activeProduct = p;
-            document.getElementById(id).style.display='flex'; 
-        }
-        
-        function closeModal(id) { 
-            document.getElementById(id).style.display='none'; 
-            if(id === 'buyModal') document.getElementById('status-msg').innerText = "";
-        }
+        function openModal(id, p = null) { if(p) activeProduct = p; document.getElementById(id).style.display='flex'; }
+        function closeModal(id) { document.getElementById(id).style.display='none'; }
 
         async function initiatePiPayment() {
             const name = document.getElementById('custName').value;
             const phone = document.getElementById('custPhone').value;
             const addr = document.getElementById('custAddr').value;
-            if(!name || !phone || !addr) return alert(currentLang === 'ar' ? "أكمل البيانات" : "Complete data");
-
-            const btn = document.getElementById('ui-pay-btn');
-            btn.disabled = true;
+            if(!name || !phone || !addr) return alert("أكمل البيانات");
 
             try {
-                await Pi.createPayment({
+                const payment = await Pi.createPayment({
                     amount: activeProduct.price,
                     memo: `Order: ${activeProduct.name}`,
                     metadata: { productId: activeProduct.id }
                 }, {
-                    onReadyForServerApproval: (pid) => fetch('/api/pi/approve', {
-                        method: 'POST', body: JSON.stringify({ paymentId: pid })
-                    }).then(res => res.json()),
+                    onReadyForServerApproval: (pid) => {}, // تواصل مع خادمك هنا
                     onReadyForServerCompletion: async (pid, txid) => {
-                        const res = await fetch('/api/pi/complete', {
-                            method: 'POST', body: JSON.stringify({ paymentId: pid, txid })
-                        });
-                        if(res.ok) {
-                            await _supabase.from('orders').insert([{
-                                pi_user: userAccount.username, product_name: activeProduct.name,
-                                amount: activeProduct.price, customer_name: name,
-                                customer_phone: phone, address: addr, txid: txid, status: "قيد المراجعة"
-                            }]);
-                            alert(currentLang === 'ar' ? "تم الشراء بنجاح!" : "Purchase successful!");
-                            closeModal('buyModal');
-                            showMyOrders(); // تحديث القائمة تلقائياً
-                        }
+                        await _supabase.from('orders').insert([{
+                            pi_user: userAccount.username, product_name: activeProduct.name,
+                            amount: activeProduct.price, customer_name: name,
+                            customer_phone: phone, address: addr, txid: txid, status: "قيد المراجعة"
+                        }]);
+                        alert("تم الشراء!");
+                        closeModal('buyModal');
                     },
-                    onCancel: () => { btn.disabled = false; },
-                    onError: () => { btn.disabled = false; }
+                    onCancel: () => {},
+                    onError: (e) => {}
                 });
-            } catch (e) { btn.disabled = false; }
+            } catch (e) {}
         }
-
         init();
     </script>
 </body>
