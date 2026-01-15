@@ -3,40 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة التحكم | Shopping Admin</title>
+    <title>لوحة تحكم الإدارة | Shopping</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        :root { --p: #6d28d9; --bg: #f8fafc; --card: #ffffff; --text: #1e293b; --err: #ef4444; }
+        :root { --p: #6d28d9; --bg: #f1f5f9; --card: #ffffff; --text: #1e293b; --accent: #fbbf24; }
         * { box-sizing: border-box; font-family: 'Cairo', sans-serif; }
         body { background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
         
+        /* شاشة الدخول */
         #loginBox { background: var(--card); padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; max-width: 400px; margin: 100px auto; }
         input, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #cbd5e1; border-radius: 8px; }
         
-        #adminContent { display: none; max-width: 1100px; margin: auto; animate: fadeIn 0.5s; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
+        /* محتوى الإدارة */
+        #adminContent { display: none; max-width: 1200px; margin: auto; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
         .card { background: var(--card); padding: 25px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 25px; }
         
-        .btn { padding: 12px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; color: white; }
+        .btn { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; color: white; transition: 0.3s; }
         .btn-p { background: var(--p); width: 100%; }
-        .btn-del { background: var(--err); font-size: 0.8rem; }
+        .btn-del { background: #ef4444; }
+        .btn-save { background: #22c55e; }
         .btn-logout { background: #475569; }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { padding: 12px; text-align: right; border-bottom: 1px solid #e2e8f0; }
-        th { background: #f1f5f9; font-size: 0.85rem; }
-        .img-preview { width: 50px; height: 50px; object-fit: contain; background: #eee; border-radius: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; border-radius: 10px; overflow: hidden; }
+        th, td { padding: 15px; text-align: right; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; }
+        th { background: #f8fafc; color: #64748b; }
+        .img-preview { width: 60px; height: 60px; object-fit: contain; background: #eee; border-radius: 8px; }
+        
+        .buyer-info { line-height: 1.6; }
+        .buyer-info b { color: var(--p); }
+        .status-badge { padding: 4px 8px; border-radius: 5px; font-size: 0.8rem; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div id="loginBox">
-        <h2 style="color:var(--p)">إدارة المتجر 🔐</h2>
-        <input type="password" id="adminPass" placeholder="كلمة المرور السرية">
-        <button class="btn btn-p" onclick="checkPass()" id="loginBtn">دخول النظام</button>
+        <h2 style="color:var(--p)">دخول الإدارة 🔐</h2>
+        <input type="password" id="adminPass" placeholder="كلمة المرور">
+        <button class="btn btn-p" onclick="checkPass()" id="loginBtn">دخول</button>
     </div>
 
     <div id="adminContent">
@@ -47,17 +52,34 @@
 
         <div class="card">
             <h3>📦 إضافة منتج جديد</h3>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                 <input type="text" id="pName" placeholder="اسم المنتج">
                 <input type="number" id="pPrice" placeholder="السعر بـ Pi">
             </div>
-            <p style="font-size: 0.8rem; color: #64748b; margin: 10px 0 5px;">اختر صورة المنتج (JPG/PNG):</p>
+            <label style="display:block; margin-top:10px;">صورة المنتج (JPG/PNG):</label>
             <input type="file" id="pImgFile" accept="image/*">
-            <button class="btn btn-p" style="margin-top:10px" onclick="addProduct()" id="uploadBtn">رفع وحفظ المنتج</button>
+            <button class="btn btn-p" style="margin-top:10px" onclick="addProduct()" id="uploadBtn">حفظ المنتج والصورة</button>
         </div>
 
         <div class="card">
-            <h3>🏷️ المنتجات المعروضة</h3>
+            <h3>🛒 طلبات العملاء التفصيلية</h3>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>بيانات المشتري</th>
+                            <th>المنتج المطلوب</th>
+                            <th>حالة الطلب</th>
+                            <th>إجراء</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ordersList"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>🏷️ المنتجات الحالية</h3>
             <div style="overflow-x: auto;">
                 <table>
                     <thead>
@@ -72,39 +94,22 @@
                 </table>
             </div>
         </div>
-
-        <div class="card">
-            <h3>🛒 طلبات الشراء</h3>
-            <div style="overflow-x: auto;">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>العميل</th>
-                            <th>المنتج</th>
-                            <th>الحالة</th>
-                            <th>تحديث</th>
-                        </tr>
-                    </thead>
-                    <tbody id="ordersList"></tbody>
-                </table>
-            </div>
-        </div>
     </div>
 
     <script>
-        // --- إعدادات الربط ---
+        // إعدادات الربط - استبدل بالقيم الخاصة بك
         const SB_URL = 'https://xncapmzlwuisupkjlftb.supabase.co';
-        const SB_KEY = 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS'; // استبدل بمفتاحك
+        const SB_KEY = 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS'; 
         const _supabase = supabase.createClient(SB_URL, SB_KEY);
 
-        // --- نظام الحماية ---
+        // --- نظام الدخول ---
         async function checkPass() {
             const pass = document.getElementById('adminPass').value;
             const btn = document.getElementById('loginBtn');
-            btn.disabled = true; btn.innerText = "جاري التحقق...";
+            btn.innerText = "جاري التحقق...";
 
             try {
-                const response = await fetch('/.netlify/functions/check-auth', {
+                const response = await fetch('/api/check-auth', {
                     method: 'POST',
                     body: JSON.stringify({ password: pass })
                 });
@@ -114,12 +119,11 @@
                     sessionStorage.setItem('isAdmin', 'true');
                     showAdmin();
                 } else {
-                    alert("كلمة المرور غير صحيحة!");
-                    btn.disabled = false; btn.innerText = "دخول";
+                    alert("كلمة المرور خاطئة!");
+                    btn.innerText = "دخول";
                 }
             } catch (e) {
-                alert("فشل الاتصال بـ Netlify Function");
-                btn.disabled = false;
+                alert("خطأ في الاتصال بالسيرفر");
             }
         }
 
@@ -131,48 +135,38 @@
 
         function logout() { sessionStorage.removeItem('isAdmin'); location.reload(); }
 
-        // --- إدارة المنتجات (الرفع والإضافة) ---
+        // --- إدارة المنتجات والرفع ---
         async function addProduct() {
             const name = document.getElementById('pName').value;
             const price = document.getElementById('pPrice').value;
             const fileInput = document.getElementById('pImgFile');
             const btn = document.getElementById('uploadBtn');
 
-            if (!name || !price || fileInput.files.length === 0) return alert("يرجى إكمال البيانات واختيار صورة");
+            if (!name || !price || fileInput.files.length === 0) return alert("أكمل البيانات");
 
-            btn.disabled = true; btn.innerText = "جاري الرفع...";
+            btn.innerText = "جاري الرفع...";
+            btn.disabled = true;
 
             try {
                 const file = fileInput.files[0];
-                // حل مشكلة الخطأ 400: تنظيف اسم الملف من أي رموز غريبة
-                const fileExt = file.name.split('.').pop();
-                const cleanFileName = `img_${Date.now()}.${fileExt}`;
-
-                // 1. رفع الصورة لـ Storage
+                const cleanName = `img_${Date.now()}.${file.name.split('.').pop()}`;
+                
                 const { data: upData, error: upError } = await _supabase.storage
                     .from('product-images')
-                    .upload(cleanFileName, file, { contentType: file.type });
+                    .upload(cleanName, file);
 
                 if (upError) throw upError;
 
-                // 2. الحصول على الرابط
-                const { data: urlData } = _supabase.storage.from('product-images').getPublicUrl(cleanFileName);
+                const { data: urlData } = _supabase.storage.from('product-images').getPublicUrl(cleanName);
                 const imageUrl = urlData.publicUrl;
 
-                // 3. الحفظ في الجدول
-                const { error: insError } = await _supabase.from('products').insert([
-                    { name, price: parseFloat(price), image_url: imageUrl }
-                ]);
+                await _supabase.from('products').insert([{ name, price: parseFloat(price), image_url: imageUrl }]);
 
-                if (insError) throw insError;
-
-                alert("تمت الإضافة بنجاح!");
+                alert("تمت إضافة المنتج!");
                 location.reload();
-
             } catch (err) {
-                console.error(err);
-                alert("حدث خطأ: " + (err.message || "تأكد من إعدادات Storage RLS"));
-                btn.disabled = false; btn.innerText = "حفظ المنتج والصورة";
+                alert("خطأ: " + err.message);
+                btn.disabled = false;
             }
         }
 
@@ -189,35 +183,54 @@
         }
 
         async function deleteProduct(id) {
-            if(confirm("هل أنت متأكد؟")) {
+            if(confirm("حذف المنتج؟")) {
                 await _supabase.from('products').delete().eq('id', id);
                 loadProducts();
             }
         }
 
-        // --- إدارة الطلبات ---
+        // --- إدارة الطلبات التفصيلية ---
         async function loadOrders() {
             const { data } = await _supabase.from('orders').select('*').order('created_at', {ascending: false});
             document.getElementById('ordersList').innerHTML = data.map(o => `
                 <tr>
-                    <td><b>${o.customer_name}</b><br><small>${o.pi_user}</small></td>
-                    <td>${o.product_name}</td>
                     <td>
-                        <select id="st-${o.id}">
-                            <option value="قيد المراجعة" ${o.status==='قيد المراجعة'?'selected':''}>قيد المراجعة</option>
-                            <option value="تم الشحن" ${o.status==='تم الشحن'?'selected':''}>تم الشحن</option>
-                            <option value="تم التوصيل" ${o.status==='تم التوصيل'?'selected':''}>تم التوصيل</option>
+                        <div class="buyer-info">
+                            <b>👤 الاسم:</b> ${o.customer_name}<br>
+                            <b>📞 الهاتف:</b> <a href="tel:${o.customer_phone}">${o.customer_phone}</a><br>
+                            <b>📍 العنوان:</b> ${o.address}<br>
+                            <small>ID: ${o.pi_user}</small>
+                        </div>
+                    </td>
+                    <td>
+                        <b>${o.product_name}</b><br>
+                        <span>السعر: ${o.amount} Pi</span><br>
+                        <small style="color:gray">TXID: ${o.txid.substring(0,10)}...</small>
+                    </td>
+                    <td>
+                        <select id="st-${o.id}" style="width: auto;">
+                            <option value="قيد المراجعة" ${o.status==='قيد المراجعة'?'selected':''}>⏳ قيد المراجعة</option>
+                            <option value="تم الشحن" ${o.status==='تم الشحن'?'selected':''}>🚚 تم الشحن</option>
+                            <option value="تم التوصيل" ${o.status==='تم التوصيل'?'selected':''}>✅ تم التوصيل</option>
+                            <option value="ملغي" ${o.status==='ملغي'?'selected':''}>❌ ملغي</option>
                         </select>
                     </td>
-                    <td><button onclick="updateStatus(${o.id})" style="background:#22c55e; color:white; border:none; border-radius:5px; padding:5px 10px; cursor:pointer">حفظ</button></td>
+                    <td>
+                        <button class="btn btn-save" onclick="updateStatus(${o.id})">حفظ</button>
+                    </td>
                 </tr>
             `).join('');
         }
 
         async function updateStatus(id) {
             const status = document.getElementById(`st-${id}`).value;
-            await _supabase.from('orders').update({ status }).eq('id', id);
-            alert("تم التحديث");
+            const { error } = await _supabase.from('orders').update({ status }).eq('id', id);
+            if (!error) {
+                alert("تم تحديث الحالة");
+                loadOrders();
+            } else {
+                alert("خطأ في التحديث");
+            }
         }
 
         function loadData() { loadProducts(); loadOrders(); }
