@@ -2,67 +2,127 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>لوحة التحكم - إضافة منتجات</title>
+    <title>لوحة التحكم - Shopping Admin</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: sans-serif; background: #f8fafc; padding: 20px; }
-        .form-box { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
-        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
-        button { background: #6d28d9; color: white; border: none; width: 100%; padding: 12px; border-radius: 5px; cursor: pointer; }
-        table { width: 100%; margin-top: 20px; border-collapse: collapse; }
-        th, td { padding: 10px; border-bottom: 1px solid #ddd; text-align: right; }
+        body { font-family: 'Cairo', sans-serif; background: #f1f5f9; margin: 0; padding: 20px; color: #1e293b; }
+        .admin-container { max-width: 1100px; margin: auto; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 30px; }
+        h2 { border-bottom: 2px solid #6d28d9; padding-bottom: 10px; color: #6d28d9; }
+        
+        /* Form Styling */
+        .form-group { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        input { padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; }
+        .btn-save { background: #6d28d9; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+
+        /* Tables Styling */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
+        th, td { padding: 12px; text-align: right; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; }
+        th { background: #f8fafc; color: #64748b; }
+        
+        .status-select { padding: 5px; border-radius: 5px; border: 1px solid #cbd5e1; background: #fff; }
+        .btn-update { background: #22c55e; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.8rem; }
+        .badge { padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; background: #fbbf24; }
     </style>
 </head>
 <body>
-    <div class="form-box">
-        <h2>إضافة منتج جديد</h2>
-        <input type="text" id="pName" placeholder="اسم المنتج">
-        <input type="number" id="pPrice" placeholder="السعر بـ Pi">
-        <input type="text" id="pImg" placeholder="رابط صورة المنتج">
-        <button onclick="addProduct()">حفظ المنتج</button>
-    </div>
 
-    <div class="form-box" style="margin-top: 20px; max-width: 800px;">
-        <h2>المنتجات الحالية</h2>
-        <table id="productsTable">
-            <thead><tr><th>المنتج</th><th>السعر</th><th>إجراء</th></tr></thead>
-            <tbody></tbody>
-        </table>
+    <div class="admin-container">
+        <h1>🛠 لوحة تحكم المتجر</h1>
+
+        <div class="card">
+            <h2>📦 إضافة منتج جديد</h2>
+            <div class="form-group">
+                <input type="text" id="pName" placeholder="اسم المنتج">
+                <input type="number" id="pPrice" placeholder="السعر بـ Pi">
+                <input type="text" id="pImg" placeholder="رابط الصورة">
+            </div>
+            <button class="btn-save" onclick="addProduct()">حفظ المنتج في المتجر</button>
+        </div>
+
+        <div class="card">
+            <h2>🛒 طلبات الشراء الواردة</h2>
+            <div style="overflow-x: auto;">
+                <table id="ordersTable">
+                    <thead>
+                        <tr>
+                            <th>العميل</th>
+                            <th>المنتج</th>
+                            <th>الهاتف</th>
+                            <th>العنوان</th>
+                            <th>رقم العملية (TXID)</th>
+                            <th>الحالة</th>
+                            <th>إجراء</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <script>
-        const supabaseUrl = 'https://xncapmzlwuisupkjlftb.supabase.co';
-        const supabaseKey = 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS';
-        const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
+        const SB_URL = 'https://xncapmzlwuisupkjlftb.supabase.co';
+        const SB_KEY = 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS';
+        const _supabase = supabase.createClient(SB_URL, SB_KEY);
 
+        // إضافة منتج
         async function addProduct() {
             const name = document.getElementById('pName').value;
             const price = document.getElementById('pPrice').value;
             const img = document.getElementById('pImg').value;
+            if(!name || !price || !img) return alert("اكمل البيانات");
 
-            const { error } = await _supabase.from('products').insert([{ name, price: parseFloat(price), image_url: img }]);
-            if (error) alert("خطأ!"); else { alert("تم الإضافة"); location.reload(); }
+            await _supabase.from('products').insert([{ name, price: parseFloat(price), image_url: img }]);
+            alert("تمت الإضافة!");
+            location.reload();
         }
 
-        async function loadAdminProducts() {
-            const { data } = await _supabase.from('products').select('*');
-            const tbody = document.querySelector('#productsTable tbody');
-            tbody.innerHTML = data.map(p => `
+        // جلب الطلبات من الداتابيز
+        async function loadOrders() {
+            const { data, error } = await _supabase
+                .from('orders')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            const tbody = document.querySelector('#ordersTable tbody');
+            tbody.innerHTML = data.map(o => `
                 <tr>
-                    <td>${p.name}</td>
-                    <td>${p.price} Pi</td>
-                    <td><button style="background:red; width:auto; padding:5px 10px" onclick="deleteProduct(${p.id})">حذف</button></td>
+                    <td><b>${o.customer_name}</b><br><small>${o.pi_user}</small></td>
+                    <td>${o.product_name}<br><small>${o.amount} Pi</small></td>
+                    <td>${o.customer_phone}</td>
+                    <td>${o.address}</td>
+                    <td><small>${o.txid.substring(0,8)}...</small></td>
+                    <td>
+                        <select id="status-${o.id}" class="status-select">
+                            <option value="قيد المراجعة" ${o.status === 'قيد المراجعة' ? 'selected' : ''}>قيد المراجعة</option>
+                            <option value="تم الشحن" ${o.status === 'تم الشحن' ? 'selected' : ''}>تم الشحن</option>
+                            <option value="تم التوصيل" ${o.status === 'تم التوصيل' ? 'selected' : ''}>تم التوصيل</option>
+                            <option value="ملغي" ${o.status === 'ملغي' ? 'selected' : ''}>ملغي</option>
+                        </select>
+                    </td>
+                    <td>
+                        <button class="btn-update" onclick="updateOrderStatus(${o.id})">تحديث</button>
+                    </td>
                 </tr>
             `).join('');
         }
 
-        async function deleteProduct(id) {
-            if(confirm("هل أنت متأكد؟")) {
-                await _supabase.from('products').delete().eq('id', id);
-                location.reload();
-            }
+        // تحديث حالة الطلب لكي يراها المستخدم في صفحة التتبع
+        async function updateOrderStatus(orderId) {
+            const newStatus = document.getElementById(`status-${orderId}`).value;
+            const { error } = await _supabase
+                .from('orders')
+                .update({ status: newStatus })
+                .eq('id', orderId);
+
+            if (error) alert("حدث خطأ");
+            else alert("تم تحديث حالة الطلب بنجاح!");
         }
-        loadAdminProducts();
+
+        window.onload = loadOrders;
     </script>
 </body>
 </html>
