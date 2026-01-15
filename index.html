@@ -3,221 +3,256 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>منصة تبرعات Pi Network</title>
+    <title>منصة Pi الخيرية | تبرع بمستقبلك</title>
+    
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
+
         :root {
-            --primary-color: #6c5ce7;
-            --secondary-color: #a29bfe;
-            --bg-color: #f9f9fb;
-            --card-bg: #ffffff;
-            --text-main: #2d3436;
+            --primary: #6c5ce7;
+            --secondary: #a29bfe;
+            --accent: #00b894;
+            --bg: #f0f2f5;
+            --card: #ffffff;
+            --text: #2d3436;
         }
+
+        * { box-sizing: border-box; transition: all 0.3s ease; }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
+            font-family: 'Tajawal', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
             margin: 0;
-            padding: 20px;
-            color: var(--text-main);
+            padding: 0;
+            line-height: 1.6;
         }
 
+        /* Header */
         header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 50px 20px;
             text-align: center;
-            padding: 40px 0;
+            border-bottom-left-radius: 50px;
+            border-bottom-right-radius: 50px;
+            box-shadow: 0 10px 30px rgba(108, 92, 231, 0.2);
         }
 
-        header h1 { color: var(--primary-color); margin-bottom: 10px; }
+        header h1 { margin: 0; font-size: 2.2rem; }
+        header p { opacity: 0.9; margin-top: 10px; font-size: 1.1rem; }
 
+        /* Main Container */
         .container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 25px;
             max-width: 1200px;
-            margin: 0 auto;
+            margin: -30px auto 50px;
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
         }
 
-        /* تصميم البطاقة */
-        .campaign-card {
-            background: var(--card-bg);
-            border-radius: 20px;
+        /* Campaign Card */
+        .card {
+            background: var(--card);
+            border-radius: 25px;
             overflow: hidden;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-            transition: transform 0.3s ease;
-            position: relative;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(0,0,0,0.03);
         }
 
-        .campaign-card:hover {
-            transform: translateY(-10px);
-        }
+        .card:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
 
-        .card-img {
-            width: 100%;
-            height: 180px;
-            background: var(--secondary-color);
+        .card-header {
+            height: 160px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-size: 2rem;
+            font-size: 4rem;
+            background: #f8f9fa;
+            position: relative;
         }
 
-        .card-content {
-            padding: 20px;
+        .card-body { padding: 25px; flex-grow: 1; }
+
+        .card-body h3 { margin: 0 0 10px; color: var(--primary); font-size: 1.4rem; }
+        .card-body p { color: #636e72; font-size: 0.95rem; margin-bottom: 20px; height: 45px; overflow: hidden; }
+
+        /* Progress Bar */
+        .progress-container { margin-bottom: 20px; }
+        .progress-info { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 8px; font-weight: bold; }
+        .progress-bar { background: #eee; height: 12px; border-radius: 10px; overflow: hidden; }
+        .progress-fill { 
+            height: 100%; 
+            background: linear-gradient(90deg, var(--primary), var(--accent)); 
+            border-radius: 10px;
         }
 
-        .card-content h3 { margin-top: 0; }
-
-        .progress-bar {
-            background: #eee;
-            height: 10px;
-            border-radius: 5px;
-            margin: 15px 0;
-            overflow: hidden;
-        }
-
-        .progress-fill {
-            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
-            height: 100%;
-            width: 45%; /* سيتم تحديثه ديناميكياً */
-        }
-
+        /* Button */
         .btn-donate {
             width: 100%;
-            padding: 12px;
+            padding: 15px;
             border: none;
-            border-radius: 10px;
-            background-color: var(--primary-color);
+            border-radius: 15px;
+            background: var(--primary);
             color: white;
-            font-size: 1rem;
-            font-weight: bold;
+            font-size: 1.1rem;
+            font-weight: 700;
             cursor: pointer;
-            transition: background 0.3s;
+            box-shadow: 0 5px 15px rgba(108, 92, 231, 0.3);
         }
 
-        .btn-donate:hover { background-color: #5849c4; }
+        .btn-donate:active { transform: scale(0.98); }
 
-        /* التفاعل مع الهواتف */
-        @media (max-width: 480px) {
-            body { padding: 10px; }
-            .container { grid-template-columns: 1fr; }
-        }
-
-        #status-msg {
+        /* Status Toast */
+        #toast {
             position: fixed;
-            bottom: 20px;
+            bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
-            padding: 10px 20px;
-            border-radius: 30px;
+            padding: 15px 30px;
+            border-radius: 50px;
+            color: white;
+            font-weight: bold;
             display: none;
             z-index: 1000;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            animation: slideUp 0.4s ease;
+        }
+
+        @keyframes slideUp { from { bottom: -50px; } to { bottom: 30px; } }
+
+        @media (max-width: 480px) {
+            header { padding: 40px 15px; border-radius: 0 0 30px 30px; }
+            header h1 { font-size: 1.8rem; }
+            .container { margin-top: 20px; }
         }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>شارك في الخير</h1>
-        <p>تبرع باستخدام عملة Pi لدعم المشاريع الإنسانية</p>
+        <h1>مستقبل العطاء مع Pi</h1>
+        <p>اختر حملتك المفضلة وساهم في تغيير حياة الآخرين</p>
     </header>
 
-    <div class="container" id="campaigns-list">
-        </div>
+    <main class="container" id="campaigns-grid"></main>
 
-    <div id="status-msg"></div>
+    <div id="toast"></div>
 
     <script>
-        // --- تهيئة Supabase ---
-        const SUPABASE_URL = 'https://xncapmzlwuisupkjlftb.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS'; // ضع مفتاح anon الخاص بك هنا
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        // --- تهيئة Pi SDK ---
-        const Pi = window.Pi;
-        Pi.init({ version: "2.0", sandbox: false }); // اجعل sandbox: false عند النشر الفعلي
-
-        // بيانات الحملات
+        // --- 1. إعداد البيانات ---
         const campaigns = [
-            { id: 1, title: "إطعام مسكين", target: 500, current: 120, icon: "🍲", amount: 1 },
-            { id: 2, title: "بناء مدرسة", target: 5000, current: 850, icon: "🏫", amount: 5 },
-            { id: 3, title: "سقيا ماء", target: 1000, current: 400, icon: "💧", amount: 2 }
+            { id: 1, title: "إغاثة غزة العاجلة", desc: "توفير مستلزمات طبية وطرود غذائية للأسر النازحة.", target: 10000, current: 4850, icon: "🇵🇸", amount: 5 },
+            { id: 2, title: "سقيا الماء للمناطق الجافة", desc: "حفر آبار ارتوازية وتمديد شبكات مياه عذبة.", target: 5000, current: 3100, icon: "💧", amount: 2 },
+            { id: 3, title: "كفالة طالب علم", desc: "توفير الحقيبة المدرسية والرسوم للطلاب المحتاجين.", target: 3000, current: 950, icon: "📚", amount: 1 },
+            { id: 4, title: "تجهيز وحدات غسيل كلى", desc: "شراء أجهزة طبية وصيانتها للمستشفيات العامة.", target: 15000, current: 1200, icon: "🏥", amount: 10 },
+            { id: 5, title: "مشروع إطعام مسكين", desc: "توزيع وجبات ساخنة يومياً على المشردين والفقراء.", target: 2000, current: 1800, icon: "🍱", amount: 0.5 },
+            { id: 6, title: "بناء مساكن للأيتام", desc: "توفير مأوى آمن وكريم للأطفال فاقدي السند.", target: 25000, current: 5000, icon: "🏠", amount: 20 }
         ];
 
-        // عرض الحملات
-        function renderCampaigns() {
-            const list = document.getElementById('campaigns-list');
-            list.innerHTML = campaigns.map(c => `
-                <div class="campaign-card">
-                    <div class="card-img">${c.icon}</div>
-                    <div class="card-content">
-                        <h3>${c.title}</h3>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${(c.current/c.target)*100}%"></div>
+        // --- 2. إعداد الخدمات (Supabase & Pi) ---
+        const SB_URL = 'https://xncapmzlwuisupkjlftb.supabase.co';
+        const SB_KEY = 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS'; // ضع مفتاحك هنا
+        const supabase = supabase.createClient(SB_URL, SB_KEY);
+        const Pi = window.Pi;
+        Pi.init({ version: "2.0", sandbox: false });
+
+        // --- 3. عرض الحملات ---
+        function displayCampaigns() {
+            const grid = document.getElementById('campaigns-grid');
+            grid.innerHTML = campaigns.map(c => {
+                const percent = Math.min((c.current / c.target) * 100, 100);
+                return `
+                    <div class="card">
+                        <div class="card-header">${c.icon}</div>
+                        <div class="card-body">
+                            <h3>${c.title}</h3>
+                            <p>${c.desc}</p>
+                            <div class="progress-container">
+                                <div class="progress-info">
+                                    <span>${percent.toFixed(1)}% اكتمل</span>
+                                    <span>الهدف: ${c.target} Pi</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${percent}%"></div>
+                                </div>
+                            </div>
+                            <button class="btn-donate" onclick="startDonation('${c.title}', ${c.amount})">
+                                تبرع بـ ${c.amount} Pi
+                            </button>
                         </div>
-                        <p>تم جمع: ${c.current} من ${c.target} Pi</p>
-                        <button class="btn-donate" onclick="handlePayment('${c.title}', ${c.amount})">تبرع بـ ${c.amount} Pi</button>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
-        // --- عملية الدفع ---
-        async function handlePayment(campaignName, amount) {
+        // --- 4. معالجة الدفع ---
+        async function startDonation(name, val) {
             try {
+                showToast("جاري تجهيز محفظة Pi...", "#6c5ce7");
+                
                 const payment = await Pi.createPayment({
-                    amount: amount,
-                    memo: `تبرع لحملة: ${campaignName}`,
-                    metadata: { campaign: campaignName }
+                    amount: val,
+                    memo: `تبرع لـ: ${name}`,
+                    metadata: { campaignName: name }
                 }, {
-                    onReadyForServerApproval: async (paymentId) => {
-                        // إرسال المعرف إلى Netlify Function للموافقة
+                    onReadyForServerApproval: async (pid) => {
                         await fetch('/api/pi/approve', {
                             method: 'POST',
-                            body: JSON.stringify({ paymentId })
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ paymentId: pid })
                         });
                     },
-                    onReadyForServerCompletion: async (paymentId, txid) => {
-                        // إرسال البيانات لإكمال العملية وحفظها في Supabase
+                    onReadyForServerCompletion: async (pid, txid) => {
                         const res = await fetch('/api/pi/complete', {
                             method: 'POST',
-                            body: JSON.stringify({ paymentId, txid })
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ paymentId: pid, txid: txid })
                         });
                         
-                        if(res.ok) {
-                            await saveToSupabase(campaignName, amount, txid);
-                            showStatus("تم التبرع بنجاح! شكراً لك.", "#2ecc71");
+                        if (res.ok) {
+                            await logToSupabase(name, val, txid);
+                            showToast("تم التبرع بنجاح! تقبل الله منك.", "#00b894");
                         }
                     },
-                    onCancel: (paymentId) => console.log("Payment Cancelled"),
-                    onError: (error, payment) => console.error(error)
+                    onCancel: () => showToast("تم إلغاء العملية", "#fab1a0"),
+                    onError: (err) => showToast("خطأ في العملية", "#ff7675")
                 });
-            } catch (err) {
-                showStatus("حدث خطأ في الاتصال", "#e74c3c");
+            } catch (e) {
+                console.error(e);
+                showToast("فشل الاتصال بـ Pi Network", "#d63031");
             }
         }
 
-        // حفظ البيانات في Supabase
-        async function saveToSupabase(campaign, amount, txid) {
-            const { data, error } = await supabase
+        // --- 5. حفظ البيانات ---
+        async function logToSupabase(campaign, amount, tx) {
+            const { error } = await supabase
                 .from('donations')
-                .insert([{ campaign_name: campaign, amount: amount, transaction_id: txid }]);
-            
-            if (error) console.error('Supabase Error:', error);
+                .insert([{ 
+                    campaign_name: campaign, 
+                    amount: amount, 
+                    txid: tx,
+                    created_at: new Date()
+                }]);
+            if (error) console.error("Supabase Save Error:", error);
         }
 
-        function showStatus(msg, color) {
-            const el = document.getElementById('status-msg');
-            el.innerText = msg;
-            el.style.backgroundColor = color;
-            el.style.color = 'white';
-            el.style.display = 'block';
-            setTimeout(() => el.style.display = 'none', 5000);
+        function showToast(msg, color) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.style.backgroundColor = color;
+            t.style.display = 'block';
+            setTimeout(() => t.style.display = 'none', 4000);
         }
 
-        renderCampaigns();
+        // تشغيل الموقع
+        displayCampaigns();
     </script>
 </body>
 </html>
