@@ -21,12 +21,14 @@ export const handler = async (event) => {
       },
     });
 
-    if (response.ok) {
-      return { statusCode: 200, body: JSON.stringify({ approved: true }) };
-    } else {
-      const error = await response.json();
-      return { statusCode: response.status, body: JSON.stringify({ error }) };
+    const text = await response.text();
+    console.log("Approve response:", text);
+
+    if (!response.ok) {
+      return { statusCode: response.status, body: text };
     }
+
+    return { statusCode: 200, body: JSON.stringify({ approved: true }) };
   } catch (err) {
     return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
   }
