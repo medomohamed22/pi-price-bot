@@ -3,210 +3,449 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shopping - Pi Store</title>
+    <title>منصة Pi للتبرعات</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;500;700&display=swap" rel="stylesheet">
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
-    
+
     <style>
-        :root { --p: #6d28d9; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --accent: #fbbf24; }
-        * { box-sizing: border-box; font-family: 'Cairo', sans-serif; transition: all 0.3s ease; }
-        body { background: var(--bg); color: var(--text); margin: 0; padding: 0; min-height: 100vh; }
-        
-        header { background: var(--card); padding: 15px 5%; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
-        .btn-sm { padding: 8px 15px; border-radius: 20px; cursor: pointer; font-weight: bold; border: none; font-size: 0.85rem; }
-        .orders-btn { background: var(--accent); color: #000; }
-        .lang-btn { background: #334155; color: white; margin-right: 10px; }
+        :root {
+            --primary-color: #bb86fc;
+            --secondary-color: #3700b3;
+            --bg-color: #050505;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-color: #ffffff;
+            --accent-glow: 0 0 20px rgba(187, 134, 252, 0.4);
+        }
 
-        .container { padding: 20px 5%; max-width: 1300px; margin: auto; }
-        .section-title { margin-bottom: 25px; font-size: 1.5rem; border-right: 5px solid var(--p); padding-right: 15px; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Tajawal', sans-serif;
+        }
 
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
-        @media (min-width: 768px) { .grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); } }
-        
-        .card { background: var(--card); border-radius: 20px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; }
-        .img-container { width: 100%; height: 180px; background: #fff; display: flex; align-items: center; justify-content: center; padding: 10px; }
-        .card img { max-width: 100%; max-height: 100%; object-fit: contain; }
-        .info { padding: 15px; text-align: center; flex-grow: 1; }
-        .price { color: var(--accent); font-weight: bold; display: block; margin-top: 5px; font-size: 1.2rem; }
-        .buy-btn { background: var(--p); color: white; border: none; width: 100%; padding: 12px; cursor: pointer; font-weight: bold; border-radius: 0 0 20px 20px; }
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 10% 20%, #2a004e 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, #1a0033 0%, transparent 40%);
+            color: var(--text-color);
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding-bottom: 50px;
+        }
 
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; z-index: 2000; padding: 20px; backdrop-filter: blur(5px); }
-        .modal-content { background: var(--card); padding: 25px; border-radius: 25px; width: 100%; max-width: 450px; position: relative; max-height: 90vh; overflow-y: auto; border: 1px solid var(--p); }
-        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: white; }
-        
-        /* تصميم عنصر الطلب في المتابعة */
-        .order-item { background: #1e293b; padding: 15px; border-radius: 15px; margin-bottom: 12px; border: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
-        .status-badge { background: var(--p); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
+        /* خلفية ناعمة */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDIiLz4KPC9zdmc+');
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Header Style */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 5%;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(15px);
+            border-bottom: 1px solid var(--glass-border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            text-shadow: var(--accent-glow);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            background: var(--glass-bg);
+            padding: 8px 15px;
+            border-radius: 50px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background-color: #00ff88;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #00ff88;
+        }
+
+        /* Main Content */
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .hero-text {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .hero-text h1 {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            background: linear-gradient(to right, #fff, #bb86fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Grid System */
+        .campaigns-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        /* Glass Card */
+        .card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 20px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(138, 43, 226, 0.15);
+            border-color: rgba(187, 134, 252, 0.3);
+        }
+
+        .card-image {
+            width: 100%;
+            height: 180px;
+            background: linear-gradient(45deg, #2a004e, #4b0082);
+            border-radius: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+        }
+
+        .card h3 {
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+
+        .card p {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: #ddd;
+            margin-bottom: 20px;
+            flex-grow: 1;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            margin-bottom: 20px;
+        }
+
+        .progress-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            margin-bottom: 5px;
+            color: #aaa;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--secondary-color), var(--primary-color));
+            border-radius: 10px;
+            box-shadow: 0 0 10px var(--primary-color);
+        }
+
+        /* Donate Action */
+        .donate-action {
+            display: flex;
+            gap: 10px;
+        }
+
+        .amount-input {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
+            padding: 10px;
+            border-radius: 10px;
+            color: white;
+            text-align: center;
+            outline: none;
+        }
+
+        .amount-input:focus {
+            border-color: var(--primary-color);
+        }
+
+        .donate-btn {
+            background: linear-gradient(135deg, var(--secondary-color), #8a2be2);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+            box-shadow: 0 4px 15px rgba(138, 43, 226, 0.3);
+        }
+
+        .donate-btn:hover {
+            box-shadow: 0 6px 20px rgba(138, 43, 226, 0.5);
+            transform: scale(1.05);
+        }
+
+        /* Loader */
+        .loader {
+            display: none;
+            border: 4px solid rgba(255,255,255,0.1);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 600px) {
+            .hero-text h1 { font-size: 1.8rem; }
+            .donate-action { flex-direction: column; }
+        }
     </style>
 </head>
 <body>
 
     <header>
-        <div style="font-size: 1.4rem; font-weight: bold; color: var(--accent);">🛒 Shopping</div>
-        <div style="display: flex; gap: 5px;">
-            <button class="btn-sm orders-btn" id="ui-my-orders" onclick="showMyOrders()">طلباتي</button>
-            <button class="btn-sm lang-btn" id="langSwitcher" onclick="toggleLanguage()">English</button>
+        <div class="logo">PiDonate 💜</div>
+        <div class="user-info">
+            <span class="status-dot"></span>
+            <span id="username-display">زائر</span>
         </div>
     </header>
 
     <div class="container">
-        <h2 class="section-title" id="ui-title">أحدث المنتجات</h2>
-        <div class="grid" id="productsGrid"></div>
-    </div>
-
-    <div id="buyModal" class="modal">
-        <div class="modal-content">
-            <h3 id="ui-modal-head" style="text-align:center; color:var(--accent);">تفاصيل الشحن</h3>
-            <input type="text" id="custName" placeholder="الاسم الكامل">
-            <input type="tel" id="custPhone" placeholder="رقم الهاتف" oninput="this.value = this.value.replace(/[^0-9]/g, '');" inputmode="numeric">
-            <input type="text" id="custAddr" placeholder="العنوان بالتفصيل">
-            <button class="buy-btn" style="border-radius:12px; margin-top:10px;" id="ui-pay-btn" onclick="initiatePiPayment()">تأكيد ودفع</button>
-            <button class="buy-btn" style="background:#475569; border-radius:12px; margin-top:10px" onclick="closeModal('buyModal')">إلغاء</button>
-            <div id="status-msg" style="text-align:center; margin-top:10px; font-size: 0.8rem; color: var(--accent);"></div>
+        <div class="hero-text">
+            <h1>ساهم في تغيير العالم بعملة Pi</h1>
+            <p>تبرعك يصل مباشرة لدعم الحملات الإنسانية.</p>
         </div>
-    </div>
 
-    <div id="ordersModal" class="modal">
-        <div class="modal-content">
-            <span style="position:absolute; top:15px; left:15px; cursor:pointer; font-size:1.5rem;" onclick="closeModal('ordersModal')">&times;</span>
-            <h3 id="ui-orders-head" style="text-align:center; color:var(--accent);">متابعة طلباتي</h3>
-            <div id="myOrdersList" style="margin-top:20px;"></div>
-        </div>
+        <div class="loader" id="loader"></div>
+
+        <div class="campaigns-grid" id="campaigns-container">
+            </div>
     </div>
 
     <script>
-        const SB_URL = 'https://xncapmzlwuisupkjlftb.supabase.co';
-        const SB_KEY = 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS'; 
-        const _supabase = supabase.createClient(SB_URL, SB_KEY);
+        // 1. بيانات الحملات
+        const campaigns = [
+            { id: 1, title: "كفالة الأيتام", desc: "توفير الرعاية الكاملة للأيتام.", target: 1000, current: 750, icon: "👶" },
+            { id: 2, title: "بناء آبار مياه", desc: "حفر آبار مياه في المناطق النائية.", target: 2500, current: 400, icon: "💧" },
+            { id: 3, title: "دعم التعليم التقني", desc: "توفير أجهزة لابتوب للطلاب.", target: 5000, current: 3200, icon: "💻" }
+        ];
 
-        let currentLang = 'ar';
-        const content = {
-            ar: { title: "أحدث المنتجات", buy: "شراء الآن", head: "بيانات التوصيل", name: "الاسم الكامل", phone: "رقم الهاتف", addr: "العنوان بالتفصيل", pay: "تأكيد والدفع بـ Pi", myOrders: "طلباتي", ordersHead: "متابعة الطلبات", loading: "جاري التحميل..." },
-            en: { title: "Latest Products", buy: "Buy Now", head: "Shipping Details", name: "Full Name", phone: "Phone Number", addr: "Detailed Address", pay: "Confirm & Pay", myOrders: "My Orders", ordersHead: "Order Tracking", loading: "Loading..." }
-        };
-
+        // 2. تهيئة SDK
         const Pi = window.Pi;
-        Pi.init({ version: "2.0", sandbox: false });
+        let currentUser = null;
 
-        let userAccount = { username: "Guest" }; 
-        let activeProduct = null;
-
-        async function init() {
+        async function initPi() {
             try {
-                const auth = await Pi.authenticate(['username', 'payments'], (p) => {});
-                userAccount = auth.user;
-                updateUI();
-                loadProducts();
-            } catch (e) { loadProducts(); }
+                // هام: غير sandbox إلى false عند الرفع النهائي (Production)
+                Pi.init({ version: "2.0", sandbox: false });
+
+                const scopes = ['username', 'payments'];
+                
+                function onIncompletePaymentFound(payment) {
+                    // يمكن إضافة منطق معالجة الدفعات المعلقة هنا
+                    console.log("Incomplete payment:", payment);
+                    // يُفضل إرسالها للسيرفر للتحقق
+                }
+
+                const authResult = await Pi.authenticate(scopes, onIncompletePaymentFound);
+                currentUser = authResult.user;
+                
+                document.getElementById('username-display').textContent = currentUser.username;
+                console.log("User:", currentUser.username);
+
+            } catch (err) {
+                console.error("Auth Error:", err);
+                document.getElementById('username-display').textContent = "يرجى فتح التطبيق في Pi Browser";
+                document.getElementById('username-display').style.color = "#ff4444";
+            }
         }
 
-        function toggleLanguage() {
-            currentLang = currentLang === 'ar' ? 'en' : 'ar';
-            document.documentElement.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
-            updateUI();
-            loadProducts();
-        }
+        // 3. دالة التبرع المحدثة (مربوطة بـ Netlify)
+        async function handleDonate(campaignId, amountStr) {
+            const amount = parseFloat(amountStr);
 
-        function updateUI() {
-            const t = content[currentLang];
-            document.getElementById('ui-title').innerText = t.title;
-            document.getElementById('langSwitcher').innerText = currentLang === 'ar' ? "English" : "عربي";
-            document.getElementById('ui-my-orders').innerText = t.myOrders;
-            document.getElementById('ui-modal-head').innerText = t.head;
-            document.getElementById('ui-pay-btn').innerText = t.pay;
-            document.getElementById('ui-orders-head').innerText = t.ordersHead;
-            document.getElementById('custName').placeholder = t.name;
-            document.getElementById('custPhone').placeholder = t.phone;
-            document.getElementById('custAddr').placeholder = t.addr;
-        }
-
-        async function loadProducts() {
-            const { data } = await _supabase.from('products').select('*').order('created_at', {ascending: false});
-            const grid = document.getElementById('productsGrid');
-            grid.innerHTML = (data || []).map(p => `
-                <div class="card">
-                    <div class="img-container"><img src="${p.image_url}"></div>
-                    <div class="info">
-                        <h3>${p.name}</h3>
-                        <span class="price">${p.price} Pi</span>
-                    </div>
-                    <button class="buy-btn" onclick='openModal("buyModal", ${JSON.stringify(p)})'>${content[currentLang].buy}</button>
-                </div>
-            `).join('');
-        }
-
-        // --- نظام عرض طلباتي (الحالة والتاريخ فقط) ---
-        async function showMyOrders() {
-            const listDiv = document.getElementById('myOrdersList');
-            listDiv.innerHTML = `<p style="text-align:center">${content[currentLang].loading}</p>`;
-            document.getElementById('ordersModal').style.display = 'flex';
-
-            const { data } = await _supabase.from('orders')
-                .select('product_name, status, created_at')
-                .eq('pi_user', userAccount.username)
-                .order('created_at', { ascending: false });
-
-            if (!data || data.length === 0) { 
-                listDiv.innerHTML = "<p style='text-align:center'>لا توجد طلبات</p>"; 
-                return; 
+            if (!currentUser) {
+                alert("يرجى تسجيل الدخول أولاً!");
+                return;
+            }
+            if (!amount || amount <= 0) {
+                alert("يرجى إدخال مبلغ صحيح");
+                return;
             }
 
-            listDiv.innerHTML = data.map(o => {
-                const date = new Date(o.created_at).toLocaleDateString(currentLang === 'ar' ? 'ar-EG' : 'en-US', {
-                    year: 'numeric', month: 'short', day: 'numeric'
-                });
-                return `
-                <div class="order-item">
-                    <div>
-                        <div style="font-weight:bold; font-size:0.9rem;">${o.product_name}</div>
-                        <div style="font-size:0.75rem; color:#94a3b8;">🗓 ${date}</div>
+            const loader = document.getElementById('loader');
+            loader.style.display = 'block';
+
+            const paymentData = {
+                amount: amount,
+                memo: `تبرع للحملة رقم ${campaignId}`,
+                metadata: { campaignId: campaignId }
+            };
+
+            const callbacks = {
+                // الموافقة من السيرفر
+                onReadyForServerApproval: function(paymentId) {
+                    console.log("Approving...", paymentId);
+                    fetch('/api/pi/approve', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ paymentId: paymentId })
+                    })
+                    .then(res => {
+                        if (!res.ok) throw new Error('Approval Failed');
+                        return res.json();
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        Pi.cancelPayment(paymentId);
+                        loader.style.display = 'none';
+                        alert("فشل التحقق من السيرفر");
+                    });
+                },
+
+                // إكمال الدفع في السيرفر
+                onReadyForServerCompletion: function(paymentId, txid) {
+                    console.log("Completing...", txid);
+                    fetch('/api/pi/complete', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ paymentId: paymentId, txid: txid })
+                    })
+                    .then(res => {
+                        if (!res.ok) throw new Error('Completion Failed');
+                        return res.json();
+                    })
+                    .then(data => {
+                        // نجاح تام
+                        loader.style.display = 'none';
+                        alert(`شكراً لك @${currentUser.username}! تم التبرع بنجاح.`);
+                        updateProgress(campaignId, amount);
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        loader.style.display = 'none';
+                        alert("تم الدفع ولكن حدث خطأ في التأكيد النهائي.");
+                    });
+                },
+
+                onCancel: function(paymentId) {
+                    console.log("Cancelled");
+                    loader.style.display = 'none';
+                    alert("تم إلغاء العملية.");
+                },
+
+                onError: function(error, payment) {
+                    console.error("Error:", error);
+                    loader.style.display = 'none';
+                    alert("حدث خطأ: " + error.message);
+                }
+            };
+
+            // بدء عملية الدفع
+            Pi.createPayment(paymentData, callbacks);
+        }
+
+        // تحديث الواجهة محلياً
+        function updateProgress(id, amount) {
+            const campaign = campaigns.find(c => c.id === id);
+            if(campaign) {
+                campaign.current += amount;
+                renderCampaigns();
+            }
+        }
+
+        // رسم البطاقات
+        function renderCampaigns() {
+            const container = document.getElementById('campaigns-container');
+            container.innerHTML = '';
+
+            campaigns.forEach(camp => {
+                const percent = Math.min((camp.current / camp.target) * 100, 100);
+                
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-image">${camp.icon}</div>
+                    <h3>${camp.title}</h3>
+                    <p>${camp.desc}</p>
+                    
+                    <div class="progress-container">
+                        <div class="progress-labels">
+                            <span>تم جمع: ${camp.current} π</span>
+                            <span>الهدف: ${camp.target} π</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${percent}%"></div>
+                        </div>
                     </div>
-                    <div class="status-badge">${o.status || 'قيد المراجعة'}</div>
-                </div>`;
-            }).join('');
+
+                    <div class="donate-action">
+                        <input type="number" id="input-${camp.id}" class="amount-input" placeholder="المبلغ" min="0.1" step="0.1">
+                        <button class="donate-btn" onclick="triggerDonate(${camp.id})">تبرع</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
         }
 
-        // --- نظام الدفع ---
-        async function initiatePiPayment() {
-            const name = document.getElementById('custName').value;
-            const phone = document.getElementById('custPhone').value;
-            const addr = document.getElementById('custAddr').value;
-            const statusMsg = document.getElementById('status-msg');
+        window.triggerDonate = (id) => {
+            const val = document.getElementById(`input-${id}`).value;
+            handleDonate(id, val);
+        };
 
-            if(!name || !phone || !addr) return alert("أكمل البيانات");
-            statusMsg.innerText = "جاري الاتصال بالمحفظة...";
-
-            try {
-                const payment = await Pi.createPayment({
-                    amount: activeProduct.price,
-                    memo: `Order: ${activeProduct.name}`,
-                    metadata: { productId: activeProduct.id }
-                }, {
-                    onReadyForServerApproval: async (pid) => {
-                        return (await fetch('/api/pi/approve', { method: 'POST', body: JSON.stringify({ paymentId: pid }) })).ok;
-                    },
-                    onReadyForServerCompletion: async (pid, txid) => {
-                        const res = await fetch('/api/pi/complete', { method: 'POST', body: JSON.stringify({ paymentId: pid, txid }) });
-                        if (res.ok) {
-                            await _supabase.from('orders').insert([{
-                                pi_user: userAccount.username, product_name: activeProduct.name,
-                                amount: activeProduct.price, customer_name: name,
-                                customer_phone: phone, address: addr, txid: txid, status: "قيد المراجعة"
-                            }]);
-                            alert("تم الدفع بنجاح!"); closeModal('buyModal');
-                        }
-                    },
-                    onCancel: () => { statusMsg.innerText = ""; },
-                    onError: () => { statusMsg.innerText = "خطأ في العملية"; }
-                });
-            } catch (e) { statusMsg.innerText = ""; }
-        }
-
-        function openModal(id, p = null) { if(p) activeProduct = p; document.getElementById(id).style.display='flex'; }
-        function closeModal(id) { document.getElementById(id).style.display='none'; }
-
-        init();
+        window.addEventListener('DOMContentLoaded', () => {
+            renderCampaigns();
+            initPi();
+        });
     </script>
 </body>
 </html>
