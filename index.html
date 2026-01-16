@@ -3,118 +3,142 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>منصة Pi Charity | الإصدار المستقر</title>
+    <title>Donate Way | منصة التبرع بالـ Pi</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --primary: #6c5ce7;
-            --glass-bg: rgba(255, 255, 255, 0.95);
+            --glass-white: rgba(255, 255, 255, 0.95);
             --bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --text: #000000;
+            --text-dark: #2d3436;
         }
 
         body {
-            margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif;
+            margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif;
             background: var(--bg); background-attachment: fixed; color: white;
+            transition: 0.5s;
         }
 
         /* Nav Bar */
         nav {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 10px 5%; background: rgba(0,0,0,0.3); backdrop-filter: blur(10px);
-            position: sticky; top: 0; z-index: 1000;
+            padding: 15px 5%; background: rgba(0,0,0,0.3); backdrop-filter: blur(12px);
+            position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid rgba(255,255,255,0.1);
         }
 
-        .user-badge { background: var(--primary); padding: 5px 15px; border-radius: 20px; display: none; font-weight: bold; }
-        .btn-auth { background: white; color: var(--primary); border: none; padding: 8px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; }
+        .brand { font-size: 1.5rem; font-weight: 800; letter-spacing: 1px; }
 
-        /* Container & Cards */
-        .container { width: 90%; max-width: 1200px; margin: 20px auto; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-        
+        .auth-section { display: flex; align-items: center; gap: 15px; }
+        .user-badge { 
+            background: var(--primary); padding: 6px 15px; border-radius: 20px; 
+            display: none; font-weight: bold; font-size: 0.9rem; border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        .btn-login {
+            background: white; color: var(--primary); border: none; 
+            padding: 8px 22px; border-radius: 20px; font-weight: bold; 
+            cursor: pointer; transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        /* Container */
+        .container { width: 90%; max-width: 1200px; margin: 30px auto; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 25px; }
+
+        /* Glass Cards */
         .card {
-            background: var(--glass-bg); border-radius: 25px; padding: 25px;
-            color: var(--text); box-shadow: 0 10px 30px rgba(0,0,0,0.2); transition: 0.3s;
+            background: var(--glass-white); border-radius: 28px; padding: 25px;
+            color: var(--text-dark); border: 1px solid rgba(255,255,255,0.4);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2); transition: 0.3s;
+            display: flex; flex-direction: column;
         }
+        .card:hover { transform: translateY(-10px); }
 
-        .emoji { font-size: 3rem; display: block; text-align: center; }
-        .card h3 { text-align: center; margin: 10px 0; }
+        .emoji { font-size: 3.5rem; display: block; text-align: center; margin-bottom: 10px; }
+        .card h3 { text-align: center; margin-bottom: 10px; color: var(--primary); }
+        .card p { font-size: 0.9rem; text-align: center; line-height: 1.5; color: #555; margin-bottom: 20px; }
 
         /* Progress Bar */
-        .prog-bg { background: #eee; border-radius: 10px; height: 10px; margin: 10px 0; overflow: hidden; }
-        .prog-fill { background: var(--primary); height: 100%; width: 0%; transition: 1s; }
+        .progress-box { margin-bottom: 20px; }
+        .prog-bg { background: #eee; border-radius: 10px; height: 12px; overflow: hidden; position: relative; }
+        .prog-fill { background: var(--primary); height: 100%; width: 0%; transition: 1.5s ease-in-out; }
+        .prog-labels { display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: bold; margin-bottom: 5px; color: #333; }
 
-        /* Payment UI */
-        .presets { display: flex; gap: 5px; margin: 10px 0; }
-        .p-btn { flex: 1; padding: 8px; border: 2px solid var(--primary); background: transparent; color: var(--primary); border-radius: 10px; cursor: pointer; font-weight: bold; }
+        /* Actions */
+        .presets { display: flex; gap: 8px; margin-bottom: 15px; }
+        .p-btn { flex: 1; padding: 10px; border: 2px solid var(--primary); background: transparent; color: var(--primary); border-radius: 12px; cursor: pointer; font-weight: bold; }
         .p-btn.active { background: var(--primary); color: white; }
         
-        .amt-input { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #ccc; text-align: center; margin-bottom: 10px; box-sizing: border-box; }
-        .btn-donate { width: 100%; padding: 15px; border-radius: 15px; border: none; background: var(--primary); color: white; font-weight: bold; cursor: pointer; }
+        .amt-input { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #ddd; text-align: center; font-size: 1rem; margin-bottom: 15px; box-sizing: border-box; }
+        .btn-donate { width: 100%; padding: 16px; border-radius: 18px; border: none; background: var(--primary); color: white; font-weight: bold; cursor: pointer; font-size: 1.1rem; }
 
-        /* Error Log System (نظام كشف الأخطاء) */
-        #debug-log {
-            position: fixed; bottom: 80px; left: 5%; width: 90%; 
+        /* Leaderboard */
+        .leaderboard { background: var(--glass-white); border-radius: 28px; padding: 30px; color: var(--text-dark); margin-top: 40px; }
+        .donor-row { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #eee; }
+
+        /* Debug & Toasts */
+        #debug-console {
+            position: fixed; bottom: 85px; left: 5%; width: 90%; 
             background: rgba(0,0,0,0.9); color: #00ff00; font-family: monospace;
-            padding: 10px; border-radius: 10px; font-size: 11px; display: none;
-            max-height: 150px; overflow-y: auto; z-index: 9999; border: 1px solid #555;
+            padding: 12px; border-radius: 12px; font-size: 11px; display: none;
+            max-height: 150px; overflow-y: auto; z-index: 9999; border: 1px solid #444;
         }
-
         #toast { 
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            background: white; color: black; padding: 12px 25px; border-radius: 50px;
-            display: none; z-index: 10000; box-shadow: 0 5px 20px rgba(0,0,0,0.3); font-weight: bold;
+            position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%);
+            background: white; color: black; padding: 14px 28px; border-radius: 50px;
+            display: none; z-index: 10000; box-shadow: 0 5px 25px rgba(0,0,0,0.4); font-weight: bold;
         }
-
-        .leaderboard { background: var(--glass-bg); border-radius: 25px; padding: 25px; color: var(--text); margin-top: 30px; }
-        .donor-row { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; }
     </style>
 </head>
 <body>
 
 <nav>
-    <div style="font-weight: bold;">π Charity Hub</div>
-    <div style="display: flex; gap: 10px;">
+    <div class="brand">Donate Way</div>
+    <div class="auth-section">
         <span id="userBadge" class="user-badge"></span>
-        <button id="loginBtn" class="btn-auth" onclick="piLogin()">دخول</button>
+        <button id="loginBtn" class="btn-login" onclick="piLogin()">تسجيل الدخول</button>
+        <button class="btn-login" style="padding: 8px 12px;" onclick="document.body.classList.toggle('dark-mode')">🌓</button>
     </div>
 </nav>
 
 <div class="container">
+    <header style="text-align: center; padding: 20px 0 40px;">
+        <h1 style="font-size: 2.2rem; margin-bottom: 10px;">ساهم في بناء المستقبل بالـ Pi</h1>
+        <p style="opacity: 0.9;">كل عملة تبرع تصنع فارقاً حقيقياً في حياة الآخرين</p>
+    </header>
+
     <div class="grid" id="mainGrid"></div>
-    
+
     <div class="leaderboard">
-        <h3 style="text-align: center;">🏆 قائمة الشرف</h3>
-        <div id="leaderboardContent">جاري التحميل...</div>
+        <h3 style="text-align: center; margin-bottom: 20px;">🏆 لوحة الشرف للمتبرعين</h3>
+        <div id="leaderboardContent">جاري جلب قائمة المتبرعين...</div>
     </div>
 </div>
 
-<div id="debug-log"></div>
+<div id="debug-console"></div>
 <div id="toast"></div>
 
 <script>
-    // --- إعدادات Supabase ---
+    // --- إعدادات Supabase (تأكد من صحتها) ---
     const SUPA_URL = 'https://xncapmzlwuisupkjlftb.supabase.co';
-    const SUPA_KEY = 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS'; // ضع مفتاح Anon هنا
+    const SUPA_KEY = 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS'; // استبدله بـ Anon Key الخاص بك
     const _supabase = supabase.createClient(SUPA_URL, SUPA_KEY);
 
     const campaigns = [
-        { id: 'c1', emoji: '📚', title: 'تعليم الأطفال', goal: 1000 },
-        { id: 'c2', emoji: '💧', title: 'سقيا الماء', goal: 2000 },
-        { id: 'c3', emoji: '🏥', title: 'علاج طبي', goal: 1500 }
+        { id: 'c1', emoji: '🎓', title: 'دعم التعليم', desc: 'توفير المنح الدراسية والكتب للأطفال في المناطق النائية.', goal: 1000 },
+        { id: 'c2', emoji: '💧', title: 'سقيا الماء', desc: 'حفر آبار مياه نظيفة تعمل بالطاقة الشمسية.', goal: 2000 },
+        { id: 'c3', emoji: '🏥', title: 'الرعاية الطبية', desc: 'تجهيز غرف العمليات وشراء الأدوية الأساسية.', goal: 1500 }
     ];
 
     const Pi = window.Pi;
     let currentUser = null;
 
-    // --- نظام تسجيل الأخطاء (Log) ---
-    function logError(stage, details) {
-        const logBox = document.getElementById('debug-log');
-        logBox.style.display = 'block';
-        const time = new Date().toLocaleTimeString();
-        logBox.innerHTML += `<div>[${time}] ERR_${stage}: ${JSON.stringify(details)}</div>`;
-        console.error(`Error at ${stage}:`, details);
+    // سجل الأخطاء
+    function debugLog(stage, msg) {
+        const box = document.getElementById('debug-console');
+        box.style.display = 'block';
+        box.innerHTML += `<div>[${new Date().toLocaleTimeString()}] ${stage}: ${JSON.stringify(msg)}</div>`;
+        box.scrollTop = box.scrollHeight;
     }
 
     window.onload = () => {
@@ -122,65 +146,84 @@
             if (typeof Pi !== 'undefined') {
                 Pi.init({ version: "2.0", sandbox: false });
             } else {
-                logError('SDK_INIT', 'Pi SDK not found. Use Pi Browser.');
+                debugLog('PI_SDK', 'المكتبة غير موجودة. افتح من تطبيق Pi Browser');
             }
-            render();
-            syncData();
-        } catch (e) { logError('WINDOW_LOAD', e.message); }
+            renderCampaigns();
+            syncFromSupabase();
+        } catch (e) { debugLog('INIT_ERR', e.message); }
     };
 
     async function piLogin() {
         try {
-            const auth = await Pi.authenticate(['username', 'payments'], (p) => {});
+            const auth = await Pi.authenticate(['username', 'payments'], onIncompletePayment);
             currentUser = auth.user;
             document.getElementById('userBadge').innerText = "@" + currentUser.username;
             document.getElementById('userBadge').style.display = 'block';
             document.getElementById('loginBtn').style.display = 'none';
-        } catch (e) { logError('AUTH_FAILED', e.message); showToast("فشل الدخول: افتح من تطبيق Pi"); }
+            showToast("مرحباً بك: " + currentUser.username);
+        } catch (e) { debugLog('AUTH_ERR', e.message); showToast("فشل الدخول: يرجى المحاولة من متصفح Pi"); }
     }
 
-    async function syncData() {
+    function onIncompletePayment(payment) {
+        debugLog('INCOMPLETE', payment.identifier);
+        fetch('/api/pi/complete', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ paymentId: payment.identifier, txid: payment.transaction.txid })
+        });
+    }
+
+    async function syncFromSupabase() {
         try {
             const { data: donations, error } = await _supabase.from('donations').select('*');
             if (error) throw error;
 
+            // تحديث الأشرطة
             campaigns.forEach(c => {
                 const raised = donations.filter(d => d.campaign_id === c.id).reduce((s, d) => s + d.amount, 0);
                 const fill = document.getElementById(`fill-${c.id}`);
-                if (fill) fill.style.width = Math.min((raised / c.goal) * 100, 100) + "%";
+                const label = document.getElementById(`label-${c.id}`);
+                if (fill) {
+                    const percent = Math.min((raised / c.goal) * 100, 100);
+                    fill.style.width = percent + "%";
+                    label.innerText = `${raised.toLocaleString()} / ${c.goal} Pi`;
+                }
             });
 
+            // تحديث لوحة الشرف
             const { data: top } = await _supabase.from('donations').select('username, amount').order('amount', { ascending: false }).limit(5);
-            document.getElementById('leaderboardContent').innerHTML = top.map(d => `
+            document.getElementById('leaderboardContent').innerHTML = top.length > 0 ? top.map(d => `
                 <div class="donor-row"><span>@${d.username}</span><strong>${d.amount} Pi</strong></div>
-            `).join('');
-        } catch (e) { logError('SUPABASE_SYNC', e.message); }
+            `).join('') : "لا يوجد متبرعون بعد، كن الأول!";
+            
+        } catch (e) { debugLog('DB_SYNC_ERR', e.message); }
     }
 
     async function handleDonate(id, title) {
-        if (!currentUser) return showToast("سجل دخولك أولاً");
+        if (!currentUser) return showToast("يرجى تسجيل الدخول أولاً");
         const amount = parseFloat(document.getElementById(`in-${id}`).value);
+        if (!amount || amount <= 0) return alert("أدخل مبلغاً صحيحاً");
 
-        showToast("جاري المعالجة...");
+        showToast("جاري فتح المحفظة...");
 
         try {
-            const payment = await Pi.createPayment({
+            await Pi.createPayment({
                 amount: amount,
-                memo: `تبرع: ${title}`,
+                memo: `تبرع لحملة: ${title} عبر Donate Way`,
                 metadata: { campaignId: id }
             }, {
                 onReadyForServerApproval: async (pid) => {
                     const res = await fetch('/api/pi/approve', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({ paymentId: pid })
                     });
-                    if (!res.ok) logError('SERVER_APPROVE_FAIL', res.status);
+                    if (!res.ok) debugLog('APPROVE_ERR', res.status);
                 },
                 onReadyForServerCompletion: async (pid, txid) => {
                     const res = await fetch('/api/pi/complete', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({ 
                             paymentId: pid, txid, username: currentUser.username, 
                             campaignId: id, amount: amount 
@@ -188,30 +231,35 @@
                     });
                     
                     if (res.ok) {
-                        showToast("شكراً لك! تم التبرع.");
-                        syncData();
+                        showToast("تم التبرع بنجاح! شكراً لك.");
+                        syncFromSupabase();
                     } else {
-                        const errText = await res.text();
-                        logError('SERVER_COMPLETE_FAIL', errText);
+                        const errData = await res.json();
+                        debugLog('SAVE_ERR', errData);
+                        showToast("نجح الدفع ولكن فشل التسجيل في القاعدة");
                     }
                 },
-                onCancel: () => showToast("تم إلغاء الدفع"),
-                onError: (e) => logError('PI_SDK_PAYMENT', e.message)
+                onCancel: () => showToast("تم إلغاء العملية"),
+                onError: (e) => debugLog('PAY_SDK_ERR', e.message)
             });
-        } catch (e) { logError('PAYMENT_CATCH', e.message); }
+        } catch (e) { debugLog('CRITICAL_ERR', e.message); }
     }
 
-    function render() {
+    function renderCampaigns() {
         const grid = document.getElementById('mainGrid');
         campaigns.forEach(c => {
             grid.innerHTML += `
                 <div class="card">
                     <span class="emoji">${c.emoji}</span>
                     <h3>${c.title}</h3>
-                    <div class="prog-bg"><div id="fill-${c.id}" class="prog-fill"></div></div>
+                    <p>${c.desc}</p>
+                    <div class="progress-box">
+                        <div class="prog-labels"><span>تم جمع</span><span id="label-${c.id}">0 / ${c.goal} Pi</span></div>
+                        <div class="prog-bg"><div id="fill-${c.id}" class="prog-fill"></div></div>
+                    </div>
                     <div class="presets">
-                        <button class="p-btn" onclick="setV('${c.id}', 10, this)">10</button>
-                        <button class="p-btn" onclick="setV('${c.id}', 50, this)">50</button>
+                        <button class="p-btn" onclick="setAmt('${c.id}', 10, this)">10</button>
+                        <button class="p-btn" onclick="setAmt('${c.id}', 50, this)">50</button>
                     </div>
                     <input type="number" id="in-${c.id}" class="amt-input" value="10">
                     <button class="btn-donate" onclick="handleDonate('${c.id}', '${c.title}')">تبرع الآن</button>
@@ -220,7 +268,7 @@
         });
     }
 
-    function setV(id, v, b) {
+    function setAmt(id, v, b) {
         document.getElementById(`in-${id}`).value = v;
         b.parentElement.querySelectorAll('.p-btn').forEach(x => x.classList.remove('active'));
         b.classList.add('active');
@@ -228,7 +276,7 @@
 
     function showToast(m) {
         const t = document.getElementById('toast'); t.innerText = m; t.style.display = 'block';
-        setTimeout(() => t.style.display = 'none', 4000);
+        setTimeout(() => t.style.display = 'none', 5000);
     }
 </script>
 </body>
