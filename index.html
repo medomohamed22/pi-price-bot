@@ -3,210 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shopping - Pi Store</title>
+    <title>منصة التبرع بـ Pi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
-    
-    <style>
-        :root { --p: #6d28d9; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --accent: #fbbf24; }
-        * { box-sizing: border-box; font-family: 'Cairo', sans-serif; transition: all 0.3s ease; }
-        body { background: var(--bg); color: var(--text); margin: 0; padding: 0; min-height: 100vh; }
-        
-        header { background: var(--card); padding: 15px 5%; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
-        .btn-sm { padding: 8px 15px; border-radius: 20px; cursor: pointer; font-weight: bold; border: none; font-size: 0.85rem; }
-        .orders-btn { background: var(--accent); color: #000; }
-        .lang-btn { background: #334155; color: white; margin-right: 10px; }
-
-        .container { padding: 20px 5%; max-width: 1300px; margin: auto; }
-        .section-title { margin-bottom: 25px; font-size: 1.5rem; border-right: 5px solid var(--p); padding-right: 15px; }
-
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
-        @media (min-width: 768px) { .grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); } }
-        
-        .card { background: var(--card); border-radius: 20px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; }
-        .img-container { width: 100%; height: 180px; background: #fff; display: flex; align-items: center; justify-content: center; padding: 10px; }
-        .card img { max-width: 100%; max-height: 100%; object-fit: contain; }
-        .info { padding: 15px; text-align: center; flex-grow: 1; }
-        .price { color: var(--accent); font-weight: bold; display: block; margin-top: 5px; font-size: 1.2rem; }
-        .buy-btn { background: var(--p); color: white; border: none; width: 100%; padding: 12px; cursor: pointer; font-weight: bold; border-radius: 0 0 20px 20px; }
-
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; z-index: 2000; padding: 20px; backdrop-filter: blur(5px); }
-        .modal-content { background: var(--card); padding: 25px; border-radius: 25px; width: 100%; max-width: 450px; position: relative; max-height: 90vh; overflow-y: auto; border: 1px solid var(--p); }
-        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: white; }
-        
-        /* تصميم عنصر الطلب في المتابعة */
-        .order-item { background: #1e293b; padding: 15px; border-radius: 15px; margin-bottom: 12px; border: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
-        .status-badge { background: var(--p); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
-    </style>
 </head>
-<body>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
 
-    <header>
-        <div style="font-size: 1.4rem; font-weight: bold; color: var(--accent);">🛒 Shopping</div>
-        <div style="display: flex; gap: 5px;">
-            <button class="btn-sm orders-btn" id="ui-my-orders" onclick="showMyOrders()">طلباتي</button>
-            <button class="btn-sm lang-btn" id="langSwitcher" onclick="toggleLanguage()">English</button>
+    <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center">
+        <h1 class="text-3xl font-bold text-purple-700 mb-6">تبرع لدعم المشروع</h1>
+        
+        <div class="space-y-4">
+            <div>
+                <label class="block text-right text-gray-700 mb-2">الاسم (اختياري)</label>
+                <input type="text" id="donorName" placeholder="أدخل اسمك" class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+            </div>
+
+            <div>
+                <label class="block text-right text-gray-700 mb-2">مبلغ التبرع (Pi)</label>
+                <input type="number" id="amount" value="1" min="0.1" step="0.1" class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+            </div>
+
+            <button onclick="startPayment()" id="payBtn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-lg transition duration-300">
+                تبرع الآن باستخدام Pi
+            </button>
         </div>
-    </header>
 
-    <div class="container">
-        <h2 class="section-title" id="ui-title">أحدث المنتجات</h2>
-        <div class="grid" id="productsGrid"></div>
-    </div>
-
-    <div id="buyModal" class="modal">
-        <div class="modal-content">
-            <h3 id="ui-modal-head" style="text-align:center; color:var(--accent);">تفاصيل الشحن</h3>
-            <input type="text" id="custName" placeholder="الاسم الكامل">
-            <input type="tel" id="custPhone" placeholder="رقم الهاتف" oninput="this.value = this.value.replace(/[^0-9]/g, '');" inputmode="numeric">
-            <input type="text" id="custAddr" placeholder="العنوان بالتفصيل">
-            <button class="buy-btn" style="border-radius:12px; margin-top:10px;" id="ui-pay-btn" onclick="initiatePiPayment()">تأكيد ودفع</button>
-            <button class="buy-btn" style="background:#475569; border-radius:12px; margin-top:10px" onclick="closeModal('buyModal')">إلغاء</button>
-            <div id="status-msg" style="text-align:center; margin-top:10px; font-size: 0.8rem; color: var(--accent);"></div>
-        </div>
-    </div>
-
-    <div id="ordersModal" class="modal">
-        <div class="modal-content">
-            <span style="position:absolute; top:15px; left:15px; cursor:pointer; font-size:1.5rem;" onclick="closeModal('ordersModal')">&times;</span>
-            <h3 id="ui-orders-head" style="text-align:center; color:var(--accent);">متابعة طلباتي</h3>
-            <div id="myOrdersList" style="margin-top:20px;"></div>
-        </div>
+        <div id="status" class="mt-4 text-sm text-gray-600"></div>
     </div>
 
     <script>
-        const SB_URL = 'https://xncapmzlwuisupkjlftb.supabase.co';
-        const SB_KEY = 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS'; 
-        const _supabase = supabase.createClient(SB_URL, SB_KEY);
+        // --- إعدادات Supabase ---
+        const SUPABASE_URL = 'https://xncapmzlwuisupkjlftb.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS'; // استبدل هذا بمفتاح ANON الخاص بك
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let currentLang = 'ar';
-        const content = {
-            ar: { title: "أحدث المنتجات", buy: "شراء الآن", head: "بيانات التوصيل", name: "الاسم الكامل", phone: "رقم الهاتف", addr: "العنوان بالتفصيل", pay: "تأكيد والدفع بـ Pi", myOrders: "طلباتي", ordersHead: "متابعة الطلبات", loading: "جاري التحميل..." },
-            en: { title: "Latest Products", buy: "Buy Now", head: "Shipping Details", name: "Full Name", phone: "Phone Number", addr: "Detailed Address", pay: "Confirm & Pay", myOrders: "My Orders", ordersHead: "Order Tracking", loading: "Loading..." }
-        };
-
+        // --- إعدادات Pi Network ---
         const Pi = window.Pi;
-        Pi.init({ version: "2.0", sandbox: false });
+        Pi.init({ version: "1.5", sandbox: true }); // اجعل sandbox: false عند النشر الفعلي
 
-        let userAccount = { username: "Guest" }; 
-        let activeProduct = null;
+        async function startPayment() {
+            const amount = document.getElementById('amount').value;
+            const donorName = document.getElementById('donorName').value || "متبرع فاعل خير";
+            const statusDiv = document.getElementById('status');
+            const btn = document.getElementById('payBtn');
 
-        async function init() {
-            try {
-                const auth = await Pi.authenticate(['username', 'payments'], (p) => {});
-                userAccount = auth.user;
-                updateUI();
-                loadProducts();
-            } catch (e) { loadProducts(); }
-        }
-
-        function toggleLanguage() {
-            currentLang = currentLang === 'ar' ? 'en' : 'ar';
-            document.documentElement.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
-            updateUI();
-            loadProducts();
-        }
-
-        function updateUI() {
-            const t = content[currentLang];
-            document.getElementById('ui-title').innerText = t.title;
-            document.getElementById('langSwitcher').innerText = currentLang === 'ar' ? "English" : "عربي";
-            document.getElementById('ui-my-orders').innerText = t.myOrders;
-            document.getElementById('ui-modal-head').innerText = t.head;
-            document.getElementById('ui-pay-btn').innerText = t.pay;
-            document.getElementById('ui-orders-head').innerText = t.ordersHead;
-            document.getElementById('custName').placeholder = t.name;
-            document.getElementById('custPhone').placeholder = t.phone;
-            document.getElementById('custAddr').placeholder = t.addr;
-        }
-
-        async function loadProducts() {
-            const { data } = await _supabase.from('products').select('*').order('created_at', {ascending: false});
-            const grid = document.getElementById('productsGrid');
-            grid.innerHTML = (data || []).map(p => `
-                <div class="card">
-                    <div class="img-container"><img src="${p.image_url}"></div>
-                    <div class="info">
-                        <h3>${p.name}</h3>
-                        <span class="price">${p.price} Pi</span>
-                    </div>
-                    <button class="buy-btn" onclick='openModal("buyModal", ${JSON.stringify(p)})'>${content[currentLang].buy}</button>
-                </div>
-            `).join('');
-        }
-
-        // --- نظام عرض طلباتي (الحالة والتاريخ فقط) ---
-        async function showMyOrders() {
-            const listDiv = document.getElementById('myOrdersList');
-            listDiv.innerHTML = `<p style="text-align:center">${content[currentLang].loading}</p>`;
-            document.getElementById('ordersModal').style.display = 'flex';
-
-            const { data } = await _supabase.from('orders')
-                .select('product_name, status, created_at')
-                .eq('pi_user', userAccount.username)
-                .order('created_at', { ascending: false });
-
-            if (!data || data.length === 0) { 
-                listDiv.innerHTML = "<p style='text-align:center'>لا توجد طلبات</p>"; 
-                return; 
+            if (!amount || amount <= 0) {
+                alert("يرجى إدخال مبلغ صحيح");
+                return;
             }
 
-            listDiv.innerHTML = data.map(o => {
-                const date = new Date(o.created_at).toLocaleDateString(currentLang === 'ar' ? 'ar-EG' : 'en-US', {
-                    year: 'numeric', month: 'short', day: 'numeric'
-                });
-                return `
-                <div class="order-item">
-                    <div>
-                        <div style="font-weight:bold; font-size:0.9rem;">${o.product_name}</div>
-                        <div style="font-size:0.75rem; color:#94a3b8;">🗓 ${date}</div>
-                    </div>
-                    <div class="status-badge">${o.status || 'قيد المراجعة'}</div>
-                </div>`;
-            }).join('');
-        }
-
-        // --- نظام الدفع ---
-        async function initiatePiPayment() {
-            const name = document.getElementById('custName').value;
-            const phone = document.getElementById('custPhone').value;
-            const addr = document.getElementById('custAddr').value;
-            const statusMsg = document.getElementById('status-msg');
-
-            if(!name || !phone || !addr) return alert("أكمل البيانات");
-            statusMsg.innerText = "جاري الاتصال بالمحفظة...";
-
             try {
+                btn.disabled = true;
+                btn.innerText = "جاري الاتصال بالمحفظة...";
+
                 const payment = await Pi.createPayment({
-                    amount: activeProduct.price,
-                    memo: `Order: ${activeProduct.name}`,
-                    metadata: { productId: activeProduct.id }
+                    amount: parseFloat(amount),
+                    memo: `تبرع من ${donorName}`,
+                    metadata: { donorName: donorName },
                 }, {
-                    onReadyForServerApproval: async (pid) => {
-                        return (await fetch('/api/pi/approve', { method: 'POST', body: JSON.stringify({ paymentId: pid }) })).ok;
+                    onReadyForServerApproval: (paymentId) => {
+                        // إرسال المعرف إلى وظيفة Netlify التي كتبتها (Approve)
+                        return fetch('/api/pi/approve', {
+                            method: 'POST',
+                            body: JSON.stringify({ paymentId }),
+                        });
                     },
-                    onReadyForServerCompletion: async (pid, txid) => {
-                        const res = await fetch('/api/pi/complete', { method: 'POST', body: JSON.stringify({ paymentId: pid, txid }) });
-                        if (res.ok) {
-                            await _supabase.from('orders').insert([{
-                                pi_user: userAccount.username, product_name: activeProduct.name,
-                                amount: activeProduct.price, customer_name: name,
-                                customer_phone: phone, address: addr, txid: txid, status: "قيد المراجعة"
-                            }]);
-                            alert("تم الدفع بنجاح!"); closeModal('buyModal');
-                        }
+                    onReadyForServerCompletion: (paymentId, txid) => {
+                        // إرسال المعرف و hash المعاملة إلى وظيفة Netlify (Complete)
+                        return fetch('/api/pi/complete', {
+                            method: 'POST',
+                            body: JSON.stringify({ paymentId, txid }),
+                        });
                     },
-                    onCancel: () => { statusMsg.innerText = ""; },
-                    onError: () => { statusMsg.innerText = "خطأ في العملية"; }
+                    onCancel: (paymentId) => {
+                        statusDiv.innerText = "تم إلغاء العملية.";
+                        btn.disabled = false;
+                    },
+                    onError: (error, payment) => {
+                        console.error(error);
+                        statusDiv.innerText = "حدث خطأ أثناء الدفع.";
+                        btn.disabled = false;
+                    },
                 });
-            } catch (e) { statusMsg.innerText = ""; }
+
+                // بعد نجاح الدفع، سجل البيانات في Supabase
+                if (payment) {
+                    const { data, error } = await supabase
+                        .from('donations') // تأكد من إنشاء جدول بهذا الاسم في Supabase
+                        .insert([
+                            { 
+                                donor_name: donorName, 
+                                amount: amount, 
+                                pi_payment_id: payment.identifier 
+                            }
+                        ]);
+
+                    statusDiv.innerHTML = "<span class='text-green-600 font-bold'>شكراً لك! تم استلام التبرع بنجاح.</span>";
+                }
+
+            } catch (err) {
+                console.error(err);
+                statusDiv.innerText = "فشلت العملية.";
+                btn.disabled = false;
+            }
         }
-
-        function openModal(id, p = null) { if(p) activeProduct = p; document.getElementById(id).style.display='flex'; }
-        function closeModal(id) { document.getElementById(id).style.display='none'; }
-
-        init();
     </script>
 </body>
 </html>
