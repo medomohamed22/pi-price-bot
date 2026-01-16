@@ -5,175 +5,56 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Donate Way | طريق العطاء</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;500;700&display=swap" rel="stylesheet">
-    
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
     <style>
-        :root {
-            --primary-purple: #8e44ad;
-            --light-purple: #bb86fc;
-            --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            --text-dark: #2c3e50;
-            --success-green: #27ae60;
-            --gold: #f1c40f;
-        }
-
+        :root { --primary-purple: #8e44ad; --light-purple: #bb86fc; --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); --gold: #f1c40f; }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Tajawal', sans-serif; }
-
-        body {
-            background: var(--bg-gradient);
-            background-attachment: fixed;
-            color: var(--text-dark);
-            min-height: 100vh;
-            padding-bottom: 50px;
-        }
-
-        header {
-            display: grid;
-            grid-template-columns: 1fr auto 1fr;
-            align-items: center;
-            padding: 10px 5%;
-            background: rgba(255, 255, 255, 0.4);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-            position: sticky; top: 0; z-index: 100;
-        }
-
-        .logo { grid-column: 2; font-size: 1.5rem; font-weight: 700; color: var(--primary-purple); text-align: center; }
-
-        .auth-section { grid-column: 3; justify-self: end; }
-
-        .login-btn {
-            background: var(--primary-purple); color: white; border: none; 
-            padding: 6px 15px; border-radius: 50px; cursor: pointer; 
-            font-weight: bold; font-size: 0.85rem; transition: 0.3s;
-        }
-
-        .user-pill {
-            display: none; align-items: center; gap: 8px;
-            background: rgba(142, 68, 173, 0.1); padding: 5px 12px;
-            border-radius: 50px; border: 1px solid var(--primary-purple);
-            font-weight: 500; color: var(--primary-purple); font-size: 0.85rem;
-        }
-
-        .status-dot {
-            width: 8px; height: 8px; background-color: var(--success-green);
-            border-radius: 50%; box-shadow: 0 0 5px var(--success-green);
-        }
-
+        body { background: var(--bg-gradient); background-attachment: fixed; min-height: 100vh; padding-bottom: 50px; }
+        header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 10px 5%; background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid rgba(255,255,255,0.3); }
+        .logo { grid-column: 2; font-size: 1.5rem; font-weight: 700; color: var(--primary-purple); }
         .container { max-width: 1200px; margin: 40px auto; padding: 0 20px; }
-        .hero-text { text-align: center; margin-bottom: 50px; }
-        .hero-text h1 { font-size: 2.2rem; color: var(--primary-purple); margin-bottom: 10px; }
-        
-        .campaigns-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; }
-
-        .card {
-            background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            border-radius: 25px; padding: 25px; transition: 0.4s ease; text-align: center;
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
-            display: flex; flex-direction: column;
-        }
+        .campaigns-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
+        .card { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(10px); border-radius: 25px; padding: 20px; transition: 0.4s; text-align: center; border: 1px solid rgba(255,255,255,0.5); overflow: hidden; }
         .card:hover { transform: translateY(-10px); }
+        
+        /* تنسيق الصورة الجديدة */
+        .campaign-img { width: 100%; height: 180px; object-fit: cover; border-radius: 15px; margin-bottom: 15px; }
 
-        .card-image-box { font-size: 3.5rem; margin-bottom: 15px; }
-
-        .progress-info {
-            display: flex; justify-content: space-between;
-            font-size: 0.8rem; color: #666; margin-bottom: 5px;
-        }
-
-        .progress-bar { width: 100%; height: 10px; background: rgba(0,0,0,0.05); border-radius: 10px; margin-bottom: 15px; overflow: hidden; }
+        .progress-bar { width: 100%; height: 10px; background: rgba(0,0,0,0.05); border-radius: 10px; margin: 15px 0; overflow: hidden; }
         .progress-fill { height: 100%; background: linear-gradient(90deg, var(--light-purple), var(--primary-purple)); transition: 1s ease-out; }
-
-        .card p { font-size: 0.9rem; color: #555; margin-bottom: 15px; line-height: 1.4; flex-grow: 1; }
-
-        .donate-action { display: flex; gap: 10px; margin-top: 15px; }
-        .amount-input { flex: 1; border: 1.5px solid #eee; padding: 10px; border-radius: 12px; outline: none; text-align: center; font-size: 0.9rem; }
-        .donate-btn { background: var(--primary-purple); color: white; border: none; padding: 10px 18px; border-radius: 12px; cursor: pointer; font-weight: bold; }
-
-        /* ستايل أبطال الخير */
-        .heroes-section {
-            margin-top: 60px;
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 30px;
-            padding: 30px;
-            text-align: center;
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .heroes-title { margin-bottom: 25px; color: var(--primary-purple); font-size: 1.8rem; }
-
-        .heroes-grid {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-
-        .hero-badge {
-            background: white;
-            padding: 10px 20px;
-            border-radius: 50px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-            border: 1px solid var(--light-purple);
-        }
-
-        .hero-rank {
-            background: var(--gold);
-            color: white;
-            width: 25px;
-            height: 25px;
-            border-radius: 50%;
-            font-size: 0.8rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-        }
-
-        .loader { display: none; border: 3px solid #f3f3f3; border-top: 3px solid var(--primary-purple); border-radius: 50%; width: 25px; height: 25px; animation: spin 1s linear infinite; margin: 20px auto; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        @media (max-width: 600px) {
-            header { grid-template-columns: 1fr auto; }
-            .logo { grid-column: 1; text-align: right; }
-        }
+        .donate-btn { background: var(--primary-purple); color: white; border: none; padding: 10px 20px; border-radius: 12px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
+        .amount-input { width: 100%; padding: 10px; border-radius: 12px; border: 1px solid #eee; text-align: center; }
+        .heroes-section { margin-top: 60px; background: rgba(255,255,255,0.3); border-radius: 30px; padding: 30px; text-align: center; }
+        .heroes-grid { display: flex; justify-content: center; flex-wrap: wrap; gap: 15px; margin-top: 20px; }
+        .hero-badge { background: white; padding: 10px 20px; border-radius: 50px; display: flex; align-items: center; gap: 10px; border: 1px solid var(--light-purple); }
+        .hero-rank { background: var(--gold); color: white; width: 25px; height: 25px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: bold; }
+        .user-pill { display: none; background: rgba(142, 68, 173, 0.1); padding: 5px 12px; border-radius: 50px; border: 1px solid var(--primary-purple); color: var(--primary-purple); }
     </style>
 </head>
 <body>
 
     <header>
         <div class="logo">Donate Way</div>
-        <div class="auth-section">
-            <button id="login-button" class="login-btn" onclick="login()">دخول</button>
+        <div class="auth-section" style="grid-column: 3; justify-self: end;">
+            <button id="login-button" style="background:var(--primary-purple); color:white; border:none; padding:8px 15px; border-radius:50px; cursor:pointer" onclick="login()">دخول</button>
             <div id="user-pill" class="user-pill">
-                <div class="status-dot"></div>
                 <span id="username-display"></span>
             </div>
         </div>
     </header>
 
     <div class="container">
-        <div class="hero-text">
-            <h1>تبرع وسجل أثرك في البلوكشين</h1>
-            <p>كل تبرع يتم تسجيله لضمان الشفافية الكاملة عبر شبكة Pi.</p>
+        <div style="text-align: center; margin-bottom: 40px;">
+            <h1 style="color:var(--primary-purple)">طريق العطاء | Pi Network</h1>
+            <p>تبرعك اليوم يغير حياة الآخرين</p>
         </div>
 
-        <div id="main-loader" class="loader"></div>
-        
         <div class="campaigns-grid" id="campaigns-container"></div>
 
         <div class="heroes-section">
-            <h2 class="heroes-title">🏆 أبطال الخير (الأكثر تبرعاً)</h2>
-            <div id="heroes-container" class="heroes-grid">
-                <p>جاري تحميل قائمة الشرف...</p>
-            </div>
+            <h2 style="color:var(--primary-purple)">🏆 أبطال الخير</h2>
+            <div id="heroes-container" class="heroes-grid"></div>
         </div>
     </div>
 
@@ -186,150 +67,85 @@
         let currentUser = null;
         let campaigns = [];
 
-        async function initPi() {
-            try { Pi.init({ version: "2.0", sandbox: false }); } catch (e) {}
-        }
+        async function loadData() {
+            const { data: camps } = await _supabase.from('campaigns').select('*').order('id');
+            if (camps) { campaigns = camps; renderCamps(); }
 
-        async function loadCampaigns() {
-            const { data } = await _supabase.from('campaigns').select('*').order('id', { ascending: true });
-            if (data) { campaigns = data; render(); }
-        }
-
-        async function loadTopHeroes() {
-            const { data } = await _supabase.from('donations').select('username, amount');
-            if (data) {
-                const userTotals = data.reduce((acc, curr) => {
+            const { data: dons } = await _supabase.from('donations').select('username, amount');
+            if (dons) {
+                const totals = dons.reduce((acc, curr) => {
                     acc[curr.username] = (acc[curr.username] || 0) + parseFloat(curr.amount);
                     return acc;
                 }, {});
-
-                const sortedHeroes = Object.entries(userTotals)
-                    .map(([username, total]) => ({ username, total }))
-                    .sort((a, b) => b.total - a.total)
-                    .slice(0, 5);
-
-                renderHeroes(sortedHeroes);
+                const sorted = Object.entries(totals).map(([username, total]) => ({ username, total })).sort((a,b) => b.total - a.total).slice(0,5);
+                renderHeroes(sorted);
             }
         }
 
-        function renderHeroes(heroes) {
-            const container = document.getElementById('heroes-container');
-            if (heroes.length === 0) {
-                container.innerHTML = "<p>كن أول بطل في القائمة!</p>";
-                return;
-            }
-            container.innerHTML = '';
-            heroes.forEach((h, index) => {
-                container.innerHTML += `
-                    <div class="hero-badge">
-                        <div class="hero-rank">${index + 1}</div>
-                        <strong>@${h.username}</strong>
-                        <span style="color: var(--primary-purple); font-weight: bold;">${h.total.toFixed(2)} π</span>
+        function renderCamps() {
+            const container = document.getElementById('campaigns-container');
+            container.innerHTML = campaigns.map(c => {
+                const progress = Math.min(((c.current_amount || 0) / c.target_amount) * 100, 100);
+                return `
+                    <div class="card">
+                        <img src="${c.image_url || 'https://via.placeholder.com/300x180'}" class="campaign-img">
+                        <h3>${c.title}</h3>
+                        <p style="font-size:0.9rem; color:#666; height:45px; overflow:hidden">${c.description || ''}</p>
+                        <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-top:10px">
+                            <span>تم جمع: ${c.current_amount || 0} π</span>
+                            <span>الهدف: ${c.target_amount} π</span>
+                        </div>
+                        <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
+                        <input type="number" id="in-${c.id}" class="amount-input" placeholder="المبلغ بـ π">
+                        <button class="donate-btn" onclick="handleDonate(${c.id})">تبرع الآن</button>
                     </div>
                 `;
-            });
+            }).join('');
+        }
+
+        function renderHeroes(heroes) {
+            document.getElementById('heroes-container').innerHTML = heroes.map((h, i) => `
+                <div class="hero-badge">
+                    <div class="hero-rank">${i+1}</div>
+                    <strong>@${h.username}</strong>
+                    <span style="color:var(--primary-purple)">${h.total.toFixed(2)} π</span>
+                </div>
+            `).join('');
         }
 
         async function login() {
             try {
-                const auth = await Pi.authenticate(['username', 'payments'], onIncompletePaymentFound);
+                const auth = await Pi.authenticate(['username', 'payments'], () => {});
                 currentUser = auth.user;
                 document.getElementById('login-button').style.display = 'none';
-                document.getElementById('user-pill').style.display = 'flex';
+                document.getElementById('user-pill').style.display = 'block';
                 document.getElementById('username-display').textContent = currentUser.username;
-            } catch (err) { alert("افتح الموقع من متصفح Pi Browser"); }
+            } catch (e) { alert("افتح من Pi Browser"); }
         }
 
-        function onIncompletePaymentFound(payment) { console.log("Unfinished payment", payment); }
+        async function handleDonate(id) {
+            if (!currentUser) return alert("سجل دخولك");
+            const amt = document.getElementById(`in-${id}`).value;
+            if (!amt || amt <= 0) return alert("أدخل مبلغاً");
 
-        async function recordDonationInSupabase(userId, username, amount, campaignId) {
-            try {
-                await _supabase.from('donations').insert([
-                    { pi_user_id: userId, username: username, amount: parseFloat(amount), campaign_id: campaignId }
-                ]);
-                
-                const camp = campaigns.find(c => c.id == campaignId);
-                const newTotal = parseFloat(camp.current_amount || 0) + parseFloat(amount);
-                await _supabase.from('campaigns').update({ current_amount: newTotal }).eq('id', campaignId);
-                
-                loadCampaigns();
-                loadTopHeroes();
-            } catch (err) { console.error(err); }
-        }
-
-        async function handleDonate(id, amountStr) {
-            if (!currentUser) return alert("سجل دخولك أولاً");
-            const amount = parseFloat(amountStr);
-            if (!amount || amount <= 0) return alert("أدخل مبلغاً صحيحاً");
-
-            // جلب اسم الحملة من المصفوفة المحلية بناءً على الـ id
-            const targetCampaign = campaigns.find(c => c.id == id);
-            const campaignTitle = targetCampaign ? targetCampaign.title : "حملة خيرية";
-
-            document.getElementById('main-loader').style.display = 'block';
-
+            const camp = campaigns.find(c => c.id == id);
+            
             Pi.createPayment({
-                amount: amount,
-                // هنا تم استبدال النص الثابت باسم الحملة الحقيقي
-                memo: `تبرع لـ: ${campaignTitle}`, 
+                amount: parseFloat(amt),
+                memo: `تبرع لـ: ${camp.title}`,
                 metadata: { campaignId: id }
             }, {
-                onReadyForServerApproval: (paymentId) => {
-                    fetch('/api/pi/approve', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ paymentId })
-                    }).then(res => { if(!res.ok) Pi.cancelPayment(paymentId); });
-                },
-                onReadyForServerCompletion: async (paymentId, txid) => {
-                    fetch('/api/pi/complete', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ paymentId, txid })
-                    }).then(async () => {
-                        await recordDonationInSupabase(currentUser.uid, currentUser.username, amount, id);
-                        document.getElementById('main-loader').style.display = 'none';
-                        alert("تم التبرع بنجاح!");
-                    });
-                },
-                onCancel: () => { document.getElementById('main-loader').style.display = 'none'; },
-                onError: (error) => { 
-                    document.getElementById('main-loader').style.display = 'none';
-                    alert("خطأ: " + error.message);
+                onReadyForServerApproval: (pid) => fetch('/approve', {method:'POST', body: JSON.stringify({pid})}),
+                onReadyForServerCompletion: async (pid, txid) => {
+                    await _supabase.from('donations').insert([{ pi_user_id: currentUser.uid, username: currentUser.username, amount: parseFloat(amt), campaign_id: id }]);
+                    await _supabase.from('campaigns').update({ current_amount: (camp.current_amount || 0) + parseFloat(amt) }).eq('id', id);
+                    alert("شكراً لك!");
+                    loadData();
                 }
             });
         }
 
-        function render() {
-            const container = document.getElementById('campaigns-container');
-            container.innerHTML = '';
-            campaigns.forEach(c => {
-                const current = c.current_amount || 0;
-                const progress = Math.min((current / c.target_amount) * 100, 100);
-                container.innerHTML += `
-                    <div class="card">
-                        <div class="card-image-box">${c.icon || '🎁'}</div>
-                        <h3>${c.title}</h3>
-                        <p>${c.description || ''}</p>
-                        <div class="progress-info">
-                            <span>تم جمع: ${current} π</span>
-                            <span>الهدف: ${c.target_amount} π</span>
-                        </div>
-                        <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
-                        <div class="donate-action">
-                            <input type="number" id="in-${c.id}" class="amount-input" placeholder="0.0">
-                            <button class="donate-btn" onclick="handleDonate(${c.id}, document.getElementById('in-${c.id}').value)">تبرع</button>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        window.onload = () => { 
-            initPi(); 
-            loadCampaigns(); 
-            loadTopHeroes();
-        };
+        window.onload = () => { Pi.init({version:"2.0"}); loadData(); };
     </script>
 </body>
 </html>
