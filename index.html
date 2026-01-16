@@ -3,73 +3,74 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>حل مشكلة Pending Payment</title>
+<title>Pi Donate</title>
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
 <style>
-  body { font-family: Arial; padding: 20px; }
-  input, button { padding: 8px; font-size: 16px; margin: 5px 0; }
-  #log { margin-top: 20px; white-space: pre-line; background: #f3f3f3; padding: 10px; border-radius: 5px; max-height: 300px; overflow-y: auto; }
+  body { font-family: Arial, sans-serif; padding: 40px; background: #f5f5f5; text-align:center; }
+  input { padding:10px; width:200px; border-radius:10px; border:1px solid #ccc; margin-bottom:10px; }
+  button { padding:10px 20px; border:none; border-radius:10px; background:#8e44ad; color:white; cursor:pointer; font-weight:bold; }
+  #log { margin-top:20px; white-space:pre-wrap; text-align:left; max-width:600px; margin-left:auto; margin-right:auto; background:white; padding:15px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.1); }
 </style>
 </head>
 <body>
 
-<h2>حل مشكلة Pending Payment في Pi Network</h2>
-
-<label>Payment ID: <input type="text" id="paymentId" placeholder="مثل: payment_89639"></label><br>
-<label>TXID: <input type="text" id="txid" placeholder="مثل: tx_12345"></label><br>
-<button id="fixBtn">حل الدفع الآن</button>
+<h2>تبرع بواسطة Pi Network</h2>
+<input type="number" id="amount" placeholder="ادخل المبلغ بالـ π" />
+<br>
+<button onclick="startDonation()">تبرع الآن</button>
 
 <div id="log"></div>
 
 <script>
-const logEl = document.getElementById('log');
-const fixBtn = document.getElementById('fixBtn');
+  Pi.init({version:"2.0"});
 
-function log(message) {
-  console.log(message);
-  logEl.textContent += message + "\n";
-}
-
-async function fixPayment() {
-  const paymentId = document.getElementById('paymentId').value.trim();
-  const txid = document.getElementById('txid').value.trim();
-
-  if (!paymentId || !txid) {
-    log("⚠️ ادخل Payment ID و TXID صحيحين");
-    return;
+  function log(msg) {
+    const logDiv = document.getElementById('log');
+    logDiv.innerText += msg + "\n";
   }
 
-  log("🔹 بدء حل مشكلة الدفع...");
+  async function startDonation() {
+    const amount = parseFloat(document.getElementById('amount').value);
+    if(!amount || amount <= 0) { alert("ادخل مبلغ صحيح"); return; }
 
-  try {
-    // 1️⃣ Approve
-    log(`✅ إرسال approve لـ Payment ID: ${paymentId}`);
-    const approveRes = await fetch('/api/pi/approve', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ paymentId })
-    });
-    const approveData = await approveRes.json();
-    log("Approve response: " + JSON.stringify(approveData));
-    if (!approveRes.ok) throw new Error("فشل approve");
+    log("🔑 تسجيل الدخول...");
+    try {
+      const auth = await Pi.authenticate(['username','payments'], (p)=>{});
+      const user = auth.user;
+      log(`✅ مرحباً ${user.username}`);
 
-    // 2️⃣ Complete
-    log(`✅ إرسال complete لـ Payment ID: ${paymentId} و TXID: ${txid}`);
-    const completeRes = await fetch('/api/pi/complete', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ paymentId, txid })
-    });
-    const completeData = await completeRes.json();
-    log("Complete response: " + JSON.stringify(completeData));
-    if (!completeRes.ok) throw new Error("فشل complete");
+      log(`💰 إنشاء الدفع بمبلغ: ${amount} π...`);
+      const payment = await Pi.createPayment({
+        amount: amount,
+        memo: "تبرع مباشر عبر المتصفح",
+        metadata: { app: "DonateWayDemo" }
+      });
 
-    log("🎉 تم حل مشكلة الدفع بنجاح!");
-  } catch (err) {
-    log("❌ حدث خطأ: " + err.message);
+      log(`🆔 Payment ID تم إنشاؤه: ${payment.id}`);
+
+      log("⏳ انتظار approve من السيرفر...");
+      const approveResp = await fetch('/api/pi/approve', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ paymentId: payment.id })
+      }).then(r=>r.json());
+
+      log("✅ رد الـ Approve: " + JSON.stringify(approveResp));
+
+      log("⏳ انتظار complete من السيرفر...");
+      const completeResp = await fetch('/api/pi/complete', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ paymentId: payment.id, txid: payment.transaction })
+      }).then(r=>r.json());
+
+      log("✅ رد الـ Complete: " + JSON.stringify(completeResp));
+      log("🎉 تم إتمام الدفع بنجاح!");
+
+    } catch(e) {
+      log("❌ حدث خطأ: " + e.message);
+    }
   }
-}
-
-fixBtn.addEventListener('click', fixPayment);
 </script>
 
 </body>
