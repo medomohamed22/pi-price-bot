@@ -1,72 +1,33 @@
-const fetch = require('node-fetch');
-
-exports.handler = async (event) => {
-  console.log("==== PI APPROVE FUNCTION ====");
-  console.log("RAW BODY:", event.body);
-
+export const handler = async (event) => {
   if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      body: 'Method Not Allowed'
-    };
+    return { statusCode: 405, body: 'Method Not Allowed' };
   }
-
-  let paymentId;
-  try {
-    const body = JSON.parse(event.body || '{}');
-    paymentId = body.paymentId;
-  } catch (err) {
-    console.error("JSON PARSE ERROR:", err);
-    return {
-      statusCode: 400,
-      body: JSON.stringify({ error: 'Invalid JSON body' })
-    };
-  }
-
-  console.log("PAYMENT ID:", paymentId);
-
-  if (!paymentId) {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({ error: 'Missing paymentId' })
-    };
-  }
-
-  const PI_SECRET_KEY = process.env.PI_SECRET_KEY;
-  const PI_API_BASE = 'https://api.minepi.com/v2';
 
   try {
-    const response = await fetch(
-      `${PI_API_BASE}/payments/${paymentId}/approve`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Key ${PI_SECRET_KEY}`,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
+    const { paymentId } = JSON.parse(event.body);
 
-    const text = await response.text();
-    console.log("PI APPROVE RESPONSE:", text);
-
-    if (!response.ok) {
-      return {
-        statusCode: response.status,
-        body: text
-      };
+    if (!paymentId) {
+      return { statusCode: 400, body: JSON.stringify({ error: 'Missing paymentId' }) };
     }
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ approved: true })
-    };
+    const PI_SECRET_KEY = process.env.PI_SECRET_KEY;
+    const PI_API_BASE = 'https://api.minepi.com/v2';
 
+    const response = await fetch(`${PI_API_BASE}/payments/${paymentId}/approve`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Key ${PI_SECRET_KEY}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (response.ok) {
+      return { statusCode: 200, body: JSON.stringify({ approved: true }) };
+    } else {
+      const error = await response.json();
+      return { statusCode: response.status, body: JSON.stringify({ error }) };
+    }
   } catch (err) {
-    console.error("APPROVE ERROR:", err);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: err.message })
-    };
+    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
   }
 };
