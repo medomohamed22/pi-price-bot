@@ -15,7 +15,6 @@
             --accent-purple: #a29bfe;
             --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             --glass: rgba(255, 255, 255, 0.15);
-            --glass-heavy: rgba(255, 255, 255, 0.25);
             --gold: #fdcb6e;
         }
 
@@ -29,7 +28,6 @@
             position: relative;
         }
 
-        /* خلفية جمالية متحركة */
         body::before {
             content: "";
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -46,7 +44,6 @@
             opacity: 0.5;
         }
 
-        /* هيدر زجاجي فائق الجمال */
         header {
             position: fixed; top: 15px; left: 5%; right: 5%;
             height: 65px; display: flex; justify-content: space-between; align-items: center;
@@ -56,7 +53,7 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.08); z-index: 1000;
         }
 
-        .logo { font-size: 1.6rem; font-weight: 700; color: var(--primary-purple); letter-spacing: -1px; }
+        .logo { font-size: 1.6rem; font-weight: 700; color: var(--primary-purple); }
 
         .user-pill {
             display: none; align-items: center; gap: 10px;
@@ -71,58 +68,52 @@
         .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
 
         .hero-title {
-            text-align: center; font-size: 2.8rem; color: #2d3436; margin-bottom: 40px;
+            text-align: center; font-size: 2.5rem; color: #2d3436; margin-bottom: 40px;
             text-shadow: 0 4px 10px rgba(0,0,0,0.05);
         }
 
-        /* كروت الحملات بتصميم "نيومورفيزم" زجاجي */
         .campaigns-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 35px; }
 
         .card {
-            background: white; border-radius: 35px; padding: 25px; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background: white; border-radius: 35px; padding: 25px; transition: all 0.4s;
             border: 1px solid rgba(255,255,255,0.8); box-shadow: 0 20px 40px rgba(0,0,0,0.05);
-            text-align: center; position: relative; overflow: hidden;
+            text-align: center; position: relative;
         }
-        .card:hover { transform: translateY(-15px); box-shadow: 0 30px 60px rgba(142, 68, 173, 0.15); }
+        .card:hover { transform: translateY(-10px); box-shadow: 0 30px 60px rgba(142, 68, 173, 0.15); }
 
         .campaign-img { width: 100%; height: 200px; object-fit: cover; border-radius: 25px; margin-bottom: 20px; }
 
-        .progress-container { margin: 20px 0; }
-        .progress-bar { width: 100%; height: 12px; background: #eee; border-radius: 20px; overflow: hidden; }
-        .progress-fill { height: 100%; background: linear-gradient(90deg, #a29bfe, #8e44ad); border-radius: 20px; transition: 1.5s; }
+        .progress-bar { width: 100%; height: 12px; background: #eee; border-radius: 20px; overflow: hidden; margin: 15px 0;}
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #a29bfe, #8e44ad); transition: 1.5s; }
 
         .amount-input {
             width: 100%; padding: 15px; border-radius: 20px; border: 2px solid #f0f0f0;
             margin-bottom: 15px; font-size: 1rem; transition: 0.3s; outline: none; text-align: center;
         }
-        .amount-input:focus { border-color: var(--primary-purple); background: #fafafa; }
+        .amount-input:focus { border-color: var(--primary-purple); }
 
         .donate-btn {
             width: 100%; padding: 15px; border-radius: 20px; border: none;
             background: var(--primary-purple); color: white; font-weight: 700;
-            font-size: 1.1rem; cursor: pointer; transition: 0.3s;
-            box-shadow: 0 10px 20px rgba(142, 68, 173, 0.2);
+            cursor: pointer; transition: 0.3s;
         }
-        .donate-btn:hover { background: #732d91; transform: scale(1.02); }
+        .donate-btn:hover { background: #732d91; }
 
-        /* قائمة الشرف الزجاجية */
         .heroes-section {
-            margin-top: 80px; padding: 50px; background: rgba(255,255,255,0.4);
+            margin-top: 80px; padding: 40px; background: rgba(255,255,255,0.4);
             backdrop-filter: blur(15px); border-radius: 50px; border: 1px solid rgba(255,255,255,0.5);
             text-align: center; margin-bottom: 50px;
         }
         .hero-badge {
-            background: white; padding: 12px 25px; border-radius: 50px;
-            display: flex; align-items: center; gap: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-            border: 1px solid #eee; transition: 0.3s;
+            background: white; padding: 10px 20px; border-radius: 50px;
+            display: flex; align-items: center; gap: 10px; border: 1px solid #eee;
         }
-        .hero-badge:hover { transform: translateY(-5px); border-color: var(--gold); }
-        .hero-rank { background: var(--gold); color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .hero-rank { background: var(--gold); color: white; width: 25px; height: 25px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; }
 
         #custom-alert {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
             background: #2d3436; color: white; padding: 15px 35px; border-radius: 50px;
-            display: none; z-index: 2000; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: none; z-index: 2000;
         }
 
         .loader { display: none; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary-purple); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
@@ -151,8 +142,8 @@
         <div class="campaigns-grid" id="campaigns-container"></div>
 
         <div class="heroes-section">
-            <h2 style="color:var(--primary-purple); margin-bottom:30px; font-size:2rem;">🏆 قائمة شرف المتبرعين</h2>
-            <div id="heroes-container" class="heroes-grid" style="display:flex; justify-content:center; flex-wrap:wrap; gap:20px;"></div>
+            <h2 style="color:var(--primary-purple); margin-bottom:30px;">🏆 قائمة شرف المتبرعين</h2>
+            <div id="heroes-container" style="display:flex; justify-content:center; flex-wrap:wrap; gap:15px;"></div>
         </div>
     </div>
 
@@ -193,13 +184,13 @@
                 return `
                     <div class="card">
                         <img src="${c.image_url || 'https://via.placeholder.com/400x200'}" class="campaign-img">
-                        <h3 style="margin-bottom:15px; color:#2d3436; font-size:1.4rem;">${c.title}</h3>
-                        <div style="display:flex; justify-content:space-between; font-weight:bold; color:var(--primary-purple); margin-bottom:10px;">
+                        <h3 style="margin-bottom:15px; color:#2d3436;">${c.title}</h3>
+                        <div style="display:flex; justify-content:space-between; font-weight:bold; color:var(--primary-purple);">
                             <span>${c.current_amount || 0} π</span>
-                            <span style="color:#b2bec3;">هدف: ${c.target_amount} π</span>
+                            <span style="color:#bbb;">الهدف: ${c.target_amount} π</span>
                         </div>
                         <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
-                        <input type="number" id="in-${c.id}" class="amount-input" placeholder="كم ستتبرع؟">
+                        <input type="number" id="in-${c.id}" class="amount-input" placeholder="0.00">
                         <button class="donate-btn" onclick="handleDonate(${c.id})">تبرع بـ Pi</button>
                     </div>`;
             }).join('');
@@ -221,8 +212,7 @@
                 document.getElementById('login-button').style.display = 'none';
                 document.getElementById('user-pill').style.display = 'flex';
                 document.getElementById('username-display').textContent = currentUser.username;
-                showMsg("مرحباً بك يا بطل: " + currentUser.username);
-            } catch (e) { showMsg("يرجى استخدام متصفح Pi"); }
+            } catch (e) { showMsg("استخدم متصفح Pi"); }
         }
 
         async function recordDonation(amount, campaignId) {
@@ -246,11 +236,12 @@
             const amt = parseFloat(amtStr);
             if (!amt || amt <= 0) return showMsg("أدخل مبلغاً صحيحاً");
 
+            const camp = campaigns.find(c => c.id == id); // البحث عن الحملة لجلب اسمها
             document.getElementById('main-loader').style.display = 'block';
 
             Pi.createPayment({
                 amount: amt,
-                memo: `تبرع لحملة رقم ${id}`,
+                memo: `تبرع لـ: ${camp.title}`, // هنا يتم وضع اسم الحملة في المذكرة
                 metadata: { campaignId: id }
             }, {
                 onReadyForServerApproval: (paymentId) => {
@@ -274,7 +265,7 @@
                 onCancel: () => { document.getElementById('main-loader').style.display = 'none'; },
                 onError: (error) => { 
                     document.getElementById('main-loader').style.display = 'none';
-                    showMsg("حدث خطأ، حاول مرة أخرى");
+                    showMsg("حدث خطأ في الدفع");
                 }
             });
         }
