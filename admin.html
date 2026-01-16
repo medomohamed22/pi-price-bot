@@ -2,144 +2,78 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>لوحة التحكم | Donate Way</title>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --primary: #8e44ad; --bg: #f4f7f6; }
-        body { font-family: 'Tajawal', sans-serif; background: var(--bg); padding: 20px; }
-        .admin-container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        h2 { color: var(--primary); margin-bottom: 20px; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
-        .btn { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .btn-delete { background: #e74c3c; margin-right: 5px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 30px; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
-        th { background-color: var(--primary); color: white; }
-        .icon-preview { font-size: 1.5rem; }
+        body { font-family: sans-serif; background: var(--bg); direction: rtl; margin: 0; }
+        #login-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.9);
+            display: flex; align-items: center; justify-content: center; z-index: 1000;
+        }
+        .login-box { background: white; padding: 30px; border-radius: 15px; text-align: center; width: 300px; }
+        #admin-content { display: none; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 25px; border-radius: 15px; }
+        input, textarea { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        button { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; width: 100%; }
     </style>
 </head>
 <body>
 
-<div class="admin-container">
-    <h2>إضافة / تعديل حملة</h2>
-    <div id="campaign-form">
-        <input type="hidden" id="camp-id">
-        <div class="form-group">
-            <label>اسم الحملة</label>
-            <input type="text" id="camp-title" placeholder="مثال: حفر بئر مياه">
-        </div>
-        <div class="form-group">
-            <label>الوصف</label>
-            <textarea id="camp-desc" rows="3"></textarea>
-        </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-            <div class="form-group">
-                <label>المبلغ المطلوب (Pi)</label>
-                <input type="number" id="camp-target">
-            </div>
-            <div class="form-group">
-                <label>أيقونة (Emoji)</label>
-                <input type="text" id="camp-icon" placeholder="مثال: 💧">
-            </div>
-        </div>
-        <button class="btn" onclick="saveCampaign()">حفظ الحملة</button>
-        <button class="btn" style="background:#95a5a6" onclick="resetForm()">إلغاء</button>
+<div id="login-overlay">
+    <div class="login-box">
+        <h3>دخول الإدارة</h3>
+        <input type="password" id="admin-pass" placeholder="كلمة السر">
+        <button onclick="checkPass()">دخول</button>
+        <p id="error-msg" style="color: red; display: none;">خطأ في كلمة السر!</p>
     </div>
+</div>
 
-    <hr style="margin: 40px 0;">
-
-    <h2>الحملات الحالية</h2>
-    <table id="campaigns-table">
-        <thead>
-            <tr>
-                <th>أيقونة</th>
-                <th>العنوان</th>
-                <th>الهدف</th>
-                <th>إجراءات</th>
-            </tr>
-        </thead>
-        <tbody id="table-body">
-            </tbody>
-    </table>
+<div id="admin-content">
+    <div class="container">
+        <h2>إدارة حملات Donate Way</h2>
+        <input type="text" id="camp-title" placeholder="عنوان الحملة">
+        <textarea id="camp-desc" placeholder="الوصف"></textarea>
+        <input type="number" id="camp-target" placeholder="المبلغ المطلوب (Pi)">
+        <input type="text" id="camp-icon" placeholder="الأيقونة">
+        <button onclick="saveCampaign()">حفظ الحملة</button>
+    </div>
 </div>
 
 <script>
     const SUPABASE_URL = 'https://xncapmzlwuisupkjlftb.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS';
+    
+    /* في Netlify، سنقوم باستبدال هذه القيمة أثناء الـ Build 
+       أو يمكنك كتابتها هنا مباشرة إذا كان المشروع خاص (Private Repo)
+    */
+    const ADMIN_PASSWORD = "REPLACE_WITH_ENV_PASS"; 
+
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    async function fetchCampaigns() {
-        const { data, error } = await _supabase.from('campaigns').select('*').order('id', { ascending: false });
-        if (data) renderTable(data);
-    }
-
-    function renderTable(data) {
-        const tbody = document.getElementById('table-body');
-        tbody.innerHTML = '';
-        data.forEach(c => {
-            tbody.innerHTML += `
-                <tr>
-                    <td class="icon-preview">${c.icon}</td>
-                    <td>${c.title}</td>
-                    <td>${c.target_amount} π</td>
-                    <td>
-                        <button class="btn" onclick="editMode(${JSON.stringify(c).replace(/"/g, '&quot;')})">تعديل</button>
-                        <button class="btn btn-delete" onclick="deleteCampaign(${c.id})">حذف</button>
-                    </td>
-                </tr>
-            `;
-        });
+    function checkPass() {
+        const input = document.getElementById('admin-pass').value;
+        if (input === ADMIN_PASSWORD) {
+            document.getElementById('login-overlay').style.display = 'none';
+            document.getElementById('admin-content').style.display = 'block';
+        } else {
+            document.getElementById('error-msg').style.display = 'block';
+        }
     }
 
     async function saveCampaign() {
-        const id = document.getElementById('camp-id').value;
         const title = document.getElementById('camp-title').value;
         const description = document.getElementById('camp-desc').value;
         const target_amount = document.getElementById('camp-target').value;
         const icon = document.getElementById('camp-icon').value;
 
-        const payload = { title, description, target_amount, icon };
+        const { error } = await _supabase.from('campaigns').insert([
+            { title, description, target_amount: parseFloat(target_amount), icon }
+        ]);
 
-        if (id) {
-            await _supabase.from('campaigns').update(payload).eq('id', id);
-        } else {
-            await _supabase.from('campaigns').insert([payload]);
-        }
-        
-        resetForm();
-        fetchCampaigns();
-        alert("تم الحفظ بنجاح!");
+        if (error) alert(error.message);
+        else { alert("تمت الإضافة!"); location.reload(); }
     }
-
-    function editMode(c) {
-        document.getElementById('camp-id').value = c.id;
-        document.getElementById('camp-title').value = c.title;
-        document.getElementById('camp-desc').value = c.description;
-        document.getElementById('camp-target').value = c.target_amount;
-        document.getElementById('camp-icon').value = c.icon;
-        window.scrollTo(0, 0);
-    }
-
-    async function deleteCampaign(id) {
-        if (confirm("هل أنت متأكد من الحذف؟")) {
-            await _supabase.from('campaigns').delete().eq('id', id);
-            fetchCampaigns();
-        }
-    }
-
-    function resetForm() {
-        document.getElementById('camp-id').value = '';
-        document.getElementById('camp-title').value = '';
-        document.getElementById('camp-desc').value = '';
-        document.getElementById('camp-target').value = '';
-        document.getElementById('camp-icon').value = '';
-    }
-
-    window.onload = fetchCampaigns;
 </script>
 </body>
 </html>
