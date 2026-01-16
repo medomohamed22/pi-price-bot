@@ -2,78 +2,100 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>لوحة التحكم | Donate Way</title>
+    <title>لوحة التحكم المؤمنة | Donate Way</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --primary: #8e44ad; --bg: #f4f7f6; }
-        body { font-family: sans-serif; background: var(--bg); direction: rtl; margin: 0; }
-        #login-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.9);
-            display: flex; align-items: center; justify-content: center; z-index: 1000;
-        }
-        .login-box { background: white; padding: 30px; border-radius: 15px; text-align: center; width: 300px; }
-        #admin-content { display: none; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 25px; border-radius: 15px; }
+        body { font-family: sans-serif; background: #f0f2f5; direction: rtl; padding: 20px; }
+        .login-screen { position: fixed; inset: 0; background: #8e44ad; display: flex; align-items: center; justify-content: center; z-index: 100; }
+        .box { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); width: 100%; max-width: 400px; }
         input, textarea { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        button { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; width: 100%; }
+        button { width: 100%; padding: 12px; background: #8e44ad; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        #admin-panel { display: none; margin: 0 auto; }
+        .error { color: red; font-size: 0.8rem; display: none; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
-<div id="login-overlay">
-    <div class="login-box">
-        <h3>دخول الإدارة</h3>
-        <input type="password" id="admin-pass" placeholder="كلمة السر">
-        <button onclick="checkPass()">دخول</button>
-        <p id="error-msg" style="color: red; display: none;">خطأ في كلمة السر!</p>
+    <div id="login-screen" class="login-screen">
+        <div class="box">
+            <h2 style="text-align: center; color: #8e44ad;">دخول الإدارة</h2>
+            <p id="error-msg" class="error">خطأ في البيانات!</p>
+            <input type="email" id="email-input" placeholder="البريد الإلكتروني">
+            <input type="password" id="pass-input" placeholder="كلمة السر">
+            <button onclick="login()">تسجيل الدخول</button>
+        </div>
     </div>
-</div>
 
-<div id="admin-content">
-    <div class="container">
-        <h2>إدارة حملات Donate Way</h2>
-        <input type="text" id="camp-title" placeholder="عنوان الحملة">
-        <textarea id="camp-desc" placeholder="الوصف"></textarea>
-        <input type="number" id="camp-target" placeholder="المبلغ المطلوب (Pi)">
-        <input type="text" id="camp-icon" placeholder="الأيقونة">
-        <button onclick="saveCampaign()">حفظ الحملة</button>
+    <div id="admin-panel" class="box">
+        <h2>إضافة حملة جديدة</h2>
+        <input type="text" id="title" placeholder="عنوان الحملة">
+        <textarea id="desc" placeholder="وصف الحملة"></textarea>
+        <input type="number" id="target" placeholder="المبلغ المطلوب (Pi)">
+        <input type="text" id="icon" placeholder="الأيقونة (مثال: 🍱)">
+        <button onclick="add()">حفظ ونشر الحملة</button>
+        <button onclick="logout()" style="background:#ccc; margin-top:10px; color:#333">تسجيل خروج</button>
     </div>
-</div>
 
-<script>
-    const SUPABASE_URL = 'https://xncapmzlwuisupkjlftb.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS';
-    
-    /* في Netlify، سنقوم باستبدال هذه القيمة أثناء الـ Build 
-       أو يمكنك كتابتها هنا مباشرة إذا كان المشروع خاص (Private Repo)
-    */
-    const ADMIN_PASSWORD = "REPLACE_WITH_ENV_PASS"; 
+    <script>
+        const SUPABASE_URL = 'https://xncapmzlwuisupkjlftb.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // 1. وظيفة تسجيل الدخول
+        async function login() {
+            const email = document.getElementById('email-input').value;
+            const password = document.getElementById('pass-input').value;
+            const errorElement = document.getElementById('error-msg');
 
-    function checkPass() {
-        const input = document.getElementById('admin-pass').value;
-        if (input === ADMIN_PASSWORD) {
-            document.getElementById('login-overlay').style.display = 'none';
-            document.getElementById('admin-content').style.display = 'block';
-        } else {
-            document.getElementById('error-msg').style.display = 'block';
+            const { data, error } = await _supabase.auth.signInWithPassword({
+                email: email,
+                password: password,
+            });
+
+            if (error) {
+                errorElement.innerText = "فشل الدخول: " + error.message;
+                errorElement.style.display = 'block';
+            } else {
+                showAdminPanel();
+            }
         }
-    }
 
-    async function saveCampaign() {
-        const title = document.getElementById('camp-title').value;
-        const description = document.getElementById('camp-desc').value;
-        const target_amount = document.getElementById('camp-target').value;
-        const icon = document.getElementById('camp-icon').value;
+        // 2. إظهار لوحة التحكم
+        function showAdminPanel() {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('admin-panel').style.display = 'block';
+        }
 
-        const { error } = await _supabase.from('campaigns').insert([
-            { title, description, target_amount: parseFloat(target_amount), icon }
-        ]);
+        // 3. وظيفة إضافة حملة
+        async function add() {
+            const title = document.getElementById('title').value;
+            const description = document.getElementById('desc').value;
+            const target_amount = document.getElementById('target').value;
+            const icon = document.getElementById('icon').value;
 
-        if (error) alert(error.message);
-        else { alert("تمت الإضافة!"); location.reload(); }
-    }
-</script>
+            if (!title || !target_amount) return alert("اكمل البيانات");
+
+            const { error } = await _supabase.from('campaigns').insert([
+                { title, description, target_amount: parseFloat(target_amount), icon }
+            ]);
+
+            if (error) alert("خطأ في الحفظ: " + error.message);
+            else { alert("تمت الإضافة!"); location.reload(); }
+        }
+
+        // 4. تسجيل الخروج
+        async function logout() {
+            await _supabase.auth.signOut();
+            location.reload();
+        }
+
+        // التحقق إذا كان الأدمن مسجل دخوله فعلياً عند فتح الصفحة
+        window.onload = async () => {
+            const { data } = await _supabase.auth.getSession();
+            if (data.session) {
+                showAdminPanel();
+            }
+        };
+    </script>
 </body>
 </html>
