@@ -3,87 +3,143 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>منصة Pi للتبرعات</title>
+    <title>Donate Way</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;500;700&display=swap" rel="stylesheet">
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
     <style>
         :root {
-            --primary-color: #bb86fc;
-            --secondary-color: #3700b3;
-            --bg-color: #050505;
-            --glass-bg: rgba(255, 255, 255, 0.05);
-            --glass-border: rgba(255, 255, 255, 0.1);
-            --text-color: #ffffff;
-            --accent-glow: 0 0 20px rgba(187, 134, 252, 0.4);
+            --primary-purple: #8e44ad;
+            --light-purple: #bb86fc;
+            --glass-white: rgba(255, 255, 255, 0.2);
+            --pure-white: #ffffff;
+            --text-dark: #2c3e50;
+            --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            --card-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Tajawal', sans-serif; }
 
         body {
-            background-color: var(--bg-color);
-            background-image: radial-gradient(circle at 10% 20%, #2a004e 0%, transparent 40%), radial-gradient(circle at 90% 80%, #1a0033 0%, transparent 40%);
-            color: var(--text-color);
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+            color: var(--text-dark);
             min-height: 100vh;
             padding-bottom: 50px;
         }
 
+        /* Header Style - Glassmorphism */
         header {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 15px 5%; background: rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(15px); border-bottom: 1px solid var(--glass-border);
+            padding: 15px 8%; 
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(12px); 
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
             position: sticky; top: 0; z-index: 100;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         }
 
-        .logo { font-size: 1.5rem; font-weight: 700; color: var(--primary-color); text-shadow: var(--accent-glow); }
+        .logo { font-size: 1.7rem; font-weight: 700; color: var(--primary-purple); }
 
-        /* زر تسجيل الدخول ومعلومات المستخدم */
         .auth-section { display: flex; align-items: center; gap: 15px; }
 
         .login-btn {
-            background: linear-gradient(135deg, #6200ee, #bb86fc);
-            color: white; border: none; padding: 8px 20px; border-radius: 50px;
+            background: var(--primary-purple);
+            color: white; border: none; padding: 10px 25px; border-radius: 50px;
             cursor: pointer; font-weight: bold; transition: 0.3s;
+            box-shadow: 0 4px 15px rgba(142, 68, 173, 0.3);
         }
+
+        .login-btn:hover { background: #732d91; transform: scale(1.05); }
 
         .user-pill {
             display: none; align-items: center; gap: 8px;
-            background: var(--glass-bg); padding: 8px 15px;
-            border-radius: 50px; border: 1px solid var(--primary-color);
+            background: rgba(142, 68, 173, 0.1); padding: 8px 20px;
+            border-radius: 50px; border: 1px solid var(--primary-purple);
+            font-weight: 500; color: var(--primary-purple);
         }
 
-        .status-dot { width: 8px; height: 8px; background: #00ff88; border-radius: 50%; box-shadow: 0 0 8px #00ff88; }
+        .status-dot { width: 10px; height: 10px; background: #27ae60; border-radius: 50%; box-shadow: 0 0 8px #27ae60; }
 
         .container { max-width: 1200px; margin: 40px auto; padding: 0 20px; }
+        
         .hero-text { text-align: center; margin-bottom: 50px; }
-        .hero-text h1 { font-size: 2.5rem; margin-bottom: 10px; background: linear-gradient(to right, #fff, #bb86fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero-text h1 { 
+            font-size: 2.8rem; margin-bottom: 10px; 
+            background: linear-gradient(to left, var(--primary-purple), #3498db); 
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
+        }
+        .hero-text p { color: #666; font-size: 1.1rem; }
 
-        .campaigns-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
+        /* Campaigns Grid */
+        .campaigns-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; }
 
         .card {
-            background: var(--glass-bg); backdrop-filter: blur(12px); border: 1px solid var(--glass-border);
-            border-radius: 20px; padding: 20px; transition: 0.3s;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 25px; padding: 25px; 
+            transition: 0.4s ease;
+            box-shadow: var(--card-shadow);
+            text-align: center;
         }
-        .card:hover { transform: translateY(-5px); border-color: var(--primary-color); }
-        .card-image { width: 100%; height: 150px; background: linear-gradient(45deg, #2a004e, #4b0082); border-radius: 15px; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; font-size: 3rem; }
+        .card:hover { transform: translateY(-10px); box-shadow: 0 12px 40px rgba(142, 68, 173, 0.2); }
 
-        .progress-bar { width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 10px; margin: 15px 0; overflow: hidden; }
-        .progress-fill { height: 100%; background: var(--primary-color); box-shadow: var(--accent-glow); transition: 0.5s; }
+        .card-image-box { 
+            width: 100%; height: 160px; 
+            background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+            border-radius: 20px; margin-bottom: 20px; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 4rem;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+        }
+
+        .card h3 { margin-bottom: 10px; color: var(--primary-purple); font-size: 1.4rem; }
+        .card p { font-size: 0.95rem; color: #555; margin-bottom: 15px; min-height: 45px; }
+
+        .progress-bar { 
+            width: 100%; height: 10px; background: rgba(0,0,0,0.05); 
+            border-radius: 10px; margin: 15px 0; overflow: hidden; 
+        }
+        .progress-fill { 
+            height: 100%; background: linear-gradient(90deg, var(--light-purple), var(--primary-purple)); 
+            border-radius: 10px; transition: 1s cubic-bezier(0.17, 0.67, 0.83, 0.67); 
+        }
+
+        .stats-text { font-size: 0.85rem; color: #888; display: flex; justify-content: space-between; margin-bottom: 10px; }
 
         .donate-action { display: flex; gap: 10px; margin-top: 15px; }
-        .amount-input { flex: 1; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); padding: 10px; border-radius: 10px; color: white; outline: none; text-align: center; }
-        .donate-btn { background: var(--secondary-color); color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+        .amount-input { 
+            flex: 1; background: white; border: 1.5px solid #eee; 
+            padding: 12px; border-radius: 15px; color: var(--text-dark); 
+            outline: none; text-align: center; font-weight: bold;
+        }
+        .amount-input:focus { border-color: var(--primary-purple); }
 
-        .loader { display: none; border: 3px solid rgba(255,255,255,0.1); border-top: 3px solid var(--primary-color); border-radius: 50%; width: 25px; height: 25px; animation: spin 1s linear infinite; margin: 20px auto; }
+        .donate-btn { 
+            background: var(--primary-purple); color: white; border: none; 
+            padding: 10px 20px; border-radius: 15px; cursor: pointer; 
+            font-weight: bold; transition: 0.3s;
+        }
+        .donate-btn:hover { opacity: 0.9; }
+
+        .loader { display: none; border: 3px solid #f3f3f3; border-top: 3px solid var(--primary-purple); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 20px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        @media (max-width: 600px) {
+            header { padding: 15px 5%; }
+            .hero-text h1 { font-size: 2rem; }
+        }
     </style>
 </head>
 <body>
 
     <header>
-        <div class="logo">PiDonate 💜</div>
+        <div class="logo">Donate Way</div>
         <div class="auth-section">
-            <button id="login-button" class="login-btn" onclick="login()">تسجيل الدخول</button>
+            <button id="login-button" class="login-btn" onclick="login()">تسجيل دخول </button>
             <div id="user-pill" class="user-pill">
                 <span class="status-dot"></span>
                 <span id="username-display"></span>
@@ -93,35 +149,35 @@
 
     <div class="container">
         <div class="hero-text">
-            <h1>تبرع بمستقبل أفضل</h1>
-            <p>استخدم عملة Pi لدعم القضايا الإنسانية حول العالم.</p>
+            <h1>شارك في العطاء الحقيقي</h1>
+            <p>منصة تبرعات شفافة تعمل بطاقة مجتمع Pi Network</p>
         </div>
 
         <div id="main-loader" class="loader"></div>
 
-        <div class="campaigns-grid" id="campaigns-container"></div>
+        <div class="campaigns-grid" id="campaigns-container">
+            </div>
     </div>
 
     <script>
         const Pi = window.Pi;
         let currentUser = null;
 
-        // بيانات الحملات
+        // 4 حملات متنوعة مع صور تعبيرية
         const campaigns = [
-            { id: 1, title: "كفالة الأيتام", target: 1000, current: 450, icon: "👶" },
-            { id: 2, title: "آبار مياه", target: 2000, current: 120, icon: "💧" }
+            { id: 1, title: "وجبات المحتاجين", desc: "توفير وجبات غذائية متكاملة للأسر المتعففة.", target: 500, current: 210, icon: "🍱" },
+            { id: 2, title: "علاج المرضى", desc: "المساهمة في تكاليف العمليات الجراحية العاجلة.", target: 3000, current: 850, icon: "🏥" },
+            { id: 3, title: "تعليم طفل", desc: "توفير الحقيبة المدرسية والرسوم للطلاب المحتاجين.", target: 1200, current: 900, icon: "📚" },
+            { id: 4, title: "سقيا الأمل", desc: "حفر وتمديد آبار مياه نقية في المناطق الجافة.", target: 5000, current: 1100, icon: "💧" }
         ];
 
-        // تهيئة SDK
         async function initPi() {
             try {
-                // تم ضبط sandbox إلى false للعمل الحقيقي
+                // وضع Sandbox false للعمل الرسمي
                 Pi.init({ version: "2.0", sandbox: false });
-                console.log("Pi SDK Initialized");
-            } catch (e) { console.error(e); }
+            } catch (e) { console.error("Initialization failed", e); }
         }
 
-        // دالة تسجيل الدخول
         async function login() {
             try {
                 const scopes = ['username', 'payments'];
@@ -130,28 +186,27 @@
                 currentUser = auth.user;
                 document.getElementById('login-button').style.display = 'none';
                 document.getElementById('user-pill').style.display = 'flex';
-                document.getElementById('username-display').textContent = currentUser.username;
+                document.getElementById('username-display').textContent = "@" + currentUser.username;
             } catch (err) {
-                alert("يرجى فتح الموقع من داخل متصفح Pi Browser");
+                alert("يرجى استخدام متصفح Pi Browser للوصول للمنصة");
             }
         }
 
         function onIncompletePaymentFound(payment) {
-            console.log("هناك دفعة لم تكتمل:", payment);
-            // هنا يفضل إرسال payment.identifier للسيرفر لإكمالها
+            // منطق التعامل مع الدفعات المعلقة
+            console.log("Incomplete payment found", payment);
         }
 
-        // دالة الدفع الحقيقية
         async function handleDonate(id, amountStr) {
-            if (!currentUser) return alert("سجل دخولك أولاً!");
+            if (!currentUser) return alert("سجل دخولك أولاً باستخدام زر دخول بالبي");
             const amount = parseFloat(amountStr);
-            if (!amount || amount <= 0) return alert("أدخل مبلغاً صحيحاً");
+            if (!amount || amount <= 0) return alert("أدخل مبلغ تبرع صحيح");
 
             document.getElementById('main-loader').style.display = 'block';
 
             const paymentData = {
                 amount: amount,
-                memo: `تبرع للحملة #${id}`,
+                memo: `تبرع لدعم حملة: ${campaigns.find(c => c.id === id).title}`,
                 metadata: { campaignId: id }
             };
 
@@ -159,23 +214,25 @@
                 onReadyForServerApproval: (paymentId) => {
                     fetch('/api/pi/approve', {
                         method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({ paymentId })
                     }).then(res => { if(!res.ok) Pi.cancelPayment(paymentId); });
                 },
                 onReadyForServerCompletion: (paymentId, txid) => {
                     fetch('/api/pi/complete', {
                         method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({ paymentId, txid })
                     }).then(() => {
                         document.getElementById('main-loader').style.display = 'none';
-                        alert("تم التبرع بنجاح!");
+                        alert("بارك الله فيك! تم استلام تبرعك بنجاح.");
                         updateUI(id, amount);
                     });
                 },
                 onCancel: () => { document.getElementById('main-loader').style.display = 'none'; },
                 onError: (error) => { 
                     document.getElementById('main-loader').style.display = 'none';
-                    alert("خطأ: " + error.message);
+                    alert("عذراً، حدث خطأ: " + error.message);
                 }
             };
 
@@ -191,15 +248,21 @@
             const container = document.getElementById('campaigns-container');
             container.innerHTML = '';
             campaigns.forEach(c => {
-                const p = (c.current / c.target) * 100;
+                const progress = Math.min((c.current / c.target) * 100, 100);
                 container.innerHTML += `
                     <div class="card">
-                        <div class="card-image">${c.icon}</div>
+                        <div class="card-image-box">${c.icon}</div>
                         <h3>${c.title}</h3>
-                        <div class="progress-bar"><div class="progress-fill" style="width:${p}%"></div></div>
-                        <div style="font-size:0.8rem; color:#aaa">جمعنا ${c.current} من أصل ${c.target} Pi</div>
+                        <p>${c.desc}</p>
+                        <div class="stats-text">
+                            <span>المجمع: ${c.current} π</span>
+                            <span>الهدف: ${c.target} π</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width:${progress}%"></div>
+                        </div>
                         <div class="donate-action">
-                            <input type="number" id="in-${c.id}" class="amount-input" placeholder="0.0">
+                            <input type="number" id="in-${c.id}" class="amount-input" placeholder="0.00 π">
                             <button class="donate-btn" onclick="handleDonate(${c.id}, document.getElementById('in-${c.id}').value)">تبرع</button>
                         </div>
                     </div>
