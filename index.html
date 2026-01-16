@@ -190,30 +190,23 @@
             try { Pi.init({ version: "2.0", sandbox: false }); } catch (e) {}
         }
 
-        // جلب الحملات
         async function loadCampaigns() {
             const { data } = await _supabase.from('campaigns').select('*').order('id', { ascending: true });
             if (data) { campaigns = data; render(); }
         }
 
-        // جلب أبطال الخير (تجميع المبالغ حسب اسم المستخدم)
         async function loadTopHeroes() {
-            const { data, error } = await _supabase
-                .from('donations')
-                .select('username, amount');
-
+            const { data } = await _supabase.from('donations').select('username, amount');
             if (data) {
-                // تجميع التبرعات لكل مستخدم
                 const userTotals = data.reduce((acc, curr) => {
                     acc[curr.username] = (acc[curr.username] || 0) + parseFloat(curr.amount);
                     return acc;
                 }, {});
 
-                // ترتيب المستخدمين من الأكثر للأقل
                 const sortedHeroes = Object.entries(userTotals)
                     .map(([username, total]) => ({ username, total }))
                     .sort((a, b) => b.total - a.total)
-                    .slice(0, 5); // عرض أفضل 5 فقط
+                    .slice(0, 5);
 
                 renderHeroes(sortedHeroes);
             }
@@ -244,24 +237,21 @@
                 document.getElementById('login-button').style.display = 'none';
                 document.getElementById('user-pill').style.display = 'flex';
                 document.getElementById('username-display').textContent = currentUser.username;
-            } catch (err) { alert("افتح الموقع من متصفح Pi"); }
+            } catch (err) { alert("افتح الموقع من متصفح Pi Browser"); }
         }
 
         function onIncompletePaymentFound(payment) { console.log("Unfinished payment", payment); }
 
         async function recordDonationInSupabase(userId, username, amount, campaignId) {
             try {
-                // 1. إضافة سجل التبرع
                 await _supabase.from('donations').insert([
                     { pi_user_id: userId, username: username, amount: parseFloat(amount), campaign_id: campaignId }
                 ]);
                 
-                // 2. تحديث عداد الحملة
                 const camp = campaigns.find(c => c.id == campaignId);
                 const newTotal = parseFloat(camp.current_amount || 0) + parseFloat(amount);
                 await _supabase.from('campaigns').update({ current_amount: newTotal }).eq('id', campaignId);
                 
-                // تحديث البيانات في الصفحة
                 loadCampaigns();
                 loadTopHeroes();
             } catch (err) { console.error(err); }
@@ -272,11 +262,16 @@
             const amount = parseFloat(amountStr);
             if (!amount || amount <= 0) return alert("أدخل مبلغاً صحيحاً");
 
+            // جلب اسم الحملة من المصفوفة المحلية بناءً على الـ id
+            const targetCampaign = campaigns.find(c => c.id == id);
+            const campaignTitle = targetCampaign ? targetCampaign.title : "حملة خيرية";
+
             document.getElementById('main-loader').style.display = 'block';
 
             Pi.createPayment({
                 amount: amount,
-                memo: `تبرع لحملة رقم ${id}`,
+                // هنا تم استبدال النص الثابت باسم الحملة الحقيقي
+                memo: `تبرع لـ: ${campaignTitle}`, 
                 metadata: { campaignId: id }
             }, {
                 onReadyForServerApproval: (paymentId) => {
