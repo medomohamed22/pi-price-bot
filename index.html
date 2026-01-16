@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Donate Way | طريق العطاء</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;500;700&display=swap" rel="stylesheet">
-    
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -14,7 +13,6 @@
             --primary-purple: #8e44ad;
             --light-purple: #bb86fc;
             --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            --text-dark: #2c3e50;
             --success-green: #27ae60;
             --gold: #f1c40f;
         }
@@ -24,83 +22,62 @@
         body {
             background: var(--bg-gradient);
             background-attachment: fixed;
-            color: var(--text-dark);
-            min-height: 100vh;
-            padding-top: 80px; /* لإعطاء مساحة للهيدر الثابت */
+            padding-top: 80px;
         }
 
-        /* تثبيت الهيدر في مكانه */
+        /* هيدر ثابت في مكانه */
         header {
-            position: fixed;
-            top: 0; left: 0; right: 0;
-            height: 70px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 5%;
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(15px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-            z-index: 1000;
+            position: fixed; top: 0; left: 0; right: 0;
+            height: 70px; display: flex; justify-content: space-between; align-items: center;
+            padding: 0 5%; background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(15px); z-index: 1000; border-bottom: 1px solid rgba(255,255,255,0.3);
         }
 
         .logo { font-size: 1.5rem; font-weight: 700; color: var(--primary-purple); }
 
-        .auth-section { display: flex; align-items: center; }
-
-        .login-btn {
-            background: var(--primary-purple); color: white; border: none; 
-            padding: 8px 20px; border-radius: 50px; cursor: pointer; 
-            font-weight: bold; transition: 0.3s;
-        }
-
-        /* تصميم اسم المستخدم مع النقطة الخضراء */
         .user-pill {
-            display: none; align-items: center; gap: 10px;
-            background: white; padding: 6px 15px;
-            border-radius: 50px; border: 1px solid var(--primary-purple);
-            font-weight: 500; color: var(--primary-purple);
+            display: none; align-items: center; gap: 8px;
+            background: white; padding: 6px 15px; border-radius: 50px;
+            border: 1px solid var(--primary-purple); color: var(--primary-purple); font-weight: bold;
         }
 
+        /* النقطة الخضراء */
         .status-dot {
-            width: 10px; height: 10px; background-color: var(--success-green);
+            width: 10px; height: 10px; background: var(--success-green);
             border-radius: 50%; box-shadow: 0 0 8px var(--success-green);
         }
 
-        /* نظام التنبيهات الجمالي */
+        /* التنبيه الجمالي */
         #custom-alert {
             position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            background: white; padding: 15px 30px; border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-right: 5px solid var(--primary-purple);
-            display: none; z-index: 2000; font-weight: bold; transition: 0.3s;
+            background: white; padding: 12px 25px; border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2); border-right: 5px solid var(--primary-purple);
+            display: none; z-index: 2000; font-weight: bold;
         }
 
         .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-        
         .campaigns-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
 
         .card {
             background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(10px);
-            border-radius: 25px; padding: 20px; transition: 0.4s; text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.5); overflow: hidden;
-            display: flex; flex-direction: column;
+            border-radius: 25px; padding: 20px; text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.5); transition: 0.3s;
         }
-        .card:hover { transform: translateY(-10px); }
+        .card:hover { transform: translateY(-5px); }
 
-        .campaign-img { width: 100%; height: 180px; object-fit: cover; border-radius: 15px; margin-bottom: 15px; }
+        .campaign-img { width: 100%; height: 180px; object-fit: cover; border-radius: 15px; }
 
         .progress-bar { width: 100%; height: 10px; background: rgba(0,0,0,0.05); border-radius: 10px; margin: 15px 0; overflow: hidden; }
-        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--light-purple), var(--primary-purple)); transition: 1s ease-out; }
+        .progress-fill { height: 100%; background: var(--primary-purple); transition: 1s; }
 
         .donate-btn { background: var(--primary-purple); color: white; border: none; padding: 12px; border-radius: 12px; cursor: pointer; font-weight: bold; width: 100%; }
-        .amount-input { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #ddd; text-align: center; margin-bottom: 10px; outline: none; }
+        .amount-input { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #ddd; margin-bottom: 10px; text-align: center; }
 
-        .heroes-section { margin-top: 60px; background: rgba(255, 255, 255, 0.3); border-radius: 30px; padding: 30px; text-align: center; }
-        .heroes-grid { display: flex; justify-content: center; flex-wrap: wrap; gap: 15px; margin-top: 20px; }
-        .hero-badge { background: white; padding: 10px 20px; border-radius: 50px; display: flex; align-items: center; gap: 10px; border: 1px solid var(--light-purple); }
-        .hero-rank { background: var(--gold); color: white; width: 25px; height: 25px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: bold; }
+        .heroes-section { margin-top: 50px; text-align: center; }
+        .heroes-grid { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+        .hero-badge { background: white; padding: 8px 18px; border-radius: 50px; display: flex; align-items: center; gap: 8px; border: 1px solid #eee; }
 
-        .loader { display: none; border: 3px solid #f3f3f3; border-top: 3px solid var(--primary-purple); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 20px auto; }
+        .loader { display: none; border: 3px solid #f3f3f3; border-top: 3px solid var(--primary-purple); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 10px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
@@ -110,8 +87,8 @@
 
     <header>
         <div class="logo">Donate Way</div>
-        <div class="auth-section">
-            <button id="login-button" class="login-btn" onclick="login()">دخول</button>
+        <div class="auth">
+            <button id="login-button" style="background:var(--primary-purple); color:white; border:none; padding:8px 18px; border-radius:50px; cursor:pointer;" onclick="login()">دخول</button>
             <div id="user-pill" class="user-pill">
                 <span id="username-display"></span>
                 <div class="status-dot"></div>
@@ -120,16 +97,12 @@
     </header>
 
     <div class="container">
-        <div style="text-align: center; margin-bottom: 40px;">
-            <h1 style="color:var(--primary-purple); font-size: 2.5rem;">طريق العطاء</h1>
-            <p>تبرع بآمن وسهولة عبر شبكة Pi Network</p>
-            <div id="main-loader" class="loader"></div>
-        </div>
-
+        <h1 style="text-align:center; color:var(--primary-purple); margin-bottom:30px;">طريق العطاء</h1>
+        <div id="main-loader" class="loader"></div>
         <div class="campaigns-grid" id="campaigns-container"></div>
 
         <div class="heroes-section">
-            <h2 style="color:var(--primary-purple)">🏆 أبطال الخير (قائمة الشرف)</h2>
+            <h2 style="color:var(--primary-purple)">🏆 أبطال الخير</h2>
             <div id="heroes-container" class="heroes-grid"></div>
         </div>
     </div>
@@ -143,12 +116,10 @@
         let currentUser = null;
         let campaigns = [];
 
-        // دالة لإظهار التنبيهات بشكل جمالي
         function showMsg(text) {
-            const alertBox = document.getElementById('custom-alert');
-            alertBox.innerText = text;
-            alertBox.style.display = 'block';
-            setTimeout(() => { alertBox.style.display = 'none'; }, 3000);
+            const el = document.getElementById('custom-alert');
+            el.innerText = text; el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 3000);
         }
 
         async function loadData() {
@@ -174,101 +145,79 @@
                     <div class="card">
                         <img src="${c.image_url || 'https://via.placeholder.com/300x180'}" class="campaign-img">
                         <h3>${c.title}</h3>
-                        <p style="font-size:0.9rem; color:#666; margin: 10px 0; height: 40px; overflow: hidden;">${c.description || ''}</p>
-                        <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
+                        <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-top:10px;">
                             <span>جمع: ${c.current_amount || 0} π</span>
                             <span>الهدف: ${c.target_amount} π</span>
                         </div>
                         <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
                         <input type="number" id="in-${c.id}" class="amount-input" placeholder="0.00">
-                        <button class="donate-btn" onclick="handleDonate(${c.id})">تبرع بـ Pi</button>
-                    </div>
-                `;
+                        <button class="donate-btn" onclick="handleDonate(${c.id})">تبرع الآن</button>
+                    </div>`;
             }).join('');
         }
 
         function renderHeroes(heroes) {
             document.getElementById('heroes-container').innerHTML = heroes.map((h, i) => `
                 <div class="hero-badge">
-                    <div class="hero-rank">${i+1}</div>
-                    <strong>@${h.username}</strong>
-                    <span style="color:var(--primary-purple)">${h.total.toFixed(2)} π</span>
-                </div>
-            `).join('');
+                    <strong style="color:var(--gold)">#${i+1}</strong>
+                    <span>@${h.username}</span>
+                    <strong style="color:var(--primary-purple)">${h.total.toFixed(2)}</strong>
+                </div>`).join('');
         }
 
         async function login() {
             try {
-                const auth = await Pi.authenticate(['username', 'payments'], onIncompletePaymentFound);
+                const auth = await Pi.authenticate(['username', 'payments'], () => {});
                 currentUser = auth.user;
                 document.getElementById('login-button').style.display = 'none';
                 document.getElementById('user-pill').style.display = 'flex';
                 document.getElementById('username-display').textContent = currentUser.username;
-                showMsg("مرحباً " + currentUser.username);
-            } catch (e) { showMsg("يرجى فتح الموقع من متصفح Pi Browser الرسمي"); }
+                showMsg("أهلاً بك يا بطل!");
+            } catch (e) { showMsg("استخدم Pi Browser"); }
         }
 
-        function onIncompletePaymentFound(payment) {
-            // منطق التعامل مع المدفوعات غير المكتملة
-            console.log("Incomplete payment found", payment);
-        }
-
-        async function handleDonate(id) {
+        function handleDonate(id) {
             if (!currentUser) return showMsg("سجل دخولك أولاً");
-            const amtInput = document.getElementById(`in-${id}`);
-            const amt = parseFloat(amtInput.value);
-            
+            const amt = parseFloat(document.getElementById(`in-${id}`).value);
             if (!amt || amt <= 0) return showMsg("أدخل مبلغاً صحيحاً");
 
             const camp = campaigns.find(c => c.id == id);
             document.getElementById('main-loader').style.display = 'block';
 
-            try {
-                const payment = await Pi.createPayment({
-                    amount: amt,
-                    memo: `تبرع لـ: ${camp.title}`,
-                    metadata: { campaignId: id }
-                }, {
-                    onReadyForServerApproval: (paymentId) => {
-                        // هنا يتم استدعاء ملف الـ Backend الخاص بك (مثل Netlify Function) للموافقة
-                        showMsg("جاري معالجة الطلب...");
-                    },
-                    onReadyForServerCompletion: async (paymentId, txid) => {
-                        // بمجرد اكتمال المعاملة، نحدث قاعدة البيانات
-                        await _supabase.from('donations').insert([{ 
-                            pi_user_id: currentUser.uid, 
-                            username: currentUser.username, 
-                            amount: amt, 
-                            campaign_id: id 
-                        }]);
-                        
-                        const newTotal = (camp.current_amount || 0) + amt;
-                        await _supabase.from('campaigns').update({ current_amount: newTotal }).eq('id', id);
-                        
-                        document.getElementById('main-loader').style.display = 'none';
-                        showMsg("تم التبرع بنجاح، شكراً لعطائك!");
-                        amtInput.value = '';
-                        loadData();
-                    },
-                    onCancel: () => { 
-                        document.getElementById('main-loader').style.display = 'none';
-                        showMsg("تم إلغاء التبرع");
-                    },
-                    onError: (error) => {
-                        document.getElementById('main-loader').style.display = 'none';
-                        showMsg("خطأ: " + error.message);
-                    }
-                });
-            } catch (e) {
-                document.getElementById('main-loader').style.display = 'none';
-                showMsg("فشل الدفع: " + e.message);
-            }
+            // الكود الأصلي الذي يفتح المحفظة فوراً بدون تعليق
+            Pi.createPayment({
+                amount: amt,
+                memo: `تبرع لـ: ${camp.title}`,
+                metadata: { campaignId: id }
+            }, {
+                onReadyForServerApproval: (paymentId) => {
+                    showMsg("جاري طلب الموافقة...");
+                },
+                onReadyForServerCompletion: async (paymentId, txid) => {
+                    await _supabase.from('donations').insert([{ 
+                        pi_user_id: currentUser.uid, 
+                        username: currentUser.username, 
+                        amount: amt, 
+                        campaign_id: id 
+                    }]);
+                    const newTotal = (camp.current_amount || 0) + amt;
+                    await _supabase.from('campaigns').update({ current_amount: newTotal }).eq('id', id);
+                    
+                    document.getElementById('main-loader').style.display = 'none';
+                    showMsg("تم التبرع بنجاح! شكراً لك.");
+                    loadData();
+                },
+                onCancel: () => { 
+                    document.getElementById('main-loader').style.display = 'none';
+                },
+                onError: (error) => {
+                    document.getElementById('main-loader').style.display = 'none';
+                    showMsg("حدث خطأ في الدفع");
+                }
+            });
         }
 
-        window.onload = () => { 
-            Pi.init({version:"2.0"}); 
-            loadData(); 
-        };
+        window.onload = () => { Pi.init({version:"2.0"}); loadData(); };
     </script>
 </body>
 </html>
