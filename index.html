@@ -26,7 +26,7 @@
             background-attachment: fixed;
             color: var(--text-dark);
             min-height: 100vh;
-            padding-top: 80px; /* مسافة لعدم تداخل المحتوى مع الهيدر الثابت */
+            padding-top: 80px; 
         }
 
         /* هيدر ثابت: اللوجو يمين، المستخدم يسار */
@@ -72,7 +72,6 @@
             border-radius: 50%; box-shadow: 0 0 8px var(--success-green);
         }
 
-        /* نظام التنبيهات الجمالي */
         #custom-alert {
             position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
             background: white; padding: 15px 30px; border-radius: 15px;
@@ -124,7 +123,7 @@
     </header>
 
     <div class="container">
-        <h1 style="text-align: center; color: var(--primary-purple); margin-bottom: 30px; font-size: 2.2rem;">طريق العطاء</h1>
+        <h1 style="text-align: center; color: var(--primary-purple); margin-bottom: 30px; font-size: 2.2rem;">عطاؤك اليوم.. حياة جديدة لغيرك غداً</h1>
         <div id="main-loader" class="loader"></div>
         
         <div class="campaigns-grid" id="campaigns-container"></div>
@@ -204,7 +203,6 @@
             } catch (e) { showMsg("يرجى الفتح من متصفح Pi Browser"); }
         }
 
-        // تسجيل البيانات في قاعدة البيانات
         async function recordDonation(amount, campaignId) {
             try {
                 await _supabase.from('donations').insert([{ 
@@ -220,7 +218,6 @@
             } catch (err) { console.error(err); }
         }
 
-        // --- كود الدفع الثابت والمستقر (Callbacks) ---
         function handleDonate(id) {
             if (!currentUser) return showMsg("سجل دخولك أولاً");
             const amtStr = document.getElementById(`in-${id}`).value;
