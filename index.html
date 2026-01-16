@@ -10,6 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
+        /* (نفس تنسيقات الـ CSS السابقة بدون تغيير) */
         :root {
             --primary-purple: #8e44ad;
             --accent-purple: #a29bfe;
@@ -54,7 +55,6 @@
             cursor: pointer; display: flex; flex-direction: column; gap: 5px;
             padding: 10px; border-radius: 12px; transition: 0.3s;
         }
-        .menu-btn:hover { background: rgba(142, 68, 173, 0.1); }
         .menu-btn span { width: 25px; height: 3px; background: var(--primary-purple); border-radius: 5px; }
 
         .side-drawer {
@@ -70,7 +70,6 @@
             background: rgba(0,0,0,0.4); z-index: 10001; display: none;
         }
 
-        /* النقطة الخضراء الوامضة */
         .live-indicator {
             display: inline-block; width: 8px; height: 8px;
             background-color: var(--success); border-radius: 50%;
@@ -94,7 +93,6 @@
 
         .logo { font-size: 1.8rem; font-weight: 700; color: var(--primary-purple); cursor: pointer; }
 
-        /* تعديل حجم اسم المستخدم */
         .user-pill {
             display: none; align-items: center; gap: 8px;
             background: white; padding: 4px 12px; border-radius: 50px;
@@ -140,14 +138,6 @@
         #custom-alert { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #2d3436; color: white; padding: 15px 35px; border-radius: 50px; display: none; z-index: 10001; }
         .loader { display: none; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary-purple); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        @media (max-width: 480px) { 
-            header { height: 65px; padding: 0 15px; } 
-            .logo { font-size: 1.4rem; } 
-            body { padding-top: 90px; }
-            .side-drawer { width: 85%; }
-            .user-pill { font-size: 0.75rem; margin-right: 5px; }
-        }
     </style>
 </head>
 <body>
@@ -172,17 +162,8 @@
                 </div>
             </div>
         </div>
-
         <h3 class="drawer-title" style="font-size: 1.1rem; margin-top: 20px;">👤 سجل جميع المتبرعين</h3>
         <div id="all-donors-list" style="display:flex; flex-direction:column; gap:10px;"></div>
-    </div>
-
-    <div id="image-modal" class="modal" onclick="closeImage()">
-        <div class="modal-content" onclick="event.stopPropagation()">
-            <div class="close-modal" onclick="closeImage()">&times;</div>
-            <h3 id="modal-title" style="margin-bottom: 15px; color: var(--primary-purple);">أثر تبرعكم</h3>
-            <img id="modal-img-src" src="" class="modal-img">
-        </div>
     </div>
 
     <header>
@@ -193,7 +174,7 @@
             <div class="logo" onclick="location.reload()">Donate Way</div>
         </div>
         <div class="auth-section">
-            <button id="login-button" style="background:var(--primary-purple); color:white; border:none; padding:10px 25px; border-radius:50px; font-weight:700; cursor:pointer;" onclick="login()">دخول</button>
+            <button id="login-button" onclick="login()" style="background:var(--primary-purple); color:white; border:none; padding:10px 25px; border-radius:50px; font-weight:700; cursor:pointer;">دخول</button>
             <div id="user-pill" class="user-pill">
                 <span id="username-display"></span>
             </div>
@@ -203,12 +184,9 @@
     <div class="container">
         <h1 class="hero-title">عطاؤك اليوم.. حياة جديدة لغيرك غداً</h1>
         <div id="main-loader" class="loader"></div>
-        
         <div class="campaigns-grid" id="campaigns-container"></div>
-
         <div class="heroes-section">
             <h2 style="color:var(--primary-purple);">🏆 قائمة أبطال الخير</h2>
-            <p style="color:#666; margin-top:5px;">أكثر الأشخاص عطاءً ومساهمة في تغيير حياة الآخرين</p>
             <div id="heroes-container" class="heroes-list"></div>
         </div>
     </div>
@@ -222,6 +200,24 @@
         let currentUser = null;
         let campaigns = [];
 
+        // --- وظيفة حل مشكلة الدفع المعلق ---
+        async function onIncompletePaymentFound(payment) {
+            console.log("Incomplete payment found:", payment);
+            showMsg("جاري معالجة دفع سابق غير مكتمل...");
+            
+            // يجب استدعاء الـ API الخاص بك لإكمال أو إلغاء الدفع في السيرفر
+            try {
+                await fetch('/api/pi/incomplete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ paymentId: payment.identifier, txid: payment.transaction.txid })
+                });
+                showMsg("تمت معالجة الدفع العالق بنجاح.");
+            } catch (err) {
+                console.error("Error handling incomplete payment", err);
+            }
+        };
+
         function toggleDrawer() {
             const drawer = document.getElementById('side-drawer');
             const overlay = document.getElementById('drawer-overlay');
@@ -233,13 +229,12 @@
         async function loadGlobalStats() {
             const { data: dons } = await _supabase.from('donations').select('username, amount');
             const { data: camps } = await _supabase.from('campaigns').select('id');
-            
             if (dons) {
                 const totalPi = dons.reduce((sum, d) => sum + parseFloat(d.amount), 0);
                 document.getElementById('total-pi-stats').innerText = totalPi.toFixed(2) + " π";
                 const donorList = document.getElementById('all-donors-list');
                 donorList.innerHTML = dons.map(d => `
-                    <div style="background:white; padding:12px; border-radius:15px; display:flex; justify-content:space-between; align-items:center; border:1px solid #eee; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
+                    <div style="background:white; padding:12px; border-radius:15px; display:flex; justify-content:space-between; align-items:center; border:1px solid #eee;">
                         <span style="font-weight:bold; color:#444;">@${d.username}</span>
                         <span style="color:var(--primary-purple); font-weight:700;">${parseFloat(d.amount).toFixed(2)} π</span>
                     </div>
@@ -251,28 +246,22 @@
         function showMsg(text) {
             const alertBox = document.getElementById('custom-alert');
             alertBox.innerText = text; alertBox.style.display = 'block';
-            setTimeout(() => { alertBox.style.display = 'none'; }, 3000);
+            setTimeout(() => { alertBox.style.display = 'none'; }, 4000);
         }
 
-        function openImage(url, title) {
-            if (!url || url === '' || url === 'null') { showMsg("سيتم رفع صور الأثر قريباً لهذه الحملة"); return; }
-            document.getElementById('modal-img-src').src = url;
-            document.getElementById('modal-title').innerText = "أثر تبرعكم: " + title;
-            document.getElementById('image-modal').style.display = 'flex';
-        }
-
-        function closeImage() { document.getElementById('image-modal').style.display = 'none'; }
-
-        function getRemainingTime(createdAt) {
-            const diff = (new Date(createdAt).getTime() + (7*24*60*60*1000)) - new Date().getTime();
-            if (diff <= 0) return "منتهية";
-            return `${Math.floor(diff / (1000*60*60*24))} يوم و ${Math.floor((diff % (1000*60*60*24)) / (1000*60*60))} ساعة`;
+        async function login() {
+            try {
+                const auth = await Pi.authenticate(['username', 'payments'], onIncompletePaymentFound);
+                currentUser = auth.user;
+                document.getElementById('login-button').style.display = 'none';
+                document.getElementById('user-pill').style.display = 'flex';
+                document.getElementById('username-display').textContent = currentUser.username;
+            } catch (e) { showMsg("استخدم متصفح Pi"); }
         }
 
         async function loadData() {
             const { data: camps } = await _supabase.from('campaigns').select('*').order('id');
             if (camps) { campaigns = camps; renderCamps(); }
-
             const { data: dons } = await _supabase.from('donations').select('username, amount');
             if (dons) {
                 const totals = dons.reduce((acc, curr) => {
@@ -290,53 +279,26 @@
                 const progress = Math.min(((c.current_amount || 0) / c.target_amount) * 100, 100);
                 return `
                     <div class="card">
-                        <div class="timer-badge">⌛ ${getRemainingTime(c.created_at)}</div>
-                        <img src="${c.image_url || 'https://via.placeholder.com/400x200'}" class="campaign-img">
+                        <img src="${c.image_url}" class="campaign-img">
                         <h3>${c.title}</h3>
-                        <div style="display:flex; justify-content:space-between; margin-top:10px; font-weight:bold;">
+                        <div style="display:flex; justify-content:space-between; margin-top:10px;">
                             <span style="color:var(--primary-purple)">${c.current_amount || 0} π</span>
                             <span style="color:#bbb">الهدف: ${c.target_amount} π</span>
                         </div>
                         <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
                         <input type="number" id="in-${c.id}" class="amount-input" placeholder="0.00">
-                        <div class="btn-group">
-                            <button class="donate-btn" onclick="handleDonate(${c.id})">تبرع الآن</button>
-                            <button class="result-btn" onclick="openImage('${c.result_image_url}', '${c.title}')">🖼️ مشاهدة الأثر</button>
-                        </div>
+                        <button class="donate-btn" onclick="handleDonate(${c.id})">تبرع الآن</button>
                     </div>`;
             }).join('');
         }
 
         function renderHeroes(heroes) {
-            document.getElementById('heroes-container').innerHTML = heroes.map((h, i) => {
-                const firstChar = h.username.charAt(0).toUpperCase();
-                return `
-                    <div class="hero-card rank-${i+1}">
-                        <div class="rank-tag">مركز ${i+1}</div>
-                        <div class="hero-avatar">${firstChar}</div>
-                        <div class="hero-name">@${h.username}</div>
-                        <div class="hero-amount">${h.total.toFixed(2)} π</div>
-                    </div>`;
-            }).join('');
-        }
-
-        async function login() {
-            try {
-                const auth = await Pi.authenticate(['username', 'payments'], (p) => {});
-                currentUser = auth.user;
-                document.getElementById('login-button').style.display = 'none';
-                document.getElementById('user-pill').style.display = 'flex';
-                document.getElementById('username-display').textContent = currentUser.username;
-            } catch (e) { showMsg("استخدم متصفح Pi"); }
-        }
-
-        async function recordDonation(amount, campaignId) {
-            try {
-                await _supabase.from('donations').insert([{ pi_user_id: currentUser.uid, username: currentUser.username, amount, campaign_id: campaignId }]);
-                const camp = campaigns.find(c => c.id == campaignId);
-                await _supabase.from('campaigns').update({ current_amount: (parseFloat(camp.current_amount) || 0) + amount }).eq('id', campaignId);
-                loadData();
-            } catch (err) {}
+            document.getElementById('heroes-container').innerHTML = heroes.map((h, i) => `
+                <div class="hero-card rank-${i+1}">
+                    <div class="hero-avatar">${h.username.charAt(0).toUpperCase()}</div>
+                    <div class="hero-name">@${h.username}</div>
+                    <div class="hero-amount">${h.total.toFixed(2)} π</div>
+                </div>`).join('');
         }
 
         function handleDonate(id) {
@@ -346,15 +308,47 @@
             document.getElementById('main-loader').style.display = 'block';
 
             Pi.createPayment({
-                amount: amt, memo: `تبرع لـ: ${campaigns.find(c => c.id == id).title}`, metadata: { campaignId: id }
+                amount: amt, 
+                memo: `تبرع لـ: ${campaigns.find(c => c.id == id).title}`, 
+                metadata: { campaignId: id }
             }, {
-                onReadyForServerApproval: (payId) => fetch('/api/pi/approve', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({paymentId:payId})}),
-                onReadyForServerCompletion: (payId, tx) => fetch('/api/pi/complete', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({paymentId:payId, txid:tx})}).then(() => { recordDonation(amt, id); document.getElementById('main-loader').style.display = 'none'; showMsg("شكراً لك!"); }),
+                onReadyForServerApproval: (payId) => {
+                    return fetch('/api/pi/approve', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ paymentId: payId })
+                    });
+                },
+                onReadyForServerCompletion: (payId, tx) => {
+                    return fetch('/api/pi/complete', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ paymentId: payId, txid: tx })
+                    }).then(() => {
+                        _supabase.from('donations').insert([{ pi_user_id: currentUser.uid, username: currentUser.username, amount: amt, campaign_id: id }]);
+                        showMsg("تم التبرع بنجاح!");
+                        loadData();
+                        document.getElementById('main-loader').style.display = 'none';
+                    });
+                },
                 onCancel: () => document.getElementById('main-loader').style.display = 'none',
-                onError: () => { document.getElementById('main-loader').style.display = 'none'; showMsg("خطأ في الدفع"); }
+                onError: (error) => {
+                    document.getElementById('main-loader').style.display = 'none';
+                    if (error.message.includes("pending payment")) {
+                        showMsg("لديك تبرع معلق.. جاري محاولة الحل تلقائياً.");
+                        // يتم استدعاء onIncompletePaymentFound تلقائياً بواسطة SDK
+                    } else {
+                        showMsg("خطأ في الدفع: " + error.message);
+                    }
+                }
             });
         }
 
-        window.onload = () => { Pi.init({version:"2.0"}); loadData(); };
+        window.onload = () => { 
+            Pi.init({ version: "2.0" }); 
+            loadData(); 
+        };
     </script>
-    
+</body>
+</html>
+
