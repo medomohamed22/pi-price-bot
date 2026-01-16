@@ -3,53 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Donate Way | منصة التبرع الذكية</title>
+    <title>Donate Way | تبرع بالـ Pi</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --primary: #6c5ce7; --bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); background-attachment: fixed; color: white; }
-        nav { display: flex; justify-content: space-between; align-items: center; padding: 15px 5%; background: rgba(0,0,0,0.3); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 1000; }
-        .container { width: 90%; max-width: 1200px; margin: 30px auto; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
-        .card { background: white; border-radius: 25px; padding: 25px; color: #333; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-        .prog-bg { background: #eee; border-radius: 10px; height: 10px; margin: 15px 0; overflow: hidden; }
-        .prog-fill { background: var(--primary); height: 100%; width: 0%; transition: 1s; }
-        .amt-input, .memo-input { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 10px; box-sizing: border-box; }
-        .btn-donate { width: 100%; padding: 15px; border-radius: 15px; border: none; background: var(--primary); color: white; font-weight: bold; cursor: pointer; }
-        .leaderboard { background: white; border-radius: 25px; padding: 25px; color: #333; margin-top: 40px; }
-        .donor-card { padding: 15px; border-bottom: 1px solid #eee; display: flex; flex-direction: column; gap: 5px; }
-        .donor-header { display: flex; justify-content: space-between; font-weight: bold; }
-        .donor-memo { font-style: italic; color: #666; font-size: 0.9rem; }
-        #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: white; color: black; padding: 12px 25px; border-radius: 50px; display: none; z-index: 10000; box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
+        :root {
+            --primary: #6c5ce7;
+            --secondary: #a29bfe;
+            --bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --glass: rgba(255, 255, 255, 0.95);
+        }
+
+        body {
+            margin: 0; font-family: 'Segoe UI', sans-serif;
+            background: var(--bg); background-attachment: fixed; color: white;
+            min-height: 100vh;
+        }
+
+        /* Nav Bar */
+        nav {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 5%; background: rgba(0,0,0,0.3); backdrop-filter: blur(10px);
+            position: sticky; top: 0; z-index: 1000;
+        }
+        .brand { font-size: 1.5rem; font-weight: bold; }
+
+        /* Layout */
+        .container { width: 90%; max-width: 1100px; margin: 30px auto; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; }
+
+        /* Cards */
+        .card {
+            background: var(--glass); border-radius: 25px; padding: 25px;
+            color: #333; box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            transition: 0.3s;
+        }
+        .card h3 { margin: 10px 0; color: var(--primary); text-align: center; }
+
+        /* Progress Bar */
+        .prog-bg { background: #eee; border-radius: 10px; height: 12px; margin: 15px 0; overflow: hidden; }
+        .prog-fill { background: var(--primary); height: 100%; width: 0%; transition: 1.5s ease-in-out; }
+
+        /* Inputs */
+        .input-group { margin-bottom: 15px; }
+        .amt-input, .memo-input {
+            width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #ddd;
+            font-size: 1rem; box-sizing: border-box; margin-top: 5px;
+        }
+
+        .btn-donate {
+            width: 100%; padding: 15px; border-radius: 15px; border: none;
+            background: var(--primary); color: white; font-weight: bold;
+            font-size: 1.1rem; cursor: pointer; transition: 0.3s;
+        }
+        .btn-donate:hover { background: #5649c1; }
+
+        /* Leaderboard */
+        .leaderboard {
+            background: var(--glass); border-radius: 25px; padding: 30px;
+            color: #333; margin-top: 40px;
+        }
+        .donor-item {
+            padding: 15px; border-bottom: 1px solid #eee;
+            display: flex; flex-direction: column; gap: 5px;
+        }
+        .donor-top { display: flex; justify-content: space-between; font-weight: bold; }
+        .donor-memo { font-style: italic; color: #666; font-size: 0.9rem; margin-top: 5px; }
+
+        #toast {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: #333; color: white; padding: 12px 25px; border-radius: 50px;
+            display: none; z-index: 10000;
+        }
     </style>
 </head>
 <body>
 
 <nav>
-    <div style="font-size: 1.5rem; font-weight: bold;">Donate Way</div>
-    <div id="userSection"><button class="btn-donate" style="padding: 8px 20px;" onclick="piLogin()">دخول</button></div>
+    <div class="brand">Donate Way</div>
+    <div id="authArea">
+        <button class="btn-donate" style="padding: 8px 20px;" onclick="piLogin()">تسجيل الدخول</button>
+    </div>
 </nav>
 
 <div class="container">
-    <div class="grid" id="mainGrid"></div>
-    
+    <div class="grid" id="campaignsGrid"></div>
+
     <div class="leaderboard">
-        <h3 style="text-align: center;">🏆 لوحة الشرف</h3>
-        <div id="leaderboardContent">جاري التحميل...</div>
+        <h2 style="text-align: center;">🏆 لوحة الشرف</h2>
+        <div id="leaderboardContent">جاري تحميل المتبرعين...</div>
     </div>
 </div>
 
 <div id="toast"></div>
 
 <script>
-    // إعدادات Supabase
-    const _supabase = supabase.createClient('https://xncapmzlwuisupkjlftb.supabase.co', 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS
-');
+    // --- إعدادات Supabase ---
+    const SUPA_URL = 'https://xncapmzlwuisupkjlftb.supabase.co';
+    const SUPA_KEY = 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS
+'; 
+    const _supabase = supabase.createClient(SUPA_URL, SUPA_KEY);
 
     const campaigns = [
-        { id: 'c1', emoji: '🎓', title: 'تعليم الأطفال', goal: 1000 },
-        { id: 'c2', emoji: '💧', title: 'سقيا الماء', goal: 2000 }
+        { id: 'c1', emoji: '📚', title: 'تعليم الأطفال', goal: 1000 },
+        { id: 'c2', emoji: '💧', title: 'سقيا الماء', goal: 2000 },
+        { id: 'c3', emoji: '🏥', title: 'الرعاية الطبية', goal: 1500 }
     ];
 
     let currentUser = null;
@@ -57,45 +115,53 @@
 
     window.onload = () => {
         if (typeof Pi !== 'undefined') Pi.init({ version: "2.0", sandbox: false });
-        render();
-        updateDisplay();
+        renderCampaigns();
+        refreshData();
     };
 
     async function piLogin() {
         try {
             const auth = await Pi.authenticate(['username', 'payments'], (p) => {});
             currentUser = auth.user;
-            document.getElementById('userSection').innerHTML = `<b>@${currentUser.username}</b>`;
-        } catch (e) { showToast("افتح من تطبيق Pi"); }
+            document.getElementById('authArea').innerHTML = `<b>@${currentUser.username}</b>`;
+            showToast("مرحباً بك يا " + currentUser.username);
+        } catch (e) { showToast("يرجى الفتح من تطبيق Pi Browser"); }
     }
 
-    async function updateDisplay() {
-        const { data: donations } = await _supabase.from('donations').select('*').order('created_at', { ascending: false });
-        if (donations) {
-            // تحديث الأشرطة
-            campaigns.forEach(c => {
-                const total = donations.filter(d => d.campaign_id === c.id).reduce((s, d) => s + d.amount, 0);
-                document.getElementById(`fill-${c.id}`).style.width = Math.min((total/c.goal)*100, 100) + "%";
-            });
-            // تحديث لوحة الشرف مع المذكرة
-            document.getElementById('leaderboardContent').innerHTML = donations.slice(0, 10).map(d => `
-                <div class="donor-card">
-                    <div class="donor-header">
-                        <span>@${d.username}</span>
-                        <span style="color:var(--primary)">${d.amount} Pi</span>
+    async function refreshData() {
+        try {
+            const { data: donations } = await _supabase.from('donations').select('*').order('created_at', { ascending: false });
+            if (donations) {
+                // تحديث أشرطة التقدم
+                campaigns.forEach(c => {
+                    const total = donations.filter(d => d.campaign_id === c.id).reduce((s, d) => s + d.amount, 0);
+                    const fill = document.getElementById(`fill-${c.id}`);
+                    if (fill) fill.style.width = Math.min((total/c.goal)*100, 100) + "%";
+                });
+
+                // تحديث لوحة الشرف
+                document.getElementById('leaderboardContent').innerHTML = donations.slice(0, 10).map(d => `
+                    <div class="donor-item">
+                        <div class="donor-top">
+                            <span>@${d.username}</span>
+                            <span style="color:var(--primary)">${d.amount} Pi</span>
+                        </div>
+                        ${d.memo ? `<div class="donor-memo">"${d.memo}"</div>` : ''}
                     </div>
-                    ${d.memo ? `<div class="donor-memo">"${d.memo}"</div>` : ''}
-                </div>
-            `).join('');
-        }
+                `).join('');
+            }
+        } catch (e) { console.error("Error fetching data:", e); }
     }
 
-    async function handleDonate(id, title) {
-        if (!currentUser) return showToast("سجل دخولك أولاً");
+    async function startDonation(id, title) {
+        if (!currentUser) return showToast("يرجى تسجيل الدخول أولاً");
+        
         const amount = parseFloat(document.getElementById(`amt-${id}`).value);
         const memo = document.getElementById(`memo-${id}`).value;
 
-        showToast("جاري المعالجة...");
+        if (!amount || amount <= 0) return showToast("أدخل مبلغاً صحيحاً");
+
+        showToast("جاري معالجة الدفع...");
 
         try {
             await Pi.createPayment({
@@ -104,7 +170,11 @@
                 metadata: { campaignId: id }
             }, {
                 onReadyForServerApproval: async (pid) => {
-                    await fetch('/api/pi/approve', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ paymentId: pid }) });
+                    await fetch('/api/pi/approve', { 
+                        method: 'POST', 
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ paymentId: pid }) 
+                    });
                 },
                 onReadyForServerCompletion: async (pid, txid) => {
                     const res = await fetch('/api/pi/complete', {
@@ -115,23 +185,34 @@
                             campaignId: id, amount: amount, memo: memo 
                         })
                     });
-                    if (res.ok) { showToast("تم التبرع بنجاح!"); updateDisplay(); }
-                }
+                    if (res.ok) {
+                        showToast("تم التبرع بنجاح! شكراً لك.");
+                        refreshData();
+                    }
+                },
+                onCancel: () => showToast("تم إلغاء الدفع"),
+                onError: (e) => showToast("خطأ في الدفع")
             });
         } catch (e) { console.error(e); }
     }
 
-    function render() {
-        const grid = document.getElementById('mainGrid');
+    function renderCampaigns() {
+        const grid = document.getElementById('campaignsGrid');
         campaigns.forEach(c => {
             grid.innerHTML += `
                 <div class="card">
-                    <div style="font-size:3rem">${c.emoji}</div>
+                    <div style="font-size:3rem; text-align:center">${c.emoji}</div>
                     <h3>${c.title}</h3>
                     <div class="prog-bg"><div id="fill-${c.id}" class="prog-fill"></div></div>
-                    <input type="number" id="amt-${c.id}" class="amt-input" value="10" placeholder="المبلغ">
-                    <input type="text" id="memo-${c.id}" class="memo-input" placeholder="اكتب كلمة طيبة (اختياري)">
-                    <button class="btn-donate" onclick="handleDonate('${c.id}', '${c.title}')">تبرع الآن</button>
+                    <div class="input-group">
+                        <label>المبلغ (Pi):</label>
+                        <input type="number" id="amt-${c.id}" class="amt-input" value="10">
+                    </div>
+                    <div class="input-group">
+                        <label>رسالتك (اختياري):</label>
+                        <input type="text" id="memo-${c.id}" class="memo-input" placeholder="اكتب رسالة تظهر للجميع">
+                    </div>
+                    <button class="btn-donate" onclick="startDonation('${c.id}', '${c.title}')">تبرع الآن</button>
                 </div>
             `;
         });
