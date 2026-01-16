@@ -17,6 +17,10 @@
             --text-dark: #2c3e50;
             --success-green: #27ae60;
             --gold: #f1c40f;
+            /* تأثير الزجاج */
+            --glass-bg: rgba(255, 255, 255, 0.4);
+            --glass-border: rgba(255, 255, 255, 0.5);
+            --glass-shadow: rgba(31, 38, 135, 0.1);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Tajawal', sans-serif; }
@@ -26,10 +30,9 @@
             background-attachment: fixed;
             color: var(--text-dark);
             min-height: 100vh;
-            padding-top: 80px; 
+            padding-top: 90px; 
         }
 
-        /* هيدر ثابت: اللوجو يمين، المستخدم يسار */
         header {
             position: fixed;
             top: 0; left: 0; right: 0;
@@ -38,9 +41,10 @@
             justify-content: space-between;
             align-items: center;
             padding: 0 5%;
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(15px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.3); /* زجاجي للهيدر */
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
             z-index: 1000;
         }
 
@@ -49,61 +53,121 @@
             font-weight: 700; 
             color: var(--primary-purple); 
             cursor: pointer;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
 
         .auth-section { display: flex; align-items: center; }
 
         .login-btn {
             background: var(--primary-purple); color: white; border: none; 
-            padding: 8px 20px; border-radius: 50px; cursor: pointer; 
+            padding: 8px 22px; border-radius: 50px; cursor: pointer; 
             font-weight: bold; transition: 0.3s;
+            box-shadow: 0 4px 15px rgba(142, 68, 173, 0.3);
         }
 
+        /* اسم المستخدم بتصميم زجاجي */
         .user-pill {
             display: none; align-items: center; gap: 10px;
-            background: white; padding: 6px 15px;
-            border-radius: 50px; border: 1px solid var(--primary-purple);
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 8px 18px;
+            border-radius: 50px; 
+            border: 1px solid var(--glass-border);
             font-weight: 600; color: var(--primary-purple);
-            box-shadow: 0 2px 10px rgba(142, 68, 173, 0.1);
+            box-shadow: 0 8px 32px 0 var(--glass-shadow);
         }
 
         .status-dot {
             width: 10px; height: 10px; background-color: var(--success-green);
-            border-radius: 50%; box-shadow: 0 0 8px var(--success-green);
+            border-radius: 50%; box-shadow: 0 0 10px var(--success-green);
         }
 
         #custom-alert {
             position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            background: white; padding: 15px 30px; border-radius: 15px;
+            background: rgba(255, 255, 255, 0.9); padding: 15px 30px; border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-right: 5px solid var(--primary-purple);
-            display: none; z-index: 2000; font-weight: bold;
+            display: none; z-index: 2000; font-weight: bold; backdrop-filter: blur(10px);
         }
 
         .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
         
         .campaigns-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
 
+        /* كروت الحملات بتصميم زجاجي حديث */
         .card {
-            background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(10px);
-            border-radius: 25px; padding: 20px; transition: 0.4s; text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.5); overflow: hidden;
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 30px; 
+            padding: 20px; 
+            transition: 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+            text-align: center;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px 0 var(--glass-shadow);
+            overflow: hidden;
         }
-        .card:hover { transform: translateY(-8px); }
+        .card:hover { 
+            transform: translateY(-12px) scale(1.02); 
+            background: rgba(255, 255, 255, 0.5);
+            border-color: var(--primary-purple);
+        }
 
-        .campaign-img { width: 100%; height: 180px; object-fit: cover; border-radius: 15px; margin-bottom: 15px; }
+        .campaign-img { 
+            width: 100%; height: 190px; object-fit: cover; 
+            border-radius: 20px; margin-bottom: 18px; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
 
-        .progress-bar { width: 100%; height: 10px; background: rgba(0,0,0,0.05); border-radius: 10px; margin: 15px 0; overflow: hidden; }
-        .progress-fill { height: 100%; background: var(--primary-purple); transition: 1s ease-out; }
+        .progress-bar { 
+            width: 100%; height: 10px; background: rgba(0,0,0,0.05); 
+            border-radius: 10px; margin: 15px 0; overflow: hidden; 
+        }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--light-purple), var(--primary-purple)); transition: 1.5s ease-out; }
 
-        .amount-input { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #ddd; text-align: center; margin-bottom: 10px; outline: none; }
-        .donate-btn { background: var(--primary-purple); color: white; border: none; padding: 12px; border-radius: 12px; cursor: pointer; font-weight: bold; width: 100%; }
+        .amount-input { 
+            width: 100%; padding: 14px; border-radius: 15px; 
+            border: 1px solid rgba(0,0,0,0.1); background: rgba(255,255,255,0.5);
+            text-align: center; margin-bottom: 10px; outline: none; transition: 0.3s;
+        }
+        .amount-input:focus { border-color: var(--primary-purple); background: white; }
 
-        .heroes-section { margin-top: 60px; background: rgba(255, 255, 255, 0.3); border-radius: 30px; padding: 30px; text-align: center; }
-        .heroes-grid { display: flex; justify-content: center; flex-wrap: wrap; gap: 15px; margin-top: 20px; }
-        .hero-badge { background: white; padding: 10px 20px; border-radius: 50px; display: flex; align-items: center; gap: 10px; border: 1px solid var(--light-purple); }
-        .hero-rank { background: var(--gold); color: white; width: 25px; height: 25px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: bold; }
+        .donate-btn { 
+            background: var(--primary-purple); color: white; border: none; 
+            padding: 14px; border-radius: 15px; cursor: pointer; 
+            font-weight: bold; width: 100%; transition: 0.3s;
+        }
+        .donate-btn:active { transform: scale(0.98); }
 
-        .loader { display: none; border: 3px solid #f3f3f3; border-top: 3px solid var(--primary-purple); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 10px auto; }
+        /* قسم الأبطال الزجاجي */
+        .heroes-section { 
+            margin-top: 60px; 
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 35px; 
+            padding: 40px 20px; 
+            text-align: center; 
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px 0 var(--glass-shadow);
+        }
+        .heroes-grid { display: flex; justify-content: center; flex-wrap: wrap; gap: 15px; margin-top: 25px; }
+        
+        .hero-badge { 
+            background: white; padding: 12px 25px; border-radius: 50px; 
+            display: flex; align-items: center; gap: 10px; 
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            transition: 0.3s;
+        }
+        .hero-badge:hover { transform: scale(1.05); }
+
+        .hero-rank { 
+            background: var(--gold); color: white; width: 28px; height: 28px; 
+            border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+            font-size: 0.85rem; font-weight: bold; 
+        }
+
+        .loader { display: none; border: 4px solid rgba(142, 68, 173, 0.1); border-top: 4px solid var(--primary-purple); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
@@ -123,13 +187,13 @@
     </header>
 
     <div class="container">
-        <h1 style="text-align: center; color: var(--primary-purple); margin-bottom: 30px; font-size: 2.2rem;">عطاؤك اليوم.. حياة جديدة لغيرك غداً</h1>
+        <h1 style="text-align: center; color: var(--primary-purple); margin-bottom: 35px; font-size: 2.5rem; font-weight: 700;">عطاؤك اليوم.. حياة جديدة لغيرك غداً</h1>
         <div id="main-loader" class="loader"></div>
         
         <div class="campaigns-grid" id="campaigns-container"></div>
 
         <div class="heroes-section">
-            <h2 style="color:var(--primary-purple)">🏆 أبطال الخير (قائمة الشرف)</h2>
+            <h2 style="color:var(--primary-purple); font-size: 1.8rem;">🏆 أبطال الخير (قائمة الشرف)</h2>
             <div id="heroes-container" class="heroes-grid"></div>
         </div>
     </div>
@@ -171,13 +235,13 @@
                 return `
                     <div class="card">
                         <img src="${c.image_url || 'https://via.placeholder.com/300x180'}" class="campaign-img">
-                        <h3>${c.title}</h3>
-                        <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-top:10px">
+                        <h3 style="margin-bottom:10px; color:var(--text-dark);">${c.title}</h3>
+                        <div style="display:flex; justify-content:space-between; font-size:0.85rem; font-weight:500; color:#555;">
                             <span>جمع: ${c.current_amount || 0} π</span>
                             <span>الهدف: ${c.target_amount} π</span>
                         </div>
                         <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
-                        <input type="number" id="in-${c.id}" class="amount-input" placeholder="0.00">
+                        <input type="number" id="in-${c.id}" class="amount-input" placeholder="أدخل مبلغ التبرع">
                         <button class="donate-btn" onclick="handleDonate(${c.id})">تبرع بـ Pi</button>
                     </div>`;
             }).join('');
@@ -188,7 +252,7 @@
                 <div class="hero-badge">
                     <div class="hero-rank">${i+1}</div>
                     <strong>@${h.username}</strong>
-                    <span style="color:var(--primary-purple); font-weight:bold;">${h.total.toFixed(2)} π</span>
+                    <span style="color:var(--primary-purple); font-weight:700;">${h.total.toFixed(2)} π</span>
                 </div>`).join('');
         }
 
