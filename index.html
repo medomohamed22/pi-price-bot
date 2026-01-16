@@ -3,61 +3,46 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pi Network Donate</title>
+<title>حل مشكلة Pending Payment</title>
 <style>
   body { font-family: Arial; padding: 20px; }
-  button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+  input, button { padding: 8px; font-size: 16px; margin: 5px 0; }
   #log { margin-top: 20px; white-space: pre-line; background: #f3f3f3; padding: 10px; border-radius: 5px; max-height: 300px; overflow-y: auto; }
 </style>
 </head>
 <body>
 
-<h1>تبرع باستخدام Pi Network</h1>
+<h2>حل مشكلة Pending Payment في Pi Network</h2>
 
-<label>المبلغ: <input type="number" id="amount" value="1"></label>
-<button id="donateBtn">ابدأ التبرع</button>
+<label>Payment ID: <input type="text" id="paymentId" placeholder="مثل: payment_89639"></label><br>
+<label>TXID: <input type="text" id="txid" placeholder="مثل: tx_12345"></label><br>
+<button id="fixBtn">حل الدفع الآن</button>
 
 <div id="log"></div>
 
 <script>
-const donateBtn = document.getElementById('donateBtn');
 const logEl = document.getElementById('log');
-let inProgress = false;
+const fixBtn = document.getElementById('fixBtn');
 
 function log(message) {
   console.log(message);
   logEl.textContent += message + "\n";
 }
 
-// هذه دالة وهمية لإنشاء الدفع من Pi Browser
-// المفروض Pi Browser يعطيك paymentId و txid
-async function createPiPayment(amount) {
-  // هذا مثال وهمي – في الواقع تستخدم Pi SDK
-  return {
-    paymentId: "payment_" + Math.floor(Math.random() * 100000),
-    txid: "tx_" + Math.floor(Math.random() * 100000)
-  };
-}
+async function fixPayment() {
+  const paymentId = document.getElementById('paymentId').value.trim();
+  const txid = document.getElementById('txid').value.trim();
 
-async function handleDonate() {
-  if (inProgress) {
-    log("هناك عملية دفع جارية. انتظر حتى تنتهي.");
+  if (!paymentId || !txid) {
+    log("⚠️ ادخل Payment ID و TXID صحيحين");
     return;
   }
-  inProgress = true;
 
-  const amount = parseFloat(document.getElementById('amount').value);
-  log("بدء إنشاء الدفع...");
+  log("🔹 بدء حل مشكلة الدفع...");
 
   try {
-    // 1️⃣ إنشاء الدفع (في الواقع Pi SDK)
-    const { paymentId, txid } = await createPiPayment(amount);
-    log(`تم إنشاء الدفع!`);
-    log(`paymentId: ${paymentId}`);
-    log(`txid: ${txid}`);
-
-    // 2️⃣ approve
-    log("إرسال approve إلى السيرفر...");
+    // 1️⃣ Approve
+    log(`✅ إرسال approve لـ Payment ID: ${paymentId}`);
     const approveRes = await fetch('/api/pi/approve', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -65,11 +50,10 @@ async function handleDonate() {
     });
     const approveData = await approveRes.json();
     log("Approve response: " + JSON.stringify(approveData));
+    if (!approveRes.ok) throw new Error("فشل approve");
 
-    if (!approveRes.ok) throw new Error("Approve failed");
-
-    // 3️⃣ complete
-    log("إرسال complete إلى السيرفر...");
+    // 2️⃣ Complete
+    log(`✅ إرسال complete لـ Payment ID: ${paymentId} و TXID: ${txid}`);
     const completeRes = await fetch('/api/pi/complete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -77,20 +61,16 @@ async function handleDonate() {
     });
     const completeData = await completeRes.json();
     log("Complete response: " + JSON.stringify(completeData));
+    if (!completeRes.ok) throw new Error("فشل complete");
 
-    if (!completeRes.ok) throw new Error("Complete failed");
-
-    log("تم إتمام الدفع بنجاح ✅");
-
+    log("🎉 تم حل مشكلة الدفع بنجاح!");
   } catch (err) {
-    log("حدث خطأ: " + err.message);
-  } finally {
-    inProgress = false;
+    log("❌ حدث خطأ: " + err.message);
   }
 }
 
-donateBtn.addEventListener('click', handleDonate);
+fixBtn.addEventListener('click', fixPayment);
 </script>
 
 </body>
-</html>    
+</html>
