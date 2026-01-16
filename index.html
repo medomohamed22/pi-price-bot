@@ -3,177 +3,210 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>منصة Pi الخيرية</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Shopping - Pi Store</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    
     <style>
-        body { font-family: 'Tajawal', sans-serif; }
-        .campaign-card.active { border-color: #7c3aed; background-color: #f5f3ff; ring: 2px; }
+        :root { --p: #6d28d9; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --accent: #fbbf24; }
+        * { box-sizing: border-box; font-family: 'Cairo', sans-serif; transition: all 0.3s ease; }
+        body { background: var(--bg); color: var(--text); margin: 0; padding: 0; min-height: 100vh; }
+        
+        header { background: var(--card); padding: 15px 5%; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
+        .btn-sm { padding: 8px 15px; border-radius: 20px; cursor: pointer; font-weight: bold; border: none; font-size: 0.85rem; }
+        .orders-btn { background: var(--accent); color: #000; }
+        .lang-btn { background: #334155; color: white; margin-right: 10px; }
+
+        .container { padding: 20px 5%; max-width: 1300px; margin: auto; }
+        .section-title { margin-bottom: 25px; font-size: 1.5rem; border-right: 5px solid var(--p); padding-right: 15px; }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
+        @media (min-width: 768px) { .grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); } }
+        
+        .card { background: var(--card); border-radius: 20px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; }
+        .img-container { width: 100%; height: 180px; background: #fff; display: flex; align-items: center; justify-content: center; padding: 10px; }
+        .card img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .info { padding: 15px; text-align: center; flex-grow: 1; }
+        .price { color: var(--accent); font-weight: bold; display: block; margin-top: 5px; font-size: 1.2rem; }
+        .buy-btn { background: var(--p); color: white; border: none; width: 100%; padding: 12px; cursor: pointer; font-weight: bold; border-radius: 0 0 20px 20px; }
+
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; z-index: 2000; padding: 20px; backdrop-filter: blur(5px); }
+        .modal-content { background: var(--card); padding: 25px; border-radius: 25px; width: 100%; max-width: 450px; position: relative; max-height: 90vh; overflow-y: auto; border: 1px solid var(--p); }
+        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: white; }
+        
+        /* تصميم عنصر الطلب في المتابعة */
+        .order-item { background: #1e293b; padding: 15px; border-radius: 15px; margin-bottom: 12px; border: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
+        .status-badge { background: var(--p); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen pb-10">
+<body>
 
-    <header class="bg-purple-700 text-white p-6 rounded-b-3xl shadow-lg mb-6 text-center">
-        <h1 class="text-2xl font-bold">بوابة Pi للتبرع الرقمي</h1>
-        <p class="text-purple-100 text-sm mt-2">ساهم بتغيير حياة الآخرين بعملة Pi</p>
+    <header>
+        <div style="font-size: 1.4rem; font-weight: bold; color: var(--accent);">🛒 Shopping</div>
+        <div style="display: flex; gap: 5px;">
+            <button class="btn-sm orders-btn" id="ui-my-orders" onclick="showMyOrders()">طلباتي</button>
+            <button class="btn-sm lang-btn" id="langSwitcher" onclick="toggleLanguage()">English</button>
+        </div>
     </header>
 
-    <main class="max-w-md mx-auto px-4">
-        
-        <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <span>📍</span> اختر حملة للتبرع لها
-        </h2>
-        
-        <div class="grid grid-cols-1 gap-4 mb-8">
-            <div onclick="selectCampaign('بناء مدارس', this)" class="campaign-card bg-white p-4 rounded-xl shadow-sm border-2 border-transparent cursor-pointer transition-all active:scale-95">
-                <div class="flex justify-between items-center mb-2">
-                    <span class="font-bold text-gray-700">بناء مدارس للأطفال</span>
-                    <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">نشط</span>
-                </div>
-                <div class="w-full bg-gray-200 h-2 rounded-full mb-2">
-                    <div class="bg-purple-600 h-2 rounded-full" style="width: 65%"></div>
-                </div>
-                <p class="text-xs text-gray-500">تم جمع 650 Pi من أصل 1000</p>
-            </div>
+    <div class="container">
+        <h2 class="section-title" id="ui-title">أحدث المنتجات</h2>
+        <div class="grid" id="productsGrid"></div>
+    </div>
 
-            <div onclick="selectCampaign('سقيا الماء', this)" class="campaign-card bg-white p-4 rounded-xl shadow-sm border-2 border-transparent cursor-pointer transition-all active:scale-95">
-                <div class="flex justify-between items-center mb-2">
-                    <span class="font-bold text-gray-700">مشروع سقيا الماء</span>
-                    <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">نشط</span>
-                </div>
-                <div class="w-full bg-gray-200 h-2 rounded-full mb-2">
-                    <div class="bg-blue-500 h-2 rounded-full" style="width: 30%"></div>
-                </div>
-                <p class="text-xs text-gray-500">تم جمع 300 Pi من أصل 1000</p>
-            </div>
+    <div id="buyModal" class="modal">
+        <div class="modal-content">
+            <h3 id="ui-modal-head" style="text-align:center; color:var(--accent);">تفاصيل الشحن</h3>
+            <input type="text" id="custName" placeholder="الاسم الكامل">
+            <input type="tel" id="custPhone" placeholder="رقم الهاتف" oninput="this.value = this.value.replace(/[^0-9]/g, '');" inputmode="numeric">
+            <input type="text" id="custAddr" placeholder="العنوان بالتفصيل">
+            <button class="buy-btn" style="border-radius:12px; margin-top:10px;" id="ui-pay-btn" onclick="initiatePiPayment()">تأكيد ودفع</button>
+            <button class="buy-btn" style="background:#475569; border-radius:12px; margin-top:10px" onclick="closeModal('buyModal')">إلغاء</button>
+            <div id="status-msg" style="text-align:center; margin-top:10px; font-size: 0.8rem; color: var(--accent);"></div>
         </div>
+    </div>
 
-        <div class="bg-white p-6 rounded-2xl shadow-md">
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-600 mb-1">اسم المتبرع</label>
-                    <input type="text" id="donorName" placeholder="فاعل خير" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none transition-all">
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-600 mb-1">المبلغ المراد التبرع به (Pi)</label>
-                    <div class="relative">
-                        <input type="number" id="amount" value="1" min="0.1" step="0.1" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none font-bold text-lg">
-                        <span class="absolute left-4 top-3 text-purple-600 font-bold">π</span>
-                    </div>
-                </div>
-
-                <button onclick="processDonation()" id="payBtn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-purple-200 transition-all flex justify-center items-center gap-2">
-                    إتمام التبرع الآن
-                </button>
-            </div>
-
-            <div id="status" class="mt-4 text-center text-sm font-medium"></div>
+    <div id="ordersModal" class="modal">
+        <div class="modal-content">
+            <span style="position:absolute; top:15px; left:15px; cursor:pointer; font-size:1.5rem;" onclick="closeModal('ordersModal')">&times;</span>
+            <h3 id="ui-orders-head" style="text-align:center; color:var(--accent);">متابعة طلباتي</h3>
+            <div id="myOrdersList" style="margin-top:20px;"></div>
         </div>
-
-        <p class="text-center text-gray-400 text-xs mt-8">جميع المعاملات تتم عبر شبكة Pi Network المشفرة</p>
-    </main>
+    </div>
 
     <script>
-        // --- Configuration ---
-        const SUPABASE_URL = 'https://xncapmzlwuisupkjlftb.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS'; 
-        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const SB_URL = 'https://xncapmzlwuisupkjlftb.supabase.co';
+        const SB_KEY = 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS'; 
+        const _supabase = supabase.createClient(SB_URL, SB_KEY);
 
-        let selectedCampaign = "عام";
+        let currentLang = 'ar';
+        const content = {
+            ar: { title: "أحدث المنتجات", buy: "شراء الآن", head: "بيانات التوصيل", name: "الاسم الكامل", phone: "رقم الهاتف", addr: "العنوان بالتفصيل", pay: "تأكيد والدفع بـ Pi", myOrders: "طلباتي", ordersHead: "متابعة الطلبات", loading: "جاري التحميل..." },
+            en: { title: "Latest Products", buy: "Buy Now", head: "Shipping Details", name: "Full Name", phone: "Phone Number", addr: "Detailed Address", pay: "Confirm & Pay", myOrders: "My Orders", ordersHead: "Order Tracking", loading: "Loading..." }
+        };
 
-        function selectCampaign(name, element) {
-            selectedCampaign = name;
-            document.querySelectorAll('.campaign-card').forEach(c => c.classList.remove('active', 'border-purple-600'));
-            element.classList.add('active', 'border-purple-600');
+        const Pi = window.Pi;
+        Pi.init({ version: "2.0", sandbox: false });
+
+        let userAccount = { username: "Guest" }; 
+        let activeProduct = null;
+
+        async function init() {
+            try {
+                const auth = await Pi.authenticate(['username', 'payments'], (p) => {});
+                userAccount = auth.user;
+                updateUI();
+                loadProducts();
+            } catch (e) { loadProducts(); }
         }
 
-        // --- Pi Network SDK ---
-        const Pi = window.Pi;
-        Pi.init({ version: "2", sandbox: false });
+        function toggleLanguage() {
+            currentLang = currentLang === 'ar' ? 'en' : 'ar';
+            document.documentElement.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
+            updateUI();
+            loadProducts();
+        }
 
-        async function processDonation() {
-            const amountInput = document.getElementById('amount');
-            const donorInput = document.getElementById('donorName');
-            const statusDiv = document.getElementById('status');
-            const btn = document.getElementById('payBtn');
+        function updateUI() {
+            const t = content[currentLang];
+            document.getElementById('ui-title').innerText = t.title;
+            document.getElementById('langSwitcher').innerText = currentLang === 'ar' ? "English" : "عربي";
+            document.getElementById('ui-my-orders').innerText = t.myOrders;
+            document.getElementById('ui-modal-head').innerText = t.head;
+            document.getElementById('ui-pay-btn').innerText = t.pay;
+            document.getElementById('ui-orders-head').innerText = t.ordersHead;
+            document.getElementById('custName').placeholder = t.name;
+            document.getElementById('custPhone').placeholder = t.phone;
+            document.getElementById('custAddr').placeholder = t.addr;
+        }
 
-            const amount = parseFloat(amountInput.value);
-            const donorName = donorInput.value || "فاعل خير";
+        async function loadProducts() {
+            const { data } = await _supabase.from('products').select('*').order('created_at', {ascending: false});
+            const grid = document.getElementById('productsGrid');
+            grid.innerHTML = (data || []).map(p => `
+                <div class="card">
+                    <div class="img-container"><img src="${p.image_url}"></div>
+                    <div class="info">
+                        <h3>${p.name}</h3>
+                        <span class="price">${p.price} Pi</span>
+                    </div>
+                    <button class="buy-btn" onclick='openModal("buyModal", ${JSON.stringify(p)})'>${content[currentLang].buy}</button>
+                </div>
+            `).join('');
+        }
 
-            if (amount <= 0) {
-                showStatus("يرجى إدخال مبلغ صحيح", "text-red-500");
-                return;
+        // --- نظام عرض طلباتي (الحالة والتاريخ فقط) ---
+        async function showMyOrders() {
+            const listDiv = document.getElementById('myOrdersList');
+            listDiv.innerHTML = `<p style="text-align:center">${content[currentLang].loading}</p>`;
+            document.getElementById('ordersModal').style.display = 'flex';
+
+            const { data } = await _supabase.from('orders')
+                .select('product_name, status, created_at')
+                .eq('pi_user', userAccount.username)
+                .order('created_at', { ascending: false });
+
+            if (!data || data.length === 0) { 
+                listDiv.innerHTML = "<p style='text-align:center'>لا توجد طلبات</p>"; 
+                return; 
             }
+
+            listDiv.innerHTML = data.map(o => {
+                const date = new Date(o.created_at).toLocaleDateString(currentLang === 'ar' ? 'ar-EG' : 'en-US', {
+                    year: 'numeric', month: 'short', day: 'numeric'
+                });
+                return `
+                <div class="order-item">
+                    <div>
+                        <div style="font-weight:bold; font-size:0.9rem;">${o.product_name}</div>
+                        <div style="font-size:0.75rem; color:#94a3b8;">🗓 ${date}</div>
+                    </div>
+                    <div class="status-badge">${o.status || 'قيد المراجعة'}</div>
+                </div>`;
+            }).join('');
+        }
+
+        // --- نظام الدفع ---
+        async function initiatePiPayment() {
+            const name = document.getElementById('custName').value;
+            const phone = document.getElementById('custPhone').value;
+            const addr = document.getElementById('custAddr').value;
+            const statusMsg = document.getElementById('status-msg');
+
+            if(!name || !phone || !addr) return alert("أكمل البيانات");
+            statusMsg.innerText = "جاري الاتصال بالمحفظة...";
 
             try {
-                btn.disabled = true;
-                btn.innerHTML = `<svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> جاري المعالجة...`;
-
                 const payment = await Pi.createPayment({
-                    amount: amount,
-                    memo: `تبرع لـ ${selectedCampaign} بواسطة ${donorName}`,
-                    metadata: { campaign: selectedCampaign, donor: donorName },
+                    amount: activeProduct.price,
+                    memo: `Order: ${activeProduct.name}`,
+                    metadata: { productId: activeProduct.id }
                 }, {
-                    onReadyForServerApproval: (paymentId) => {
-                        return fetch('/api/pi/approve', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ paymentId }),
-                        });
+                    onReadyForServerApproval: async (pid) => {
+                        return (await fetch('/api/pi/approve', { method: 'POST', body: JSON.stringify({ paymentId: pid }) })).ok;
                     },
-                    onReadyForServerCompletion: (paymentId, txid) => {
-                        return fetch('/api/pi/complete', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ paymentId, txid }),
-                        });
-                    },
-                    onCancel: (paymentId) => {
-                        showStatus("تم إلغاء عملية الدفع", "text-orange-500");
-                        resetBtn();
-                    },
-                    onError: (error) => {
-                        showStatus("فشل الدفع: " + error.message, "text-red-500");
-                        resetBtn();
-                    },
-                });
-
-                if (payment) {
-                    // تسجيل البيانات في Supabase
-                    await _supabase.from('donations').insert([
-                        { 
-                            donor_name: donorName, 
-                            amount: amount, 
-                            campaign: selectedCampaign,
-                            pi_payment_id: payment.identifier 
+                    onReadyForServerCompletion: async (pid, txid) => {
+                        const res = await fetch('/api/pi/complete', { method: 'POST', body: JSON.stringify({ paymentId: pid, txid }) });
+                        if (res.ok) {
+                            await _supabase.from('orders').insert([{
+                                pi_user: userAccount.username, product_name: activeProduct.name,
+                                amount: activeProduct.price, customer_name: name,
+                                customer_phone: phone, address: addr, txid: txid, status: "قيد المراجعة"
+                            }]);
+                            alert("تم الدفع بنجاح!"); closeModal('buyModal');
                         }
-                    ]);
-                    
-                    showStatus("✨ شكراً لك! تم استلام تبرعك بنجاح", "text-green-600");
-                    resetBtn("تبرع مرة أخرى");
-                }
-
-            } catch (err) {
-                console.error(err);
-                showStatus("خطأ في الاتصال بالخادم", "text-red-500");
-                resetBtn();
-            }
+                    },
+                    onCancel: () => { statusMsg.innerText = ""; },
+                    onError: () => { statusMsg.innerText = "خطأ في العملية"; }
+                });
+            } catch (e) { statusMsg.innerText = ""; }
         }
 
-        function showStatus(msg, colorClass) {
-            const statusDiv = document.getElementById('status');
-            statusDiv.className = `mt-4 text-center text-sm font-bold ${colorClass}`;
-            statusDiv.innerText = msg;
-        }
+        function openModal(id, p = null) { if(p) activeProduct = p; document.getElementById(id).style.display='flex'; }
+        function closeModal(id) { document.getElementById(id).style.display='none'; }
 
-        function resetBtn(text = "إتمام التبرع الآن") {
-            const btn = document.getElementById('payBtn');
-            btn.disabled = false;
-            btn.innerText = text;
-        }
+        init();
     </script>
 </body>
 </html>
