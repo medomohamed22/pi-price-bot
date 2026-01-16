@@ -1,195 +1,212 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Donate Way - Donate with Pi Network</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping - Pi Store</title>
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root { --p: #6d28d9; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --accent: #fbbf24; }
+        * { box-sizing: border-box; font-family: 'Cairo', sans-serif; transition: all 0.3s ease; }
+        body { background: var(--bg); color: var(--text); margin: 0; padding: 0; min-height: 100vh; }
+        
+        header { background: var(--card); padding: 15px 5%; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
+        .btn-sm { padding: 8px 15px; border-radius: 20px; cursor: pointer; font-weight: bold; border: none; font-size: 0.85rem; }
+        .orders-btn { background: var(--accent); color: #000; }
+        .lang-btn { background: #334155; color: white; margin-right: 10px; }
 
-<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+        .container { padding: 20px 5%; max-width: 1300px; margin: auto; }
+        .section-title { margin-bottom: 25px; font-size: 1.5rem; border-right: 5px solid var(--p); padding-right: 15px; }
 
-<style>
-body{
-    font-family:'Segoe UI',Tahoma;
-    background:linear-gradient(135deg,#f5f0ff,#e6d9ff);
-    margin:0;
-    color:#4a148c;
-}
-.container{max-width:1100px;margin:30px auto;padding:20px}
-.header{text-align:center;margin-bottom:40px}
-.logo{font-size:90px;color:#7e57c2;animation:float 3s ease-in-out infinite}
-@keyframes float{50%{transform:translateY(-10px)}}
-.campaigns{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:25px}
-.campaign-card{
-    background:#fff;
-    border-radius:24px;
-    padding:30px;
-    box-shadow:0 10px 30px rgba(126,87,194,.15);
-    text-align:center;
-}
-.icon{font-size:55px}
-.progress-container{background:#ede7f6;border-radius:50px;height:18px;margin:12px 0}
-.progress-bar{
-    background:#7e57c2;
-    height:100%;
-    width:0%;
-    color:#fff;
-    font-size:12px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-}
-.amount-btn{
-    border:2px solid #b39ddb;
-    background:#ede7f6;
-    padding:8px 16px;
-    border-radius:50px;
-    cursor:pointer;
-}
-.amount-btn.selected{background:#7e57c2;color:#fff}
-.custom-input{
-    padding:10px;
-    border-radius:50px;
-    border:2px solid #b39ddb;
-    width:160px;
-    text-align:center;
-}
-button.donate{
-    margin-top:15px;
-    background:linear-gradient(135deg,#9c27b0,#7e57c2);
-    color:#fff;
-    border:none;
-    padding:14px 30px;
-    border-radius:50px;
-    cursor:pointer;
-    width:100%;
-    font-size:16px;
-}
-.message-box{display:none;margin:20px auto;padding:15px;border-radius:15px;text-align:center}
-.message-success{background:#d1c4e9}
-.message-cancel{background:#f8bbd0}
-footer{text-align:center;margin-top:40px;font-size:14px}
-</style>
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
+        @media (min-width: 768px) { .grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); } }
+        
+        .card { background: var(--card); border-radius: 20px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; }
+        .img-container { width: 100%; height: 180px; background: #fff; display: flex; align-items: center; justify-content: center; padding: 10px; }
+        .card img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .info { padding: 15px; text-align: center; flex-grow: 1; }
+        .price { color: var(--accent); font-weight: bold; display: block; margin-top: 5px; font-size: 1.2rem; }
+        .buy-btn { background: var(--p); color: white; border: none; width: 100%; padding: 12px; cursor: pointer; font-weight: bold; border-radius: 0 0 20px 20px; }
+
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; z-index: 2000; padding: 20px; backdrop-filter: blur(5px); }
+        .modal-content { background: var(--card); padding: 25px; border-radius: 25px; width: 100%; max-width: 450px; position: relative; max-height: 90vh; overflow-y: auto; border: 1px solid var(--p); }
+        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: white; }
+        
+        /* تصميم عنصر الطلب في المتابعة */
+        .order-item { background: #1e293b; padding: 15px; border-radius: 15px; margin-bottom: 12px; border: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
+        .status-badge { background: var(--p); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
+    </style>
 </head>
-
 <body>
-<div class="container">
-    <div class="header">
-        <div class="logo">π</div>
-        <h1>Donate Way</h1>
-        <p>Donate with Pi Network to support charitable campaigns</p>
-        <div id="user"></div>
+
+    <header>
+        <div style="font-size: 1.4rem; font-weight: bold; color: var(--accent);">🛒 Shopping</div>
+        <div style="display: flex; gap: 5px;">
+            <button class="btn-sm orders-btn" id="ui-my-orders" onclick="showMyOrders()">طلباتي</button>
+            <button class="btn-sm lang-btn" id="langSwitcher" onclick="toggleLanguage()">English</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <h2 class="section-title" id="ui-title">أحدث المنتجات</h2>
+        <div class="grid" id="productsGrid"></div>
     </div>
 
-    <div id="campaigns" class="campaigns"></div>
+    <div id="buyModal" class="modal">
+        <div class="modal-content">
+            <h3 id="ui-modal-head" style="text-align:center; color:var(--accent);">تفاصيل الشحن</h3>
+            <input type="text" id="custName" placeholder="الاسم الكامل">
+            <input type="tel" id="custPhone" placeholder="رقم الهاتف" oninput="this.value = this.value.replace(/[^0-9]/g, '');" inputmode="numeric">
+            <input type="text" id="custAddr" placeholder="العنوان بالتفصيل">
+            <button class="buy-btn" style="border-radius:12px; margin-top:10px;" id="ui-pay-btn" onclick="initiatePiPayment()">تأكيد ودفع</button>
+            <button class="buy-btn" style="background:#475569; border-radius:12px; margin-top:10px" onclick="closeModal('buyModal')">إلغاء</button>
+            <div id="status-msg" style="text-align:center; margin-top:10px; font-size: 0.8rem; color: var(--accent);"></div>
+        </div>
+    </div>
 
-    <div id="messageBox" class="message-box"></div>
+    <div id="ordersModal" class="modal">
+        <div class="modal-content">
+            <span style="position:absolute; top:15px; left:15px; cursor:pointer; font-size:1.5rem;" onclick="closeModal('ordersModal')">&times;</span>
+            <h3 id="ui-orders-head" style="text-align:center; color:var(--accent);">متابعة طلباتي</h3>
+            <div id="myOrdersList" style="margin-top:20px;"></div>
+        </div>
+    </div>
 
-    <footer>Donate Way © 2025 - Powered by Pi Network</footer>
-</div>
+    <script>
+        const SB_URL = 'https://xncapmzlwuisupkjlftb.supabase.co';
+        const SB_KEY = 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS'; 
+        const _supabase = supabase.createClient(SB_URL, SB_KEY);
 
-<script>
-Pi.init({ version: "2.0" });
+        let currentLang = 'ar';
+        const content = {
+            ar: { title: "أحدث المنتجات", buy: "شراء الآن", head: "بيانات التوصيل", name: "الاسم الكامل", phone: "رقم الهاتف", addr: "العنوان بالتفصيل", pay: "تأكيد والدفع بـ Pi", myOrders: "طلباتي", ordersHead: "متابعة الطلبات", loading: "جاري التحميل..." },
+            en: { title: "Latest Products", buy: "Buy Now", head: "Shipping Details", name: "Full Name", phone: "Phone Number", addr: "Detailed Address", pay: "Confirm & Pay", myOrders: "My Orders", ordersHead: "Order Tracking", loading: "Loading..." }
+        };
 
-const BASE_URL = window.location.origin;
+        const Pi = window.Pi;
+        Pi.init({ version: "2.0", sandbox: false });
 
-let piUser = null;
-let currentUser = "Guest";
-let selectedAmounts = {};
+        let userAccount = { username: "Guest" }; 
+        let activeProduct = null;
 
-const campaigns = [
-    { id:"c1", title:"Food Aid", icon:"🍲", goal:500 },
-    { id:"c2", title:"Education", icon:"📚", goal:800 },
-    { id:"c3", title:"Medical Care", icon:"🏥", goal:600 },
-    { id:"c4", title:"Clean Water", icon:"💧", goal:1000 }
-];
-
-campaigns.forEach(c => selectedAmounts[c.id] = 5);
-
-async function initUser(){
-    try{
-        const auth = await Pi.authenticate(['username','payments']);
-        piUser = auth.user;
-        currentUser = piUser.username;
-        document.getElementById("user").innerText = "Welcome, " + currentUser + " 👋";
-    }catch{
-        document.getElementById("user").innerText = "Guest Mode";
-    }
-}
-
-function selectAmount(id,amount,btn){
-    selectedAmounts[id] = amount;
-    btn.parentElement.querySelectorAll(".amount-btn").forEach(b=>b.classList.remove("selected"));
-    btn.classList.add("selected");
-}
-
-function donate(id){
-    const amount = selectedAmounts[id];
-    const campaign = campaigns.find(c=>c.id===id);
-
-    const paymentData = {
-        amount: amount.toString(),
-        memo: `Donation ${amount} Pi to ${campaign.title}`,
-        metadata:{
-            campaign:campaign.title,
-            donor:currentUser
+        async function init() {
+            try {
+                const auth = await Pi.authenticate(['username', 'payments'], (p) => {});
+                userAccount = auth.user;
+                updateUI();
+                loadProducts();
+            } catch (e) { loadProducts(); }
         }
-    };
 
-    Pi.createPayment(paymentData,{
-        onReadyForServerApproval:(paymentId)=>{
-            fetch(`${BASE_URL}/.netlify/functions/approve`,{
-                method:"POST",
-                headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({paymentId})
-            });
-        },
-        onReadyForServerCompletion:(paymentId,txid)=>{
-            fetch(`${BASE_URL}/.netlify/functions/complete`,{
-                method:"POST",
-                headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({paymentId,txid})
-            });
-            showMessage("✅ Donation successful","success");
-        },
-        onCancel:()=>showMessage("❌ Payment cancelled","cancel"),
-        onError:(e)=>showMessage("❌ "+e.message,"cancel")
-    });
-}
+        function toggleLanguage() {
+            currentLang = currentLang === 'ar' ? 'en' : 'ar';
+            document.documentElement.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
+            updateUI();
+            loadProducts();
+        }
 
-function showMessage(msg,type){
-    const box=document.getElementById("messageBox");
-    box.innerText=msg;
-    box.className="message-box "+(type==="success"?"message-success":"message-cancel");
-    box.style.display="block";
-    setTimeout(()=>box.style.display="none",5000);
-}
+        function updateUI() {
+            const t = content[currentLang];
+            document.getElementById('ui-title').innerText = t.title;
+            document.getElementById('langSwitcher').innerText = currentLang === 'ar' ? "English" : "عربي";
+            document.getElementById('ui-my-orders').innerText = t.myOrders;
+            document.getElementById('ui-modal-head').innerText = t.head;
+            document.getElementById('ui-pay-btn').innerText = t.pay;
+            document.getElementById('ui-orders-head').innerText = t.ordersHead;
+            document.getElementById('custName').placeholder = t.name;
+            document.getElementById('custPhone').placeholder = t.phone;
+            document.getElementById('custAddr').placeholder = t.addr;
+        }
 
-function renderCampaigns(){
-    const wrap=document.getElementById("campaigns");
-    campaigns.forEach(c=>{
-        const div=document.createElement("div");
-        div.className="campaign-card";
-        div.innerHTML=`
-            <div class="icon">${c.icon}</div>
-            <h3>${c.title}</h3>
-            <div class="progress-container">
-                <div class="progress-bar">0%</div>
-            </div>
-            <div>
-                <button class="amount-btn selected" onclick="selectAmount('${c.id}',5,this)">5</button>
-                <button class="amount-btn" onclick="selectAmount('${c.id}',10,this)">10</button>
-                <button class="amount-btn" onclick="selectAmount('${c.id}',50,this)">50</button>
-            </div>
-            <button class="donate" onclick="donate('${c.id}')">Donate with Pi</button>
-        `;
-        wrap.appendChild(div);
-    });
-}
+        async function loadProducts() {
+            const { data } = await _supabase.from('products').select('*').order('created_at', {ascending: false});
+            const grid = document.getElementById('productsGrid');
+            grid.innerHTML = (data || []).map(p => `
+                <div class="card">
+                    <div class="img-container"><img src="${p.image_url}"></div>
+                    <div class="info">
+                        <h3>${p.name}</h3>
+                        <span class="price">${p.price} Pi</span>
+                    </div>
+                    <button class="buy-btn" onclick='openModal("buyModal", ${JSON.stringify(p)})'>${content[currentLang].buy}</button>
+                </div>
+            `).join('');
+        }
 
-window.onload=()=>{
-    initUser();
-    renderCampaigns();
-};
-</script>
+        // --- نظام عرض طلباتي (الحالة والتاريخ فقط) ---
+        async function showMyOrders() {
+            const listDiv = document.getElementById('myOrdersList');
+            listDiv.innerHTML = `<p style="text-align:center">${content[currentLang].loading}</p>`;
+            document.getElementById('ordersModal').style.display = 'flex';
+
+            const { data } = await _supabase.from('orders')
+                .select('product_name, status, created_at')
+                .eq('pi_user', userAccount.username)
+                .order('created_at', { ascending: false });
+
+            if (!data || data.length === 0) { 
+                listDiv.innerHTML = "<p style='text-align:center'>لا توجد طلبات</p>"; 
+                return; 
+            }
+
+            listDiv.innerHTML = data.map(o => {
+                const date = new Date(o.created_at).toLocaleDateString(currentLang === 'ar' ? 'ar-EG' : 'en-US', {
+                    year: 'numeric', month: 'short', day: 'numeric'
+                });
+                return `
+                <div class="order-item">
+                    <div>
+                        <div style="font-weight:bold; font-size:0.9rem;">${o.product_name}</div>
+                        <div style="font-size:0.75rem; color:#94a3b8;">🗓 ${date}</div>
+                    </div>
+                    <div class="status-badge">${o.status || 'قيد المراجعة'}</div>
+                </div>`;
+            }).join('');
+        }
+
+        // --- نظام الدفع ---
+        async function initiatePiPayment() {
+            const name = document.getElementById('custName').value;
+            const phone = document.getElementById('custPhone').value;
+            const addr = document.getElementById('custAddr').value;
+            const statusMsg = document.getElementById('status-msg');
+
+            if(!name || !phone || !addr) return alert("أكمل البيانات");
+            statusMsg.innerText = "جاري الاتصال بالمحفظة...";
+
+            try {
+                const payment = await Pi.createPayment({
+                    amount: activeProduct.price,
+                    memo: `Order: ${activeProduct.name}`,
+                    metadata: { productId: activeProduct.id }
+                }, {
+                    onReadyForServerApproval: async (pid) => {
+                        return (await fetch('/api/pi/approve', { method: 'POST', body: JSON.stringify({ paymentId: pid }) })).ok;
+                    },
+                    onReadyForServerCompletion: async (pid, txid) => {
+                        const res = await fetch('/api/pi/complete', { method: 'POST', body: JSON.stringify({ paymentId: pid, txid }) });
+                        if (res.ok) {
+                            await _supabase.from('orders').insert([{
+                                pi_user: userAccount.username, product_name: activeProduct.name,
+                                amount: activeProduct.price, customer_name: name,
+                                customer_phone: phone, address: addr, txid: txid, status: "قيد المراجعة"
+                            }]);
+                            alert("تم الدفع بنجاح!"); closeModal('buyModal');
+                        }
+                    },
+                    onCancel: () => { statusMsg.innerText = ""; },
+                    onError: () => { statusMsg.innerText = "خطأ في العملية"; }
+                });
+            } catch (e) { statusMsg.innerText = ""; }
+        }
+
+        function openModal(id, p = null) { if(p) activeProduct = p; document.getElementById(id).style.display='flex'; }
+        function closeModal(id) { document.getElementById(id).style.display='none'; }
+
+        init();
+    </script>
 </body>
 </html>
