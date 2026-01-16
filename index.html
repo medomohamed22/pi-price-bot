@@ -12,162 +12,120 @@
     <style>
         :root {
             --primary-purple: #8e44ad;
-            --light-purple: #bb86fc;
-            --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            --text-dark: #2c3e50;
-            --success-green: #27ae60;
-            --gold: #f1c40f;
-            /* تأثير الزجاج */
-            --glass-bg: rgba(255, 255, 255, 0.4);
-            --glass-border: rgba(255, 255, 255, 0.5);
-            --glass-shadow: rgba(31, 38, 135, 0.1);
+            --accent-purple: #a29bfe;
+            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --glass: rgba(255, 255, 255, 0.15);
+            --glass-heavy: rgba(255, 255, 255, 0.25);
+            --gold: #fdcb6e;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Tajawal', sans-serif; }
 
         body {
-            background: var(--bg-gradient);
-            background-attachment: fixed;
-            color: var(--text-dark);
+            background: #f0f2f5;
             min-height: 100vh;
-            padding-top: 90px; 
+            padding-top: 100px;
+            overflow-x: hidden;
+            position: relative;
         }
 
+        /* خلفية جمالية متحركة */
+        body::before {
+            content: "";
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-gradient);
+            clip-path: circle(30% at 90% 10%);
+            z-index: -1;
+        }
+        body::after {
+            content: "";
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--accent-purple);
+            clip-path: circle(20% at 10% 90%);
+            z-index: -1;
+            opacity: 0.5;
+        }
+
+        /* هيدر زجاجي فائق الجمال */
         header {
-            position: fixed;
-            top: 0; left: 0; right: 0;
-            height: 70px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 5%;
-            background: rgba(255, 255, 255, 0.3); /* زجاجي للهيدر */
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--glass-border);
-            z-index: 1000;
+            position: fixed; top: 15px; left: 5%; right: 5%;
+            height: 65px; display: flex; justify-content: space-between; align-items: center;
+            padding: 0 30px; background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-radius: 50px; border: 1px solid rgba(255,255,255,0.4);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08); z-index: 1000;
         }
 
-        .logo { 
-            font-size: 1.5rem; 
-            font-weight: 700; 
-            color: var(--primary-purple); 
-            cursor: pointer;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
+        .logo { font-size: 1.6rem; font-weight: 700; color: var(--primary-purple); letter-spacing: -1px; }
 
-        .auth-section { display: flex; align-items: center; }
-
-        .login-btn {
-            background: var(--primary-purple); color: white; border: none; 
-            padding: 8px 22px; border-radius: 50px; cursor: pointer; 
-            font-weight: bold; transition: 0.3s;
-            box-shadow: 0 4px 15px rgba(142, 68, 173, 0.3);
-        }
-
-        /* اسم المستخدم بتصميم زجاجي */
         .user-pill {
             display: none; align-items: center; gap: 10px;
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            padding: 8px 18px;
-            border-radius: 50px; 
-            border: 1px solid var(--glass-border);
-            font-weight: 600; color: var(--primary-purple);
-            box-shadow: 0 8px 32px 0 var(--glass-shadow);
+            background: white; padding: 6px 15px; border-radius: 50px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid var(--primary-purple);
+            color: var(--primary-purple); font-weight: 700;
         }
 
-        .status-dot {
-            width: 10px; height: 10px; background-color: var(--success-green);
-            border-radius: 50%; box-shadow: 0 0 10px var(--success-green);
+        .status-dot { width: 10px; height: 10px; background: #2ecc71; border-radius: 50%; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(46, 204, 113, 0); } 100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); } }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+
+        .hero-title {
+            text-align: center; font-size: 2.8rem; color: #2d3436; margin-bottom: 40px;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.05);
         }
+
+        /* كروت الحملات بتصميم "نيومورفيزم" زجاجي */
+        .campaigns-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 35px; }
+
+        .card {
+            background: white; border-radius: 35px; padding: 25px; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid rgba(255,255,255,0.8); box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+            text-align: center; position: relative; overflow: hidden;
+        }
+        .card:hover { transform: translateY(-15px); box-shadow: 0 30px 60px rgba(142, 68, 173, 0.15); }
+
+        .campaign-img { width: 100%; height: 200px; object-fit: cover; border-radius: 25px; margin-bottom: 20px; }
+
+        .progress-container { margin: 20px 0; }
+        .progress-bar { width: 100%; height: 12px; background: #eee; border-radius: 20px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #a29bfe, #8e44ad); border-radius: 20px; transition: 1.5s; }
+
+        .amount-input {
+            width: 100%; padding: 15px; border-radius: 20px; border: 2px solid #f0f0f0;
+            margin-bottom: 15px; font-size: 1rem; transition: 0.3s; outline: none; text-align: center;
+        }
+        .amount-input:focus { border-color: var(--primary-purple); background: #fafafa; }
+
+        .donate-btn {
+            width: 100%; padding: 15px; border-radius: 20px; border: none;
+            background: var(--primary-purple); color: white; font-weight: 700;
+            font-size: 1.1rem; cursor: pointer; transition: 0.3s;
+            box-shadow: 0 10px 20px rgba(142, 68, 173, 0.2);
+        }
+        .donate-btn:hover { background: #732d91; transform: scale(1.02); }
+
+        /* قائمة الشرف الزجاجية */
+        .heroes-section {
+            margin-top: 80px; padding: 50px; background: rgba(255,255,255,0.4);
+            backdrop-filter: blur(15px); border-radius: 50px; border: 1px solid rgba(255,255,255,0.5);
+            text-align: center; margin-bottom: 50px;
+        }
+        .hero-badge {
+            background: white; padding: 12px 25px; border-radius: 50px;
+            display: flex; align-items: center; gap: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            border: 1px solid #eee; transition: 0.3s;
+        }
+        .hero-badge:hover { transform: translateY(-5px); border-color: var(--gold); }
+        .hero-rank { background: var(--gold); color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
 
         #custom-alert {
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            background: rgba(255, 255, 255, 0.9); padding: 15px 30px; border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-right: 5px solid var(--primary-purple);
-            display: none; z-index: 2000; font-weight: bold; backdrop-filter: blur(10px);
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: #2d3436; color: white; padding: 15px 35px; border-radius: 50px;
+            display: none; z-index: 2000; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
 
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-        
-        .campaigns-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
-
-        /* كروت الحملات بتصميم زجاجي حديث */
-        .card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-radius: 30px; 
-            padding: 20px; 
-            transition: 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
-            text-align: center;
-            border: 1px solid var(--glass-border);
-            box-shadow: 0 8px 32px 0 var(--glass-shadow);
-            overflow: hidden;
-        }
-        .card:hover { 
-            transform: translateY(-12px) scale(1.02); 
-            background: rgba(255, 255, 255, 0.5);
-            border-color: var(--primary-purple);
-        }
-
-        .campaign-img { 
-            width: 100%; height: 190px; object-fit: cover; 
-            border-radius: 20px; margin-bottom: 18px; 
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-        }
-
-        .progress-bar { 
-            width: 100%; height: 10px; background: rgba(0,0,0,0.05); 
-            border-radius: 10px; margin: 15px 0; overflow: hidden; 
-        }
-        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--light-purple), var(--primary-purple)); transition: 1.5s ease-out; }
-
-        .amount-input { 
-            width: 100%; padding: 14px; border-radius: 15px; 
-            border: 1px solid rgba(0,0,0,0.1); background: rgba(255,255,255,0.5);
-            text-align: center; margin-bottom: 10px; outline: none; transition: 0.3s;
-        }
-        .amount-input:focus { border-color: var(--primary-purple); background: white; }
-
-        .donate-btn { 
-            background: var(--primary-purple); color: white; border: none; 
-            padding: 14px; border-radius: 15px; cursor: pointer; 
-            font-weight: bold; width: 100%; transition: 0.3s;
-        }
-        .donate-btn:active { transform: scale(0.98); }
-
-        /* قسم الأبطال الزجاجي */
-        .heroes-section { 
-            margin-top: 60px; 
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            border-radius: 35px; 
-            padding: 40px 20px; 
-            text-align: center; 
-            border: 1px solid var(--glass-border);
-            box-shadow: 0 8px 32px 0 var(--glass-shadow);
-        }
-        .heroes-grid { display: flex; justify-content: center; flex-wrap: wrap; gap: 15px; margin-top: 25px; }
-        
-        .hero-badge { 
-            background: white; padding: 12px 25px; border-radius: 50px; 
-            display: flex; align-items: center; gap: 10px; 
-            border: 1px solid var(--glass-border);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-            transition: 0.3s;
-        }
-        .hero-badge:hover { transform: scale(1.05); }
-
-        .hero-rank { 
-            background: var(--gold); color: white; width: 28px; height: 28px; 
-            border-radius: 50%; display: flex; align-items: center; justify-content: center; 
-            font-size: 0.85rem; font-weight: bold; 
-        }
-
-        .loader { display: none; border: 4px solid rgba(142, 68, 173, 0.1); border-top: 4px solid var(--primary-purple); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
+        .loader { display: none; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary-purple); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
@@ -178,23 +136,23 @@
     <header>
         <div class="logo" onclick="location.reload()">Donate Way</div>
         <div class="auth-section">
-            <button id="login-button" class="login-btn" onclick="login()">دخول</button>
+            <button id="login-button" style="background:var(--primary-purple); color:white; border:none; padding:10px 25px; border-radius:50px; font-weight:700; cursor:pointer;" onclick="login()">دخول</button>
             <div id="user-pill" class="user-pill">
-                <span id="username-display"></span>
                 <div class="status-dot"></div>
+                <span id="username-display"></span>
             </div>
         </div>
     </header>
 
     <div class="container">
-        <h1 style="text-align: center; color: var(--primary-purple); margin-bottom: 35px; font-size: 2.5rem; font-weight: 700;">عطاؤك اليوم.. حياة جديدة لغيرك غداً</h1>
+        <h1 class="hero-title">عطاؤك اليوم.. حياة جديدة لغيرك غداً</h1>
         <div id="main-loader" class="loader"></div>
         
         <div class="campaigns-grid" id="campaigns-container"></div>
 
         <div class="heroes-section">
-            <h2 style="color:var(--primary-purple); font-size: 1.8rem;">🏆 أبطال الخير (قائمة الشرف)</h2>
-            <div id="heroes-container" class="heroes-grid"></div>
+            <h2 style="color:var(--primary-purple); margin-bottom:30px; font-size:2rem;">🏆 قائمة شرف المتبرعين</h2>
+            <div id="heroes-container" class="heroes-grid" style="display:flex; justify-content:center; flex-wrap:wrap; gap:20px;"></div>
         </div>
     </div>
 
@@ -234,14 +192,14 @@
                 const progress = Math.min(((c.current_amount || 0) / c.target_amount) * 100, 100);
                 return `
                     <div class="card">
-                        <img src="${c.image_url || 'https://via.placeholder.com/300x180'}" class="campaign-img">
-                        <h3 style="margin-bottom:10px; color:var(--text-dark);">${c.title}</h3>
-                        <div style="display:flex; justify-content:space-between; font-size:0.85rem; font-weight:500; color:#555;">
-                            <span>جمع: ${c.current_amount || 0} π</span>
-                            <span>الهدف: ${c.target_amount} π</span>
+                        <img src="${c.image_url || 'https://via.placeholder.com/400x200'}" class="campaign-img">
+                        <h3 style="margin-bottom:15px; color:#2d3436; font-size:1.4rem;">${c.title}</h3>
+                        <div style="display:flex; justify-content:space-between; font-weight:bold; color:var(--primary-purple); margin-bottom:10px;">
+                            <span>${c.current_amount || 0} π</span>
+                            <span style="color:#b2bec3;">هدف: ${c.target_amount} π</span>
                         </div>
                         <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
-                        <input type="number" id="in-${c.id}" class="amount-input" placeholder="أدخل مبلغ التبرع">
+                        <input type="number" id="in-${c.id}" class="amount-input" placeholder="كم ستتبرع؟">
                         <button class="donate-btn" onclick="handleDonate(${c.id})">تبرع بـ Pi</button>
                     </div>`;
             }).join('');
@@ -263,8 +221,8 @@
                 document.getElementById('login-button').style.display = 'none';
                 document.getElementById('user-pill').style.display = 'flex';
                 document.getElementById('username-display').textContent = currentUser.username;
-                showMsg("أهلاً بك يا " + currentUser.username);
-            } catch (e) { showMsg("يرجى الفتح من متصفح Pi Browser"); }
+                showMsg("مرحباً بك يا بطل: " + currentUser.username);
+            } catch (e) { showMsg("يرجى استخدام متصفح Pi"); }
         }
 
         async function recordDonation(amount, campaignId) {
@@ -288,16 +246,13 @@
             const amt = parseFloat(amtStr);
             if (!amt || amt <= 0) return showMsg("أدخل مبلغاً صحيحاً");
 
-            const camp = campaigns.find(c => c.id == id);
             document.getElementById('main-loader').style.display = 'block';
 
-            const paymentData = {
+            Pi.createPayment({
                 amount: amt,
-                memo: `تبرع لـ: ${camp.title}`,
+                memo: `تبرع لحملة رقم ${id}`,
                 metadata: { campaignId: id }
-            };
-
-            const callbacks = {
+            }, {
                 onReadyForServerApproval: (paymentId) => {
                     fetch('/api/pi/approve', {
                         method: 'POST',
@@ -313,19 +268,15 @@
                     }).then(async () => {
                         await recordDonation(amt, id);
                         document.getElementById('main-loader').style.display = 'none';
-                        showMsg("تم التبرع بنجاح! شكراً لك.");
+                        showMsg("شكراً لك! تم التبرع بنجاح.");
                     });
                 },
-                onCancel: () => { 
-                    document.getElementById('main-loader').style.display = 'none';
-                },
+                onCancel: () => { document.getElementById('main-loader').style.display = 'none'; },
                 onError: (error) => { 
                     document.getElementById('main-loader').style.display = 'none';
-                    showMsg("خطأ: " + error.message);
+                    showMsg("حدث خطأ، حاول مرة أخرى");
                 }
-            };
-
-            Pi.createPayment(paymentData, callbacks);
+            });
         }
 
         window.onload = () => { Pi.init({version:"2.0"}); loadData(); };
