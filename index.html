@@ -3,283 +3,215 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>منصة Pi Network الإنسانية | تبرع بالـ Pi</title>
+    <title>منصة Pi الخيرية | نظام المتبرعين</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <style>
         :root {
             --primary: #6c5ce7;
-            --secondary: #a29bfe;
+            --glass-white: rgba(255, 255, 255, 0.9);
             --bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --card-bg: rgba(255, 255, 255, 0.9);
-            --text-color: #000000;
-        }
-
-        .dark-mode {
-            --bg: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            --card-bg: rgba(255, 255, 255, 0.95); /* الحفاظ على الخلفية الفاتحة للنص الأسود */
-            --text-color: #000000;
         }
 
         body {
             margin: 0; padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, sans-serif;
+            font-family: 'Segoe UI', sans-serif;
             background: var(--bg);
             background-attachment: fixed;
-            transition: 0.5s;
+            color: white;
         }
 
-        /* التحكم العلوي */
-        .controls {
-            position: fixed; top: 20px; left: 20px; z-index: 1000;
-            display: flex; gap: 10px;
-        }
-        .icon-btn {
-            background: white; border: none; padding: 12px; border-radius: 50%;
-            cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.2); font-size: 1.2rem;
+        /* Nav Bar for Login */
+        .nav-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 5%; background: rgba(0,0,0,0.2); backdrop-filter: blur(10px);
+            position: sticky; top: 0; z-index: 1000;
         }
 
-        header { text-align: center; padding: 50px 20px; color: white; }
-        header h1 { font-size: 2.5rem; margin-bottom: 10px; text-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .user-info { display: flex; align-items: center; gap: 10px; font-weight: bold; }
+        .user-name { background: var(--primary); padding: 5px 15px; border-radius: 20px; display: none; }
 
-        .stats-container {
-            display: flex; justify-content: center; gap: 15px; margin-bottom: 30px; flex-wrap: wrap;
-        }
-        .stat-box {
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            padding: 10px 20px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.3);
+        .login-btn {
+            background: white; color: var(--primary); border: none;
+            padding: 8px 20px; border-radius: 20px; font-weight: bold;
+            cursor: pointer; transition: 0.3s;
         }
 
-        /* شبكة الحملات */
-        .container { width: 90%; max-width: 1200px; margin: 0 auto; }
-        .campaigns-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 25px; margin-bottom: 50px;
-        }
-
-        /* البطاقة الزجاجية */
+        /* Glass Cards */
+        .container { width: 90%; max-width: 1200px; margin: 30px auto; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        
         .card {
-            background: var(--card-bg);
-            backdrop-filter: blur(15px);
-            border-radius: 30px; padding: 30px;
-            border: 1px solid rgba(255,255,255,0.4);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
-            color: var(--text-color);
-            transition: 0.3s;
-            display: flex; flex-direction: column;
+            background: var(--glass-white); color: #000;
+            padding: 25px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center; transition: 0.3s;
         }
-        .card:hover { transform: translateY(-10px); }
+        
+        .card h3 { margin-top: 10px; }
+        .emoji { font-size: 3rem; }
 
-        .emoji-header { font-size: 3.5rem; text-align: center; margin-bottom: 15px; }
-        .card h3 { text-align: center; font-size: 1.5rem; margin-bottom: 10px; }
-        .card p { text-align: center; line-height: 1.6; font-size: 0.95rem; margin-bottom: 20px; flex-grow: 1; }
+        /* Progress Bar */
+        .p-bar-bg { background: #eee; border-radius: 10px; height: 10px; margin: 15px 0; overflow: hidden; }
+        .p-bar-fill { background: var(--primary); height: 100%; width: 0%; transition: 1s; }
 
-        /* شريط التقدم */
-        .progress-info { display: flex; justify-content: space-between; font-weight: bold; font-size: 0.85rem; margin-bottom: 5px; }
-        .progress-bg { background: #e0e0e0; border-radius: 10px; height: 12px; margin-bottom: 20px; overflow: hidden; }
-        .progress-fill { background: var(--primary); height: 100%; border-radius: 10px; transition: 1.5s ease-out; }
-
-        /* خيارات المبالغ */
-        .preset-grid { display: flex; gap: 8px; margin-bottom: 15px; }
-        .preset-btn {
-            flex: 1; padding: 10px; border: 2px solid var(--primary);
-            background: transparent; color: var(--primary); font-weight: bold;
-            border-radius: 12px; cursor: pointer; transition: 0.3s;
-        }
-        .preset-btn.active { background: var(--primary); color: white; }
-
-        .amount-input {
-            width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #ddd;
-            text-align: center; font-size: 1rem; margin-bottom: 20px; box-sizing: border-box;
+        .donate-btn {
+            width: 100%; padding: 15px; border-radius: 15px; border: none;
+            background: var(--primary); color: white; font-weight: bold; cursor: pointer;
         }
 
-        .main-donate-btn {
-            width: 100%; padding: 16px; border-radius: 18px; border: none;
-            background: var(--primary); color: white; font-size: 1.1rem; font-weight: bold;
-            cursor: pointer; box-shadow: 0 6px 20px rgba(108, 92, 231, 0.3);
+        #status-toast {
+            position: fixed; bottom: 20px; right: 20px; background: #fff; color: #333;
+            padding: 15px; border-radius: 10px; display: none; z-index: 9999; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         }
 
-        /* لوحة الشرف */
-        .leaderboard {
-            background: var(--card-bg); border-radius: 30px; padding: 40px;
-            margin-bottom: 50px; color: var(--text-color);
+        /* Certificate */
+        #certModal {
+            display: none; position: fixed; top:0; left:0; width:100%; height:100%;
+            background:rgba(0,0,0,0.8); z-index:10000; justify-content:center; align-items:center;
         }
-        .leaderboard h2 { text-align: center; margin-bottom: 25px; }
-        .donor-item {
-            display: flex; justify-content: space-between; padding: 15px;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-        }
-
-        /* منبثق الشهادة */
-        #certOverlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center;
-        }
-        .certificate {
-            background: white; padding: 40px; border-radius: 25px; text-align: center;
-            border: 8px double var(--primary); max-width: 450px; width: 90%; color: #333;
-        }
-
-        #toast {
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            background: white; color: black; padding: 15px 30px; border-radius: 50px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3); display: none; z-index: 3000; font-weight: bold;
-        }
-
-        @media (max-width: 600px) {
-            header h1 { font-size: 1.8rem; }
-            .card { padding: 20px; }
-        }
+        .cert-box { background:white; padding:40px; border-radius:20px; text-align:center; color:#333; border: 5px solid var(--primary); }
     </style>
 </head>
 <body>
 
-<div class="controls">
-    <button class="icon-btn" onclick="toggleDarkMode()">🌓</button>
+<div class="nav-bar">
+    <div class="logo">π Charity App</div>
+    <div class="user-info">
+        <span id="userNameDisplay" class="user-name"></span>
+        <button id="loginBtn" class="login-btn" onclick="loginWithPi()">تسجيل الدخول</button>
+    </div>
 </div>
 
-<header>
-    <h1>تكاتف مجتمع Pi الخيرية</h1>
-    <div class="stats-container">
-        <div class="stat-box">إجمالي التبرعات: <span id="grandTotal">2,540</span> Pi</div>
-        <div class="stat-box">المساهمون: 312 رائد</div>
-    </div>
+<header style="text-align: center; padding: 40px;">
+    <h1>مرحباً بك في مجتمع تبرعات Pi</h1>
+    <p>شارك في الحملات الإنسانية مباشرة من محفظتك</p>
 </header>
 
 <div class="container">
-    <div class="campaigns-grid" id="grid"></div>
+    <div class="grid" id="campaignsContainer"></div>
+</div>
 
-    <div class="leaderboard">
-        <h2>🏆 لوحة الشرف للمتبرعين</h2>
-        <div id="donors">
-            <div class="donor-item"><span>1. Pioneer_Abdul***</span> <strong>500 Pi</strong></div>
-            <div class="donor-item"><span>2. Pi_Queen_2026***</span> <strong>350 Pi</strong></div>
-            <div class="donor-item"><span>3. Web3_Charity***</span> <strong>200 Pi</strong></div>
-        </div>
+<div id="certModal">
+    <div class="cert-box">
+        <h2>شهادة شكر 📜</h2>
+        <p>شكراً لك يا بطل على التبرع بـ</p>
+        <h1 id="certAmt">0 Pi</h1>
+        <button class="login-btn" style="background:var(--primary); color:white;" onclick="document.getElementById('certModal').style.display='none'">إغلاق</button>
     </div>
 </div>
 
-<div id="certOverlay">
-    <div class="certificate">
-        <h2 style="color: var(--primary)">شهادة فخر واعتزاز 📜</h2>
-        <p>تتقدم المنصة بجزيل الشكر والامتنان للرائد(ة) على مساهمته الكريمة بمبلغ:</p>
-        <h1 id="finalAmtDisplay" style="font-size: 3rem; margin: 20px 0;">0 Pi</h1>
-        <p>لقد ساهمت في تغيير حياة الآخرين عبر تكنولوجيا Pi.</p>
-        <button class="main-donate-btn" onclick="closeCert()">إغلاق ومشاركة</button>
-    </div>
-</div>
-
-<div id="toast">جاري المعالجة...</div>
+<div id="status-toast"></div>
 
 <script>
     const campaigns = [
-        { id: 'c1', emoji: '🎓', title: 'دعم الطلاب', desc: 'تمويل المنح الدراسية للطلاب المتفوقين في الدول النامية.', raised: 120, goal: 500 },
-        { id: 'c2', emoji: '💧', title: 'مياه نظيفة', desc: 'حفر آبار مياه تعمل بالطاقة الشمسية في أفريقيا.', raised: 890, goal: 1500 },
-        { id: 'c3', emoji: '🏥', title: 'الرعاية الصحية', desc: 'توفير أدوية ومستلزمات طبية للمراكز الصحية الريفية.', raised: 450, goal: 1000 },
-        { id: 'c4', emoji: '🌲', title: 'مكافحة التصحر', desc: 'زراعة غابات صغيرة حول المناطق السكنية المهددة بالرمال.', raised: 150, goal: 600 },
-        { id: 'c5', emoji: '🥗', title: 'الأمن الغذائي', desc: 'توزيع حصص غذائية شهرية للأرامل والأيتام.', raised: 700, goal: 1200 }
+        { id: 'c1', emoji: '🥗', title: 'إطعام الفقراء', raised: 320, goal: 1000 },
+        { id: 'c2', emoji: '💧', title: 'سقيا الماء', raised: 650, goal: 1500 },
+        { id: 'c3', emoji: '🏥', title: 'علاج المرضى', raised: 150, goal: 2000 }
     ];
 
-    // تهيئة Pi SDK
     const Pi = window.Pi;
-    Pi.init({ version: "2.0", sandbox: false });
+    let currentUser = null;
 
-    function render() {
-        const grid = document.getElementById('grid');
-        grid.innerHTML = '';
+    // تأكيد تهيئة الـ SDK عند تحميل الصفحة
+    window.onload = function() {
+        if (typeof Pi !== 'undefined') {
+            Pi.init({ version: "2.0", sandbox: false });
+            console.log("Pi SDK Initialized");
+        } else {
+            showToast("فشل تحميل SDK، تأكد أنك في Pi Browser");
+        }
+        renderCampaigns();
+    };
+
+    // وظيفة تسجيل الدخول
+    async function loginWithPi() {
+        try {
+            const scopes = ['username', 'payments'];
+            const auth = await Pi.authenticate(scopes, onIncompletePaymentFound);
+            
+            currentUser = auth.user;
+            document.getElementById('userNameDisplay').innerText = "مرحباً: " + currentUser.username;
+            document.getElementById('userNameDisplay').style.display = 'block';
+            document.getElementById('loginBtn').style.display = 'none';
+            
+            showToast("تم تسجيل الدخول بنجاح يا " + currentUser.username);
+        } catch (err) {
+            console.error(err);
+            showToast("يجب فتح الموقع داخل Pi Browser");
+        }
+    }
+
+    function onIncompletePaymentFound(payment) {
+        // إذا وجد دفع غير مكتمل يتم إرساله للخادم للإكمال
+        fetch('/api/pi/complete', {
+            method: 'POST',
+            body: JSON.stringify({ paymentId: payment.identifier, txid: payment.transaction.txid })
+        });
+    }
+
+    // وظيفة التبرع المربوطة بـ Netlify
+    async function donate(id, title) {
+        if (!currentUser) {
+            alert("يرجى تسجيل الدخول أولاً بالضغط على الزر في الأعلى");
+            return;
+        }
+
+        const amt = 10; // مثال لمبلغ ثابت
+        showToast("جاري معالجة التبرع لـ " + title);
+
+        try {
+            const payment = await Pi.createPayment({
+                amount: amt,
+                memo: "تبرع لحملة " + title,
+                metadata: { campaignId: id }
+            }, {
+                onReadyForServerApproval: async (paymentId) => {
+                    await fetch('/api/pi/approve', {
+                        method: 'POST',
+                        body: JSON.stringify({ paymentId })
+                    });
+                },
+                onReadyForServerCompletion: async (paymentId, txid) => {
+                    await fetch('/api/pi/complete', {
+                        method: 'POST',
+                        body: JSON.stringify({ paymentId, txid })
+                    });
+                    showCert(amt);
+                },
+                onCancel: () => showToast("تم إلغاء الدفع"),
+                onError: (err) => showToast("خطأ: " + err.message)
+            });
+        } catch (e) {
+            showToast("تأكد أنك داخل متصفح Pi");
+        }
+    }
+
+    function renderCampaigns() {
+        const container = document.getElementById('campaignsContainer');
         campaigns.forEach(c => {
             const percent = (c.raised / c.goal) * 100;
-            grid.innerHTML += `
+            container.innerHTML += `
                 <div class="card">
-                    <div class="emoji-header">${c.emoji}</div>
+                    <div class="emoji">${c.emoji}</div>
                     <h3>${c.title}</h3>
-                    <p>${c.desc}</p>
-                    <div class="progress-info">
-                        <span>${c.raised} Pi مجمعة</span>
-                        <span>${percent.toFixed(0)}%</span>
-                    </div>
-                    <div class="progress-bg">
-                        <div class="progress-fill" style="width: ${percent}%"></div>
-                    </div>
-                    <div class="preset-grid">
-                        <button class="preset-btn" onclick="selectValue('${c.id}', 5, this)">5</button>
-                        <button class="preset-btn active" onclick="selectValue('${c.id}', 10, this)">10</button>
-                        <button class="preset-btn" onclick="selectValue('${c.id}', 50, this)">50</button>
-                    </div>
-                    <input type="number" id="val-${c.id}" class="amount-input" value="10" placeholder="أدخل مبلغاً آخر">
-                    <button class="main-donate-btn" onclick="handleDonation('${c.id}', '${c.title}')">تبرع بالـ Pi الآن</button>
+                    <div class="p-bar-bg"><div class="p-bar-fill" style="width:${percent}%"></div></div>
+                    <p>${c.raised} / ${c.goal} Pi</p>
+                    <button class="donate-btn" onclick="donate('${c.id}', '${c.title}')">تبرع 10 Pi</button>
                 </div>
             `;
         });
     }
 
-    function selectValue(id, val, btn) {
-        document.getElementById(`val-${id}`).value = val;
-        btn.parentElement.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+    function showToast(msg) {
+        const t = document.getElementById('status-toast');
+        t.innerText = msg;
+        t.style.display = 'block';
+        setTimeout(() => t.style.display = 'none', 5000);
     }
 
-    // الربط مع كود Netlify (Backend) الخاص بك
-    async function handleDonation(campaignId, title) {
-        const amount = parseFloat(document.getElementById(`val-${campaignId}`).value);
-        
-        if (!amount || amount <= 0) {
-            alert("يرجى إدخال مبلغ صحيح.");
-            return;
-        }
-
-        notify("جاري فتح محفظة Pi...");
-
-        try {
-            const payment = await Pi.createPayment({
-                amount: amount,
-                memo: `Donation for: ${title}`,
-                metadata: { campaignId: campaignId }
-            }, {
-                onReadyForServerApproval: async (paymentId) => {
-                    notify("جاري الموافقة على العملية...");
-                    const res = await fetch('/api/pi/approve', {
-                        method: 'POST',
-                        body: JSON.stringify({ paymentId })
-                    });
-                    if (res.ok) notify("تمت الموافقة، بانتظار تأكيدك...");
-                },
-                onReadyForServerCompletion: async (paymentId, txid) => {
-                    notify("جاري توثيق العملية نهائياً...");
-                    const res = await fetch('/api/pi/complete', {
-                        method: 'POST',
-                        body: JSON.stringify({ paymentId, txid })
-                    });
-                    if (res.ok) {
-                        notify("شكراً لك! تم التبرع بنجاح.");
-                        showCertificate(amount);
-                    }
-                },
-                onCancel: () => notify("تم إلغاء العملية."),
-                onError: (err) => notify("حدث خطأ: " + err.message)
-            });
-        } catch (e) {
-            notify("خطأ: يرجى فتح الموقع من داخل متصفح Pi.");
-        }
+    function showCert(amt) {
+        document.getElementById('certAmt').innerText = amt + " Pi";
+        document.getElementById('certModal').style.display = 'flex';
     }
-
-    function toggleDarkMode() { document.body.classList.toggle('dark-mode'); }
-
-    function notify(msg) {
-        const toast = document.getElementById('toast');
-        toast.innerText = msg;
-        toast.style.display = 'block';
-        setTimeout(() => toast.style.display = 'none', 4000);
-    }
-
-    function showCertificate(amt) {
-        document.getElementById('finalAmtDisplay').innerText = amt + " Pi";
-        document.getElementById('certOverlay').style.display = 'flex';
-    }
-
-    function closeCert() { document.getElementById('certOverlay').style.display = 'none'; }
-
-    render();
 </script>
 
 </body>
