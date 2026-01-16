@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
-        :root { --p: #6d28d9; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --accent: #fbbf24; --success: #22c55e; }
+        :root { --p: #6d28d9; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --accent: #fbbf24; }
         * { box-sizing: border-box; font-family: 'Cairo', sans-serif; transition: all 0.3s ease; }
         body { background: var(--bg); color: var(--text); margin: 0; padding: 0; min-height: 100vh; }
         
@@ -31,18 +31,13 @@
         .price { color: var(--accent); font-weight: bold; display: block; margin-top: 5px; font-size: 1.2rem; }
         .buy-btn { background: var(--p); color: white; border: none; width: 100%; padding: 12px; cursor: pointer; font-weight: bold; border-radius: 0 0 20px 20px; }
 
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; z-index: 2000; padding: 20px; backdrop-filter: blur(8px); }
-        .modal-content { background: var(--card); padding: 25px; border-radius: 25px; width: 100%; max-width: 450px; position: relative; max-height: 90vh; overflow-y: auto; border: 1px solid var(--p); animation: zoomIn 0.3s ease; }
-        @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; z-index: 2000; padding: 20px; backdrop-filter: blur(5px); }
+        .modal-content { background: var(--card); padding: 25px; border-radius: 25px; width: 100%; max-width: 450px; position: relative; max-height: 90vh; overflow-y: auto; border: 1px solid var(--p); }
         input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: white; }
         
+        /* تصميم عنصر الطلب في المتابعة */
         .order-item { background: #1e293b; padding: 15px; border-radius: 15px; margin-bottom: 12px; border: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
         .status-badge { background: var(--p); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
-
-        .success-card { text-align: center; padding: 40px 20px; }
-        .success-icon { width: 80px; height: 80px; background: var(--success); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin: 0 auto 20px; box-shadow: 0 0 20px rgba(34, 197, 94, 0.4); }
-        .ok-btn { background: var(--success); color: white; border: none; padding: 12px 40px; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 20px; width: 100%; font-size: 1.1rem; }
     </style>
 </head>
 <body>
@@ -80,15 +75,6 @@
         </div>
     </div>
 
-    <div id="successModal" class="modal">
-        <div class="modal-content success-card">
-            <div class="success-icon">✓</div>
-            <h2 id="ui-success-title" style="margin-bottom:10px;">تم الدفع بنجاح!</h2>
-            <p id="ui-success-msg" style="color:#94a3b8; line-height:1.6;">تم استلام طلبك وهو الآن قيد المراجعة. يمكنك متابعة حالة الشحن من قسم "طلباتي".</p>
-            <button class="ok-btn" onclick="closeModal('successModal')">موافق</button>
-        </div>
-    </div>
-
     <script>
         const SB_URL = 'https://xncapmzlwuisupkjlftb.supabase.co';
         const SB_KEY = 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS'; 
@@ -96,36 +82,23 @@
 
         let currentLang = 'ar';
         const content = {
-            ar: { 
-                title: "أحدث المنتجات", buy: "شراء الآن", head: "بيانات التوصيل", name: "الاسم الكامل", 
-                phone: "رقم الهاتف", addr: "العنوان بالتفصيل", pay: "تأكيد والدفع بـ Pi", 
-                myOrders: "طلباتي", ordersHead: "متابعة الطلبات", loading: "جاري التحميل...",
-                successTitle: "تم الدفع بنجاح!", successMsg: "تم استلام طلبك وهو الآن قيد المراجعة. يمكنك متابعة حالة الشحن من قسم 'طلباتي'."
-            },
-            en: { 
-                title: "Latest Products", buy: "Buy Now", head: "Shipping Details", name: "Full Name", 
-                phone: "Phone Number", addr: "Detailed Address", pay: "Confirm & Pay", 
-                myOrders: "My Orders", ordersHead: "Order Tracking", loading: "Loading...",
-                successTitle: "Payment Successful!", successMsg: "Your order has been received and is under review. You can track it in 'My Orders'."
-            }
+            ar: { title: "أحدث المنتجات", buy: "شراء الآن", head: "بيانات التوصيل", name: "الاسم الكامل", phone: "رقم الهاتف", addr: "العنوان بالتفصيل", pay: "تأكيد والدفع بـ Pi", myOrders: "طلباتي", ordersHead: "متابعة الطلبات", loading: "جاري التحميل..." },
+            en: { title: "Latest Products", buy: "Buy Now", head: "Shipping Details", name: "Full Name", phone: "Phone Number", addr: "Detailed Address", pay: "Confirm & Pay", myOrders: "My Orders", ordersHead: "Order Tracking", loading: "Loading..." }
         };
 
         const Pi = window.Pi;
+        Pi.init({ version: "2.0", sandbox: false });
+
         let userAccount = { username: "Guest" }; 
         let activeProduct = null;
 
         async function init() {
             try {
-                // تفعيل SDK
-                Pi.init({ version: "2.0", sandbox: false });
                 const auth = await Pi.authenticate(['username', 'payments'], (p) => {});
                 userAccount = auth.user;
                 updateUI();
                 loadProducts();
-            } catch (e) { 
-                console.error("Auth Error:", e);
-                loadProducts(); 
-            }
+            } catch (e) { loadProducts(); }
         }
 
         function toggleLanguage() {
@@ -146,8 +119,6 @@
             document.getElementById('custName').placeholder = t.name;
             document.getElementById('custPhone').placeholder = t.phone;
             document.getElementById('custAddr').placeholder = t.addr;
-            document.getElementById('ui-success-title').innerText = t.successTitle;
-            document.getElementById('ui-success-msg').innerText = t.successMsg;
         }
 
         async function loadProducts() {
@@ -165,6 +136,7 @@
             `).join('');
         }
 
+        // --- نظام عرض طلباتي (الحالة والتاريخ فقط) ---
         async function showMyOrders() {
             const listDiv = document.getElementById('myOrdersList');
             listDiv.innerHTML = `<p style="text-align:center">${content[currentLang].loading}</p>`;
@@ -195,13 +167,14 @@
             }).join('');
         }
 
+        // --- نظام الدفع ---
         async function initiatePiPayment() {
             const name = document.getElementById('custName').value;
             const phone = document.getElementById('custPhone').value;
             const addr = document.getElementById('custAddr').value;
             const statusMsg = document.getElementById('status-msg');
 
-            if(!name || !phone || !addr) return;
+            if(!name || !phone || !addr) return alert("أكمل البيانات");
             statusMsg.innerText = "جاري الاتصال بالمحفظة...";
 
             try {
@@ -211,54 +184,27 @@
                     metadata: { productId: activeProduct.id }
                 }, {
                     onReadyForServerApproval: async (pid) => {
-                        const response = await fetch('/api/pi/approve', { 
-                            method: 'POST', 
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ paymentId: pid }) 
-                        });
-                        return response.ok;
+                        return (await fetch('/api/pi/approve', { method: 'POST', body: JSON.stringify({ paymentId: pid }) })).ok;
                     },
                     onReadyForServerCompletion: async (pid, txid) => {
-                        const response = await fetch('/api/pi/complete', { 
-                            method: 'POST', 
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ paymentId: pid, txid: txid }) 
-                        });
-                        
-                        if (response.ok) {
+                        const res = await fetch('/api/pi/complete', { method: 'POST', body: JSON.stringify({ paymentId: pid, txid }) });
+                        if (res.ok) {
                             await _supabase.from('orders').insert([{
-                                pi_user: userAccount.username, 
-                                product_name: activeProduct.name,
-                                amount: activeProduct.price, 
-                                customer_name: name,
-                                customer_phone: phone, 
-                                address: addr, 
-                                txid: txid, 
-                                status: "قيد المراجعة"
+                                pi_user: userAccount.username, product_name: activeProduct.name,
+                                amount: activeProduct.price, customer_name: name,
+                                customer_phone: phone, address: addr, txid: txid, status: "قيد المراجعة"
                             }]);
-                            closeModal('buyModal');
-                            openModal('successModal');
+                            alert("تم الدفع بنجاح!"); closeModal('buyModal');
                         }
                     },
                     onCancel: () => { statusMsg.innerText = ""; },
-                    onError: (err) => { 
-                        console.error("Payment Error:", err);
-                        statusMsg.innerText = "خطأ في العملية"; 
-                    }
+                    onError: () => { statusMsg.innerText = "خطأ في العملية"; }
                 });
-            } catch (e) { 
-                console.error("Payment Exception:", e);
-                statusMsg.innerText = ""; 
-            }
+            } catch (e) { statusMsg.innerText = ""; }
         }
 
-        function openModal(id, p = null) { 
-            if(p) activeProduct = p; 
-            document.getElementById(id).style.display='flex'; 
-        }
-        function closeModal(id) { 
-            document.getElementById(id).style.display='none'; 
-        }
+        function openModal(id, p = null) { if(p) activeProduct = p; document.getElementById(id).style.display='flex'; }
+        function closeModal(id) { document.getElementById(id).style.display='none'; }
 
         init();
     </script>
