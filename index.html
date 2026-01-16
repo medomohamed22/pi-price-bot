@@ -18,434 +18,196 @@
             --accent-glow: 0 0 20px rgba(187, 134, 252, 0.4);
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Tajawal', sans-serif;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Tajawal', sans-serif; }
 
         body {
             background-color: var(--bg-color);
-            background-image: 
-                radial-gradient(circle at 10% 20%, #2a004e 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, #1a0033 0%, transparent 40%);
+            background-image: radial-gradient(circle at 10% 20%, #2a004e 0%, transparent 40%), radial-gradient(circle at 90% 80%, #1a0033 0%, transparent 40%);
             color: var(--text-color);
             min-height: 100vh;
-            overflow-x: hidden;
             padding-bottom: 50px;
         }
 
-        /* خلفية ناعمة */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDIiLz4KPC9zdmc+');
-            pointer-events: none;
-            z-index: -1;
-        }
-
-        /* Header Style */
         header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 5%;
-            background: rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(15px);
-            border-bottom: 1px solid var(--glass-border);
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 5%; background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(15px); border-bottom: 1px solid var(--glass-border);
+            position: sticky; top: 0; z-index: 100;
         }
 
-        .logo {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--primary-color);
-            text-shadow: var(--accent-glow);
+        .logo { font-size: 1.5rem; font-weight: 700; color: var(--primary-color); text-shadow: var(--accent-glow); }
+
+        /* زر تسجيل الدخول ومعلومات المستخدم */
+        .auth-section { display: flex; align-items: center; gap: 15px; }
+
+        .login-btn {
+            background: linear-gradient(135deg, #6200ee, #bb86fc);
+            color: white; border: none; padding: 8px 20px; border-radius: 50px;
+            cursor: pointer; font-weight: bold; transition: 0.3s;
         }
 
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 0.9rem;
-            background: var(--glass-bg);
-            padding: 8px 15px;
-            border-radius: 50px;
-            border: 1px solid var(--glass-border);
+        .user-pill {
+            display: none; align-items: center; gap: 8px;
+            background: var(--glass-bg); padding: 8px 15px;
+            border-radius: 50px; border: 1px solid var(--primary-color);
         }
 
-        .status-dot {
-            width: 10px;
-            height: 10px;
-            background-color: #00ff88;
-            border-radius: 50%;
-            box-shadow: 0 0 10px #00ff88;
-        }
+        .status-dot { width: 8px; height: 8px; background: #00ff88; border-radius: 50%; box-shadow: 0 0 8px #00ff88; }
 
-        /* Main Content */
-        .container {
-            max-width: 1200px;
-            margin: 40px auto;
-            padding: 0 20px;
-        }
+        .container { max-width: 1200px; margin: 40px auto; padding: 0 20px; }
+        .hero-text { text-align: center; margin-bottom: 50px; }
+        .hero-text h1 { font-size: 2.5rem; margin-bottom: 10px; background: linear-gradient(to right, #fff, #bb86fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 
-        .hero-text {
-            text-align: center;
-            margin-bottom: 50px;
-        }
+        .campaigns-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
 
-        .hero-text h1 {
-            font-size: 2.5rem;
-            margin-bottom: 15px;
-            background: linear-gradient(to right, #fff, #bb86fc);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        /* Grid System */
-        .campaigns-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-        }
-
-        /* Glass Card */
         .card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            padding: 20px;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            display: flex;
-            flex-direction: column;
+            background: var(--glass-bg); backdrop-filter: blur(12px); border: 1px solid var(--glass-border);
+            border-radius: 20px; padding: 20px; transition: 0.3s;
         }
+        .card:hover { transform: translateY(-5px); border-color: var(--primary-color); }
+        .card-image { width: 100%; height: 150px; background: linear-gradient(45deg, #2a004e, #4b0082); border-radius: 15px; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; font-size: 3rem; }
 
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(138, 43, 226, 0.15);
-            border-color: rgba(187, 134, 252, 0.3);
-        }
+        .progress-bar { width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 10px; margin: 15px 0; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--primary-color); box-shadow: var(--accent-glow); transition: 0.5s; }
 
-        .card-image {
-            width: 100%;
-            height: 180px;
-            background: linear-gradient(45deg, #2a004e, #4b0082);
-            border-radius: 15px;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 3rem;
-        }
+        .donate-action { display: flex; gap: 10px; margin-top: 15px; }
+        .amount-input { flex: 1; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); padding: 10px; border-radius: 10px; color: white; outline: none; text-align: center; }
+        .donate-btn { background: var(--secondary-color); color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: bold; }
 
-        .card h3 {
-            margin-bottom: 10px;
-            color: var(--primary-color);
-        }
-
-        .card p {
-            font-size: 0.9rem;
-            line-height: 1.6;
-            color: #ddd;
-            margin-bottom: 20px;
-            flex-grow: 1;
-        }
-
-        /* Progress Bar */
-        .progress-container {
-            margin-bottom: 20px;
-        }
-
-        .progress-labels {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.8rem;
-            margin-bottom: 5px;
-            color: #aaa;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 8px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 10px;
-            overflow: hidden;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--secondary-color), var(--primary-color));
-            border-radius: 10px;
-            box-shadow: 0 0 10px var(--primary-color);
-        }
-
-        /* Donate Action */
-        .donate-action {
-            display: flex;
-            gap: 10px;
-        }
-
-        .amount-input {
-            flex: 1;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid var(--glass-border);
-            padding: 10px;
-            border-radius: 10px;
-            color: white;
-            text-align: center;
-            outline: none;
-        }
-
-        .amount-input:focus {
-            border-color: var(--primary-color);
-        }
-
-        .donate-btn {
-            background: linear-gradient(135deg, var(--secondary-color), #8a2be2);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: 0.3s;
-            box-shadow: 0 4px 15px rgba(138, 43, 226, 0.3);
-        }
-
-        .donate-btn:hover {
-            box-shadow: 0 6px 20px rgba(138, 43, 226, 0.5);
-            transform: scale(1.05);
-        }
-
-        /* Loader */
-        .loader {
-            display: none;
-            border: 4px solid rgba(255,255,255,0.1);
-            border-top: 4px solid var(--primary-color);
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        @media (max-width: 600px) {
-            .hero-text h1 { font-size: 1.8rem; }
-            .donate-action { flex-direction: column; }
-        }
+        .loader { display: none; border: 3px solid rgba(255,255,255,0.1); border-top: 3px solid var(--primary-color); border-radius: 50%; width: 25px; height: 25px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
     <header>
         <div class="logo">PiDonate 💜</div>
-        <div class="user-info">
-            <span class="status-dot"></span>
-            <span id="username-display">زائر</span>
+        <div class="auth-section">
+            <button id="login-button" class="login-btn" onclick="login()">تسجيل الدخول</button>
+            <div id="user-pill" class="user-pill">
+                <span class="status-dot"></span>
+                <span id="username-display"></span>
+            </div>
         </div>
     </header>
 
     <div class="container">
         <div class="hero-text">
-            <h1>ساهم في تغيير العالم بعملة Pi</h1>
-            <p>تبرعك يصل مباشرة لدعم الحملات الإنسانية.</p>
+            <h1>تبرع بمستقبل أفضل</h1>
+            <p>استخدم عملة Pi لدعم القضايا الإنسانية حول العالم.</p>
         </div>
 
-        <div class="loader" id="loader"></div>
+        <div id="main-loader" class="loader"></div>
 
-        <div class="campaigns-grid" id="campaigns-container">
-            </div>
+        <div class="campaigns-grid" id="campaigns-container"></div>
     </div>
 
     <script>
-        // 1. بيانات الحملات
-        const campaigns = [
-            { id: 1, title: "كفالة الأيتام", desc: "توفير الرعاية الكاملة للأيتام.", target: 1000, current: 750, icon: "👶" },
-            { id: 2, title: "بناء آبار مياه", desc: "حفر آبار مياه في المناطق النائية.", target: 2500, current: 400, icon: "💧" },
-            { id: 3, title: "دعم التعليم التقني", desc: "توفير أجهزة لابتوب للطلاب.", target: 5000, current: 3200, icon: "💻" }
-        ];
-
-        // 2. تهيئة SDK
         const Pi = window.Pi;
         let currentUser = null;
 
+        // بيانات الحملات
+        const campaigns = [
+            { id: 1, title: "كفالة الأيتام", target: 1000, current: 450, icon: "👶" },
+            { id: 2, title: "آبار مياه", target: 2000, current: 120, icon: "💧" }
+        ];
+
+        // تهيئة SDK
         async function initPi() {
             try {
-                // هام: غير sandbox إلى false عند الرفع النهائي (Production)
+                // تم ضبط sandbox إلى false للعمل الحقيقي
                 Pi.init({ version: "2.0", sandbox: false });
+                console.log("Pi SDK Initialized");
+            } catch (e) { console.error(e); }
+        }
 
+        // دالة تسجيل الدخول
+        async function login() {
+            try {
                 const scopes = ['username', 'payments'];
+                const auth = await Pi.authenticate(scopes, onIncompletePaymentFound);
                 
-                function onIncompletePaymentFound(payment) {
-                    // يمكن إضافة منطق معالجة الدفعات المعلقة هنا
-                    console.log("Incomplete payment:", payment);
-                    // يُفضل إرسالها للسيرفر للتحقق
-                }
-
-                const authResult = await Pi.authenticate(scopes, onIncompletePaymentFound);
-                currentUser = authResult.user;
-                
+                currentUser = auth.user;
+                document.getElementById('login-button').style.display = 'none';
+                document.getElementById('user-pill').style.display = 'flex';
                 document.getElementById('username-display').textContent = currentUser.username;
-                console.log("User:", currentUser.username);
-
             } catch (err) {
-                console.error("Auth Error:", err);
-                document.getElementById('username-display').textContent = "يرجى فتح التطبيق في Pi Browser";
-                document.getElementById('username-display').style.color = "#ff4444";
+                alert("يرجى فتح الموقع من داخل متصفح Pi Browser");
             }
         }
 
-        // 3. دالة التبرع المحدثة (مربوطة بـ Netlify)
-        async function handleDonate(campaignId, amountStr) {
+        function onIncompletePaymentFound(payment) {
+            console.log("هناك دفعة لم تكتمل:", payment);
+            // هنا يفضل إرسال payment.identifier للسيرفر لإكمالها
+        }
+
+        // دالة الدفع الحقيقية
+        async function handleDonate(id, amountStr) {
+            if (!currentUser) return alert("سجل دخولك أولاً!");
             const amount = parseFloat(amountStr);
+            if (!amount || amount <= 0) return alert("أدخل مبلغاً صحيحاً");
 
-            if (!currentUser) {
-                alert("يرجى تسجيل الدخول أولاً!");
-                return;
-            }
-            if (!amount || amount <= 0) {
-                alert("يرجى إدخال مبلغ صحيح");
-                return;
-            }
-
-            const loader = document.getElementById('loader');
-            loader.style.display = 'block';
+            document.getElementById('main-loader').style.display = 'block';
 
             const paymentData = {
                 amount: amount,
-                memo: `تبرع للحملة رقم ${campaignId}`,
-                metadata: { campaignId: campaignId }
+                memo: `تبرع للحملة #${id}`,
+                metadata: { campaignId: id }
             };
 
             const callbacks = {
-                // الموافقة من السيرفر
-                onReadyForServerApproval: function(paymentId) {
-                    console.log("Approving...", paymentId);
+                onReadyForServerApproval: (paymentId) => {
                     fetch('/api/pi/approve', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ paymentId: paymentId })
-                    })
-                    .then(res => {
-                        if (!res.ok) throw new Error('Approval Failed');
-                        return res.json();
-                    })
-                    .catch(err => {
-                        console.error(err);
-                        Pi.cancelPayment(paymentId);
-                        loader.style.display = 'none';
-                        alert("فشل التحقق من السيرفر");
-                    });
+                        body: JSON.stringify({ paymentId })
+                    }).then(res => { if(!res.ok) Pi.cancelPayment(paymentId); });
                 },
-
-                // إكمال الدفع في السيرفر
-                onReadyForServerCompletion: function(paymentId, txid) {
-                    console.log("Completing...", txid);
+                onReadyForServerCompletion: (paymentId, txid) => {
                     fetch('/api/pi/complete', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ paymentId: paymentId, txid: txid })
-                    })
-                    .then(res => {
-                        if (!res.ok) throw new Error('Completion Failed');
-                        return res.json();
-                    })
-                    .then(data => {
-                        // نجاح تام
-                        loader.style.display = 'none';
-                        alert(`شكراً لك @${currentUser.username}! تم التبرع بنجاح.`);
-                        updateProgress(campaignId, amount);
-                    })
-                    .catch(err => {
-                        console.error(err);
-                        loader.style.display = 'none';
-                        alert("تم الدفع ولكن حدث خطأ في التأكيد النهائي.");
+                        body: JSON.stringify({ paymentId, txid })
+                    }).then(() => {
+                        document.getElementById('main-loader').style.display = 'none';
+                        alert("تم التبرع بنجاح!");
+                        updateUI(id, amount);
                     });
                 },
-
-                onCancel: function(paymentId) {
-                    console.log("Cancelled");
-                    loader.style.display = 'none';
-                    alert("تم إلغاء العملية.");
-                },
-
-                onError: function(error, payment) {
-                    console.error("Error:", error);
-                    loader.style.display = 'none';
-                    alert("حدث خطأ: " + error.message);
+                onCancel: () => { document.getElementById('main-loader').style.display = 'none'; },
+                onError: (error) => { 
+                    document.getElementById('main-loader').style.display = 'none';
+                    alert("خطأ: " + error.message);
                 }
             };
 
-            // بدء عملية الدفع
             Pi.createPayment(paymentData, callbacks);
         }
 
-        // تحديث الواجهة محلياً
-        function updateProgress(id, amount) {
-            const campaign = campaigns.find(c => c.id === id);
-            if(campaign) {
-                campaign.current += amount;
-                renderCampaigns();
-            }
+        function updateUI(id, amount) {
+            const camp = campaigns.find(c => c.id === id);
+            if(camp) { camp.current += amount; render(); }
         }
 
-        // رسم البطاقات
-        function renderCampaigns() {
+        function render() {
             const container = document.getElementById('campaigns-container');
             container.innerHTML = '';
-
-            campaigns.forEach(camp => {
-                const percent = Math.min((camp.current / camp.target) * 100, 100);
-                
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.innerHTML = `
-                    <div class="card-image">${camp.icon}</div>
-                    <h3>${camp.title}</h3>
-                    <p>${camp.desc}</p>
-                    
-                    <div class="progress-container">
-                        <div class="progress-labels">
-                            <span>تم جمع: ${camp.current} π</span>
-                            <span>الهدف: ${camp.target} π</span>
+            campaigns.forEach(c => {
+                const p = (c.current / c.target) * 100;
+                container.innerHTML += `
+                    <div class="card">
+                        <div class="card-image">${c.icon}</div>
+                        <h3>${c.title}</h3>
+                        <div class="progress-bar"><div class="progress-fill" style="width:${p}%"></div></div>
+                        <div style="font-size:0.8rem; color:#aaa">جمعنا ${c.current} من أصل ${c.target} Pi</div>
+                        <div class="donate-action">
+                            <input type="number" id="in-${c.id}" class="amount-input" placeholder="0.0">
+                            <button class="donate-btn" onclick="handleDonate(${c.id}, document.getElementById('in-${c.id}').value)">تبرع</button>
                         </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${percent}%"></div>
-                        </div>
-                    </div>
-
-                    <div class="donate-action">
-                        <input type="number" id="input-${camp.id}" class="amount-input" placeholder="المبلغ" min="0.1" step="0.1">
-                        <button class="donate-btn" onclick="triggerDonate(${camp.id})">تبرع</button>
                     </div>
                 `;
-                container.appendChild(card);
             });
         }
 
-        window.triggerDonate = (id) => {
-            const val = document.getElementById(`input-${id}`).value;
-            handleDonate(id, val);
-        };
-
-        window.addEventListener('DOMContentLoaded', () => {
-            renderCampaigns();
-            initPi();
-        });
+        window.onload = () => { initPi(); render(); };
     </script>
 </body>
 </html>
