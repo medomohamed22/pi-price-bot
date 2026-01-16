@@ -2,8 +2,7 @@ const { createClient } = require('@supabase/supabase-js');
 
 // استبدل الروابط التالية ببياناتك الحقيقية من إعدادات Supabase
 const SUPABASE_URL = 'https://xncapmzlwuisupkjlftb.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS
-'; 
+const SUPABASE_KEY = 'sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS'; 
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
