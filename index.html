@@ -31,7 +31,6 @@
         .price { color: var(--accent); font-weight: bold; display: block; margin-top: 5px; font-size: 1.2rem; }
         .buy-btn { background: var(--p); color: white; border: none; width: 100%; padding: 12px; cursor: pointer; font-weight: bold; border-radius: 0 0 20px 20px; }
 
-        /* نوافذ المودال */
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; z-index: 2000; padding: 20px; backdrop-filter: blur(8px); }
         .modal-content { background: var(--card); padding: 25px; border-radius: 25px; width: 100%; max-width: 450px; position: relative; max-height: 90vh; overflow-y: auto; border: 1px solid var(--p); animation: zoomIn 0.3s ease; }
         @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
@@ -41,7 +40,6 @@
         .order-item { background: #1e293b; padding: 15px; border-radius: 15px; margin-bottom: 12px; border: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
         .status-badge { background: var(--p); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
 
-        /* تصميم بطاقة النجاح الجديدة */
         .success-card { text-align: center; padding: 40px 20px; }
         .success-icon { width: 80px; height: 80px; background: var(--success); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin: 0 auto 20px; box-shadow: 0 0 20px rgba(34, 197, 94, 0.4); }
         .ok-btn { background: var(--success); color: white; border: none; padding: 12px 40px; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 20px; width: 100%; font-size: 1.1rem; }
@@ -113,18 +111,21 @@
         };
 
         const Pi = window.Pi;
-        Pi.init({ version: "2.0", sandbox: false });
-
         let userAccount = { username: "Guest" }; 
         let activeProduct = null;
 
         async function init() {
             try {
+                // تفعيل SDK
+                Pi.init({ version: "2.0", sandbox: false });
                 const auth = await Pi.authenticate(['username', 'payments'], (p) => {});
                 userAccount = auth.user;
                 updateUI();
                 loadProducts();
-            } catch (e) { loadProducts(); }
+            } catch (e) { 
+                console.error("Auth Error:", e);
+                loadProducts(); 
+            }
         }
 
         function toggleLanguage() {
@@ -145,7 +146,6 @@
             document.getElementById('custName').placeholder = t.name;
             document.getElementById('custPhone').placeholder = t.phone;
             document.getElementById('custAddr').placeholder = t.addr;
-            // تحديث بطاقة النجاح
             document.getElementById('ui-success-title').innerText = t.successTitle;
             document.getElementById('ui-success-msg').innerText = t.successMsg;
         }
@@ -211,28 +211,54 @@
                     metadata: { productId: activeProduct.id }
                 }, {
                     onReadyForServerApproval: async (pid) => {
-                        return (await fetch('/api/pi/approve', { method: 'POST', body: JSON.stringify({ paymentId: pid }) })).ok;
+                        const response = await fetch('/api/pi/approve', { 
+                            method: 'POST', 
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ paymentId: pid }) 
+                        });
+                        return response.ok;
                     },
                     onReadyForServerCompletion: async (pid, txid) => {
-                        const res = await fetch('/api/pi/complete', { method: 'POST', body: JSON.stringify({ paymentId: pid, txid }) });
-                        if (res.ok) {
+                        const response = await fetch('/api/pi/complete', { 
+                            method: 'POST', 
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ paymentId: pid, txid: txid }) 
+                        });
+                        
+                        if (response.ok) {
                             await _supabase.from('orders').insert([{
-                                pi_user: userAccount.username, product_name: activeProduct.name,
-                                amount: activeProduct.price, customer_name: name,
-                                customer_phone: phone, address: addr, txid: txid, status: "قيد المراجعة"
+                                pi_user: userAccount.username, 
+                                product_name: activeProduct.name,
+                                amount: activeProduct.price, 
+                                customer_name: name,
+                                customer_phone: phone, 
+                                address: addr, 
+                                txid: txid, 
+                                status: "قيد المراجعة"
                             }]);
                             closeModal('buyModal');
-                            openModal('successModal'); // إظهار بطاقة النجاح
+                            openModal('successModal');
                         }
                     },
                     onCancel: () => { statusMsg.innerText = ""; },
-                    onError: () => { statusMsg.innerText = "خطأ في العملية"; }
+                    onError: (err) => { 
+                        console.error("Payment Error:", err);
+                        statusMsg.innerText = "خطأ في العملية"; 
+                    }
                 });
-            } catch (e) { statusMsg.innerText = ""; }
+            } catch (e) { 
+                console.error("Payment Exception:", e);
+                statusMsg.innerText = ""; 
+            }
         }
 
-        function openModal(id, p = null) { if(p) activeProduct = p; document.getElementById(id).style.display='flex'; }
-        function closeModal(id) { document.getElementById(id).style.display='none'; }
+        function openModal(id, p = null) { 
+            if(p) activeProduct = p; 
+            document.getElementById(id).style.display='flex'; 
+        }
+        function closeModal(id) { 
+            document.getElementById(id).style.display='none'; 
+        }
 
         init();
     </script>
