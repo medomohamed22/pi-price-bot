@@ -40,7 +40,7 @@
 
         // --- إعدادات Pi Network ---
         const Pi = window.Pi;
-        Pi.init({ version: "1.5", sandbox: true }); // اجعل sandbox: false عند النشر الفعلي
+        Pi.init({ version: "1.5", sandbox: false }); // اجعل sandbox: false عند النشر الفعلي
 
         async function startPayment() {
             const amount = document.getElementById('amount').value;
