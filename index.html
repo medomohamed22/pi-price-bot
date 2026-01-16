@@ -70,7 +70,6 @@
             background: rgba(0,0,0,0.4); z-index: 10001; display: none;
         }
 
-        /* النقطة الخضراء الوامضة */
         .live-indicator {
             display: inline-block; width: 8px; height: 8px;
             background-color: var(--success); border-radius: 50%;
@@ -94,7 +93,6 @@
 
         .logo { font-size: 1.8rem; font-weight: 700; color: var(--primary-purple); cursor: pointer; }
 
-        /* تعديل حجم اسم المستخدم */
         .user-pill {
             display: none; align-items: center; gap: 8px;
             background: white; padding: 4px 12px; border-radius: 50px;
@@ -222,6 +220,17 @@
         let currentUser = null;
         let campaigns = [];
 
+        // الحل لتعلق الدفعات: وظيفة التعامل مع الدفعات غير المكتملة
+        const onIncompletePaymentFound = (payment) => {
+            console.log("Incomplete payment found:", payment);
+            // إرسال المعاملة العالقة للسيرفر لإكمالها
+            return fetch('/api/pi/complete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ paymentId: payment.identifier, txid: payment.transaction.txid })
+            });
+        };
+
         function toggleDrawer() {
             const drawer = document.getElementById('side-drawer');
             const overlay = document.getElementById('drawer-overlay');
@@ -322,7 +331,8 @@
 
         async function login() {
             try {
-                const auth = await Pi.authenticate(['username', 'payments'], (p) => {});
+                // تمرير دالة onIncompletePaymentFound لمنع تعليق المحفظة
+                const auth = await Pi.authenticate(['username', 'payments'], onIncompletePaymentFound);
                 currentUser = auth.user;
                 document.getElementById('login-button').style.display = 'none';
                 document.getElementById('user-pill').style.display = 'flex';
@@ -336,7 +346,9 @@
                 const camp = campaigns.find(c => c.id == campaignId);
                 await _supabase.from('campaigns').update({ current_amount: (parseFloat(camp.current_amount) || 0) + amount }).eq('id', campaignId);
                 loadData();
-            } catch (err) {}
+            } catch (err) {
+                console.error("Error updating DB:", err);
+            }
         }
 
         function handleDonate(id) {
@@ -349,12 +361,4 @@
                 amount: amt, memo: `تبرع لـ: ${campaigns.find(c => c.id == id).title}`, metadata: { campaignId: id }
             }, {
                 onReadyForServerApproval: (payId) => fetch('/api/pi/approve', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({paymentId:payId})}),
-                onReadyForServerCompletion: (payId, tx) => fetch('/api/pi/complete', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({paymentId:payId, txid:tx})}).then(() => { recordDonation(amt, id); document.getElementById('main-loader').style.display = 'none'; showMsg("شكراً لك!"); }),
-                onCancel: () => document.getElementById('main-loader').style.display = 'none',
-                onError: () => { document.getElementById('main-loader').style.display = 'none'; showMsg("خطأ في الدفع"); }
-            });
-        }
-
-        window.onload = () => { Pi.init({version:"2.0"}); loadData(); };
-    </script>
-    
+                onReadyForServerCompletion: (payId    
