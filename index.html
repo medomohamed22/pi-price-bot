@@ -22,7 +22,7 @@
         body { background: #f0f2f5; min-height: 100vh; padding-top: 100px; overflow-x: hidden; }
         body.rtl { direction: rtl; }
 
-        /* --- Modern Toast Notification --- */
+        /* --- Modern Toast Notification (Fixed Auto-Hide) --- */
         #custom-toast {
             position: fixed; top: 20px; left: 50%; 
             transform: translateX(-50%) translateY(-150px);
@@ -37,14 +37,7 @@
         #custom-toast.error { border-bottom: 3px solid var(--error); color: var(--error); }
         #custom-toast.success { border-bottom: 3px solid var(--success); color: var(--success); }
 
-        /* --- Layout Elements --- */
-        header {
-            position: fixed; top: 0; left: 0; right: 0; height: 75px; 
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 0 5%; background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(15px); border-bottom: 1px solid rgba(0,0,0,0.05); z-index: 9999;
-        }
-
+        /* --- Side Drawer 50% --- */
         .side-drawer {
             position: fixed; top: 0; width: 50%; height: 100%;
             background: white; z-index: 10002; padding: 40px; overflow-y: auto;
@@ -63,8 +56,16 @@
 
         .drawer-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); z-index: 10001; display: none; }
 
+        /* --- Stats Card --- */
         .stats-card { background: var(--bg-gradient); color: white; padding: 30px; border-radius: 25px; text-align: center; margin: 20px 0; }
         .stat-val { font-size: 2.2rem; font-weight: 700; display: block; }
+
+        header {
+            position: fixed; top: 0; left: 0; right: 0; height: 75px; 
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 5%; background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(15px); border-bottom: 1px solid rgba(0,0,0,0.05); z-index: 9999;
+        }
 
         .lang-switch {
             position: fixed; bottom: 30px; right: 30px; width: 55px; height: 55px;
@@ -78,18 +79,20 @@
         .camp-img { width: 100%; height: 180px; object-fit: cover; border-radius: 20px; margin-bottom: 15px; }
         .donate-btn { width: 100%; padding: 12px; border-radius: 12px; border: none; background: var(--primary-purple); color: white; font-weight: 700; cursor: pointer; }
 
-        @media (max-width: 768px) { .side-drawer { width: 85%; } }
+        @media (max-width: 768px) { .side-drawer { width: 90%; } }
     </style>
 </head>
 <body>
 
     <div id="custom-toast"><span id="toast-icon"></span><span id="toast-message"></span></div>
+    
     <div id="drawer-overlay" class="drawer-overlay" onclick="toggleDrawer()"></div>
+    
     <div class="lang-switch" onclick="toggleLanguage()" id="lang-toggle">AR</div>
 
     <div id="side-drawer" class="side-drawer">
         <button class="close-drawer" onclick="toggleDrawer()">&times;</button>
-        <h2 id="t-stats-title" style="color: var(--primary-purple);">Platform Stats</h2>
+        <h2 id="t-stats-title" style="color: var(--primary-purple); margin-bottom: 15px;">Platform Stats</h2>
         <div class="stats-card">
             <p id="t-total-donated">Total Donations</p>
             <span id="total-pi-stats" class="stat-val">0.00 π</span>
@@ -106,8 +109,10 @@
             <div onclick="toggleDrawer()" style="cursor:pointer; font-size: 24px;">☰</div>
             <div style="font-weight:700; color:var(--primary-purple); font-size:1.4rem;">Donate Way</div>
         </div>
-        <button id="login-button" style="background:var(--primary-purple); color:white; border:none; padding:8px 22px; border-radius:50px; font-weight:700; cursor:pointer;" onclick="login()">Login</button>
-        <span id="user-pill" style="display:none; color:var(--primary-purple); font-weight:700;">@<span id="username-display"></span></span>
+        <div>
+            <button id="login-button" style="background:var(--primary-purple); color:white; border:none; padding:8px 22px; border-radius:50px; font-weight:700; cursor:pointer;" onclick="login()">Login</button>
+            <span id="user-pill" style="display:none; color:var(--primary-purple); font-weight:700;">@<span id="username-display"></span></span>
+        </div>
     </header>
 
     <div class="container" style="max-width: 1200px; margin: auto; padding: 0 20px;">
@@ -116,6 +121,7 @@
     </div>
 
     <script>
+        // Config
         const SUPABASE_URL = 'https://axjkwrssmofzavaoqutq.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_tiuMncgWhf1YRWoD-uYQ3Q_ziI8OKci';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -136,9 +142,9 @@
                 donateBtn: "Donate Now",
                 msgLogin: "Please login first",
                 msgAmount: "Enter a valid amount",
-                msgSuccess: "Thank you for your donation!",
-                msgError: "Payment failed",
-                processing: "Processing..."
+                msgSuccess: "Payment Successful! Thank you.",
+                msgError: "Payment failed or denied",
+                processing: "Connecting to Pi Wallet..."
             },
             ar: {
                 hero: "عطاؤك اليوم.. حياة جديدة لغيرك غداً",
@@ -150,33 +156,26 @@
                 donateBtn: "تبرع الآن",
                 msgLogin: "سجل دخولك أولاً",
                 msgAmount: "أدخل مبلغاً صحيحاً",
-                msgSuccess: "شكراً لك على تبرعك!",
-                msgError: "فشلت عملية الدفع",
-                processing: "جاري المعالجة..."
+                msgSuccess: "تم الدفع بنجاح! شكراً لك.",
+                msgError: "فشلت عملية الدفع أو تم رفضها",
+                processing: "جاري الاتصال بمحفظة Pi..."
             }
         };
 
-        // --- Optimized Toast Function ---
+        // --- Optimized Toast ---
         function showToast(msgKey, type = 'info') {
             const toast = document.getElementById('custom-toast');
             const message = i18n[currentLang][msgKey] || msgKey;
-            
             toast.classList.remove('show', 'error', 'success');
-            
             if(type === 'error') toast.classList.add('error');
             if(type === 'success') toast.classList.add('success');
-            
             document.getElementById('toast-message').innerText = message;
             document.getElementById('toast-icon').innerText = type === 'success' ? '✅' : (type === 'error' ? '❌' : 'ℹ️');
-            
             setTimeout(() => toast.classList.add('show'), 50);
-
-            // Auto-hide after 3 seconds
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 3000);
+            setTimeout(() => toast.classList.remove('show'), 3500);
         }
 
+        // --- UI Logic ---
         function toggleLanguage() {
             currentLang = currentLang === 'en' ? 'ar' : 'en';
             document.body.classList.toggle('rtl', currentLang === 'ar');
@@ -204,6 +203,7 @@
             if(isActive) fetchLiveStats();
         }
 
+        // --- Data Fetching ---
         async function fetchLiveStats() {
             const { data: dons } = await _supabase.from('donations').select('username, amount').order('created_at', { ascending: false });
             const { count: campCount } = await _supabase.from('campaigns').select('*', { count: 'exact', head: true });
@@ -212,7 +212,6 @@
                 const total = dons.reduce((sum, d) => sum + parseFloat(d.amount), 0);
                 document.getElementById('total-pi-stats').innerText = total.toFixed(2) + " π";
                 document.getElementById('total-campaigns-stats').innerText = campCount || 0;
-                
                 document.getElementById('all-donors-list').innerHTML = dons.slice(0, 8).map(d => `
                     <div style="background:#f8f9fa; padding:12px; border-radius:12px; display:flex; justify-content:space-between; border-left: 4px solid var(--primary-purple);">
                         <span style="font-weight:600;">@${d.username}</span>
@@ -237,6 +236,7 @@
                 </div>`).join('');
         }
 
+        // --- Pi Network Auth ---
         async function login() {
             try {
                 const auth = await Pi.authenticate(['username', 'payments'], (p) => {});
@@ -248,30 +248,69 @@
             } catch (e) { showToast("Use Pi Browser", "error"); }
         }
 
-        function handleDonate(id) {
+        // --- Pi Network Payment (Linked to Netlify Functions) ---
+        async function handleDonate(id) {
             if (!currentUser) return showToast("msgLogin", "error");
             const amt = parseFloat(document.getElementById(`in-${id}`).value);
             if (!amt || amt <= 0) return showToast("msgAmount", "error");
 
             showToast("processing");
 
-            Pi.createPayment({
-                amount: amt, memo: `Donation for Campaign #${id}`, metadata: { campaignId: id }
-            }, {
-                onReadyForServerApproval: (payId) => fetch('/api/pi/approve', {method:'POST', body:JSON.stringify({paymentId:payId})}),
-                onReadyForServerCompletion: (payId, tx) => fetch('/api/pi/complete', {method:'POST', body:JSON.stringify({paymentId:payId, txid:tx})}).then(() => { 
-                    recordDonation(amt, id);
-                    showToast("msgSuccess", "success");
-                })
-            });
+            try {
+                await Pi.createPayment({
+                    amount: amt,
+                    memo: `Support Campaign #${id}`,
+                    metadata: { campaignId: id }
+                }, {
+                    onReadyForServerApproval: async (paymentId) => {
+                        console.log("Approving payment via Netlify...", paymentId);
+                        return fetch('/api/pi/approve', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ paymentId })
+                        });
+                    },
+                    onReadyForServerCompletion: async (paymentId, txid) => {
+                        console.log("Completing payment via Netlify...", paymentId);
+                        const response = await fetch('/api/pi/complete', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ paymentId, txid })
+                        });
+                        
+                        if (response.ok) {
+                            await recordDonation(amt, id);
+                            showToast("msgSuccess", "success");
+                        } else {
+                            showToast("msgError", "error");
+                        }
+                    },
+                    onCancel: (paymentId) => showToast("Payment Cancelled", "info"),
+                    onError: (error, payment) => {
+                        console.error("Payment Error:", error);
+                        showToast("msgError", "error");
+                    }
+                });
+            } catch (err) {
+                showToast("msgError", "error");
+            }
         }
 
         async function recordDonation(amount, campaignId) {
-            await _supabase.from('donations').insert([{ pi_user_id: currentUser.uid, username: currentUser.username, amount, campaign_id: campaignId }]);
+            await _supabase.from('donations').insert([{ 
+                pi_user_id: currentUser.uid, 
+                username: currentUser.username, 
+                amount: amount, 
+                campaign_id: campaignId 
+            }]);
             loadData();
+            fetchLiveStats();
         }
 
-        window.onload = () => { Pi.init({version:"2.0"}); loadData(); };
+        window.onload = () => { 
+            Pi.init({version:"2.0"}); 
+            loadData(); 
+        };
     </script>
 </body>
 </html>
