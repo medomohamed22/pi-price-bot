@@ -2,255 +2,227 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Freelance Escrow | وسيط الخدمات</title>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pi Second-Hand Hub | 2026</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
     <style>
         :root {
-            --p: #7f5cff; --p-dark: #5b2cff; --success: #16a34a; --danger: #ef4444;
-            --bg: #f8fafc; --card: #ffffff; --text: #1e293b; --muted: #64748b;
+            --primary: #633081;
+            --primary-light: #8a4cae;
+            --secondary: #ff9800;
+            --bg: #f0f2f5;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --danger: #ff4d4d;
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body {
-            margin: 0; font-family: 'Tajawal', sans-serif; background: var(--bg); color: var(--text);
-            padding-bottom: 90px; line-height: 1.6;
+        * { box-sizing: border-box; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; background-color: var(--bg); color: #1a1a1b; padding-bottom: 80px; overflow-x: hidden; }
+
+        /* Modern Header */
+        .header { 
+            background: rgba(99, 48, 129, 0.95); 
+            backdrop-filter: blur(10px);
+            color: white; padding: 20px; text-align: center; 
+            position: sticky; top: 0; z-index: 1000; 
+            border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
         }
 
-        /* Header & Glassmorphism */
-        .top-nav {
-            position: sticky; top: 0; z-index: 100;
-            background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(0,0,0,0.05); padding: 12px 20px;
-            display: flex; justify-content: space-between; align-items: center;
+        /* Bottom Nav - App Style */
+        .nav-bottom { 
+            position: fixed; bottom: 15px; left: 15px; right: 15px;
+            background: rgba(255, 255, 255, 0.85); 
+            backdrop-filter: blur(15px);
+            display: flex; justify-content: space-around; padding: 12px; 
+            border-radius: 25px; border: 1px solid rgba(255,255,255,0.3);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); z-index: 1000; 
+        }
+        .nav-item { border: none; background: none; color: #888; display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: 0.3s; font-size: 12px; }
+        .nav-item i { font-size: 20px; margin-bottom: 4px; }
+        .nav-item.active { color: var(--primary); transform: translateY(-5px); font-weight: bold; }
+
+        /* Container & Grid */
+        .container { max-width: 800px; margin: auto; padding: 15px; }
+        .page { display: none; animation: fadeIn 0.4s ease; }
+        .page.active { display: block; }
+
+        .ads-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 15px; }
+        .ad-card { 
+            background: var(--card-bg); border-radius: 20px; overflow: hidden; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05); border: 1px solid white;
+            transition: 0.3s; position: relative;
+        }
+        .ad-card:active { transform: scale(0.95); }
+        .ad-card img { width: 100%; height: 150px; object-fit: cover; }
+        .ad-info { padding: 12px; }
+        .ad-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 5px; height: 2.4em; overflow: hidden; }
+        .ad-price { color: var(--primary); font-weight: 800; font-size: 1.1rem; }
+
+        /* Forms */
+        .glass-form { background: white; padding: 25px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .input-group { margin-bottom: 20px; }
+        input, textarea { 
+            width: 100%; padding: 15px; border: 1px solid #eee; border-radius: 15px; 
+            background: #f9f9f9; font-size: 16px; outline: none; transition: 0.3s;
+        }
+        input:focus { border-color: var(--primary); background: white; }
+        .btn-primary { 
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white; border: none; padding: 18px; border-radius: 15px; width: 100%; font-size: 18px; font-weight: bold; cursor: pointer;
         }
 
-        .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; color: var(--p); font-size: 1.2rem; }
-        .logo-circle { width: 35px; height: 35px; background: linear-gradient(135deg, var(--p), var(--p-dark)); border-radius: 10px; }
-
-        .container { max-width: 1000px; margin: 0 auto; padding: 15px; }
-
-        /* Wallet Card */
-        .wallet-card {
-            background: linear-gradient(135deg, #1e293b, #0f172a); color: white;
-            border-radius: 24px; padding: 25px; margin-bottom: 25px;
-            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); position: relative; overflow: hidden;
-        }
-        .wallet-card::after {
-            content: ''; position: absolute; top: -50%; right: -20%; width: 200px; height: 200px;
-            background: rgba(127, 92, 255, 0.2); border-radius: 50%; filter: blur(50px);
+        /* Delete Button */
+        .delete-btn {
+            background: var(--danger); color: white; border: none; padding: 8px 12px;
+            border-radius: 10px; font-size: 12px; margin-top: 8px; width: 100%;
         }
 
-        .balance-label { font-size: 0.9rem; opacity: 0.7; }
-        .balance-value { font-size: 2.5rem; font-weight: 800; margin: 5px 0; }
-
-        /* Tabs */
-        .tabs { display: flex; gap: 10px; overflow-x: auto; margin-bottom: 20px; padding-bottom: 5px; }
-        .tab {
-            padding: 10px 20px; background: white; border-radius: 12px; border: 1px solid #e2e8f0;
-            white-space: nowrap; cursor: pointer; font-weight: 600; transition: 0.3s; color: var(--muted);
-        }
-        .tab.active { background: var(--p); color: white; border-color: var(--p); box-shadow: 0 4px 12px rgba(127, 92, 255, 0.3); }
-
-        /* Gigs/Orders Cards */
-        .card { background: var(--card); border-radius: 20px; padding: 20px; margin-bottom: 15px; border: 1px solid #f1f5f9; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .card h3 { margin: 0 0 10px; font-size: 1.1rem; }
-        .price-tag { color: var(--success); font-weight: 800; font-size: 1.1rem; }
-
-        /* Buttons */
-        .btn {
-            border: none; padding: 14px 24px; border-radius: 16px; font-weight: 700; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; width: 100%;
-        }
-        .btn-p { background: var(--p); color: white; }
-        .btn-p:active { transform: scale(0.98); }
-        .btn-outline { background: transparent; border: 2px solid var(--p); color: var(--p); }
-
-        /* Bottom Nav */
-        .bottom-nav {
-            position: fixed; bottom: 0; left: 0; right: 0; background: white;
-            display: flex; justify-content: space-around; padding: 12px;
-            border-top: 1px solid #f1f5f9; z-index: 100;
-        }
-        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--muted); font-size: 0.7rem; font-weight: 700; text-decoration: none; }
-        .nav-item.active { color: var(--p); }
-        .nav-item i { font-size: 1.3rem; }
-
-        /* Input Styles */
-        input, select {
-            width: 100%; padding: 12px 16px; border-radius: 14px; border: 1px solid #e2e8f0;
-            margin-top: 8px; outline: none; transition: 0.2s;
-        }
-        input:focus { border-color: var(--p); box-shadow: 0 0 0 4px rgba(127, 92, 255, 0.1); }
-
-        .view { display: none; }
-        .view.active { display: block; animation: fadeIn 0.4s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
     </style>
 </head>
 <body>
 
-    <nav class="top-nav">
-        <div class="brand">
-            <div class="logo-circle"></div>
-            <span>Escrow Pi</span>
-        </div>
-        <div id="userBadge" class="nav-item" style="font-size: 0.8rem;">
-            <i class="fas fa-circle-user"></i> <span id="username-text">تحميل...</span>
-        </div>
-    </nav>
+    <header class="header">
+        <h2 id="view-title">السوق المستعمل</h2>
+    </header>
 
     <div class="container">
-        <div id="wallet-section" class="wallet-card">
-            <div class="balance-label">رصيدك المعتمد (Pi)</div>
-            <div class="balance-value" id="balanceText">0.00</div>
-            <div style="display: flex; gap: 10px; margin-top: 15px;">
-                <span style="background: rgba(255,255,255,0.1); padding: 4px 12px; border-radius: 20px; font-size: 0.8rem;">
-                    <i class="fas fa-shield-halved"></i> دفع وسيط آمن
-                </span>
-            </div>
-        </div>
+        <section id="browse-view" class="page active">
+            <input type="text" id="searchBox" placeholder="🔍 ابحث عما تريد..." onkeyup="filterAds()">
+            <div id="ads-list" class="ads-grid"></div>
+        </section>
 
-        <div id="view_home" class="view active">
-            <div class="tabs">
-                <div class="tab active">الكل</div>
-                <div class="tab">برمجة</div>
-                <div class="tab">تصميم</div>
-                <div class="tab">تسويق</div>
+        <section id="publish-view" class="page">
+            <div class="glass-form">
+                <form id="uploadForm">
+                    <div class="input-group"><label>صورة المنتج</label><input type="file" id="pImg" accept="image/*" required></div>
+                    <div class="input-group"><input type="text" id="pTitle" placeholder="عنوان الإعلان" required></div>
+                    <div class="input-group"><textarea id="pDesc" rows="3" placeholder="وصف المنتج وحالته..." required></textarea></div>
+                    <div class="input-group"><input type="number" id="pPrice" placeholder="السعر بـ Pi" step="0.01" required></div>
+                    <div class="input-group"><input type="tel" id="pPhone" placeholder="رقم الواتساب" required></div>
+                    <button type="submit" class="btn-primary">🚀 انشر الآن</button>
+                </form>
             </div>
-            <div id="gigList">
-                <div class="card">
-                    <h3>تصميم واجهات تطبيقات احترافية</h3>
-                    <div style="display:flex; justify-content: space-between; align-items:center;">
-                        <span class="price-tag">5.00 Pi</span>
-                        <button class="btn btn-p" style="width: auto; padding: 8px 16px;" onclick="startOrder(5.00, 'تصميم واجهات')">طلب الخدمة</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+        </section>
 
-        <div id="view_withdraw" class="view">
-            <div class="card">
-                <h3>طلب سحب إلى محفظتك</h3>
-                <p style="font-size: 0.9rem; color: var(--muted);">المبالغ هنا هي التي وافق المشتري على تحريرها لك.</p>
-                
-                <label>عنوان محفظة Pi المستلمة:</label>
-                <input type="text" id="withdrawWallet" placeholder="G..." class="mono">
-                
-                <label style="margin-top:15px; display:block;">المبلغ المراد سحبه:</label>
-                <input type="number" id="withdrawAmount" placeholder="0.00">
-                
-                <button class="btn btn-p" style="margin-top: 20px;" onclick="handleAppToUserWithdraw()">
-                    <i class="fas fa-paper-plane"></i> تنفيذ السحب الآن
-                </button>
+        <section id="profile-view" class="page">
+            <div style="background: var(--primary); color: white; padding: 20px; border-radius: 20px; margin-bottom: 20px;">
+                <h3 id="user-name">مرحباً بك</h3>
+                <p>إدارة إعلاناتك النشطة</p>
             </div>
-        </div>
+            <div id="my-ads-list" class="ads-grid"></div>
+        </section>
+
+        <section id="details-view" class="page">
+            <div id="details-content" class="glass-form"></div>
+        </section>
     </div>
 
-    <div class="bottom-nav">
-        <a href="#" class="nav-item active" onclick="showView('home')"><i class="fas fa-search"></i>استكشف</a>
-        <a href="#" class="nav-item" onclick="showView('orders')"><i class="fas fa-briefcase"></i>طلباتي</a>
-        <a href="#" class="nav-item" onclick="showView('withdraw')"><i class="fas fa-wallet"></i>المحفظة</a>
-        <a href="#" class="nav-item" onclick="showView('profile')"><i class="fas fa-user-gear"></i>حسابي</a>
-    </div>
+    <nav class="nav-bottom">
+        <button class="nav-item active" onclick="nav('browse-view', this)"><i class="fas fa-th-large"></i>تصفح</button>
+        <button class="nav-item" onclick="nav('publish-view', this)"><i class="fas fa-plus-circle"></i>نشر</button>
+        <button class="nav-item" onclick="nav('profile-view', this)"><i class="fas fa-user-circle"></i>حسابي</button>
+    </nav>
 
     <script>
-        const SB_URL = "https://axjkwrssmofzavaoqutq.supabase.co";
-        const SB_KEY = "sb_publishable_tiuMncgWhf1YRWoD-uYQ3Q_ziI8OKci";
-        const sb = supabase.createClient(SB_URL, SB_KEY);
+        const SB_URL = 'https://axjkwrssmofzavaoqutq.supabase.co';
+        const SB_KEY = 'sb_publishable_tiuMncgWhf1YRWoD-uYQ3Q_ziI8OKci';
+        const client = supabase.createClient(SB_URL, SB_KEY);
+        const Pi = window.Pi;
+        let user = null;
+        let allAds = [];
 
-        let currentUser = null;
-
-        async function initPi() {
+        async function init() {
             try {
-                // ضبط الإعدادات للإنتاج
-                await Pi.init({ version: "2.0", sandbox: false });
-                const auth = await Pi.authenticate(['username', 'payments'], onIncompletePayment);
-                currentUser = auth.user;
-                document.getElementById('username-text').innerText = currentUser.username;
-                fetchUserBalance();
-            } catch (err) {
-                console.error(err);
-                alert("تأكد من فتح التطبيق عبر Pi Browser");
+                Pi.init({ version: "2.0" });
+                const auth = await Pi.authenticate(['username', 'payments'], (p) => {});
+                user = auth.user;
+                document.getElementById('user-name').innerText = user.username;
+                loadAds();
+            } catch (e) { alert("افتح التطبيق من داخل Pi Browser"); }
+        }
+
+        function nav(id, btn) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+            if(btn) btn.classList.add('active');
+            if(id === 'profile-view') loadMyAds();
+        }
+
+        async function loadAds() {
+            const { data } = await client.from('ads').select('*').order('created_at', {ascending: false});
+            allAds = data;
+            render(data, 'ads-list', false);
+        }
+
+        async function loadMyAds() {
+            const { data } = await client.from('ads').select('*').eq('seller_username', user.username);
+            render(data, 'my-ads-list', true);
+        }
+
+        function render(data, containerId, isOwner) {
+            const div = document.getElementById(containerId);
+            div.innerHTML = data.map(ad => `
+                <div class="ad-card">
+                    <img src="${SB_URL}/storage/v1/object/public/ads-images/${ad.image_url}" onclick="showAd('${ad.id}')">
+                    <div class="ad-info">
+                        <div class="ad-title">${ad.title}</div>
+                        <div class="ad-price">${ad.price} Pi</div>
+                        ${isOwner ? `<button class="delete-btn" onclick="deleteAd('${ad.id}', '${ad.image_url}')">حذف الإعلان</button>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function deleteAd(id, imgPath) {
+            if(confirm("هل تريد بالتأكيد حذف هذا الإعلان؟")) {
+                await client.from('ads').delete().eq('id', id);
+                await client.storage.from('ads-images').remove([imgPath]);
+                alert("تم الحذف");
+                loadMyAds();
+                loadAds();
             }
         }
 
-        function showView(viewId) {
-            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-            document.getElementById('view_' + viewId).classList.add('active');
+        function showAd(id) {
+            const ad = allAds.find(a => a.id === id);
+            document.getElementById('details-content').innerHTML = `
+                <img src="${SB_URL}/storage/v1/object/public/ads-images/${ad.image_url}" style="width:100%; border-radius:15px; margin-bottom:15px;">
+                <h2>${ad.title}</h2>
+                <div class="ad-price" style="font-size:1.8rem">${ad.price} Pi</div>
+                <p style="color:#666; line-height:1.6; margin:15px 0;">${ad.description}</p>
+                <a href="https://wa.me/${ad.phone}" class="btn-primary" style="text-decoration:none; display:block; text-align:center;">اتصل بالبائع</a>
+                <button onclick="nav('browse-view')" style="margin-top:10px; width:100%; background:none; border:none; color:gray;">عودة</button>
+            `;
+            nav('details-view');
+        }
+
+        document.getElementById('uploadForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const file = document.getElementById('pImg').files[0];
+            const path = `${Date.now()}_${file.name}`;
             
-            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-            event.currentTarget.classList.add('active');
-        }
+            await client.storage.from('ads-images').upload(path, file);
+            await client.from('ads').insert([{
+                title: document.getElementById('pTitle').value,
+                description: document.getElementById('pDesc').value,
+                price: document.getElementById('pPrice').value,
+                phone: document.getElementById('pPhone').value,
+                image_url: path,
+                seller_username: user.username
+            }]);
 
-        // --- وظيفة الدفع (مشتري -> تطبيق) ---
-        async function startOrder(amount, gigTitle) {
-            try {
-                const payment = await Pi.createPayment({
-                    amount: amount,
-                    memo: "دفع مقابل خدمة: " + gigTitle,
-                    metadata: { type: "escrow_payment" }
-                }, {
-                    onReadyForServerApproval: (id) => console.log("Approved ID:", id),
-                    onReadyForServerCompletion: async (id, txid) => {
-                        // حفظ الطلب في قاعدة البيانات كـ Escrow معلق
-                        await sb.from('orders').insert([{
-                            buyer: currentUser.username,
-                            amount: amount,
-                            txid: txid,
-                            status: 'paid'
-                        }]);
-                        alert("تم الدفع بنجاح! الرصيد الآن في أمان (Escrow)");
-                    }
-                });
-            } catch (e) { alert("فشل الدفع"); }
-        }
+            alert("تم النشر!");
+            document.getElementById('uploadForm').reset();
+            nav('browse-view');
+            loadAds();
+        };
 
-        // --- وظيفة السحب (تطبيق -> مستخدم) ---
-        async function handleAppToUserWithdraw() {
-            const amount = parseFloat(document.getElementById('withdrawAmount').value);
-            const wallet = document.getElementById('withdrawWallet').value;
-            const currentBal = parseFloat(document.getElementById('balanceText').innerText);
-
-            if (!wallet || amount <= 0) return alert("أكمل البيانات");
-            if (amount > currentBal) return alert("الرصيد غير كافٍ");
-
-            try {
-                // ميزة App-to-User تتطلب الموافقة من جانب التطبيق
-                const payment = await Pi.createPayment({
-                    amount: amount,
-                    memo: "سحب أرباح من Freelance Escrow",
-                    metadata: { type: "withdrawal", wallet: wallet }
-                }, {
-                    onReadyForServerApproval: (id) => console.log("Withdrawal Pending Approval:", id),
-                    onReadyForServerCompletion: async (id, txid) => {
-                        // تسجيل السحب وخصمه من رصيد قاعدة البيانات
-                        await sb.from('payouts').insert([{
-                            username: currentUser.username,
-                            amount: -amount,
-                            txid: txid
-                        }]);
-                        alert("تم السحب بنجاح إلى محفظتك!");
-                        fetchUserBalance();
-                    }
-                });
-            } catch (e) { alert("حدث خطأ أثناء السحب"); }
-        }
-
-        async function fetchUserBalance() {
-            const { data } = await sb.from('payouts').select('amount').eq('username', currentUser.username);
-            const total = data ? data.reduce((acc, curr) => acc + curr.amount, 0) : 0;
-            document.getElementById('balanceText').innerText = total.toFixed(2);
-        }
-
-        function onIncompletePayment(p) { /* معالجة المدفوعات غير المكتملة */ }
-
-        window.onload = initPi;
+        window.onload = init;
     </script>
 </body>
 </html>
-
