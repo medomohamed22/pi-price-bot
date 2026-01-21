@@ -1,281 +1,279 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <title>Pi Chama - جمعية بعملة Pi</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>جمعيتي Premium - Pi Network</title>
+    
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-  <!-- Pi SDK -->
-  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-  <script>
-    // Sandbox true للتجربة — خليها false في الإنتاج داخل Pi Browser
-    Pi.init({ version: "2.0", sandbox: false });
-  </script>
+    <style>
+        :root {
+            --primary: #673AB7;
+            --accent: #FFC107;
+            --bg: #F0F2F5;
+            --card: #ffffff;
+        }
 
-  <style>
-    :root{
-      --bg:#0b0b14;
-      --card:#141428;
-      --card2:#1a1a33;
-      --text:#ffffff;
-      --muted:#a7a7c7;
-      --primary:#7f5cff;
-      --good:#2ecc71;
-      --bad:#ff4d6d;
-      --line: rgba(255,255,255,.08);
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family: system-ui, -apple-system, "Segoe UI", Tahoma, Arial;
-      background: radial-gradient(1200px 600px at 20% -10%, rgba(127,92,255,.35), transparent 60%),
-                  radial-gradient(900px 500px at 90% 10%, rgba(46,204,113,.18), transparent 60%),
-                  var(--bg);
-      color:var(--text);
-    }
-    .wrap{max-width:1100px;margin:0 auto;padding:18px}
-    .top{
-      display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;
-      padding:14px;border:1px solid var(--line);border-radius:18px;
-      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
-      box-shadow: 0 10px 40px rgba(0,0,0,.35);
-    }
-    .brand{display:flex;gap:12px;align-items:center}
-    .logo{
-      width:46px;height:46px;border-radius:16px;
-      background: radial-gradient(circle at 30% 25%, rgba(255,255,255,.3), transparent 45%),
-                  linear-gradient(135deg, rgba(127,92,255,1), rgba(127,92,255,.25));
-      display:grid;place-items:center;font-weight:900;
-      box-shadow: 0 12px 30px rgba(127,92,255,.25);
-    }
-    .brand h1{font-size:16px;margin:0}
-    .brand p{margin:2px 0 0;color:var(--muted);font-size:12px}
-    .actions{display:flex;gap:10px;flex-wrap:wrap}
-    .btn{
-      border:1px solid var(--line);
-      background: rgba(255,255,255,.06);
-      color:var(--text);
-      padding:10px 12px;border-radius:14px;
-      cursor:pointer;
-      transition:.2s;
-      font-weight:700;
-    }
-    .btn:hover{transform: translateY(-1px); background: rgba(255,255,255,.09)}
-    .btn.primary{
-      border:none;
-      background: linear-gradient(135deg, rgba(127,92,255,1), rgba(127,92,255,.55));
-      box-shadow: 0 12px 35px rgba(127,92,255,.22);
-    }
-    .btn.danger{
-      border:none;
-      background: linear-gradient(135deg, rgba(255,77,109,1), rgba(255,77,109,.55));
-      box-shadow: 0 12px 35px rgba(255,77,109,.18);
-    }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { background-color: var(--bg); color: #2D3436; padding-bottom: 100px; }
 
-    .grid{display:grid;grid-template-columns: 1.2fr .8fr;gap:14px;margin-top:14px}
-    @media(max-width:900px){.grid{grid-template-columns:1fr}}
+        /* الهيدر الاحترافي */
+        header {
+            background: linear-gradient(135deg, var(--primary), #4527A0);
+            height: 160px; padding: 30px 20px; color: white;
+            border-bottom-left-radius: 35px; border-bottom-right-radius: 35px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
 
-    .card{
-      border:1px solid var(--line);
-      border-radius:18px;
-      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
-      box-shadow: 0 10px 40px rgba(0,0,0,.28);
-      overflow:hidden;
-    }
-    .head{
-      padding:14px 14px 10px;
-      display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
-      border-bottom:1px solid var(--line);
-      background: rgba(255,255,255,.03);
-    }
-    .head h2{margin:0;font-size:14px}
-    .head small{color:var(--muted)}
-    .body{padding:14px}
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    @media(max-width:520px){.row{grid-template-columns:1fr}}
-    label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
-    input, select{
-      width:100%;
-      padding:11px 12px;
-      border-radius:14px;
-      border:1px solid var(--line);
-      background: rgba(20,20,40,.6);
-      color: var(--text);
-      outline:none;
-    }
-    input::placeholder{color:rgba(255,255,255,.35)}
-    .pill{
-      display:inline-flex;gap:8px;align-items:center;
-      padding:7px 10px;border-radius:999px;
-      border:1px solid var(--line);
-      background: rgba(255,255,255,.05);
-      color: var(--muted);
-      font-size:12px;
-    }
-    .pill b{color:var(--text)}
-    .status{margin-top:10px; padding:10px 12px;border-radius:14px;border:1px solid var(--line);
-      background: rgba(255,255,255,.04); color: var(--muted); font-size:13px; line-height:1.55;
-      white-space: pre-wrap;
-    }
-    .ok{color: var(--good)}
-    .bad{color: var(--bad)}
-    .muted{color:var(--muted)}
-    .kpi{
-      display:grid;grid-template-columns:1fr 1fr;gap:10px;
-    }
-    .kpi .box{
-      padding:12px;border-radius:16px;border:1px solid var(--line);
-      background: rgba(255,255,255,.04);
-    }
-    .kpi .box h3{margin:0;font-size:12px;color:var(--muted);font-weight:600}
-    .kpi .box div{margin-top:6px;font-size:18px;font-weight:900}
-    .list{display:flex;flex-direction:column;gap:10px}
-    .item{
-      border:1px solid var(--line);
-      background: rgba(255,255,255,.04);
-      border-radius:16px;
-      padding:12px;
-      display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;
-    }
-    .item .left{display:flex;flex-direction:column;gap:4px}
-    .item .t{font-weight:800}
-    .item .s{color:var(--muted);font-size:12px}
-    .item .amt{font-weight:900}
-    .footerNote{margin-top:10px;color:var(--muted);font-size:12px;line-height:1.6}
-  </style>
+        .user-pill {
+            background: rgba(255,255,255,0.2); padding: 6px 15px; border-radius: 50px;
+            display: inline-flex; align-items: center; gap: 8px; font-size: 0.85rem; margin-top: 10px;
+        }
+
+        /* البطاقات */
+        .container { padding: 0 20px; margin-top: -40px; }
+        .card {
+            background: var(--card); border-radius: 20px; padding: 20px;
+            margin-bottom: 15px; box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+            transition: 0.3s; border: 1px solid rgba(0,0,0,0.02);
+        }
+        .card:active { transform: scale(0.98); }
+
+        .price-tag { color: var(--primary); font-weight: 800; font-size: 1.1rem; }
+        
+        /* الأزرار */
+        .btn {
+            width: 100%; padding: 16px; border-radius: 15px; border: none;
+            font-weight: bold; font-size: 1rem; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .btn-pay { background: var(--primary); color: white; }
+        .btn-withdraw { background: #2d3436; color: white; margin-top: 15px; }
+
+        /* نظام العرض */
+        .view { display: none; animation: fadeInUp 0.4s ease; }
+        .view.active { display: block; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* بار التنقل السفلي */
+        .nav {
+            position: fixed; bottom: 15px; left: 15px; right: 15px;
+            background: white; height: 70px; border-radius: 20px;
+            display: flex; justify-content: space-around; align-items: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .nav-item { color: #B2BEC3; text-align: center; cursor: pointer; transition: 0.3s; }
+        .nav-item.active { color: var(--primary); transform: translateY(-5px); }
+        .nav-item i { font-size: 1.4rem; }
+        .nav-item span { display: block; font-size: 0.7rem; font-weight: bold; }
+
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid var(--primary); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
 </head>
-
 <body>
-  <div class="wrap">
-    <div class="top">
-      <div class="brand">
-        <div class="logo">π</div>
-        <div>
-          <h1>Pi Chama</h1>
-          <p>جمعية بـ Pi — دفع أقساط + سحب رصيد (Testnet/Sandbox)</p>
-        </div>
-      </div>
 
-      <div class="actions">
-        <button class="btn primary" id="btnLogin">تسجيل دخول Pi</button>
-        <button class="btn" id="btnRefresh">تحديث الرصيد</button>
-        <button class="btn danger" id="btnLogout">خروج</button>
-      </div>
+    <header>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="letter-spacing: -1px;">جمعيتي <span style="color: var(--accent);">PRO</span></h2>
+            <div id="loading-pi" class="loader" style="width:20px; height:20px; margin:0; display:none;"></div>
+        </div>
+        <div id="user-display" class="user-pill" style="display: none;">
+            <i class="fas fa-user-circle"></i> <span id="username-text">...</span>
+        </div>
+        <p id="system-msg" style="font-size: 0.75rem; opacity: 0.9; margin-top: 8px;">جاري الاتصال بـ Pi Network...</p>
+    </header>
+
+    <div class="container">
+        
+        <div id="view-home" class="view active">
+            <div id="circles-list">
+                <div class="loader"></div>
+            </div>
+        </div>
+
+        <div id="view-details" class="view">
+            <div class="card">
+                <div onclick="switchView('home')" style="margin-bottom: 15px; color: var(--primary); cursor: pointer; font-weight: bold;">
+                    <i class="fas fa-chevron-right"></i> عودة
+                </div>
+                <h2 id="det-title">...</h2>
+                <p id="det-desc" style="color: #636E72; font-size: 0.85rem; margin: 10px 0 20px;"></p>
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <div style="flex:1; background: #F8F9FA; padding: 12px; border-radius: 12px; text-align: center;">
+                        <small>القسط</small><br><b class="price-tag" id="det-amount">0 π</b>
+                    </div>
+                    <div style="flex:1; background: #F8F9FA; padding: 12px; border-radius: 12px; text-align: center;">
+                        <small>الأدوار</small><br><b id="det-slots">0</b>
+                    </div>
+                </div>
+
+                <button id="pay-btn" class="btn btn-pay" onclick="handlePayment()">
+                    <i class="fas fa-shield-check"></i> دفع واشتراك الآن
+                </button>
+            </div>
+
+            <div class="card">
+                <h4 style="font-size: 0.9rem; margin-bottom: 10px;"><i class="fas fa-list-ol"></i> قائمة الأدوار والمشتركين</h4>
+                <div id="participants-list"></div>
+            </div>
+        </div>
+
+        <div id="view-wallet" class="view">
+            <div class="card" style="text-align: center; padding: 40px 20px;">
+                <p style="color: #636E72;">رصيدك القابل للسحب</p>
+                <h1 style="font-size: 3rem; color: var(--primary); margin: 15px 0;">0.00 <span style="font-size: 1rem;">π</span></h1>
+                <button class="btn btn-withdraw" onclick="alert('سيتم إتاحة السحب فور اكتمال دورتك في الجمعية')">
+                    <i class="fas fa-money-bill-transfer"></i> طلب سحب الرصيد
+                </button>
+            </div>
+        </div>
+
     </div>
 
-    <div class="grid">
-      <!-- Left: Pay installment -->
-      <div class="card">
-        <div class="head">
-          <div>
-            <h2>دفع قسط الجمعية (User → App)</h2>
-            <small>بيبدأ Payment Flow ويكمّل approve/complete من السيرفر</small>
-          </div>
-          <div class="pill">الحالة: <b id="authState">غير مسجل</b></div>
+    <nav class="nav">
+        <div class="nav-item active" id="n-home" onclick="switchView('home')">
+            <i class="fas fa-th-large"></i><span>الرئيسية</span>
         </div>
-
-        <div class="body">
-          <div class="row">
-            <div>
-              <label>اسم الجمعية (للـ memo/metadata)</label>
-              <input id="groupName" placeholder="مثال: جمعية يناير" value="جمعية يناير" />
-            </div>
-            <div>
-              <label>رقم الدورة (Cycle)</label>
-              <input id="cycleNo" type="number" min="1" placeholder="1" value="1" />
-            </div>
-          </div>
-
-          <div class="row" style="margin-top:10px">
-            <div>
-              <label>قيمة القسط بـ Pi</label>
-              <input id="installment" type="number" min="0.1" step="0.1" placeholder="مثال: 2" value="1" />
-            </div>
-            <div>
-              <label>ملاحظة تظهر للمستخدم (Memo)</label>
-              <input id="memo" placeholder="قسط الجمعية" value="قسط الجمعية" />
-            </div>
-          </div>
-
-          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
-            <button class="btn primary" id="btnPay">ادفع القسط بـ Pi</button>
-            <span class="pill">UID: <b id="uid">-</b></span>
-            <span class="pill">User: <b id="username">-</b></span>
-          </div>
-
-          <div class="status" id="payLog">جاهز…</div>
-
-          <div class="footerNote">
-            * الدفعة لا تعتبر “مدفوعة” عندك إلا بعد نجاح /complete من السيرفر. 1
-          </div>
+        <div class="nav-item" id="n-wallet" onclick="switchView('wallet')">
+            <i class="fas fa-wallet"></i><span>محفظتي</span>
         </div>
-      </div>
+    </nav>
 
-      <!-- Right: Balance + withdraw -->
-      <div class="card">
-        <div class="head">
-          <div>
-            <h2>الداشبورد</h2>
-            <small>الرصيد محسوب من Supabase: إجمالي المدفوعات - إجمالي السحوبات</small>
-          </div>
-          <div class="pill">آخر تحديث: <b id="lastSync">-</b></div>
-        </div>
+    <script>
+        const SUPABASE_URL = 'https://axjkwrssmofzavaoqutq.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_tiuMncgWhf1YRWoD-uYQ3Q_ziI8OKci'; 
+        const _db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        <div class="body">
-          <div class="kpi">
-            <div class="box">
-              <h3>إجمالي المدفوع</h3>
-              <div id="kpiDonated">0</div>
-            </div>
-            <div class="box">
-              <h3>إجمالي المسحوب</h3>
-              <div id="kpiWithdrawn">0</div>
-            </div>
-            <div class="box" style="grid-column:1/-1">
-              <h3>رصيدك الحالي</h3>
-              <div id="kpiBalance">0</div>
-            </div>
-          </div>
+        let currentUser = null;
+        let selectedCircle = null;
 
-          <hr style="border:none;border-top:1px solid var(--line);margin:14px 0">
+        // 1. تسجيل الدخول بـ Pi Network
+        async function initPi() {
+            try {
+                await Pi.init({ version: "2.0", sandbox: false });
+                const auth = await Pi.authenticate(['username', 'payments'], onIncompletePayment);
+                currentUser = auth.user;
+                
+                document.getElementById('username-text').innerText = currentUser.username;
+                document.getElementById('user-display').style.display = 'inline-flex';
+                document.getElementById('system-msg').innerText = "متصل بالشبكة الحقيقية";
+                
+                loadCircles();
+            } catch (e) {
+                document.getElementById('system-msg').innerText = "يرجى الدخول من متصفح Pi";
+            }
+        }
 
-          <h3 style="margin:0 0 10px;font-size:13px;color:var(--muted)">سحب رصيد (App Wallet → User Wallet)</h3>
+        // 2. جلب البطاقات من قاعدة البيانات
+        async function loadCircles() {
+            const list = document.getElementById('circles-list');
+            const { data, error } = await _db.from('circles').select('*').order('created_at', { ascending: false });
 
-          <div class="row">
-            <div>
-              <label>عنوان محفظتك (Pi Wallet Address)</label>
-              <input id="walletAddress" placeholder="GA...." />
-            </div>
-            <div>
-              <label>قيمة السحب بـ Pi</label>
-              <input id="withdrawAmount" type="number" min="0.1" step="0.1" placeholder="مثال: 1" />
-            </div>
-          </div>
+            if (error) {
+                list.innerHTML = `<p style="text-align:center; color:red;">خطأ في البيانات: ${error.message}</p>`;
+                return;
+            }
 
-          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
-            <button class="btn primary" id="btnWithdraw">اطلب سحب</button>
-          </div>
+            list.innerHTML = '';
+            data.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.onclick = () => openCircle(item);
+                card.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <h3 style="font-size:1.1rem;">${item.title}</h3>
+                        <span class="price-tag">${item.installment_amount} π</span>
+                    </div>
+                    <p style="font-size:0.8rem; color:#636E72; margin:8px 0;">${item.description?.substring(0, 50)}...</p>
+                    <div style="margin-top:12px; border-top:1px solid #f0f0f0; padding-top:10px; display:flex; justify-content:space-between; font-size:0.75rem; color:#AAA;">
+                        <span><i class="fas fa-users"></i> المطلوب: ${item.total_slots}</span>
+                        <span style="color:var(--primary)">عرض التفاصيل <i class="fas fa-arrow-left"></i></span>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
 
-          <div class="status" id="withdrawLog">—</div>
+        // 3. فتح تفاصيل الجمعية والمشتركين
+        async function openCircle(circle) {
+            selectedCircle = circle;
+            document.getElementById('det-title').innerText = circle.title;
+            document.getElementById('det-desc').innerText = circle.description || 'لا يوجد وصف';
+            document.getElementById('det-amount').innerText = circle.installment_amount + ' π';
+            document.getElementById('det-slots').innerText = circle.total_slots;
+            
+            const pList = document.getElementById('participants-list');
+            pList.innerHTML = '<div class="loader"></div>';
+            switchView('details');
 
-          <hr style="border:none;border-top:1px solid var(--line);margin:14px 0">
+            const { data: members } = await _db.from('participants').select('*').eq('circle_id', circle.id);
+            
+            pList.innerHTML = '';
+            for (let i = 1; i <= circle.total_slots; i++) {
+                const m = members ? members[i-1] : null;
+                pList.innerHTML += `
+                    <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #f9f9f9; font-size:0.85rem;">
+                        <span style="color:${m ? '#2d3436' : '#ccc'}"><b>${i}.</b> ${m ? m.username : 'مقعد شاغر'}</span>
+                        <span style="color:${m ? 'green' : '#eee'}">${m ? '<i class="fas fa-check-circle"></i>' : '<i class="far fa-circle"></i>'}</span>
+                    </div>
+                `;
+            }
+        }
 
-          <h3 style="margin:0 0 10px;font-size:13px;color:var(--muted)">آخر عملياتك</h3>
-          <div class="list" id="txList">
-            <div class="item">
-              <div class="left">
-                <div class="t">لا يوجد بيانات</div>
-                <div class="s">بعد أول دفع/سحب هتظهر هنا</div>
-              </div>
-              <div class="amt muted">—</div>
-            </div>
-          </div>
+        // 4. نظام الدفع (Blockchain)
+        async function handlePayment() {
+            const btn = document.getElementById('pay-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري تأمين المعاملة...';
 
-        </div>
-      </div>
-    </div>
-  </div>
+            try {
+                const paymentData = {
+                    amount: selectedCircle.installment_amount,
+                    memo: "قسط جمعية: " + selectedCircle.title,
+                    metadata: { circleId: selectedCircle.id }
+                };
 
-  <script src="./app.js"></script>
+                const callbacks = {
+                    onReadyForServerApproval: (pid) => fetch('/api/pi/approve', { method: 'POST', body: JSON.stringify({ paymentId: pid }), headers: {'Content-Type': 'application/json'} }),
+                    onReadyForServerCompletion: async (pid, txid) => {
+                        await fetch('/api/pi/complete', { method: 'POST', body: JSON.stringify({ paymentId: pid, txid }), headers: {'Content-Type': 'application/json'} });
+                        
+                        // إضافة المشترك لقاعدة البيانات فور النجاح
+                        await _db.from('participants').insert([{
+                            circle_id: selectedCircle.id,
+                            pi_user_id: currentUser.uid,
+                            username: currentUser.username,
+                            has_paid_current: true
+                        }]);
+                        
+                        alert("✅ تم الاشتراك والدفع بنجاح!");
+                        openCircle(selectedCircle);
+                    },
+                    onCancel: () => { btn.disabled = false; btn.innerHTML = '<i class="fas fa-shield-check"></i> دفع واشتراك الآن'; },
+                    onError: (e) => { alert(e.message); btn.disabled = false; btn.innerHTML = '<i class="fas fa-shield-check"></i> دفع واشتراك الآن'; }
+                };
+
+                await Pi.createPayment(paymentData, callbacks);
+            } catch (e) { btn.disabled = false; }
+        }
+
+        // تنقل الصفحات
+        function switchView(v) {
+            document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.getElementById('view-' + v).classList.add('active');
+            document.getElementById('n-' + v).classList.add('active');
+            window.scrollTo(0,0);
+        }
+
+        function onIncompletePayment(p) { if (p.status.blockchain_status === 'COMPLETED') fetch('/api/pi/complete', { method: 'POST', body: JSON.stringify({ paymentId: p.identifier, txid: p.transaction.txid }), headers: {'Content-Type': 'application/json'} }); }
+
+        window.onload = initPi;
+    </script>
 </body>
 </html>
