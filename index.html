@@ -1,319 +1,274 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
-  <title>Freelance Escrow - وسيط خدمات</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+  <title>Freelance Escrow</title>
 
   <!-- Pi SDK -->
   <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-  <!-- Supabase JS v2 -->
+  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
     :root{
-      --bg:#0b0b14;
-      --card:#141428;
-      --card2:#1b1b33;
-      --text:#fff;
-      --muted:#a9a9c7;
-      --primary:#7f5cff;
-      --ok:#2ecc71;
-      --warn:#f1c40f;
-      --bad:#e74c3c;
-      --stroke:rgba(255,255,255,.08);
-      --shadow: 0 14px 40px rgba(0,0,0,.35);
+      --bg:#ffffff;
+      --bg2:#faf7ff;
+      --card:#ffffff;
+      --text:#1b1033;
+      --muted:#6b5f88;
+      --stroke:rgba(40,20,90,.12);
+      --shadow: 0 12px 34px rgba(80,20,160,.12);
+      --p:#7f5cff;
+      --p2:#5b2cff;
+      --ok:#16a34a;
+      --warn:#f59e0b;
+      --bad:#ef4444;
       --radius:18px;
     }
     *{box-sizing:border-box}
     body{
       margin:0;
-      background: radial-gradient(1200px 500px at 30% -10%, rgba(127,92,255,.25), transparent 60%),
-                  radial-gradient(900px 400px at 80% 10%, rgba(46,204,113,.12), transparent 55%),
-                  var(--bg);
+      font-family: system-ui,-apple-system,"Tajawal",Segoe UI,Roboto,Arial;
       color:var(--text);
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Tajawal", Arial;
+      background:
+        radial-gradient(900px 420px at 10% -10%, rgba(127,92,255,.18), transparent 60%),
+        radial-gradient(700px 360px at 90% 0%, rgba(91,44,255,.10), transparent 55%),
+        linear-gradient(180deg, var(--bg2), var(--bg));
       min-height:100vh;
-      display:flex;
-      justify-content:center;
     }
     a{color:inherit}
-    .app{
-      width:100%;
-      max-width:1100px;
-      padding:16px 14px 90px;
-    }
-
-    /* Top bar */
-    .topbar{
-      position:sticky; top:0;
-      padding:10px 0 12px;
-      z-index:30;
+    .wrap{max-width:1100px;margin:0 auto;padding:14px 14px 90px}
+    .top{
+      position:sticky; top:0; z-index:50;
+      background: rgba(255,255,255,.75);
       backdrop-filter: blur(10px);
-      background: linear-gradient(to bottom, rgba(11,11,20,.85), rgba(11,11,20,.35));
+      border-bottom:1px solid var(--stroke);
     }
-    .row{display:flex; gap:12px; align-items:center; justify-content:space-between}
-    .brand{
-      display:flex; align-items:center; gap:10px;
-      background: rgba(255,255,255,.04);
-      border:1px solid var(--stroke);
-      padding:10px 12px;
-      border-radius:999px;
-      box-shadow: var(--shadow);
+    .topin{max-width:1100px;margin:0 auto;padding:10px 14px;display:flex;gap:10px;align-items:center;justify-content:space-between}
+    .brand{display:flex;gap:10px;align-items:center}
+    .logo{
+      width:40px;height:40px;border-radius:14px;
+      background: linear-gradient(135deg, var(--p), var(--p2));
+      box-shadow: 0 10px 24px rgba(127,92,255,.22);
     }
-    .dot{
-      width:12px;height:12px;border-radius:50%;
-      background: var(--primary);
-      box-shadow: 0 0 18px rgba(127,92,255,.9);
-    }
-    .brand b{font-size:14px}
-    .brand span{font-size:12px;color:var(--muted)}
-    .pill{
-      padding:8px 10px;
-      border-radius:999px;
-      border:1px solid var(--stroke);
-      background: rgba(255,255,255,.04);
-      display:flex; gap:8px; align-items:center;
-    }
-    .pill small{color:var(--muted)}
+    .brand b{display:block;font-size:14px}
+    .brand small{color:var(--muted)}
+    .actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
     .btn{
       border:1px solid var(--stroke);
-      background: rgba(255,255,255,.06);
+      background: #fff;
       color:var(--text);
       padding:10px 12px;
-      border-radius:12px;
+      border-radius:14px;
       cursor:pointer;
+      font-weight:800;
       transition:.15s;
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      gap:8px;
-      font-weight:600;
+      display:inline-flex;gap:8px;align-items:center;justify-content:center;
+      box-shadow: 0 6px 16px rgba(80,20,160,.06);
       user-select:none;
     }
-    .btn:hover{transform: translateY(-1px); background: rgba(255,255,255,.09)}
-    .btn.primary{background: linear-gradient(135deg, rgba(127,92,255,.95), rgba(127,92,255,.55)); border-color: rgba(127,92,255,.5)}
-    .btn.ok{background: linear-gradient(135deg, rgba(46,204,113,.95), rgba(46,204,113,.45)); border-color: rgba(46,204,113,.5)}
-    .btn.bad{background: linear-gradient(135deg, rgba(231,76,60,.95), rgba(231,76,60,.45)); border-color: rgba(231,76,60,.5)}
-    .btn:disabled{opacity:.55; cursor:not-allowed; transform:none}
-    .grid{
-      margin-top:14px;
-      display:grid;
-      grid-template-columns: 1.3fr .9fr;
-      gap:14px;
+    .btn:hover{transform:translateY(-1px)}
+    .btn.primary{
+      background: linear-gradient(135deg, rgba(127,92,255,.15), rgba(91,44,255,.10));
+      border-color: rgba(127,92,255,.35);
+      color:#2b165e;
     }
-    @media (max-width: 980px){
-      .grid{grid-template-columns:1fr}
+    .btn.solid{
+      background: linear-gradient(135deg, var(--p), var(--p2));
+      border-color: rgba(127,92,255,.5);
+      color:#fff;
     }
+    .btn.ok{border-color:rgba(22,163,74,.28);background:rgba(22,163,74,.08)}
+    .btn.bad{border-color:rgba(239,68,68,.28);background:rgba(239,68,68,.08)}
+    .btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
+
+    .grid{display:grid;grid-template-columns:1.35fr .85fr;gap:14px;margin-top:14px}
+    @media (max-width: 980px){ .grid{grid-template-columns:1fr} }
+
     .card{
-      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
+      background: var(--card);
       border:1px solid var(--stroke);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
       padding:14px;
     }
-    .card h2{margin:0 0 10px; font-size:16px}
+    .card h2{margin:0 0 10px;font-size:16px}
     .muted{color:var(--muted)}
     .sep{height:1px;background:var(--stroke);margin:12px 0}
 
-    /* Tabs content */
-    .tabs{
-      display:flex; gap:10px; flex-wrap:wrap;
-      margin-top:10px;
-    }
-    .tab{
-      padding:9px 10px;
-      border-radius:999px;
+    .badge{
+      display:inline-flex;align-items:center;gap:6px;
+      padding:6px 10px;border-radius:999px;
       border:1px solid var(--stroke);
-      background: rgba(255,255,255,.04);
-      cursor:pointer;
-      font-weight:700;
-      font-size:13px;
+      background: rgba(127,92,255,.06);
+      color:#2b165e;font-weight:800;font-size:12px;
+      max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
     }
-    .tab.active{background: rgba(127,92,255,.22); border-color: rgba(127,92,255,.45)}
+    .badge.ok{background:rgba(22,163,74,.08);border-color:rgba(22,163,74,.25);color:#0f5a2a}
+    .badge.warn{background:rgba(245,158,11,.10);border-color:rgba(245,158,11,.25);color:#6a3d00}
+    .badge.bad{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.25);color:#7a0b0b}
+    .mono{font-family: ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+
+    .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+    .tab{
+      padding:9px 12px;border-radius:999px;
+      border:1px solid var(--stroke);
+      background:#fff;
+      cursor:pointer;
+      font-weight:900;font-size:12px;color:var(--muted);
+    }
+    .tab.active{
+      color:#2b165e;
+      border-color: rgba(127,92,255,.35);
+      background: rgba(127,92,255,.10);
+    }
+
     .view{display:none}
     .view.active{display:block}
 
-    /* Lists */
-    .list{display:flex; flex-direction:column; gap:10px}
+    .list{display:flex;flex-direction:column;gap:10px}
     .item{
       border:1px solid var(--stroke);
-      border-radius: 14px;
+      border-radius:16px;
+      background: #fff;
       padding:12px;
-      background: rgba(255,255,255,.03);
-      display:flex;
-      gap:10px;
-      align-items:flex-start;
-      justify-content:space-between;
+      display:flex;gap:10px;align-items:flex-start;justify-content:space-between;
     }
-    .item .meta{display:flex; flex-direction:column; gap:4px; min-width:0}
-    .item .meta b{font-size:14px}
-    .item .meta small{color:var(--muted); line-height:1.2}
-    .item .actions{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end}
-    .badge{
-      display:inline-flex; align-items:center; gap:6px;
-      padding:6px 8px;
-      border-radius:999px;
-      border:1px solid var(--stroke);
-      background: rgba(255,255,255,.04);
-      font-size:12px;
-      color:var(--muted);
-      max-width:100%;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-    .badge.ok{color:#d6ffe6; border-color: rgba(46,204,113,.35); background: rgba(46,204,113,.12)}
-    .badge.warn{color:#fff6cc; border-color: rgba(241,196,15,.35); background: rgba(241,196,15,.12)}
-    .badge.bad{color:#ffd6d2; border-color: rgba(231,76,60,.35); background: rgba(231,76,60,.12)}
-    .fields{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:10px;
-    }
-    @media (max-width:640px){
-      .fields{grid-template-columns:1fr}
-    }
-    .field label{display:block; font-size:12px; color:var(--muted); margin:0 0 6px}
+    .meta{min-width:0;display:flex;flex-direction:column;gap:4px}
+    .meta b{font-size:14px}
+    .meta small{color:var(--muted);line-height:1.25}
+    .iactions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+
+    .fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media (max-width: 640px){ .fields{grid-template-columns:1fr} }
+    .field label{display:block;font-size:12px;color:var(--muted);margin:0 0 6px;font-weight:800}
     .field input,.field textarea,.field select{
       width:100%;
       padding:11px 12px;
       border-radius:14px;
       border:1px solid var(--stroke);
-      background: rgba(255,255,255,.04);
+      background:#fff;
       color:var(--text);
       outline:none;
     }
-    .field textarea{min-height:90px; resize:vertical}
-    .hint{font-size:12px; color:var(--muted); margin-top:8px; line-height:1.4}
+    .field textarea{min-height:90px;resize:vertical}
+    .hint{font-size:12px;color:var(--muted);line-height:1.45;margin-top:8px}
 
-    /* Bottom nav */
+    /* Mobile bottom nav */
     .bottom{
-      position:fixed;
-      left:0; right:0; bottom:0;
-      display:flex;
-      justify-content:center;
+      position:fixed;left:0;right:0;bottom:0;
+      display:flex;justify-content:center;
       padding:10px 10px 14px;
-      z-index:40;
+      z-index:80;
       pointer-events:none;
     }
-    .bottom .nav{
+    .nav{
       pointer-events:auto;
       width:min(1100px, 96vw);
-      border-radius: 18px;
+      border-radius:18px;
       border:1px solid var(--stroke);
-      background: rgba(20,20,40,.75);
+      background: rgba(255,255,255,.82);
       backdrop-filter: blur(12px);
       box-shadow: var(--shadow);
-      display:flex;
-      gap:8px;
-      padding:8px;
+      display:flex;gap:8px;padding:8px;
     }
-    .nav .navbtn{
-      flex:1;
-      text-align:center;
-      padding:10px 8px;
-      border-radius:14px;
-      cursor:pointer;
-      font-weight:800;
-      font-size:12px;
-      color:var(--muted);
-      border:1px solid transparent;
-      user-select:none;
+    .navbtn{
+      flex:1;text-align:center;padding:10px 8px;border-radius:14px;
+      cursor:pointer;font-weight:1000;font-size:12px;color:var(--muted);
+      border:1px solid transparent;user-select:none;
     }
-    .nav .navbtn.active{
-      color:var(--text);
-      border-color: rgba(127,92,255,.45);
-      background: rgba(127,92,255,.18);
+    .navbtn.active{
+      color:#2b165e;
+      border-color: rgba(127,92,255,.35);
+      background: rgba(127,92,255,.10);
     }
 
-    /* Modal */
-    .modalWrap{
-      position:fixed; inset:0;
-      display:none;
-      align-items:flex-end;
-      justify-content:center;
-      background: rgba(0,0,0,.45);
-      z-index:100;
-      padding:14px;
-    }
-    .modalWrap.show{display:flex}
-    .modal{
-      width:min(720px, 100%);
-      border:1px solid var(--stroke);
-      border-radius: 22px;
-      background: rgba(20,20,40,.95);
-      backdrop-filter: blur(12px);
-      box-shadow: var(--shadow);
-      padding:14px;
-      max-height: 82vh;
-      overflow:auto;
-    }
-    .modal header{display:flex; justify-content:space-between; align-items:center; gap:10px}
-    .modal header b{font-size:15px}
+    /* Toast */
     .toast{
-      position:fixed;
-      top:14px;
-      left:50%;
-      transform: translateX(-50%);
-      z-index:999;
-      display:none;
-      background: rgba(20,20,40,.92);
-      border:1px solid var(--stroke);
-      border-radius: 14px;
-      padding:10px 12px;
+      position:fixed; top:14px; left:50%; transform:translateX(-50%);
+      background:#fff;border:1px solid var(--stroke);
+      border-radius:14px; padding:10px 12px;
       box-shadow: var(--shadow);
-      max-width: 92vw;
-      color: var(--text);
+      z-index:999; display:none; max-width:92vw;
     }
     .toast.show{display:block}
     .toast small{color:var(--muted)}
-    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace}
+
+    /* Simple modal */
+    .mwrap{position:fixed;inset:0;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.25);z-index:200;padding:14px}
+    .mwrap.show{display:flex}
+    .modal{
+      width:min(760px, 100%);
+      background:#fff;border:1px solid var(--stroke);
+      border-radius:22px; box-shadow: var(--shadow);
+      padding:14px; max-height:82vh; overflow:auto;
+    }
+    .mhead{display:flex;align-items:center;justify-content:space-between;gap:10px}
   </style>
 </head>
 
 <body>
   <div class="toast" id="toast"></div>
 
-  <div class="app">
-    <div class="topbar">
-      <div class="row">
-        <div class="brand">
-          <div class="dot"></div>
-          <div>
-            <b>Freelance Escrow</b><br>
-            <span class="muted">موقع وسيط: طلب + تنفيذ + دفع Pi + سحب</span>
-          </div>
-        </div>
-
-        <div class="row" style="gap:8px; flex-wrap:wrap; justify-content:flex-end">
-          <div class="pill">
-            <small>الحالة:</small>
-            <b id="statusText">غير متصل</b>
-          </div>
-          <button class="btn primary" id="btnLogin">تسجيل / دخول بـ Pi</button>
-          <button class="btn" id="btnGuest">دخول كزائر</button>
+  <div class="top">
+    <div class="topin">
+      <div class="brand">
+        <div class="logo"></div>
+        <div>
+          <b>Freelance Escrow</b>
+          <small>وسيط خدمات: مشتري + مستقل + Pi دفع + سحب</small>
         </div>
       </div>
-    </div>
 
+      <div class="actions">
+        <span class="badge" id="sdkBadge">Pi SDK: …</span>
+        <span class="badge" id="userBadge">ضيف</span>
+        <button class="btn solid" id="btnPiLogin">تسجيل بـ Pi</button>
+        <button class="btn primary" id="btnGuest">دخول كزائر</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
     <div class="grid">
       <!-- Main -->
       <div class="card">
         <div class="tabs">
-          <div class="tab active" data-view="market">السوق</div>
-          <div class="tab" data-view="requests">الطلبات</div>
-          <div class="tab" data-view="orders">الطلبات الجارية</div>
-          <div class="tab" data-view="messages">الرسائل</div>
+          <div class="tab active" data-route="#/home">الرئيسية</div>
+          <div class="tab" data-route="#/buyer">صفحة المشتري</div>
+          <div class="tab" data-route="#/freelancer">صفحة المستقل</div>
+          <div class="tab" data-route="#/orders">الطلبات (Escrow)</div>
+          <div class="tab" data-route="#/messages">الرسائل</div>
         </div>
 
-        <!-- Market -->
-        <div class="view active" id="view_market">
-          <h2>خدمات جاهزة (Gigs)</h2>
+        <!-- HOME -->
+        <div class="view active" id="view_home">
+          <h2>ابدأ بسرعة</h2>
+          <div class="item">
+            <div class="meta">
+              <b>لو تسجيل Pi مش شغال</b>
+              <small>
+                لازم تفتح من <b>Pi Browser</b> + يكون URL متسجل في Developer Portal.
+                ومع <span class="mono">sandbox:false</span> لازم Production URL الحقيقي. 5
+              </small>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+                <span class="badge warn">Pi.init({ version:"2.0", sandbox:false })</span>
+                <span class="badge">Scopes: username + payments</span>
+              </div>
+            </div>
+            <div class="iactions">
+              <button class="btn solid" id="btnDiagnose">تشخيص المشكلة</button>
+            </div>
+          </div>
+
+          <div class="sep"></div>
+
+          <h2>سوق الخدمات (Gigs)</h2>
           <div class="fields">
             <div class="field">
               <label>بحث</label>
-              <input id="gigSearch" placeholder="مثال: تصميم لوجو / برمجة / مونتاج..." />
+              <input id="gigSearch" placeholder="مثال: تصميم / برمجة / مونتاج..." />
             </div>
             <div class="field">
               <label>تصنيف</label>
@@ -329,41 +284,73 @@
           </div>
           <div class="sep"></div>
           <div class="list" id="gigList"></div>
-
-          <div class="hint">
-            💡 كعميل: اختار خدمة واضغط <b>توظيف + دفع Escrow</b> عشان الفلوس تدخل في وسيط الموقع (محفظة التطبيق).<br>
-            💡 كفريلانسر: افتح <b>لوحة التحكم</b> من الأسفل واعمل خدمة جديدة.
-          </div>
         </div>
 
-        <!-- Requests -->
-        <div class="view" id="view_requests">
-          <h2>طلبات العملاء (Projects)</h2>
-          <div class="row" style="gap:8px; flex-wrap:wrap">
-            <button class="btn primary" id="btnNewRequest">إنشاء طلب جديد</button>
-            <span class="badge">العملاء ينشروا طلبات… والفريلانسر يقدّم عرض</span>
+        <!-- BUYER PAGE -->
+        <div class="view" id="view_buyer">
+          <h2>صفحة المشتري</h2>
+          <div class="item">
+            <div class="meta">
+              <b>ماذا تريد؟</b>
+              <small>انشر مشروع، أو وظّف خدمة جاهزة، وتابع طلباتك.</small>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+                <span class="badge ok">نشر مشروع</span>
+                <span class="badge warn">دفع Escrow</span>
+              </div>
+            </div>
+            <div class="iactions">
+              <button class="btn solid" id="btnNewRequest">نشر مشروع</button>
+              <button class="btn primary" onclick="go('#/home')">تصفح الخدمات</button>
+            </div>
           </div>
+
           <div class="sep"></div>
+
+          <h2>مشاريع مفتوحة (Requests)</h2>
           <div class="list" id="requestList"></div>
         </div>
 
-        <!-- Orders -->
+        <!-- FREELANCER PAGE -->
+        <div class="view" id="view_freelancer">
+          <h2>صفحة المستقل</h2>
+          <div class="item">
+            <div class="meta">
+              <b>أنشئ خدمة وابدأ عروض</b>
+              <small>انشر Gig، وقدّم عروض على مشاريع العملاء.</small>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+                <span class="badge ok">نشر خدمة</span>
+                <span class="badge">عروض Offers</span>
+              </div>
+            </div>
+            <div class="iactions">
+              <button class="btn solid" onclick="openGigModal()">نشر خدمة</button>
+              <button class="btn primary" onclick="go('#/buyer')">شوف مشاريع العملاء</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ORDERS -->
         <div class="view" id="view_orders">
-          <h2>الطلبات الجارية (Escrow)</h2>
-          <div class="row" style="gap:8px; flex-wrap:wrap">
-            <span class="badge warn">الدفع: createPayment → approve → complete</span>
-            <span class="badge">بعد التسليم: العميل يضغط Release عشان تتسجل أرباح الفريلانسر</span>
+          <h2>الطلبات (Escrow)</h2>
+          <div class="item">
+            <div class="meta">
+              <b>حالات الطلب</b>
+              <small>pending_payment → paid → delivered → released</small>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+                <span class="badge warn">الـ UI بيتقفل لحد ما /complete ينجح 6</span>
+              </div>
+            </div>
           </div>
           <div class="sep"></div>
           <div class="list" id="orderList"></div>
         </div>
 
-        <!-- Messages -->
+        <!-- MESSAGES -->
         <div class="view" id="view_messages">
           <h2>الرسائل</h2>
           <div class="fields">
             <div class="field">
-              <label>Order ID (للدردشة الخاصة بطلب)</label>
+              <label>Order ID</label>
               <input id="chatOrderId" placeholder="مثال: 12" />
             </div>
             <div class="field">
@@ -371,21 +358,21 @@
               <input id="chatText" placeholder="اكتب رسالة..." />
             </div>
           </div>
-          <div class="row" style="margin-top:10px">
-            <button class="btn ok" id="btnSendMsg">إرسال</button>
-            <button class="btn" id="btnLoadMsgs">تحديث</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+            <button class="btn solid" id="btnSendMsg">إرسال</button>
+            <button class="btn primary" id="btnLoadMsgs">تحديث</button>
           </div>
           <div class="sep"></div>
           <div class="list" id="msgList"></div>
         </div>
       </div>
 
-      <!-- Side / Dashboard -->
+      <!-- SIDE: Profile + Wallet -->
       <div class="card">
-        <h2>لوحة التحكم</h2>
-        <div class="row" style="gap:8px; flex-wrap:wrap">
-          <span class="badge" id="whoAmI">ضيف</span>
+        <h2>حسابك</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
           <span class="badge" id="roleBadge">Role: Guest</span>
+          <span class="badge" id="statusBadge">Status: …</span>
         </div>
 
         <div class="sep"></div>
@@ -393,135 +380,97 @@
         <div class="fields">
           <div class="field">
             <label>اسم العرض</label>
-            <input id="profileName" placeholder="اسمك / اسم البراند" />
+            <input id="profileName" placeholder="اسمك" />
           </div>
           <div class="field">
-            <label>تخصصك</label>
-            <input id="profileTitle" placeholder="مثال: مصمم / مطور / مسوّق..." />
+            <label>تخصص</label>
+            <input id="profileTitle" placeholder="مثال: مطور / مصمم" />
           </div>
           <div class="field">
             <label>Pi Wallet Address (للسحب)</label>
-            <input id="profileWallet" placeholder="G..." class="mono" />
+            <input id="profileWallet" class="mono" placeholder="G..." />
           </div>
           <div class="field">
             <label>نبذة</label>
-            <input id="profileBio" placeholder="نبذة قصيرة..." />
+            <input id="profileBio" placeholder="نبذة قصيرة" />
           </div>
         </div>
 
-        <div class="row" style="margin-top:10px; gap:8px; flex-wrap:wrap">
-          <button class="btn primary" id="btnSaveProfile">حفظ البروفايل</button>
-          <button class="btn" id="btnReload">تحديث البيانات</button>
-        </div>
-
-        <div class="sep"></div>
-
-        <h2>أضف خدمة (Gig)</h2>
-        <div class="fields">
-          <div class="field">
-            <label>عنوان الخدمة</label>
-            <input id="gigTitle" placeholder="مثال: تصميم لوجو احترافي" />
-          </div>
-          <div class="field">
-            <label>تصنيف</label>
-            <select id="gigCatNew">
-              <option>تصميم</option><option>برمجة</option><option>مونتاج</option><option>كتابة</option><option>تسويق</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>السعر (Pi)</label>
-            <input id="gigPrice" type="number" step="0.01" placeholder="مثال: 5" />
-          </div>
-          <div class="field">
-            <label>مدة التسليم (أيام)</label>
-            <input id="gigDays" type="number" placeholder="مثال: 3" />
-          </div>
-          <div class="field" style="grid-column:1/-1">
-            <label>وصف</label>
-            <textarea id="gigDesc" placeholder="اكتب تفاصيل الخدمة…"></textarea>
-          </div>
-        </div>
-        <div class="row" style="margin-top:10px">
-          <button class="btn ok" id="btnCreateGig">نشر الخدمة</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+          <button class="btn solid" id="btnSaveProfile">حفظ</button>
+          <button class="btn primary" id="btnReload">تحديث</button>
         </div>
 
         <div class="sep"></div>
 
-        <h2>المحفظة (الأرباح والسحب)</h2>
-        <div class="row" style="gap:8px; flex-wrap:wrap">
-          <span class="badge ok">الرصيد المتاح: <b id="balanceText">0</b> Pi</span>
-          <span class="badge">عمولة المنصة: <b id="feeText">10%</b></span>
+        <h2>المحفظة</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span class="badge ok">الرصيد: <b id="balanceText">0</b> Pi</span>
+          <span class="badge">عمولة: <b id="feeText">10%</b></span>
         </div>
+
         <div class="fields" style="margin-top:10px">
           <div class="field">
-            <label>مبلغ السحب (Pi)</label>
-            <input id="withdrawAmount" type="number" step="0.01" placeholder="مثال: 1.5" />
+            <label>مبلغ السحب</label>
+            <input id="withdrawAmount" type="number" step="0.01" placeholder="مثال: 1.5"/>
           </div>
           <div class="field">
-            <label>إلى العنوان</label>
-            <input id="withdrawTo" placeholder="Pi Wallet Address" class="mono" />
+            <label>إلى</label>
+            <input id="withdrawTo" class="mono" placeholder="Wallet Address"/>
           </div>
         </div>
-        <div class="row" style="margin-top:10px; gap:8px; flex-wrap:wrap">
-          <button class="btn primary" id="btnWithdraw">سحب الأرباح</button>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+          <button class="btn primary" id="btnWithdraw">سحب</button>
         </div>
 
         <div class="hint">
-          ⚠️ السحب بيستخدم باك إندك (Stellar/Pi Testnet) وبيحسب الرصيد من جدول <b>donations</b> مطروح منه <b>withdrawals</b> (زي الكود اللي عندك).<br>
-          إحنا هنستغل <b>donations</b> كـ “ledger للأرباح” بعد ما العميل يعمل Release.
+          السحب مربوط بـ <span class="mono">/api/withdraw</span> وبيراجع الرصيد من جدول
+          <b>donations - withdrawals</b> زي كود الباك إند عندك.
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Bottom nav -->
+  <!-- Bottom nav (mobile) -->
   <div class="bottom">
     <div class="nav">
-      <div class="navbtn active" data-view="market">السوق</div>
-      <div class="navbtn" data-view="requests">الطلبات</div>
-      <div class="navbtn" data-view="orders">الـ Escrow</div>
-      <div class="navbtn" data-view="messages">الرسائل</div>
-      <div class="navbtn" id="navDash">لوحة التحكم</div>
+      <div class="navbtn active" data-route="#/home">الرئيسية</div>
+      <div class="navbtn" data-route="#/buyer">المشتري</div>
+      <div class="navbtn" data-route="#/freelancer">المستقل</div>
+      <div class="navbtn" data-route="#/orders">الطلبات</div>
+      <div class="navbtn" data-route="#/messages">الرسائل</div>
     </div>
   </div>
 
   <!-- Modal -->
-  <div class="modalWrap" id="modalWrap">
-    <div class="modal" id="modal">
-      <header>
-        <b id="modalTitle">Modal</b>
-        <button class="btn" id="btnCloseModal">إغلاق</button>
-      </header>
+  <div class="mwrap" id="mwrap">
+    <div class="modal">
+      <div class="mhead">
+        <b id="mtitle">Modal</b>
+        <button class="btn" onclick="closeModal()">إغلاق</button>
+      </div>
       <div class="sep"></div>
-      <div id="modalBody"></div>
+      <div id="mbody"></div>
     </div>
   </div>
 
 <script>
-/** ===========================
- *  CONFIG
- *  =========================== */
+/* =======================
+   CONFIG
+======================= */
 const SUPABASE_URL = "https://axjkwrssmofzavaoqutq.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_tiuMncgWhf1YRWoD-uYQ3Q_ziI8OKci";
-
-/**
- * لو عندك Netlify redirects زي اللي انت كاتبه:
- * /api/pi/approve -> /.netlify/functions/approve
- * /api/pi/complete -> /.netlify/functions/complete
- * وخلّي السحب:
- * /api/withdraw -> /.netlify/functions/withdraw
- */
-const API_BASE = ""; // فاضي = نفس الدومين
-
-const PLATFORM_FEE = 0.10; // 10% عمولة
+const API_BASE = ""; // نفس الدومين
+const PLATFORM_FEE = 0.10;
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-/** ===========================
- *  STATE
- *  =========================== */
+/* =======================
+   STATE
+======================= */
 let state = {
-  user: null, // {uid, username, isGuest}
+  user: null,  // {uid, username, isGuest}
   profile: null,
   gigs: [],
   requests: [],
@@ -530,7 +479,7 @@ let state = {
 
 const $ = (id)=>document.getElementById(id);
 
-function toast(html, ms=2600){
+function toast(html, ms=2800){
   const t = $("toast");
   t.innerHTML = html;
   t.classList.add("show");
@@ -538,954 +487,27 @@ function toast(html, ms=2600){
   toast._t = setTimeout(()=>t.classList.remove("show"), ms);
 }
 
-function setStatus(text){
-  $("statusText").textContent = text;
+function openModal(title, bodyHTML){
+  $("mtitle").textContent = title;
+  $("mbody").innerHTML = bodyHTML;
+  $("mwrap").classList.add("show");
+}
+function closeModal(){ $("mwrap").classList.remove("show"); }
+$("mwrap").addEventListener("click", (e)=>{ if(e.target.id==="mwrap") closeModal(); });
+
+function escapeHtml(s){
+  return (s??"").toString()
+    .replaceAll("&","&amp;").replaceAll("<","&lt;")
+    .replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
 }
 
 function requireUser(){
   if(!state.user){
-    toast("<b>لازم تسجل دخول</b><br><small>اضغط تسجيل / دخول بـ Pi أو دخول كزائر</small>");
+    toast("<b>سجّل دخول</b><br><small>Pi أو زائر</small>");
     throw new Error("Not logged in");
   }
 }
 
-/** ===========================
- *  NAV / VIEWS
- *  =========================== */
-function setView(name){
-  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active", t.dataset.view===name));
-  document.querySelectorAll(".navbtn").forEach(t=>t.classList.toggle("active", t.dataset.view===name));
-  document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active", v.id==="view_"+name));
-}
-
-document.querySelectorAll(".tab").forEach(t=>{
-  t.addEventListener("click", ()=> setView(t.dataset.view));
-});
-document.querySelectorAll(".navbtn").forEach(t=>{
-  if(t.id==="navDash") return;
-  t.addEventListener("click", ()=> setView(t.dataset.view));
-});
-$("navDash").addEventListener("click", ()=>{
-  toast("<b>لوحة التحكم</b><br><small>على اليمين / تحت حسب حجم الشاشة</small>", 1800);
-});
-
-/** ===========================
- *  MODAL
- *  =========================== */
-function openModal(title, bodyHTML){
-  $("modalTitle").textContent = title;
-  $("modalBody").innerHTML = bodyHTML;
-  $("modalWrap").classList.add("show");
-}
-function closeModal(){ $("modalWrap").classList.remove("show"); }
-$("btnCloseModal").addEventListener("click", closeModal);
-$("modalWrap").addEventListener("click", (e)=>{ if(e.target.id==="modalWrap") closeModal(); });
-
-/** ===========================
- *  PI LOGIN (supports old & newer styles)
- *  =========================== */
-async function piLogin(){
-  if(!window.Pi){
-    toast("<b>Pi SDK مش متاح</b><br><small>افتح الموقع من Pi Browser أو فعّل sdk.minepi.com</small>", 3500);
-    return;
-  }
-
-  // بعض الإصدارات: Pi.authenticate(scopes, onIncompletePaymentFound)
-  // وبعضها: Pi.connect()
-  try{
-    setStatus("جاري الاتصال...");
-    let authRes = null;
-
-    if(typeof Pi.authenticate === "function"){
-      // scopes ممكن تكون: ["username","payments"]
-      authRes = await Pi.authenticate(["username","payments"], (payment)=> {
-        // optional: handle incomplete payments
-        console.log("Incomplete payment:", payment);
-      });
-      // authRes: { user: { uid, username }, accessToken, ... }
-    } else if(typeof Pi.connect === "function"){
-      authRes = await Pi.connect();
-      // بعض المكتبات تخزن المستخدم في Pi.user
-    }
-
-    const u = authRes?.user || Pi?.user || Pi?.PiSdkBase?.user;
-    if(!u?.uid){
-      setStatus("فشل الاتصال");
-      toast("<b>فشل تسجيل الدخول</b><br><small>جرّب تاني من Pi Browser</small>", 3500);
-      return;
-    }
-
-    state.user = { uid: u.uid, username: u.username || "pi-user", isGuest:false };
-    $("whoAmI").textContent = `@${state.user.username}`;
-    $("roleBadge").textContent = "Role: User";
-    setStatus("متصل بـ Pi");
-    toast("<b>تم تسجيل الدخول</b><br><small>دلوقتي تقدر تدفع وتتعامل كفريلانسر/عميل</small>");
-
-    await ensureProfile();
-    await reloadAll();
-  }catch(err){
-    console.error(err);
-    setStatus("غير متصل");
-    toast("<b>حصل خطأ</b><br><small>"+(err?.message||"")+"</small>", 3500);
-  }
-}
-
-function guestLogin(){
-  const gid = "guest_" + Math.random().toString(16).slice(2,10);
-  state.user = { uid: gid, username: "guest", isGuest:true };
-  $("whoAmI").textContent = `Guest`;
-  $("roleBadge").textContent = "Role: Guest";
-  setStatus("زائر");
-  toast("<b>دخلت كزائر</b><br><small>تقدر تتصفح وتعمل طلب/توظيف، الدفع يحتاج Pi</small>", 3200);
-  ensureProfile().then(reloadAll);
-}
-
-$("btnLogin").addEventListener("click", piLogin);
-$("btnGuest").addEventListener("click", guestLogin);
-
-/** ===========================
- *  SUPABASE HELPERS
- *  =========================== */
-async function ensureProfile(){
-  requireUser();
-  const uid = state.user.uid;
-
-  const { data, error } = await sb.from("profiles").select("*").eq("pi_user_id", uid).maybeSingle();
-  if(error){ console.warn(error); }
-
-  if(!data){
-    const payload = {
-      pi_user_id: uid,
-      username: state.user.username,
-      display_name: state.user.username,
-      title: "",
-      bio: "",
-      wallet_address: "",
-      created_at: new Date().toISOString()
-    };
-    const ins = await sb.from("profiles").insert(payload).select().single();
-    state.profile = ins.data || payload;
-  } else {
-    state.profile = data;
-  }
-
-  // fill UI
-  $("profileName").value = state.profile.display_name || "";
-  $("profileTitle").value = state.profile.title || "";
-  $("profileBio").value = state.profile.bio || "";
-  $("profileWallet").value = state.profile.wallet_address || "";
-  $("withdrawTo").value = state.profile.wallet_address || "";
-
-  $("feeText").textContent = Math.round(PLATFORM_FEE*100) + "%";
-}
-
-async function reloadAll(){
-  await Promise.all([loadGigs(), loadRequests(), loadOrders(), refreshBalance()]);
-}
-
-$("btnReload").addEventListener("click", reloadAll);
-
-$("btnSaveProfile").addEventListener("click", async ()=>{
-  try{
-    requireUser();
-    const uid = state.user.uid;
-    const payload = {
-      pi_user_id: uid,
-      username: state.user.username,
-      display_name: $("profileName").value.trim(),
-      title: $("profileTitle").value.trim(),
-      bio: $("profileBio").value.trim(),
-      wallet_address: $("profileWallet").value.trim(),
-      updated_at: new Date().toISOString()
-    };
-    const { error } = await sb.from("profiles").upsert(payload, { onConflict: "pi_user_id" });
-    if(error) throw error;
-    toast("<b>تم حفظ البروفايل</b><br><small>جاهز للشغل</small>");
-    await ensureProfile();
-  }catch(err){
-    console.error(err);
-    toast("<b>خطأ</b><br><small>"+(err.message||"")+"</small>", 3500);
-  }
-});
-
-/** ===========================
- *  GIGS
- *  =========================== */
-async function loadGigs(){
-  const q = $("gigSearch").value.trim();
-  const cat = $("gigCategory").value.trim();
-
-  let query = sb.from("gigs").select("*").order("created_at", { ascending:false }).limit(50);
-  if(q) query = query.ilike("title", `%${q}%`);
-  if(cat) query = query.eq("category", cat);
-
-  const { data, error } = await query;
-  if(error){ console.warn(error); state.gigs=[]; }
-  else state.gigs = data || [];
-
-  renderGigs();
-}
-
-function renderGigs(){
-  const el = $("gigList");
-  if(!state.gigs.length){
-    el.innerHTML = `<div class="item"><div class="meta"><b>مفيش خدمات حالياً</b><small class="muted">ابدأ واعمل خدمة من لوحة التحكم</small></div></div>`;
-    return;
-  }
-
-  el.innerHTML = state.gigs.map(g=>{
-    const price = Number(g.price_pi||0).toFixed(2);
-    const days = g.delivery_days || 0;
-    return `
-      <div class="item">
-        <div class="meta" style="min-width:0">
-          <b>${escapeHtml(g.title||"")}</b>
-          <small>${escapeHtml(g.description||"")}</small>
-          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:6px">
-            <span class="badge">تصنيف: <b>${escapeHtml(g.category||"")}</b></span>
-            <span class="badge ok">السعر: <b>${price}</b> Pi</span>
-            <span class="badge warn">تسليم: <b>${days}</b> يوم</span>
-            <span class="badge">Seller: <b>@${escapeHtml(g.seller_username||"")}</b></span>
-          </div>
-        </div>
-        <div class="actions">
-          <button class="btn primary" onclick="hireGig(${g.id})">توظيف + دفع Escrow</button>
-        </div>
-      </div>
-    `;
-  }).join("");
-}
-
-$("gigSearch").addEventListener("input", debounce(loadGigs, 250));
-$("gigCategory").addEventListener("change", loadGigs);
-
-$("btnCreateGig").addEventListener("click", async ()=>{
-  try{
-    requireUser();
-    if(!state.profile) await ensureProfile();
-
-    const title = $("gigTitle").value.trim();
-    const desc = $("gigDesc").value.trim();
-    const category = $("gigCatNew").value.trim();
-    const price = parseFloat($("gigPrice").value || "0");
-    const days = parseInt($("gigDays").value || "0", 10);
-
-    if(!title || !desc || !category || !(price>0)){
-      toast("<b>بيانات ناقصة</b><br><small>اكتب عنوان ووصف وسعر</small>", 3000);
-      return;
-    }
-
-    const payload = {
-      title, description: desc, category,
-      price_pi: price,
-      delivery_days: days || 3,
-      seller_id: state.user.uid,
-      seller_username: state.user.username,
-      created_at: new Date().toISOString()
-    };
-
-    const { error } = await sb.from("gigs").insert(payload);
-    if(error) throw error;
-
-    $("gigTitle").value=""; $("gigDesc").value=""; $("gigPrice").value=""; $("gigDays").value="";
-    toast("<b>تم نشر الخدمة</b><br><small>هتظهر في السوق</small>");
-    await loadGigs();
-  }catch(err){
-    console.error(err);
-    toast("<b>خطأ</b><br><small>"+(err.message||"")+"</small>", 3500);
-  }
-});
-
-async function hireGig(gigId){
-  try{
-    requireUser();
-    if(state.user.isGuest){
-      openModal("لازم Pi للدفع", `
-        <div class="muted">تقدر تتصفح كزائر… لكن الدفع Escrow يحتاج تسجيل Pi.</div>
-        <div class="sep"></div>
-        <button class="btn primary" onclick="closeModal(); piLogin();">سجل بـ Pi</button>
-      `);
-      return;
-    }
-
-    const gig = state.gigs.find(x=>x.id===gigId);
-    if(!gig) return;
-
-    openModal("تأكيد التوظيف والدفع Escrow", `
-      <div class="item">
-        <div class="meta">
-          <b>${escapeHtml(gig.title)}</b>
-          <small>${escapeHtml(gig.description)}</small>
-          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px">
-            <span class="badge ok">المبلغ: <b>${Number(gig.price_pi).toFixed(2)}</b> Pi</span>
-            <span class="badge">Seller: <b>@${escapeHtml(gig.seller_username)}</b></span>
-          </div>
-        </div>
-      </div>
-
-      <div class="sep"></div>
-
-      <div class="fields">
-        <div class="field" style="grid-column:1/-1">
-          <label>متطلباتك</label>
-          <textarea id="orderRequirements" placeholder="اكتب المطلوب بالتفصيل…"></textarea>
-        </div>
-      </div>
-
-      <div class="row" style="margin-top:10px; gap:8px; flex-wrap:wrap">
-        <button class="btn ok" onclick="createOrderAndPay(${gig.id})">إنشاء الطلب + دفع</button>
-        <button class="btn" onclick="closeModal()">إلغاء</button>
-      </div>
-
-      <div class="hint">
-        الدفع هيعمل createPayment، وبعدها الباك إند هيعمل approve/complete تلقائياً من callbacks.
-      </div>
-    `);
-
-  }catch(err){
-    console.error(err);
-  }
-}
-
-async function createOrderAndPay(gigId){
-  try{
-    requireUser();
-    const gig = state.gigs.find(x=>x.id===gigId);
-    const req = (document.getElementById("orderRequirements")?.value || "").trim();
-    if(!req){
-      toast("<b>اكتب المتطلبات</b><br><small>عشان الطلب يبقى واضح</small>");
-      return;
-    }
-
-    // 1) create order in DB
-    const payload = {
-      gig_id: gig.id,
-      buyer_id: state.user.uid,
-      buyer_username: state.user.username,
-      seller_id: gig.seller_id,
-      seller_username: gig.seller_username,
-      amount_pi: gig.price_pi,
-      requirements: req,
-      status: "pending_payment",
-      created_at: new Date().toISOString()
-    };
-
-    const ins = await sb.from("orders").insert(payload).select().single();
-    if(ins.error) throw ins.error;
-
-    closeModal();
-    toast("<b>تم إنشاء الطلب</b><br><small>هنبدأ الدفع Escrow</small>");
-
-    // 2) start Pi payment
-    await startPiPaymentForOrder(ins.data);
-
-  }catch(err){
-    console.error(err);
-    toast("<b>خطأ</b><br><small>"+(err.message||"")+"</small>", 3500);
-  }
-}
-
-async function startPiPaymentForOrder(order){
-  if(!window.Pi) throw new Error("Pi SDK not available");
-  if(typeof Pi.createPayment !== "function") throw new Error("Pi.createPayment غير موجود");
-
-  const amount = Number(order.amount_pi);
-  const memo = `order_${order.id}`; // مهم: memo قصير وواضح
-  const metadata = { order_id: order.id, seller_id: order.seller_id, buyer_id: order.buyer_id };
-
-  // Pi SDK: createPayment(paymentData, callbacks)
-  // docs show paymentCallbacks incl: onReadyForServerApproval, onReadyForServerCompletion, onCancel, onError 1
-  return Pi.createPayment({
-    amount,
-    memo,
-    metadata,
-  }, {
-    onReadyForServerApproval: async (paymentId) => {
-      try{
-        toast("<b>جاري الموافقة على الدفع</b><br><small>Approve...</small>", 2200);
-        await apiPost("/api/pi/approve", { paymentId });
-        await sb.from("orders").update({ payment_id: paymentId }).eq("id", order.id);
-      }catch(e){
-        console.error(e);
-        toast("<b>Approve فشل</b><br><small>"+(e.message||"")+"</small>", 3500);
-        throw e;
-      }
-    },
-    onReadyForServerCompletion: async (paymentId, txid) => {
-      try{
-        toast("<b>جاري إكمال الدفع</b><br><small>Complete...</small>", 2200);
-        const res = await apiPost("/api/pi/complete", { paymentId, txid });
-        await sb.from("orders").update({
-          payment_id: paymentId,
-          txid,
-          status: "paid",
-          paid_at: new Date().toISOString()
-        }).eq("id", order.id);
-
-        toast("<b>تم الدفع ✅</b><br><small>الطلب بقى Paid في Escrow</small>", 3200);
-        await loadOrders();
-      }catch(e){
-        console.error(e);
-        toast("<b>Complete فشل</b><br><small>"+(e.message||"")+"</small>", 3500);
-        throw e;
-      }
-    },
-    onCancel: async () => {
-      toast("<b>تم إلغاء الدفع</b><br><small>الطلب لسه Pending</small>", 3000);
-    },
-    onError: async (err) => {
-      console.error(err);
-      toast("<b>خطأ في الدفع</b><br><small>"+(err?.message||"")+"</small>", 3500);
-    }
-  });
-}
-
-/** ===========================
- *  REQUESTS (Projects)
- *  =========================== */
-$("btnNewRequest").addEventListener("click", ()=>{
-  try{
-    requireUser();
-    openModal("إنشاء طلب جديد", `
-      <div class="fields">
-        <div class="field">
-          <label>عنوان الطلب</label>
-          <input id="reqTitle" placeholder="مثال: محتاج تصميم UI لصفحة Landing" />
-        </div>
-        <div class="field">
-          <label>تصنيف</label>
-          <select id="reqCat">
-            <option>تصميم</option><option>برمجة</option><option>مونتاج</option><option>كتابة</option><option>تسويق</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>ميزانية (Pi)</label>
-          <input id="reqBudget" type="number" step="0.01" placeholder="مثال: 8" />
-        </div>
-        <div class="field">
-          <label>مدة (أيام)</label>
-          <input id="reqDays" type="number" placeholder="مثال: 5" />
-        </div>
-        <div class="field" style="grid-column:1/-1">
-          <label>تفاصيل</label>
-          <textarea id="reqDesc" placeholder="اكتب المطلوب بالتفصيل…"></textarea>
-        </div>
-      </div>
-      <div class="row" style="margin-top:10px; gap:8px; flex-wrap:wrap">
-        <button class="btn ok" onclick="createRequest()">نشر الطلب</button>
-        <button class="btn" onclick="closeModal()">إلغاء</button>
-      </div>
-    `);
-  }catch(e){}
-});
-
-async function createRequest(){
-  try{
-    requireUser();
-    const title = $("reqTitle").value.trim();
-    const category = $("reqCat").value.trim();
-    const budget = parseFloat($("reqBudget").value || "0");
-    const days = parseInt($("reqDays").value || "0",10);
-    const desc = $("reqDesc").value.trim();
-
-    if(!title || !desc || !(budget>0)){
-      toast("<b>بيانات ناقصة</b><br><small>اكتب عنوان/تفاصيل/ميزانية</small>", 3200);
-      return;
-    }
-
-    const payload = {
-      title, category, budget_pi: budget,
-      expected_days: days||5,
-      description: desc,
-      buyer_id: state.user.uid,
-      buyer_username: state.user.username,
-      status: "open",
-      created_at: new Date().toISOString()
-    };
-
-    const { error } = await sb.from("requests").insert(payload);
-    if(error) throw error;
-
-    closeModal();
-    toast("<b>تم نشر الطلب</b><br><small>الفريلانسر يقدر يقدّم عرض</small>");
-    await loadRequests();
-  }catch(err){
-    console.error(err);
-    toast("<b>خطأ</b><br><small>"+(err.message||"")+"</small>", 3500);
-  }
-}
-
-async function loadRequests(){
-  const { data, error } = await sb.from("requests").select("*").order("created_at",{ascending:false}).limit(50);
-  if(error){ console.warn(error); state.requests=[]; }
-  else state.requests = data || [];
-  renderRequests();
-}
-
-function renderRequests(){
-  const el = $("requestList");
-  if(!state.requests.length){
-    el.innerHTML = `<div class="item"><div class="meta"><b>مفيش طلبات حالياً</b><small class="muted">انشر أول طلب</small></div></div>`;
-    return;
-  }
-
-  el.innerHTML = state.requests.map(r=>{
-    const budget = Number(r.budget_pi||0).toFixed(2);
-    const isOwner = state.user && r.buyer_id === state.user.uid;
-    return `
-      <div class="item">
-        <div class="meta" style="min-width:0">
-          <b>${escapeHtml(r.title||"")}</b>
-          <small>${escapeHtml(r.description||"")}</small>
-          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:6px">
-            <span class="badge">تصنيف: <b>${escapeHtml(r.category||"")}</b></span>
-            <span class="badge ok">ميزانية: <b>${budget}</b> Pi</span>
-            <span class="badge warn">مدة: <b>${r.expected_days||0}</b> يوم</span>
-            <span class="badge">Buyer: <b>@${escapeHtml(r.buyer_username||"")}</b></span>
-            <span class="badge ${r.status==='open'?'ok':'warn'}">Status: <b>${escapeHtml(r.status||"")}</b></span>
-          </div>
-        </div>
-        <div class="actions">
-          <button class="btn primary" onclick="openOffer(${r.id})">قدّم عرض</button>
-          ${isOwner ? `<button class="btn" onclick="viewOffers(${r.id})">شوف العروض</button>` : ``}
-        </div>
-      </div>
-    `;
-  }).join("");
-}
-
-async function openOffer(requestId){
-  try{
-    requireUser();
-    const r = state.requests.find(x=>x.id===requestId);
-    if(!r) return;
-
-    openModal("تقديم عرض", `
-      <div class="item">
-        <div class="meta">
-          <b>${escapeHtml(r.title)}</b>
-          <small class="muted">ميزانية: ${Number(r.budget_pi).toFixed(2)} Pi</small>
-        </div>
-      </div>
-      <div class="sep"></div>
-      <div class="fields">
-        <div class="field">
-          <label>السعر (Pi)</label>
-          <input id="offerPrice" type="number" step="0.01" value="${Number(r.budget_pi).toFixed(2)}" />
-        </div>
-        <div class="field">
-          <label>المدة (أيام)</label>
-          <input id="offerDays" type="number" value="${r.expected_days||5}" />
-        </div>
-        <div class="field" style="grid-column:1/-1">
-          <label>رسالة العرض</label>
-          <textarea id="offerMsg" placeholder="اشرح هتسلم ازاي…"></textarea>
-        </div>
-      </div>
-      <div class="row" style="margin-top:10px; gap:8px; flex-wrap:wrap">
-        <button class="btn ok" onclick="submitOffer(${r.id})">إرسال العرض</button>
-        <button class="btn" onclick="closeModal()">إلغاء</button>
-      </div>
-    `);
-  }catch(e){}
-}
-
-async function submitOffer(requestId){
-  try{
-    requireUser();
-    const price = parseFloat($("offerPrice").value || "0");
-    const days = parseInt($("offerDays").value || "0",10);
-    const msg = $("offerMsg").value.trim();
-    if(!(price>0) || !msg){
-      toast("<b>اكتب السعر والرسالة</b>", 2500);
-      return;
-    }
-    const payload = {
-      request_id: requestId,
-      seller_id: state.user.uid,
-      seller_username: state.user.username,
-      price_pi: price,
-      delivery_days: days||5,
-      message: msg,
-      status: "sent",
-      created_at: new Date().toISOString()
-    };
-    const { error } = await sb.from("offers").insert(payload);
-    if(error) throw error;
-
-    closeModal();
-    toast("<b>تم إرسال العرض</b><br><small>العميل يقدر يقبل</small>");
-  }catch(err){
-    console.error(err);
-    toast("<b>خطأ</b><br><small>"+(err.message||"")+"</small>", 3500);
-  }
-}
-
-async function viewOffers(requestId){
-  try{
-    requireUser();
-    const { data, error } = await sb.from("offers").select("*").eq("request_id", requestId).order("created_at",{ascending:false});
-    if(error) throw error;
-
-    const r = state.requests.find(x=>x.id===requestId);
-    const html = `
-      <div class="item"><div class="meta">
-        <b>${escapeHtml(r?.title||("Request #"+requestId))}</b>
-        <small class="muted">اختر عرض واعمل عقد (Order) + Escrow</small>
-      </div></div>
-      <div class="sep"></div>
-      <div class="list">
-        ${(data||[]).map(o=>`
-          <div class="item">
-            <div class="meta">
-              <b>@${escapeHtml(o.seller_username||"")}</b>
-              <small>${escapeHtml(o.message||"")}</small>
-              <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:6px">
-                <span class="badge ok">السعر: <b>${Number(o.price_pi).toFixed(2)}</b> Pi</span>
-                <span class="badge warn">المدة: <b>${o.delivery_days||0}</b> يوم</span>
-              </div>
-            </div>
-            <div class="actions">
-              <button class="btn primary" onclick="acceptOffer(${requestId}, ${o.id})">قبول + إنشاء Order</button>
-            </div>
-          </div>
-        `).join("") || `<div class="muted">لا توجد عروض</div>`}
-      </div>
-    `;
-    openModal("العروض", html);
-  }catch(err){
-    console.error(err);
-    toast("<b>خطأ</b><br><small>"+(err.message||"")+"</small>", 3500);
-  }
-}
-
-async function acceptOffer(requestId, offerId){
-  try{
-    requireUser();
-    if(state.user.isGuest){
-      toast("<b>لازم Pi عشان تكمل</b>", 2500);
-      return;
-    }
-
-    const offer = (await sb.from("offers").select("*").eq("id", offerId).single()).data;
-    const req = (await sb.from("requests").select("*").eq("id", requestId).single()).data;
-    if(!offer || !req) throw new Error("Offer/Request not found");
-
-    // create order from offer
-    const payload = {
-      request_id: requestId,
-      offer_id: offerId,
-      buyer_id: req.buyer_id,
-      buyer_username: req.buyer_username,
-      seller_id: offer.seller_id,
-      seller_username: offer.seller_username,
-      amount_pi: offer.price_pi,
-      requirements: req.description,
-      status: "pending_payment",
-      created_at: new Date().toISOString()
-    };
-
-    const ins = await sb.from("orders").insert(payload).select().single();
-    if(ins.error) throw ins.error;
-
-    // close request
-    await sb.from("requests").update({ status: "in_progress" }).eq("id", requestId);
-    await sb.from("offers").update({ status: "accepted" }).eq("id", offerId);
-
-    closeModal();
-    toast("<b>تم إنشاء Order</b><br><small>ابدأ الدفع Escrow</small>");
-
-    await startPiPaymentForOrder(ins.data);
-    await loadOrders();
-    await loadRequests();
-  }catch(err){
-    console.error(err);
-    toast("<b>خطأ</b><br><small>"+(err.message||"")+"</small>", 3500);
-  }
-}
-
-/** ===========================
- *  ORDERS (ESCROW)
- *  =========================== */
-async function loadOrders(){
-  // لو user موجود: نجيب الطلبات اللي هو طرف فيها
-  if(!state.user){
-    state.orders = [];
-    renderOrders();
-    return;
-  }
-
-  const uid = state.user.uid;
-  const { data, error } = await sb
-    .from("orders")
-    .select("*")
-    .or(`buyer_id.eq.${uid},seller_id.eq.${uid}`)
-    .order("created_at",{ascending:false})
-    .limit(80);
-
-  if(error){ console.warn(error); state.orders=[]; }
-  else state.orders = data || [];
-  renderOrders();
-}
-
-function renderOrders(){
-  const el = $("orderList");
-  if(!state.user){
-    el.innerHTML = `<div class="item"><div class="meta"><b>سجّل دخول</b><small class="muted">عشان تشوف الطلبات</small></div></div>`;
-    return;
-  }
-  if(!state.orders.length){
-    el.innerHTML = `<div class="item"><div class="meta"><b>مفيش Orders</b><small class="muted">ابدأ بتوظيف خدمة أو قبول عرض</small></div></div>`;
-    return;
-  }
-
-  el.innerHTML = state.orders.map(o=>{
-    const mineBuyer = o.buyer_id === state.user.uid;
-    const mineSeller = o.seller_id === state.user.uid;
-    const amount = Number(o.amount_pi||0).toFixed(2);
-
-    const statusClass =
-      o.status==="paid" ? "ok" :
-      o.status==="released" ? "ok" :
-      o.status==="delivered" ? "warn" :
-      o.status==="disputed" ? "bad" :
-      "warn";
-
-    return `
-      <div class="item">
-        <div class="meta" style="min-width:0">
-          <b>Order #${o.id} • ${mineBuyer ? "أنت العميل" : "أنت الفريلانسر"}</b>
-          <small>${escapeHtml(o.requirements||"")}</small>
-          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:6px">
-            <span class="badge ok">المبلغ: <b>${amount}</b> Pi</span>
-            <span class="badge ${statusClass}">Status: <b>${escapeHtml(o.status||"")}</b></span>
-            <span class="badge">Buyer: <b>@${escapeHtml(o.buyer_username||"")}</b></span>
-            <span class="badge">Seller: <b>@${escapeHtml(o.seller_username||"")}</b></span>
-            ${o.payment_id ? `<span class="badge mono">paymentId: ${escapeHtml(o.payment_id)}</span>` : ``}
-            ${o.txid ? `<span class="badge mono">txid: ${escapeHtml(o.txid)}</span>` : ``}
-          </div>
-        </div>
-        <div class="actions">
-          ${mineBuyer && o.status==="pending_payment" ? `<button class="btn primary" onclick="resumePay(${o.id})">ادفع Escrow</button>` : ``}
-          ${mineSeller && o.status==="paid" ? `<button class="btn ok" onclick="markDelivered(${o.id})">تم التسليم</button>` : ``}
-          ${mineBuyer && o.status==="delivered" ? `<button class="btn ok" onclick="releasePayment(${o.id})">Release (صرف للفريلانسر)</button>` : ``}
-          ${mineBuyer && (o.status==="paid"||o.status==="delivered") ? `<button class="btn bad" onclick="openDispute(${o.id})">فتح نزاع</button>` : ``}
-        </div>
-      </div>
-    `;
-  }).join("");
-}
-
-async function resumePay(orderId){
-  try{
-    requireUser();
-    if(state.user.isGuest){ toast("<b>لازم Pi</b>", 2000); return; }
-    const order = state.orders.find(x=>x.id===orderId);
-    if(!order) return;
-    await startPiPaymentForOrder(order);
-  }catch(err){
-    console.error(err);
-  }
-}
-
-async function markDelivered(orderId){
-  try{
-    requireUser();
-    await sb.from("orders").update({ status:"delivered", delivered_at: new Date().toISOString() }).eq("id", orderId);
-    toast("<b>تم وضع الطلب كـ Delivered</b>");
-    await loadOrders();
-  }catch(err){
-    console.error(err);
-    toast("<b>خطأ</b><br><small>"+(err.message||"")+"</small>", 3500);
-  }
-}
-
-async function releasePayment(orderId){
-  try{
-    requireUser();
-    const order = state.orders.find(x=>x.id===orderId);
-    if(!order) return;
-    if(order.buyer_id !== state.user.uid) throw new Error("Only buyer can release");
-
-    // 1) update order status
-    await sb.from("orders").update({ status:"released", released_at: new Date().toISOString() }).eq("id", orderId);
-
-    // 2) credit seller in "donations" ledger (so your withdraw backend works)
-    const gross = Number(order.amount_pi||0);
-    const net = +(gross * (1-PLATFORM_FEE)).toFixed(7);
-
-    const payload = {
-      pi_user_id: order.seller_id,
-      username: order.seller_username,
-      amount: net,
-      type: "earning",
-      order_id: order.id,
-      txid: order.txid || null,
-      created_at: new Date().toISOString()
-    };
-
-    await sb.from("donations").insert(payload);
-
-    toast(`<b>تم Release ✅</b><br><small>اتسجلت أرباح الفريلانسر: ${net} Pi</small>`, 3600);
-    await loadOrders();
-    await refreshBalance();
-  }catch(err){
-    console.error(err);
-    toast("<b>Release فشل</b><br><small>"+(err.message||"")+"</small>", 3800);
-  }
-}
-
-async function openDispute(orderId){
-  openModal("فتح نزاع", `
-    <div class="muted">اكتب سبب النزاع… (نسخة بسيطة)</div>
-    <div class="sep"></div>
-    <div class="field">
-      <label>السبب</label>
-      <textarea id="disputeReason" placeholder="اشرح المشكلة…"></textarea>
-    </div>
-    <div class="row" style="margin-top:10px; gap:8px; flex-wrap:wrap">
-      <button class="btn bad" onclick="submitDispute(${orderId})">إرسال</button>
-      <button class="btn" onclick="closeModal()">إلغاء</button>
-    </div>
-  `);
-}
-
-async function submitDispute(orderId){
-  try{
-    requireUser();
-    const reason = $("disputeReason").value.trim();
-    if(!reason){ toast("<b>اكتب السبب</b>", 2000); return; }
-    await sb.from("orders").update({ status:"disputed", dispute_reason: reason, disputed_at: new Date().toISOString() }).eq("id", orderId);
-    closeModal();
-    toast("<b>تم فتح نزاع</b><br><small>محتاج Admin flow لحله (ممكن أضيفه)</small>", 3600);
-    await loadOrders();
-  }catch(err){
-    console.error(err);
-    toast("<b>خطأ</b><br><small>"+(err.message||"")+"</small>", 3500);
-  }
-}
-
-/** ===========================
- *  MESSAGES
- *  =========================== */
-$("btnSendMsg").addEventListener("click", async ()=>{
-  try{
-    requireUser();
-    const orderId = parseInt($("chatOrderId").value||"0",10);
-    const text = $("chatText").value.trim();
-    if(!orderId || !text){
-      toast("<b>اكتب Order ID والرسالة</b>", 2500);
-      return;
-    }
-    const payload = {
-      order_id: orderId,
-      sender_id: state.user.uid,
-      sender_username: state.user.username,
-      text,
-      created_at: new Date().toISOString()
-    };
-    const { error } = await sb.from("messages").insert(payload);
-    if(error) throw error;
-    $("chatText").value="";
-    await loadMsgs();
-  }catch(err){
-    console.error(err);
-    toast("<b>خطأ</b><br><small>"+(err.message||"")+"</small>", 3500);
-  }
-});
-
-$("btnLoadMsgs").addEventListener("click", loadMsgs);
-
-async function loadMsgs(){
-  try{
-    requireUser();
-    const orderId = parseInt($("chatOrderId").value||"0",10);
-    if(!orderId){ toast("<b>اكتب Order ID</b>", 2200); return; }
-
-    const { data, error } = await sb.from("messages").select("*").eq("order_id", orderId).order("created_at",{ascending:false}).limit(50);
-    if(error) throw error;
-
-    const el = $("msgList");
-    el.innerHTML = (data||[]).map(m=>{
-      const mine = m.sender_id === state.user.uid;
-      return `
-        <div class="item">
-          <div class="meta">
-            <b>${mine ? "أنت" : "@"+escapeHtml(m.sender_username||"")}</b>
-            <small>${escapeHtml(m.text||"")}</small>
-            <small class="muted">${new Date(m.created_at).toLocaleString("ar-EG")}</small>
-          </div>
-        </div>
-      `;
-    }).join("") || `<div class="muted">لا رسائل</div>`;
-  }catch(err){
-    console.error(err);
-  }
-}
-
-/** ===========================
- *  WALLET / BALANCE + WITHDRAW
- *  uses your backend logic: balance = sum(donations)-sum(withdrawals)
- *  =========================== */
-async function refreshBalance(){
-  if(!state.user){ $("balanceText").textContent="0"; return; }
-  try{
-    const uid = state.user.uid;
-
-    const { data: d1 } = await sb.from("donations").select("amount").eq("pi_user_id", uid);
-    const { data: d2 } = await sb.from("withdrawals").select("amount").eq("pi_user_id", uid);
-
-    const totalIn = (d1||[]).reduce((s,r)=> s + parseFloat(r.amount||0), 0);
-    const totalOut = (d2||[]).reduce((s,r)=> s + parseFloat(r.amount||0), 0);
-    const bal = (totalIn - totalOut);
-
-    $("balanceText").textContent = bal.toFixed(2);
-  }catch(err){
-    console.warn(err);
-  }
-}
-
-$("btnWithdraw").addEventListener("click", async ()=>{
-  try{
-    requireUser();
-    if(state.user.isGuest){
-      toast("<b>السحب يحتاج Pi User</b>", 2500);
-      return;
-    }
-
-    const amount = parseFloat($("withdrawAmount").value || "0");
-    const walletAddress = $("withdrawTo").value.trim() || $("profileWallet").value.trim();
-
-    if(!(amount>0) || !walletAddress){
-      toast("<b>اكتب مبلغ وعنوان السحب</b>", 2600);
-      return;
-    }
-
-    toast("<b>جاري السحب...</b><br><small>التحويل على البلوكشين</small>", 3500);
-
-    const res = await apiPost("/api/withdraw", {
-      uid: state.user.uid,
-      username: state.user.username,
-      amount: amount,
-      walletAddress
-    });
-
-    if(res?.success){
-      toast("<b>تم السحب ✅</b><br><small class='mono'>txid: "+escapeHtml(res.txid||"")+"</small>", 5000);
-      // سجل السحب في DB بيحصل من الباك اند بتاعك بالفعل
-      await refreshBalance();
-    }else{
-      toast("<b>السحب فشل</b><br><small>"+escapeHtml(JSON.stringify(res))+"</small>", 5000);
-    }
-  }catch(err){
-    console.error(err);
-    toast("<b>خطأ</b><br><small>"+(err.message||"")+"</small>", 4000);
-  }
-});
-
-/** ===========================
- *  API helper
- *  =========================== */
 async function apiPost(path, body){
   const r = await fetch(API_BASE + path, {
     method:"POST",
@@ -1501,30 +523,70 @@ async function apiPost(path, body){
   return data;
 }
 
-/** ===========================
- *  UTIL
- *  =========================== */
-function debounce(fn, ms){
-  let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); };
+/* =======================
+   ROUTER (Pages)
+======================= */
+const routes = ["home","buyer","freelancer","orders","messages"];
+function go(hash){
+  location.hash = hash;
 }
-function escapeHtml(s){
-  return (s??"").toString()
-    .replaceAll("&","&amp;").replaceAll("<","&lt;")
-    .replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
+function setRoute(){
+  const hash = location.hash || "#/home";
+  const name = (hash.split("/")[1] || "home").toLowerCase();
+  const route = routes.includes(name) ? name : "home";
+
+  document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+  $("view_"+route).classList.add("active");
+
+  document.querySelectorAll(".tab").forEach(t=>{
+    t.classList.toggle("active", t.dataset.route === "#/"+route);
+  });
+  document.querySelectorAll(".navbtn").forEach(b=>{
+    b.classList.toggle("active", b.dataset.route === "#/"+route);
+  });
+}
+window.addEventListener("hashchange", setRoute);
+
+document.querySelectorAll(".tab").forEach(t=>{
+  t.addEventListener("click", ()=>go(t.dataset.route));
+});
+document.querySelectorAll(".navbtn").forEach(b=>{
+  b.addEventListener("click", ()=>go(b.dataset.route));
+});
+
+/* =======================
+   PI SDK FIX (sandbox:false always)
+======================= */
+function initPiSdk(){
+  const Pi = window.Pi;
+  if(!Pi){
+    $("sdkBadge").textContent = "Pi SDK: غير متاح";
+    return { ok:false, reason:"Pi SDK script not loaded" };
+  }
+
+  // Required init (version 2.0) and sandbox flag 7
+  try{
+    if(typeof Pi.init === "function"){
+      Pi.init({ version: "2.0", sandbox: false });
+      $("sdkBadge").textContent = "Pi SDK: جاهز (prod)";
+      $("statusBadge").textContent = "Status: SDK ready";
+      return { ok:true };
+    }
+    $("sdkBadge").textContent = "Pi SDK: init غير موجود";
+    return { ok:false, reason:"Pi.init missing" };
+  }catch(e){
+    $("sdkBadge").textContent = "Pi SDK: init فشل";
+    return { ok:false, reason: e.message };
+  }
 }
 
-/** ===========================
- *  INIT
- *  =========================== */
-(async ()=>{
-  // load public lists first (works even as guest)
-  await loadGigs();
-  await loadRequests();
+async function piLogin(){
+  const Pi = window.Pi;
+  const init = initPiSdk();
+  if(!init.ok){
+    toast("<b>Pi SDK مش جاهز</b><br><small>"+escapeHtml(init.reason||"")+"</small>", 4500);
+    return;
+  }
 
-  // default: no user
-  setStatus("غير متصل");
-})();
-</script>
-
-</body>
-</html>
+  if(typeof Pi.authenticate !== "function"){
+    toast("<b>authenticate غير متاح</b><br><small>ا
