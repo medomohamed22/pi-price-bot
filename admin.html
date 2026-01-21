@@ -2,166 +2,90 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة الإدارة | جمعيتي VIP</title>
-    
+    <title>لوحة تحكم الأدمن</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
     <style>
-        :root { --primary: #6c5ce7; --dark: #2d3436; --bg: #f4f7fe; }
-        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; }
-        body { background: var(--bg); color: var(--dark); padding: 20px; }
-
-        .admin-container { max-width: 1000px; margin: 0 auto; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        
-        /* إحصائيات سريعة */
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
-        .stat-card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); text-align: center; }
-        .stat-card i { font-size: 2rem; color: var(--primary); margin-bottom: 10px; }
-        .stat-card h3 { font-size: 1.5rem; }
-
-        /* النماذج والجداول */
-        .card { background: white; padding: 25px; border-radius: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin-bottom: 25px; }
-        h2 { margin-bottom: 20px; font-size: 1.2rem; display: flex; align-items: center; gap: 10px; }
-
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-size: 0.9rem; color: #636e72; }
-        input, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 12px; outline: none; }
-        
-        .btn { background: var(--primary); color: white; border: none; padding: 12px 25px; border-radius: 12px; cursor: pointer; font-weight: bold; width: 100%; }
-        
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { padding: 12px; text-align: right; border-bottom: 1px solid #eee; font-size: 0.9rem; }
-        th { color: #888; }
-
-        .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: bold; }
-        .badge-success { background: #e1fef4; color: #00b894; }
+        body { font-family: sans-serif; background: #f4f7fe; padding: 20px; }
+        .card { background: white; padding: 20px; border-radius: 20px; margin-bottom: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        input, select, textarea { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; }
+        .btn { background: #6c5ce7; color: white; border: none; padding: 12px 20px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+        .stat { display: inline-block; background: white; padding: 20px; border-radius: 15px; margin-right: 10px; min-width: 150px; text-align: center; }
     </style>
 </head>
 <body>
+    <h1>لوحة الإدارة الاستراتيجية</h1>
+    <div style="margin: 20px 0;">
+        <div class="stat"><h3>الجمعيات</h3><p id="s-circles">0</p></div>
+        <div class="stat"><h3>إجمالي π</h3><p id="s-total">0.00</p></div>
+    </div>
 
-    <div class="admin-container">
-        <div class="header">
-            <h1>لوحة التحكم <small style="font-size: 0.5rem; color: var(--primary);">ADMIN</small></h1>
-            <button class="btn" style="width: auto;" onclick="location.reload()"><i class="fas fa-sync"></i> تحديث</button>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div class="card">
+            <h2>إضافة جمعية جديدة</h2>
+            <input type="text" id="c-title" placeholder="العنوان">
+            <input type="number" id="c-amount" placeholder="القسط (π)">
+            <input type="number" id="c-slots" placeholder="عدد الأدوار">
+            <textarea id="c-desc" placeholder="الوصف"></textarea>
+            <button class="btn" onclick="createCircle()">نشر الجمعية</button>
         </div>
 
-        <div class="stats-grid">
-            <div class="stat-card">
-                <i class="fas fa-layer-group"></i>
-                <p>إجمالي الجمعيات</p>
-                <h3 id="stat-circles">0</h3>
-            </div>
-            <div class="stat-card">
-                <i class="fas fa-users"></i>
-                <p>إجمالي المشتركين</p>
-                <h3 id="stat-participants">0</h3>
-            </div>
-            <div class="stat-card">
-                <i class="fab fa-viacoin"></i>
-                <p>إجمالي المبالغ (π)</p>
-                <h3 id="stat-total-pi">0.00</h3>
-            </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px;">
-            <div class="card">
-                <h2><i class="fas fa-plus-circle"></i> إنشاء جمعية جديدة</h2>
-                <div class="form-group">
-                    <label>عنوان الجمعية</label>
-                    <input type="text" id="c-title" placeholder="مثال: جمعية الأصدقاء الكبرى">
-                </div>
-                <div class="form-group">
-                    <label>مبلغ القسط (π)</label>
-                    <input type="number" id="c-amount" placeholder="0.00">
-                </div>
-                <div class="form-group">
-                    <label>عدد الأدوار (المقاعد)</label>
-                    <input type="number" id="c-slots" placeholder="10">
-                </div>
-                <div class="form-group">
-                    <label>الوصف</label>
-                    <textarea id="c-desc" rows="3" placeholder="اكتب تفاصيل الجمعية هنا..."></textarea>
-                </div>
-                <button class="btn" onclick="createNewCircle()">نشر الجمعية الآن</button>
-            </div>
-
-            <div class="card">
-                <h2><i class="fas fa-history"></i> آخر المدفوعات المستلمة</h2>
-                <div style="overflow-x: auto;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>المستخدم</th>
-                                <th>المبلغ</th>
-                                <th>الحالة</th>
-                            </tr>
-                        </thead>
-                        <tbody id="recent-payments">
-                            </tbody>
-                    </table>
-                </div>
-            </div>
+        <div class="card">
+            <h2>تحديد الفائز وصرف π</h2>
+            <label>اختر الجمعية</label>
+            <select id="sel-circle" onchange="loadCircleUsers(this.value)"></select>
+            <label>اختر الفائز من المشتركين</label>
+            <select id="sel-user"></select>
+            <label>المبلغ المراد تحويله (π)</label>
+            <input type="number" id="p-amount" placeholder="المبلغ الكلي">
+            <button class="btn" style="background:#00b894" onclick="approvePayout()">اعتماد صرف المبلغ للفائز</button>
         </div>
     </div>
 
     <script>
         const SB_URL = 'https://axjkwrssmofzavaoqutq.supabase.co';
-        const SB_KEY = 'sb_publishable_tiuMncgWhf1YRWoD-uYQ3Q_ziI8OKci'; 
+        const SB_KEY = 'sb_publishable_tiuMncgWhf1YRWoD-uYQ3Q_ziI8OKci';
         const _db = supabase.createClient(SB_URL, SB_KEY);
 
-        async function loadStats() {
-            // جلب عدد الجمعيات
-            const { data: circles } = await _db.from('circles').select('id, installment_amount');
-            document.getElementById('stat-circles').innerText = circles ? circles.length : 0;
+        async function loadData() {
+            const { data: circles } = await _db.from('circles').select('*');
+            document.getElementById('s-circles').innerText = circles.length;
+            const selCircle = document.getElementById('sel-circle');
+            selCircle.innerHTML = '<option>اختر الجمعية</option>';
+            circles.forEach(c => selCircle.innerHTML += `<option value="${c.id}">${c.title}</option>`);
 
-            // جلب المشتركين والمدفوعات
-            const { data: participants } = await _db.from('participants').select('amount, username, created_at');
-            if (participants) {
-                document.getElementById('stat-participants').innerText = participants.length;
-                const total = participants.reduce((sum, p) => sum + Number(p.amount), 0);
-                document.getElementById('stat-total-pi').innerText = total.toFixed(2);
-
-                // ملء جدول العمليات الأخيرة
-                const tableBody = document.getElementById('recent-payments');
-                tableBody.innerHTML = '';
-                participants.slice(-5).reverse().forEach(p => {
-                    tableBody.innerHTML += `
-                        <tr>
-                            <td>${p.username}</td>
-                            <td>${p.amount} π</td>
-                            <td><span class="badge badge-success">مكتملة</span></td>
-                        </tr>
-                    `;
-                });
-            }
+            const { data: parts } = await _db.from('participants').select('amount');
+            const total = parts.reduce((s, p) => s + Number(p.amount), 0);
+            document.getElementById('s-total').innerText = total.toFixed(2) + " π";
         }
 
-        async function createNewCircle() {
+        async function createCircle() {
             const title = document.getElementById('c-title').value;
             const amount = document.getElementById('c-amount').value;
             const slots = document.getElementById('c-slots').value;
             const desc = document.getElementById('c-desc').value;
-
-            if (!title || !amount || !slots) return alert("يرجى ملء كافة البيانات");
-
-            const { error } = await _db.from('circles').insert([{
-                title,
-                installment_amount: amount,
-                total_slots: slots,
-                description: desc
-            }]);
-
-            if (error) alert("خطأ: " + error.message);
-            else {
-                alert("تم إنشاء الجمعية بنجاح!");
-                location.reload();
-            }
+            await _db.from('circles').insert([{ title, installment_amount: amount, total_slots: slots, description: desc }]);
+            alert("تم الإنشاء!"); location.reload();
         }
 
-        window.onload = loadStats;
+        async function loadCircleUsers(id) {
+            const { data } = await _db.from('participants').select('pi_user_id, username').eq('circle_id', id);
+            const selUser = document.getElementById('sel-user');
+            selUser.innerHTML = '';
+            data.forEach(u => selUser.innerHTML += `<option value="${u.pi_user_id}">${u.username}</option>`);
+        }
+
+        async function approvePayout() {
+            const cid = document.getElementById('sel-circle').value;
+            const uid = document.getElementById('sel-user').value;
+            const amount = document.getElementById('p-amount').value;
+            const name = document.getElementById('sel-user').options[document.getElementById('sel-user').selectedIndex].text;
+
+            const { error } = await _db.from('payouts').insert([{ circle_id: cid, pi_user_id: uid, username: name, amount: amount }]);
+            if(!error) alert("تم الاعتماد! سيظهر المبلغ في محفظة " + name);
+        }
+
+        window.onload = loadData;
     </script>
 </body>
 </html>
