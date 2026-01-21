@@ -3,282 +3,168 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pi Elite Hub 2026 | سوق النخبة</title>
+    <title>Pi Elite Hub | 2026</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    
     <style>
-        :root {
-            --primary: #6d28d9;
-            --accent: #00f2fe;
-            --glass: rgba(255, 255, 255, 0.1);
-            --glass-border: rgba(255, 255, 255, 0.2);
-            --bg-gradient: radial-gradient(circle at top, #2e1065, #0f172a);
-        }
-
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body {
-            margin: 0; background: #0f172a; color: white;
-            font-family: 'Segoe UI', Roboto, sans-serif;
-            overflow-x: hidden; min-height: 100vh;
-        }
-
-        /* نظام الصفحات */
-        .page {
-            display: none; padding: 20px 15px 100px;
-            animation: fadeIn 0.4s ease;
-        }
+        :root { --primary: #6d28d9; --accent: #00f2fe; --glass: rgba(255,255,255,0.1); }
+        body { margin: 0; background: #0f172a; color: white; font-family: sans-serif; padding-bottom: 80px; }
+        .page { display: none; padding: 20px 15px; animation: fadeIn 0.3s; }
         .page.active { display: block; }
-
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* التصميم الزجاجي Glassmorphism */
-        .glass-card {
-            background: var(--glass);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid var(--glass-border);
-            border-radius: 25px;
-            overflow: hidden;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-        }
-
-        /* شبكة الإعلانات */
-        .ads-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
-        .ad-item { position: relative; transition: 0.3s; }
-        .ad-item img { width: 100%; height: 150px; object-fit: cover; border-radius: 20px; }
-        .ad-details { padding: 10px; }
-        .price-tag { color: var(--accent); font-weight: 800; font-size: 1.1rem; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
-        /* الفئات */
-        .cat-bar { display: flex; overflow-x: auto; gap: 10px; padding: 10px 0; scrollbar-width: none; }
-        .cat-bar::-webkit-scrollbar { display: none; }
-        .cat-item {
-            background: var(--glass); border: 1px solid var(--glass-border);
-            padding: 8px 18px; border-radius: 20px; white-space: nowrap; font-size: 13px;
-        }
-        .cat-item.active { background: var(--accent); color: #000; font-weight: bold; border: none; }
+        .glass-card { background: var(--glass); backdrop-filter: blur(10px); border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); overflow: hidden; }
+        .ads-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .ad-item img { width: 100%; height: 130px; object-fit: cover; }
+        
+        /* شريط التنقل */
+        .nav { position: fixed; bottom: 0; width: 100%; background: rgba(15,23,42,0.9); display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid var(--glass); z-index: 1000; }
+        .nav button { background: none; border: none; color: #64748b; font-size: 12px; }
+        .nav button.active { color: var(--accent); }
 
-        /* شريط التنقل السفلي */
-        .tab-bar {
-            position: fixed; bottom: 0; left: 0; right: 0;
-            background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(20px);
-            display: flex; justify-content: space-around; padding: 10px 0 25px;
-            border-top: 1px solid var(--glass-border); z-index: 1000;
-        }
-        .tab-btn { background: none; border: none; color: #64748b; font-size: 11px; display: flex; flex-direction: column; align-items: center; }
-        .tab-btn i { font-size: 20px; margin-bottom: 5px; transition: 0.3s; }
-        .tab-btn.active { color: var(--accent); }
-        .tab-btn.active i { transform: translateY(-5px); text-shadow: 0 0 10px var(--accent); }
-
-        /* أزرار وحقول */
-        .main-btn {
-            background: linear-gradient(90deg, #7c3aed, #00f2fe);
-            color: white; border: none; padding: 15px; border-radius: 15px;
-            width: 100%; font-weight: bold; cursor: pointer; box-shadow: 0 5px 15px rgba(124, 58, 237, 0.3);
-        }
-        .input-box {
-            width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
-            padding: 15px; border-radius: 15px; color: white; margin-bottom: 12px; outline: none;
-        }
-
-        /* شارات التوثيق والمفضلة */
-        .verified { color: var(--accent); margin-left: 5px; }
-        .fav-icon { position: absolute; top: 10px; right: 10px; color: white; font-size: 18px; z-index: 10; }
-        .views-badge { font-size: 10px; color: #94a3b8; display: flex; align-items: center; gap: 4px; }
+        /* صندوق الدردشة */
+        .chat-box { height: 250px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 15px; padding: 10px; margin-top: 15px; border: 1px solid var(--glass); }
+        .msg { margin-bottom: 10px; padding: 8px 12px; border-radius: 12px; max-width: 80%; font-size: 14px; }
+        .msg.sent { background: var(--primary); align-self: flex-end; margin-right: auto; }
+        .msg.received { background: #334155; align-self: flex-start; }
+        
+        .chat-input { display: flex; gap: 5px; margin-top: 10px; }
+        input { background: rgba(255,255,255,0.05); border: 1px solid var(--glass); color: white; padding: 10px; border-radius: 10px; flex: 1; }
+        .send-btn { background: var(--accent); color: black; border: none; padding: 10px; border-radius: 10px; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div id="login-page" class="page active" style="text-align: center; padding-top: 100px;">
-        <div style="font-size: 80px; margin-bottom: 20px;">💎</div>
+    <div id="page-login" class="page active" style="text-align: center; padding-top: 100px;">
         <h1>Pi Elite Hub</h1>
-        <p style="color: #94a3b8; margin-bottom: 40px;">سوق الرواد للأشياء الفاخرة والمستعملة</p>
-        <button class="main-btn" onclick="authPi()" style="max-width: 250px;">تسجيل الدخول عبر Pi</button>
+        <button onclick="authPi()" style="padding: 15px 30px; border-radius: 25px; border: none; background: #ffc107; font-weight: bold;">دخول عبر Pi</button>
     </div>
 
-    <div id="home-page" class="page">
-        <div class="cat-bar">
-            <div class="cat-item active" onclick="changeCat('الكل', this)">الكل</div>
-            <div class="cat-item" onclick="changeCat('إلكترونيات', this)">📱 إلكترونيات</div>
-            <div class="cat-item" onclick="changeCat('أثاث', this)">🛋️ أثاث</div>
-            <div class="cat-item" onclick="changeCat('أزياء', this)">👕 أزياء</div>
-            <div class="cat-item" onclick="changeCat('أخرى', this)">🎁 أخرى</div>
-        </div>
-        <input type="text" class="input-box" placeholder="🔍 ابحث عما تريد..." onkeyup="searchAds(this.value)">
+    <div id="page-home" class="page">
+        <h2>احدث الإعلانات</h2>
         <div id="ads-grid" class="ads-grid"></div>
     </div>
 
-    <div id="add-page" class="page">
-        <div class="glass-card" style="padding: 20px;">
-            <h3>نشر إعلان جديد</h3>
-            <form id="adForm">
-                <input type="file" id="p-img" class="input-box" accept="image/*" required>
-                <input type="text" id="p-title" class="input-box" placeholder="عنوان الإعلان" required>
-                <textarea id="p-desc" class="input-box" rows="4" placeholder="وصف السلعة..." required></textarea>
-                <select id="p-cat" class="input-box">
-                    <option value="إلكترونيات">إلكترونيات</option>
-                    <option value="أثاث">أثاث</option>
-                    <option value="أزياء">أزياء</option>
-                    <option value="أخرى">أخرى</option>
-                </select>
-                <input type="number" id="p-price" class="input-box" placeholder="السعر بـ Pi" step="0.001" required>
-                <input type="tel" id="p-phone" class="input-box" placeholder="رقم الهاتف (واتساب)" required>
-                <button type="submit" class="main-btn">نشر الآن</button>
-            </form>
+    <div id="page-details" class="page">
+        <button onclick="nav('home')" style="background: none; border: none; color: var(--accent); margin-bottom: 10px;">← العودة</button>
+        <div id="details-content"></div>
+        
+        <div class="glass-card" style="padding: 15px; margin-top: 20px;">
+            <h4>💬 دردشة سريعة مع البائع</h4>
+            <div id="chat-messages" class="chat-box"></div>
+            <div class="chat-input">
+                <input type="text" id="chat-input-text" placeholder="اكتب رسالتك...">
+                <button class="send-btn" onclick="sendMessage()">إرسال</button>
+            </div>
         </div>
     </div>
 
-    <div id="profile-page" class="page">
-        <div class="glass-card" style="padding: 20px; text-align: center; background: var(--primary); margin-bottom: 20px;">
-            <div style="font-size: 50px;">👤</div>
-            <h3 id="user-name">--</h3>
-            <p id="user-status" style="font-size: 12px; color: var(--accent);"><i class="fas fa-check-circle"></i> رائد موثوق</p>
-        </div>
-        <h4>إعلاناتي</h4>
-        <div id="my-ads-grid" class="ads-grid"></div>
-    </div>
-
-    <div id="chat-page" class="page">
-        <h3>المحادثات</h3>
-        <div id="chat-list" class="glass-card" style="padding: 20px; text-align: center;">
-            <p style="color: #64748b;">قريباً: نظام الدردشة المباشر بين الرواد</p>
-        </div>
-    </div>
-
-    <nav class="tab-bar" id="nav-bar" style="display: none;">
-        <button class="tab-btn active" onclick="nav('home', this)"><i class="fas fa-home"></i><span>السوق</span></button>
-        <button class="tab-btn" onclick="nav('chat', this)"><i class="fas fa-comment-dots"></i><span>الرسائل</span></button>
-        <button class="tab-btn" onclick="nav('add', this)"><i class="fas fa-plus-circle"></i><span>نشر</span></button>
-        <button class="tab-btn" onclick="nav('profile', this)"><i class="fas fa-user"></i><span>حسابي</span></button>
+    <nav class="nav" id="main-nav" style="display: none;">
+        <button onclick="nav('home', this)" class="active"><i class="fas fa-home"></i><br>السوق</button>
+        <button onclick="nav('home')"><i class="fas fa-plus"></i><br>نشر</button> <button onclick="nav('home')"><i class="fas fa-user"></i><br>حسابي</button>
     </nav>
 
     <script>
-        // تكوين Supabase
-        const SUPABASE_URL = 'https://axjkwrssmofzavaoqutq.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_tiuMncgWhf1YRWoD-uYQ3Q_ziI8OKci';
-        const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const SB_URL = 'https://axjkwrssmofzavaoqutq.supabase.co';
+        const SB_KEY = 'sb_publishable_tiuMncgWhf1YRWoD-uYQ3Q_ziI8OKci';
+        const _sb = supabase.createClient(SB_URL, SB_KEY);
 
-        let currentUser = null;
-        let allAds = [];
+        let user = null;
+        let currentAd = null;
 
-        // تسجيل الدخول Pi SDK
         async function authPi() {
             try {
-                const Pi = window.Pi;
-                Pi.init({ version: "2.0" });
-                const auth = await Pi.authenticate(['username', 'payments'], onIncompletePaymentFound);
-                currentUser = auth.user;
-                document.getElementById('user-name').innerText = currentUser.username;
-                document.getElementById('login-page').style.display = 'none';
-                document.getElementById('nav-bar').style.display = 'flex';
-                nav('home', document.querySelector('.tab-btn'));
-                loadAds();
-            } catch (err) {
-                alert("يرجى فتح الموقع من متصفح Pi الرسمي");
-            }
+                const Pi = window.Pi; Pi.init({ version: "2.0" });
+                const auth = await Pi.authenticate(['username'], (p)=>{});
+                user = auth.user;
+                document.getElementById('page-login').classList.remove('active');
+                document.getElementById('main-nav').style.display = 'flex';
+                nav('home');
+            } catch (e) { alert("افتح من Pi Browser"); }
         }
 
-        // التنقل بين الصفحات
-        function nav(pageId, btn) {
+        function nav(id, btn) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.getElementById(pageId + '-page').classList.add('active');
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            if(btn) btn.classList.add('active');
-            if(pageId === 'profile') loadMyAds();
-            window.scrollTo(0,0);
+            document.getElementById('page-' + id).classList.add('active');
+            if(id === 'home') loadAds();
         }
 
-        // جلب البيانات
         async function loadAds() {
-            const { data, error } = await _sb.from('ads').select('*').order('created_at', {ascending: false});
-            if(!error) { allAds = data; renderAds(data, 'ads-grid', false); }
-        }
-
-        async function loadMyAds() {
-            const { data } = await _sb.from('ads').select('*').eq('seller_username', currentUser.username);
-            renderAds(data, 'my-ads-grid', true);
-        }
-
-        // عرض الإعلانات
-        function renderAds(data, containerId, isOwner) {
-            const container = document.getElementById(containerId);
-            container.innerHTML = data.map(ad => `
-                <div class="ad-item glass-card">
-                    <i class="far fa-heart fav-icon" onclick="toggleFav('${ad.id}')"></i>
-                    <img src="${SUPABASE_URL}/storage/v1/object/public/ads-images/${ad.image_url}" onclick="viewDetail('${ad.id}')">
-                    <div class="ad-details">
-                        <div class="price-tag">${ad.price} Pi</div>
-                        <div style="font-size:13px; font-weight:bold; white-space:nowrap; overflow:hidden;">
-                            ${ad.seller_username === 'Elite' ? '<i class="fas fa-check-circle verified"></i>' : ''}${ad.title}
-                        </div>
-                        <div style="display:flex; justify-content:space-between; margin-top:5px;">
-                            <span style="font-size:10px; color:#94a3b8;">@${ad.seller_username}</span>
-                            <span class="views-badge"><i class="far fa-eye"></i> ${ad.views_count || 0}</span>
-                        </div>
-                        <div style="margin-top:8px; display:flex; gap:5px;">
-                            <a href="https://wa.me/${ad.phone}" style="flex:1; background:var(--glass); color:white; text-decoration:none; text-align:center; font-size:11px; padding:5px; border-radius:8px;">واتساب</a>
-                            ${isOwner ? `<button onclick="deleteAd('${ad.id}','${ad.image_url}')" style="background:#ef4444; border:none; color:white; border-radius:8px; padding:5px;"><i class="fas fa-trash"></i></button>` : ''}
-                        </div>
+            const { data } = await _sb.from('ads').select('*').order('created_at', {ascending: false});
+            const grid = document.getElementById('ads-grid');
+            grid.innerHTML = data.map(ad => `
+                <div class="glass-card ad-item" onclick="openDetails('${ad.id}')">
+                    <img src="${SB_URL}/storage/v1/object/public/ads-images/${ad.image_url}">
+                    <div style="padding:10px;">
+                        <div style="color:var(--accent); font-weight:bold;">${ad.price} Pi</div>
+                        <div style="font-size:12px;">${ad.title}</div>
                     </div>
                 </div>
             `).join('');
         }
 
-        // حذف الإعلان
-        async function deleteAd(id, path) {
-            if(confirm("حذف نهائي؟")) {
-                const { error } = await _sb.from('ads').delete().eq('id', id);
-                if(!error) {
-                    await _sb.storage.from('ads-images').remove([path]);
-                    loadMyAds(); loadAds();
-                }
-            }
+        async function openDetails(id) {
+            const { data: ad } = await _sb.from('ads').select('*').eq('id', id).single();
+            currentAd = ad;
+            
+            document.getElementById('details-content').innerHTML = `
+                <div class="glass-card">
+                    <img src="${SB_URL}/storage/v1/object/public/ads-images/${ad.image_url}" style="width:100%;">
+                    <div style="padding:15px;">
+                        <h3>${ad.title}</h3>
+                        <h2 style="color:var(--accent);">${ad.price} Pi</h2>
+                        <p style="color:#94a3b8;">${ad.description}</p>
+                        <p>بواسطة: @${ad.seller_username}</p>
+                    </div>
+                </div>
+            `;
+            nav('details');
+            loadMessages(id);
+            // تحديث عداد المشاهدات
+            _sb.from('ads').update({ views_count: (ad.views_count || 0) + 1 }).eq('id', id).then();
         }
 
-        // الفئات والبحث
-        function changeCat(cat, btn) {
-            document.querySelectorAll('.cat-item').forEach(i => i.classList.remove('active'));
-            btn.classList.add('active');
-            const filtered = cat === 'الكل' ? allAds : allAds.filter(a => a.category === cat);
-            renderAds(filtered, 'ads-grid', false);
+        async function loadMessages(adId) {
+            const { data } = await _sb.from('messages')
+                .select('*')
+                .eq('ad_id', adId)
+                .order('created_at', { ascending: true });
+            
+            const chatBox = document.getElementById('chat-messages');
+            chatBox.innerHTML = data.map(m => `
+                <div class="msg ${m.sender_username === user.username ? 'sent' : 'received'}">
+                    <strong>${m.sender_username}:</strong> ${m.text}
+                </div>
+            `).join('');
+            chatBox.scrollTop = chatBox.scrollHeight;
         }
 
-        function searchAds(val) {
-            const filtered = allAds.filter(a => a.title.toLowerCase().includes(val.toLowerCase()));
-            renderAds(filtered, 'ads-grid', false);
-        }
+        async function sendMessage() {
+            const input = document.getElementById('chat-input-text');
+            const text = input.value.trim();
+            if(!text || !currentAd) return;
 
-        // رفع الإعلان
-        document.getElementById('adForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const file = document.getElementById('p-img').files[0];
-            const path = `img_${Date.now()}.png`;
-
-            const { error: upErr } = await _sb.storage.from('ads-images').upload(path, file);
-            if(upErr) return alert("خطأ في رفع الصورة");
-
-            const { error } = await _sb.from('ads').insert([{
-                title: document.getElementById('p-title').value,
-                description: document.getElementById('p-desc').value,
-                price: document.getElementById('p-price').value,
-                phone: document.getElementById('p-phone').value,
-                category: document.getElementById('p-cat').value,
-                image_url: path,
-                seller_username: currentUser.username
+            const { error } = await _sb.from('messages').insert([{
+                ad_id: currentAd.id,
+                sender_username: user.username,
+                receiver_username: currentAd.seller_username,
+                text: text
             }]);
 
             if(!error) {
-                alert("تم النشر!");
-                document.getElementById('adForm').reset();
-                nav('home');
-                loadAds();
+                input.value = '';
+                loadMessages(currentAd.id);
             }
-        };
+        }
 
-        function onIncompletePaymentFound(p) { console.log(p); }
-        function toggleFav(id) { alert("تمت الإضافة للمفضلة ❤️"); }
+        // تحديث الدردشة تلقائياً كل 5 ثوانٍ
+        setInterval(() => {
+            if(document.getElementById('page-details').classList.contains('active') && currentAd) {
+                loadMessages(currentAd.id);
+            }
+        }, 5000);
+
     </script>
 </body>
 </html>
