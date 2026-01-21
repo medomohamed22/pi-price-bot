@@ -631,6 +631,10 @@
       </div>
     </div>
   </div>
+  <div class="glass mt">
+  <button onclick="buyPlan('premium')" class="btn-main">⭐ تمييز الإعلان – 5 Pi / 3 أيام</button>
+  <button onclick="buyPlan('elite')" class="btn-main mt">👑 Elite – 10 Pi / أسبوع</button>
+</div>
 
   <!-- NAV -->
   <nav class="tab-bar" id="navbar" style="display:none">
@@ -641,6 +645,48 @@
   </nav>
 
   <script>
+  async function buyPlan(plan) {
+  if (!user || !activeAd) return alert("سجل دخول الأول");
+  
+  const amount = plan === 'elite' ? 10 : 5;
+  
+  const payment = await Pi.createPayment({
+    amount,
+    memo: `Promote Ad ${activeAd.id}`,
+    metadata: { plan, adId: activeAd.id }
+  }, {
+    onReadyForServerApproval: async (p) => {
+      await fetch('/api/pi/approve', {
+        method: 'POST',
+        body: JSON.stringify({
+          paymentId: p.identifier,
+          amount,
+          username: user.username,
+          purpose: plan
+        })
+      });
+    },
+    
+    onReadyForServerCompletion: async (p, txid) => {
+      await fetch('/api/pi/complete', {
+        method: 'POST',
+        body: JSON.stringify({
+          paymentId: p.identifier,
+          txid,
+          amount,
+          username: user.username,
+          adId: activeAd.id,
+          plan
+        })
+      });
+      alert("تم تمييز الإعلان بنجاح 🔥");
+      loadAds();
+    },
+    
+    onCancel: () => alert("تم إلغاء الدفع"),
+    onError: (e) => alert("خطأ في الدفع")
+  });
+}
     // ====== Supabase ======
     const SB_URL = 'https://axjkwrssmofzavaoqutq.supabase.co';
     const SB_KEY = 'sb_publishable_tiuMncgWhf1YRWoD-uYQ3Q_ziI8OKci';
