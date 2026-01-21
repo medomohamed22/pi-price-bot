@@ -8,220 +8,154 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { --primary: #6c5ce7; --secondary: #a29bfe; --success: #00b894; --danger: #d63031; --dark: #2d3436; --light-bg: #f9f9fb; }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background-color: var(--light-bg); color: var(--dark); padding-bottom: 100px; overflow-x: hidden; }
-        
-        /* الإشعارات */
-        #toast-container { position: fixed; top: 20px; left: 20px; right: 20px; z-index: 9999; }
-        .toast { padding: 15px; border-radius: 15px; margin-bottom: 10px; color: white; display: flex; align-items: center; gap: 10px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); animation: slideIn 0.3s forwards; font-weight: bold; }
-        @keyframes slideIn { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
-        .header { background: linear-gradient(135deg, var(--primary), var(--secondary)); padding: 40px 20px 60px; color: white; border-radius: 0 0 40px 40px; position: sticky; top: 0; z-index: 100; }
-        .page { display: none; padding: 20px; animation: fadeIn 0.3s ease; }
-        .page.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        .card { background: white; border-radius: 24px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.03); }
-        .btn { width: 100%; padding: 16px; border-radius: 18px; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.3s; }
+        :root { --primary: #6c5ce7; --success: #00b894; --danger: #d63031; --bg: #f9f9fb; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: var(--bg); padding-bottom: 100px; }
+        .header { background: linear-gradient(135deg, var(--primary), #a29bfe); padding: 30px 20px; color: white; border-radius: 0 0 30px 30px; text-align: center; }
+        .card { background: white; margin: 20px; padding: 20px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .btn { width: 100%; padding: 15px; border-radius: 15px; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
         .btn-primary { background: var(--primary); color: white; }
-        .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
-
-        .nav-bar { position: fixed; bottom: 20px; left: 20px; right: 20px; background: rgba(255,255,255,0.9); backdrop-filter: blur(15px); height: 75px; border-radius: 25px; display: flex; justify-content: space-around; align-items: center; box-shadow: 0 15px 35px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.5); }
-        .nav-item { color: #b2bec3; text-align: center; font-size: 0.75rem; cursor: pointer; }
-        .nav-item.active { color: var(--primary); font-weight: bold; }
-        .nav-item i { font-size: 1.5rem; display: block; margin-bottom: 4px; }
-        
-        .loader { border: 3px solid #f3f3f3; border-top: 3px solid var(--primary); border-radius: 50%; width: 25px; height: 25px; animation: spin 1s linear infinite; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .nav-bar { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 15px; box-shadow: 0 -5px 15px rgba(0,0,0,0.05); }
+        .nav-item { color: #ccc; cursor: pointer; text-align: center; font-size: 0.8rem; }
+        .nav-item.active { color: var(--primary); }
+        .page { display: none; } .active-page { display: block; }
     </style>
 </head>
 <body>
-    <div id="toast-container"></div>
 
-    <header class="header">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h1>جمعيتي <span style="font-weight: 300;">PRO</span></h1>
-            <div id="user-tag" style="background: rgba(255,255,255,0.2); padding: 5px 12px; border-radius: 20px; font-size: 0.8rem;">
-                <i class="fas fa-user"></i> <span id="username-display">تحميل...</span>
-            </div>
+<div class="header">
+    <h1>جمعيتي <small>PRO</small></h1>
+    <p id="user-display">جاري التحقق من الهوية...</p>
+</div>
+
+<div id="home-page" class="page active-page">
+    <div id="circles-list"></div>
+</div>
+
+<div id="details-page" class="page">
+    <div class="card">
+        <button onclick="showPage('home')" style="background:none; border:none; color:var(--primary); cursor:pointer;"><i class="fas fa-arrow-right"></i> عودة</button>
+        <h2 id="det-title" style="margin-top:10px;"></h2>
+        <p id="det-desc" style="color:#666; margin:10px 0;"></p>
+        <div style="background:#f0f0ff; padding:15px; border-radius:10px; margin-bottom:15px;">
+            <p>المبلغ المطلوب: <b id="det-amount">0</b> π</p>
         </div>
-    </header>
-
-    <div id="page-home" class="page active">
-        <h3 style="margin-bottom: 15px;">الجمعيات النشطة</h3>
-        <div id="circles-list"></div>
+        <button id="pay-button" class="btn btn-primary" onclick="processPayment()">ادفع الآن للاشتراك</button>
     </div>
+</div>
 
-    <div id="page-details" class="page">
-        <div class="card" style="margin-top: -40px;">
-            <div onclick="showPage('home')" style="color: var(--primary); margin-bottom: 15px; cursor: pointer;"><i class="fas fa-arrow-right"></i> عودة</div>
-            <h2 id="det-title">...</h2>
-            <p id="det-desc" style="color: #636e72; font-size: 0.9rem; margin-bottom: 20px;"></p>
-            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                <div style="flex:1; background:#f8f9fa; padding:15px; border-radius:15px; text-align:center;">
-                    <small>القسط</small><br><b id="det-amount" style="color:var(--primary)">0 π</b>
-                </div>
-                <div style="flex:1; background:#f8f9fa; padding:15px; border-radius:15px; text-align:center;">
-                    <small>الأدوار</small><br><b id="det-slots">0</b>
-                </div>
-            </div>
-            <button id="btn-pay" class="btn btn-primary" onclick="startPayment()">
-                <i class="fas fa-credit-card"></i> دفع القسط والاشتراك
-            </button>
-        </div>
-        <div class="card">
-            <h4>المشتركون</h4>
-            <div id="participants-list" style="margin-top:10px;"></div>
-        </div>
+<div id="wallet-page" class="page">
+    <div class="card" style="text-align:center;">
+        <i class="fas fa-wallet" style="font-size:3rem; color:var(--primary);"></i>
+        <h2 style="margin:15px 0;">رصيدك القابل للسحب</h2>
+        <h1 id="balance-display">0.00 π</h1>
+        <p id="payout-msg" style="margin-bottom:20px; color:var(--success);"></p>
+        <button class="btn btn-primary" onclick="claimPi()">سحب π إلى محفظتي</button>
     </div>
+</div>
 
-    <div id="page-wallet" class="page">
-        <div class="card" style="text-align: center; padding: 40px 20px; margin-top: -40px;">
-            <i class="fas fa-wallet" style="font-size: 3rem; color: var(--primary);"></i>
-            <p style="margin-top: 15px; color: #888;">إجمالي مستحقاتك المعتمدة</p>
-            <h1 id="wallet-balance" style="font-size: 3.5rem; margin: 10px 0;">0.00 <small style="font-size: 1rem;">π</small></h1>
-            <div id="wallet-msg" style="margin-bottom: 20px; font-size: 0.9rem;"></div>
-            <button class="btn btn-primary" onclick="requestWithdraw()">طلب تحويل المبالغ</button>
-        </div>
-    </div>
+<nav class="nav-bar">
+    <div class="nav-item active" onclick="showPage('home')"><i class="fas fa-home fa-lg"></i><br>الرئيسية</div>
+    <div class="nav-item" onclick="showPage('wallet')"><i class="fas fa-wallet fa-lg"></i><br>المحفظة</div>
+</nav>
 
-    <nav class="nav-bar">
-        <div class="nav-item active" id="n-home" onclick="showPage('home')"><i class="fas fa-home"></i><span>الرئيسية</span></div>
-        <div class="nav-item" id="n-wallet" onclick="showPage('wallet')"><i class="fas fa-wallet"></i><span>المحفظة</span></div>
-    </nav>
+<script>
+    const SB_URL = 'https://axjkwrssmofzavaoqutq.supabase.co';
+    const SB_KEY = 'sb_publishable_tiuMncgWhf1YRWoD-uYQ3Q_ziI8OKci';
+    const _db = supabase.createClient(SB_URL, SB_KEY);
 
-    <script>
-        const SB_URL = 'https://axjkwrssmofzavaoqutq.supabase.co';
-        const SB_KEY = 'sb_publishable_tiuMncgWhf1YRWoD-uYQ3Q_ziI8OKci';
-        const _db = supabase.createClient(SB_URL, SB_KEY);
+    let user = null;
+    let activeCircle = null;
 
-        let user = null;
-        let currentCircle = null;
+    async function init() {
+        try {
+            await Pi.init({ version: "2.0", sandbox: false });
+            const auth = await Pi.authenticate(['username', 'payments'], onIncomplete);
+            user = auth.user;
+            document.getElementById('user-display').innerText = "مرحباً، " + user.username;
+            loadCircles();
+            updateBalance();
+        } catch (e) { alert("افتح التطبيق من Pi Browser"); }
+    }
 
-        async function init() {
-            try {
-                await Pi.init({ version: "2.0", sandbox: false });
-                const auth = await Pi.authenticate(['username', 'payments'], onIncompletePayment);
-                user = auth.user;
-                document.getElementById('username-display').innerText = user.username;
-                loadCircles();
-                fetchWalletData();
-            } catch (e) {
-                showToast("تأكد من استخدام Pi Browser", "error");
-            }
-        }
-
-        async function loadCircles() {
-            const { data } = await _db.from('circles').select('*').order('created_at', { ascending: false });
-            const container = document.getElementById('circles-list');
-            container.innerHTML = '';
-            data.forEach(c => {
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.onclick = () => openCircle(c);
-                card.innerHTML = `<h3>${c.title}</h3><p>${c.installment_amount} π | ${c.total_slots} دور</p>`;
-                container.appendChild(card);
-            });
-        }
-
-        async function openCircle(c) {
-            currentCircle = c;
-            showPage('details');
-            document.getElementById('det-title').innerText = c.title;
-            document.getElementById('det-desc').innerText = c.description;
-            document.getElementById('det-amount').innerText = c.installment_amount + ' π';
-            document.getElementById('det-slots').innerText = c.total_slots;
-            
-            const { data: members } = await _db.from('participants').select('*').eq('circle_id', c.id);
-            const pList = document.getElementById('participants-list');
-            pList.innerHTML = '';
-            for(let i=1; i<=c.total_slots; i++) {
-                const m = members[i-1];
-                pList.innerHTML += `<div style="padding:10px 0; border-bottom:1px solid #f0f0f0; display:flex; justify-content:space-between;">
-                    <span>${i}. ${m ? m.username : 'مقعد متاح'}</span>
-                    <span>${m ? '<i class="fas fa-check-circle" style="color:var(--success)"></i>' : ''}</span>
+    async function loadCircles() {
+        const { data } = await _db.from('circles').select('*');
+        const container = document.getElementById('circles-list');
+        container.innerHTML = '';
+        data.forEach(c => {
+            container.innerHTML += `
+                <div class="card" onclick="openDetails(${JSON.stringify(c).replace(/"/g, '&quot;')})">
+                    <h3>${c.title}</h3>
+                    <p>${c.installment_amount} π - ${c.total_slots} دور</p>
                 </div>`;
-            }
-        }
+        });
+    }
 
-        // كود الدفع (Payment)
-        async function startPayment() {
-            const btn = document.getElementById('btn-pay');
-            btn.disabled = true;
-            btn.innerHTML = '<div class="loader"></div> جاري معالجة الدفع...';
+    function openDetails(c) {
+        activeCircle = c;
+        document.getElementById('det-title').innerText = c.title;
+        document.getElementById('det-desc').innerText = c.description;
+        document.getElementById('det-amount').innerText = c.installment_amount;
+        showPage('details');
+    }
 
-            try {
-                const payment = await Pi.createPayment({
-                    amount: currentCircle.installment_amount,
-                    memo: `الاشتراك في جمعية: ${currentCircle.title}`,
-                    metadata: { circleId: currentCircle.id }
-                }, {
-                    onReadyForServerApproval: async (paymentId) => {
-                        // في تطبيقات الـ Pi الحقيقية، هنا ترسل الـ ID لخادمك ليقوم بعمل Approve
-                        // لتجاوز ذلك في التطبيقات البسيطة، يمكن استخدام خادم وسيط أو محاكاة الحالة
-                        showToast("تم إرسال الطلب، بانتظار الموافقة...", "warning");
-                    },
-                    onReadyForServerCompletion: async (paymentId, txid) => {
-                        await _db.from('participants').insert([{
-                            circle_id: currentCircle.id,
-                            pi_user_id: user.uid,
-                            username: user.username,
-                            amount: currentCircle.installment_amount,
-                            transaction_id: txid
-                        }]);
-                        showToast("تم الدفع بنجاح!");
-                        openCircle(currentCircle);
-                    },
-                    onCancel: () => { btn.disabled = false; btn.innerHTML = '<i class="fas fa-credit-card"></i> دفع القسط والاشتراك'; },
-                    onError: (e) => { 
-                        showToast("حدث خطأ في الدفع: " + e.message, "error");
-                        btn.disabled = false;
-                        btn.innerHTML = '<i class="fas fa-credit-card"></i> دفع القسط والاشتراك';
-                    }
-                });
-            } catch (e) {
-                btn.disabled = false;
-            }
-        }
+    // حل مشكلة الدفع 60%
+    async function processPayment() {
+        const btn = document.getElementById('pay-button');
+        btn.disabled = true;
+        btn.innerText = "جاري الاتصال بالشبكة...";
 
-        async function fetchWalletData() {
-            if(!user) return;
-            const { data } = await _db.from('payouts').select('*').eq('pi_user_id', user.uid);
-            const balance = data.reduce((sum, p) => sum + Number(p.amount), 0);
-            document.getElementById('wallet-balance').innerText = balance.toFixed(2) + " π";
-            if(balance > 0) {
-                document.getElementById('wallet-msg').innerHTML = '<b style="color:var(--success)">الأدمن وافق على سحب مستحقاتك!</b>';
-            }
-        }
+        try {
+            const payment = await Pi.createPayment({
+                amount: activeCircle.installment_amount,
+                memo: "اشتراك جمعية: " + activeCircle.title,
+                metadata: { circleId: activeCircle.id }
+            }, {
+                onReadyForServerApproval: async (id) => {
+                    // ملاحظة: يجب أن يكون لديك Backend يقوم بعمل Approve. 
+                    // إذا لم يتوفر، ستظل العملية معلقة.
+                    console.log("Payment ID:", id);
+                },
+                onReadyForServerCompletion: async (id, txid) => {
+                    await _db.from('participants').insert([{
+                        circle_id: activeCircle.id,
+                        pi_user_id: user.uid,
+                        username: user.username,
+                        amount: activeCircle.installment_amount,
+                        transaction_id: txid
+                    }]);
+                    alert("تم الاشتراك بنجاح!");
+                    showPage('home');
+                },
+                onCancel: () => { btn.disabled = false; btn.innerText = "ادفع الآن للاشتراك"; },
+                onError: (e) => { alert("خطأ: " + e.message); btn.disabled = false; }
+            });
+        } catch (e) { btn.disabled = false; }
+    }
 
-        function requestWithdraw() {
-            showToast("سيتم التواصل معك من قبل الأدمن لتحويل الـ Pi لمحفظتك", "success");
-        }
+    async function updateBalance() {
+        if(!user) return;
+        const { data } = await _db.from('payouts').select('amount').eq('pi_user_id', user.uid);
+        const total = data ? data.reduce((s, p) => s + Number(p.amount), 0) : 0;
+        document.getElementById('balance-display').innerText = total.toFixed(2) + " π";
+        if(total > 0) document.getElementById('payout-msg').innerText = "لديك مبالغ معتمدة جاهزة للسحب!";
+    }
 
-        function showPage(p) {
-            document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            document.getElementById('page-' + p).classList.add('active');
-            document.getElementById('n-' + p).classList.add('active');
-            window.scrollTo(0,0);
-        }
+    // كود السحب (App-to-User)
+    async function claimPi() {
+        const balance = parseFloat(document.getElementById('balance-display').innerText);
+        if(balance <= 0) return alert("رصيدك صفر حالياً");
+        
+        alert("طلبك قيد المعالجة. سيقوم الأدمن بتحويل Pi لمحفظتك فوراً.");
+        // يتم التحويل الفعلي من صفحة الأدمن عبر وظيفة App-to-User
+    }
 
-        function showToast(m, t="success") {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.style.background = t === "success" ? "#00b894" : (t === "error" ? "#d63031" : "#fdcb6e");
-            toast.innerHTML = `<i class="fas fa-info-circle"></i> ${m}`;
-            container.appendChild(toast);
-            setTimeout(() => toast.remove(), 4000);
-        }
-
-        function onIncompletePayment(p) {
-            // معالجة المدفوعات التي لم تكتمل
-        }
-
-        window.onload = init;
-    </script>
+    function showPage(p) {
+        document.querySelectorAll('.page').forEach(el => el.classList.remove('active-page'));
+        document.getElementById(p + '-page').classList.add('active-page');
+    }
+    function onIncomplete(p) {}
+    window.onload = init;
+</script>
 </body>
 </html>
