@@ -1,592 +1,256 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
-  <title>Freelance Escrow</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Freelance Escrow | وسيط الخدمات</title>
 
-  <!-- Pi SDK -->
-  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-  <!-- Supabase -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-  <style>
-    :root{
-      --bg:#ffffff;
-      --bg2:#faf7ff;
-      --card:#ffffff;
-      --text:#1b1033;
-      --muted:#6b5f88;
-      --stroke:rgba(40,20,90,.12);
-      --shadow: 0 12px 34px rgba(80,20,160,.12);
-      --p:#7f5cff;
-      --p2:#5b2cff;
-      --ok:#16a34a;
-      --warn:#f59e0b;
-      --bad:#ef4444;
-      --radius:18px;
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family: system-ui,-apple-system,"Tajawal",Segoe UI,Roboto,Arial;
-      color:var(--text);
-      background:
-        radial-gradient(900px 420px at 10% -10%, rgba(127,92,255,.18), transparent 60%),
-        radial-gradient(700px 360px at 90% 0%, rgba(91,44,255,.10), transparent 55%),
-        linear-gradient(180deg, var(--bg2), var(--bg));
-      min-height:100vh;
-    }
-    a{color:inherit}
-    .wrap{max-width:1100px;margin:0 auto;padding:14px 14px 90px}
-    .top{
-      position:sticky; top:0; z-index:50;
-      background: rgba(255,255,255,.75);
-      backdrop-filter: blur(10px);
-      border-bottom:1px solid var(--stroke);
-    }
-    .topin{max-width:1100px;margin:0 auto;padding:10px 14px;display:flex;gap:10px;align-items:center;justify-content:space-between}
-    .brand{display:flex;gap:10px;align-items:center}
-    .logo{
-      width:40px;height:40px;border-radius:14px;
-      background: linear-gradient(135deg, var(--p), var(--p2));
-      box-shadow: 0 10px 24px rgba(127,92,255,.22);
-    }
-    .brand b{display:block;font-size:14px}
-    .brand small{color:var(--muted)}
-    .actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-    .btn{
-      border:1px solid var(--stroke);
-      background: #fff;
-      color:var(--text);
-      padding:10px 12px;
-      border-radius:14px;
-      cursor:pointer;
-      font-weight:800;
-      transition:.15s;
-      display:inline-flex;gap:8px;align-items:center;justify-content:center;
-      box-shadow: 0 6px 16px rgba(80,20,160,.06);
-      user-select:none;
-    }
-    .btn:hover{transform:translateY(-1px)}
-    .btn.primary{
-      background: linear-gradient(135deg, rgba(127,92,255,.15), rgba(91,44,255,.10));
-      border-color: rgba(127,92,255,.35);
-      color:#2b165e;
-    }
-    .btn.solid{
-      background: linear-gradient(135deg, var(--p), var(--p2));
-      border-color: rgba(127,92,255,.5);
-      color:#fff;
-    }
-    .btn.ok{border-color:rgba(22,163,74,.28);background:rgba(22,163,74,.08)}
-    .btn.bad{border-color:rgba(239,68,68,.28);background:rgba(239,68,68,.08)}
-    .btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
+    <style>
+        :root {
+            --p: #7f5cff; --p-dark: #5b2cff; --success: #16a34a; --danger: #ef4444;
+            --bg: #f8fafc; --card: #ffffff; --text: #1e293b; --muted: #64748b;
+        }
 
-    .grid{display:grid;grid-template-columns:1.35fr .85fr;gap:14px;margin-top:14px}
-    @media (max-width: 980px){ .grid{grid-template-columns:1fr} }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            margin: 0; font-family: 'Tajawal', sans-serif; background: var(--bg); color: var(--text);
+            padding-bottom: 90px; line-height: 1.6;
+        }
 
-    .card{
-      background: var(--card);
-      border:1px solid var(--stroke);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding:14px;
-    }
-    .card h2{margin:0 0 10px;font-size:16px}
-    .muted{color:var(--muted)}
-    .sep{height:1px;background:var(--stroke);margin:12px 0}
+        /* Header & Glassmorphism */
+        .top-nav {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(0,0,0,0.05); padding: 12px 20px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
 
-    .badge{
-      display:inline-flex;align-items:center;gap:6px;
-      padding:6px 10px;border-radius:999px;
-      border:1px solid var(--stroke);
-      background: rgba(127,92,255,.06);
-      color:#2b165e;font-weight:800;font-size:12px;
-      max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-    }
-    .badge.ok{background:rgba(22,163,74,.08);border-color:rgba(22,163,74,.25);color:#0f5a2a}
-    .badge.warn{background:rgba(245,158,11,.10);border-color:rgba(245,158,11,.25);color:#6a3d00}
-    .badge.bad{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.25);color:#7a0b0b}
-    .mono{font-family: ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+        .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; color: var(--p); font-size: 1.2rem; }
+        .logo-circle { width: 35px; height: 35px; background: linear-gradient(135deg, var(--p), var(--p-dark)); border-radius: 10px; }
 
-    .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
-    .tab{
-      padding:9px 12px;border-radius:999px;
-      border:1px solid var(--stroke);
-      background:#fff;
-      cursor:pointer;
-      font-weight:900;font-size:12px;color:var(--muted);
-    }
-    .tab.active{
-      color:#2b165e;
-      border-color: rgba(127,92,255,.35);
-      background: rgba(127,92,255,.10);
-    }
+        .container { max-width: 1000px; margin: 0 auto; padding: 15px; }
 
-    .view{display:none}
-    .view.active{display:block}
+        /* Wallet Card */
+        .wallet-card {
+            background: linear-gradient(135deg, #1e293b, #0f172a); color: white;
+            border-radius: 24px; padding: 25px; margin-bottom: 25px;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); position: relative; overflow: hidden;
+        }
+        .wallet-card::after {
+            content: ''; position: absolute; top: -50%; right: -20%; width: 200px; height: 200px;
+            background: rgba(127, 92, 255, 0.2); border-radius: 50%; filter: blur(50px);
+        }
 
-    .list{display:flex;flex-direction:column;gap:10px}
-    .item{
-      border:1px solid var(--stroke);
-      border-radius:16px;
-      background: #fff;
-      padding:12px;
-      display:flex;gap:10px;align-items:flex-start;justify-content:space-between;
-    }
-    .meta{min-width:0;display:flex;flex-direction:column;gap:4px}
-    .meta b{font-size:14px}
-    .meta small{color:var(--muted);line-height:1.25}
-    .iactions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+        .balance-label { font-size: 0.9rem; opacity: 0.7; }
+        .balance-value { font-size: 2.5rem; font-weight: 800; margin: 5px 0; }
 
-    .fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    @media (max-width: 640px){ .fields{grid-template-columns:1fr} }
-    .field label{display:block;font-size:12px;color:var(--muted);margin:0 0 6px;font-weight:800}
-    .field input,.field textarea,.field select{
-      width:100%;
-      padding:11px 12px;
-      border-radius:14px;
-      border:1px solid var(--stroke);
-      background:#fff;
-      color:var(--text);
-      outline:none;
-    }
-    .field textarea{min-height:90px;resize:vertical}
-    .hint{font-size:12px;color:var(--muted);line-height:1.45;margin-top:8px}
+        /* Tabs */
+        .tabs { display: flex; gap: 10px; overflow-x: auto; margin-bottom: 20px; padding-bottom: 5px; }
+        .tab {
+            padding: 10px 20px; background: white; border-radius: 12px; border: 1px solid #e2e8f0;
+            white-space: nowrap; cursor: pointer; font-weight: 600; transition: 0.3s; color: var(--muted);
+        }
+        .tab.active { background: var(--p); color: white; border-color: var(--p); box-shadow: 0 4px 12px rgba(127, 92, 255, 0.3); }
 
-    /* Mobile bottom nav */
-    .bottom{
-      position:fixed;left:0;right:0;bottom:0;
-      display:flex;justify-content:center;
-      padding:10px 10px 14px;
-      z-index:80;
-      pointer-events:none;
-    }
-    .nav{
-      pointer-events:auto;
-      width:min(1100px, 96vw);
-      border-radius:18px;
-      border:1px solid var(--stroke);
-      background: rgba(255,255,255,.82);
-      backdrop-filter: blur(12px);
-      box-shadow: var(--shadow);
-      display:flex;gap:8px;padding:8px;
-    }
-    .navbtn{
-      flex:1;text-align:center;padding:10px 8px;border-radius:14px;
-      cursor:pointer;font-weight:1000;font-size:12px;color:var(--muted);
-      border:1px solid transparent;user-select:none;
-    }
-    .navbtn.active{
-      color:#2b165e;
-      border-color: rgba(127,92,255,.35);
-      background: rgba(127,92,255,.10);
-    }
+        /* Gigs/Orders Cards */
+        .card { background: var(--card); border-radius: 20px; padding: 20px; margin-bottom: 15px; border: 1px solid #f1f5f9; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .card h3 { margin: 0 0 10px; font-size: 1.1rem; }
+        .price-tag { color: var(--success); font-weight: 800; font-size: 1.1rem; }
 
-    /* Toast */
-    .toast{
-      position:fixed; top:14px; left:50%; transform:translateX(-50%);
-      background:#fff;border:1px solid var(--stroke);
-      border-radius:14px; padding:10px 12px;
-      box-shadow: var(--shadow);
-      z-index:999; display:none; max-width:92vw;
-    }
-    .toast.show{display:block}
-    .toast small{color:var(--muted)}
+        /* Buttons */
+        .btn {
+            border: none; padding: 14px 24px; border-radius: 16px; font-weight: 700; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; width: 100%;
+        }
+        .btn-p { background: var(--p); color: white; }
+        .btn-p:active { transform: scale(0.98); }
+        .btn-outline { background: transparent; border: 2px solid var(--p); color: var(--p); }
 
-    /* Simple modal */
-    .mwrap{position:fixed;inset:0;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.25);z-index:200;padding:14px}
-    .mwrap.show{display:flex}
-    .modal{
-      width:min(760px, 100%);
-      background:#fff;border:1px solid var(--stroke);
-      border-radius:22px; box-shadow: var(--shadow);
-      padding:14px; max-height:82vh; overflow:auto;
-    }
-    .mhead{display:flex;align-items:center;justify-content:space-between;gap:10px}
-  </style>
+        /* Bottom Nav */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; right: 0; background: white;
+            display: flex; justify-content: space-around; padding: 12px;
+            border-top: 1px solid #f1f5f9; z-index: 100;
+        }
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--muted); font-size: 0.7rem; font-weight: 700; text-decoration: none; }
+        .nav-item.active { color: var(--p); }
+        .nav-item i { font-size: 1.3rem; }
+
+        /* Input Styles */
+        input, select {
+            width: 100%; padding: 12px 16px; border-radius: 14px; border: 1px solid #e2e8f0;
+            margin-top: 8px; outline: none; transition: 0.2s;
+        }
+        input:focus { border-color: var(--p); box-shadow: 0 0 0 4px rgba(127, 92, 255, 0.1); }
+
+        .view { display: none; }
+        .view.active { display: block; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
 </head>
-
 <body>
-  <div class="toast" id="toast"></div>
 
-  <div class="top">
-    <div class="topin">
-      <div class="brand">
-        <div class="logo"></div>
-        <div>
-          <b>Freelance Escrow</b>
-          <small>وسيط خدمات: مشتري + مستقل + Pi دفع + سحب</small>
+    <nav class="top-nav">
+        <div class="brand">
+            <div class="logo-circle"></div>
+            <span>Escrow Pi</span>
         </div>
-      </div>
+        <div id="userBadge" class="nav-item" style="font-size: 0.8rem;">
+            <i class="fas fa-circle-user"></i> <span id="username-text">تحميل...</span>
+        </div>
+    </nav>
 
-      <div class="actions">
-        <span class="badge" id="sdkBadge">Pi SDK: …</span>
-        <span class="badge" id="userBadge">ضيف</span>
-        <button class="btn solid" id="btnPiLogin">تسجيل بـ Pi</button>
-        <button class="btn primary" id="btnGuest">دخول كزائر</button>
-      </div>
+    <div class="container">
+        <div id="wallet-section" class="wallet-card">
+            <div class="balance-label">رصيدك المعتمد (Pi)</div>
+            <div class="balance-value" id="balanceText">0.00</div>
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <span style="background: rgba(255,255,255,0.1); padding: 4px 12px; border-radius: 20px; font-size: 0.8rem;">
+                    <i class="fas fa-shield-halved"></i> دفع وسيط آمن
+                </span>
+            </div>
+        </div>
+
+        <div id="view_home" class="view active">
+            <div class="tabs">
+                <div class="tab active">الكل</div>
+                <div class="tab">برمجة</div>
+                <div class="tab">تصميم</div>
+                <div class="tab">تسويق</div>
+            </div>
+            <div id="gigList">
+                <div class="card">
+                    <h3>تصميم واجهات تطبيقات احترافية</h3>
+                    <div style="display:flex; justify-content: space-between; align-items:center;">
+                        <span class="price-tag">5.00 Pi</span>
+                        <button class="btn btn-p" style="width: auto; padding: 8px 16px;" onclick="startOrder(5.00, 'تصميم واجهات')">طلب الخدمة</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view_withdraw" class="view">
+            <div class="card">
+                <h3>طلب سحب إلى محفظتك</h3>
+                <p style="font-size: 0.9rem; color: var(--muted);">المبالغ هنا هي التي وافق المشتري على تحريرها لك.</p>
+                
+                <label>عنوان محفظة Pi المستلمة:</label>
+                <input type="text" id="withdrawWallet" placeholder="G..." class="mono">
+                
+                <label style="margin-top:15px; display:block;">المبلغ المراد سحبه:</label>
+                <input type="number" id="withdrawAmount" placeholder="0.00">
+                
+                <button class="btn btn-p" style="margin-top: 20px;" onclick="handleAppToUserWithdraw()">
+                    <i class="fas fa-paper-plane"></i> تنفيذ السحب الآن
+                </button>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <div class="wrap">
-    <div class="grid">
-      <!-- Main -->
-      <div class="card">
-        <div class="tabs">
-          <div class="tab active" data-route="#/home">الرئيسية</div>
-          <div class="tab" data-route="#/buyer">صفحة المشتري</div>
-          <div class="tab" data-route="#/freelancer">صفحة المستقل</div>
-          <div class="tab" data-route="#/orders">الطلبات (Escrow)</div>
-          <div class="tab" data-route="#/messages">الرسائل</div>
-        </div>
-
-        <!-- HOME -->
-        <div class="view active" id="view_home">
-          <h2>ابدأ بسرعة</h2>
-          <div class="item">
-            <div class="meta">
-              <b>لو تسجيل Pi مش شغال</b>
-              <small>
-                لازم تفتح من <b>Pi Browser</b> + يكون URL متسجل في Developer Portal.
-                ومع <span class="mono">sandbox:false</span> لازم Production URL الحقيقي. 5
-              </small>
-              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
-                <span class="badge warn">Pi.init({ version:"2.0", sandbox:false })</span>
-                <span class="badge">Scopes: username + payments</span>
-              </div>
-            </div>
-            <div class="iactions">
-              <button class="btn solid" id="btnDiagnose">تشخيص المشكلة</button>
-            </div>
-          </div>
-
-          <div class="sep"></div>
-
-          <h2>سوق الخدمات (Gigs)</h2>
-          <div class="fields">
-            <div class="field">
-              <label>بحث</label>
-              <input id="gigSearch" placeholder="مثال: تصميم / برمجة / مونتاج..." />
-            </div>
-            <div class="field">
-              <label>تصنيف</label>
-              <select id="gigCategory">
-                <option value="">الكل</option>
-                <option>تصميم</option>
-                <option>برمجة</option>
-                <option>مونتاج</option>
-                <option>كتابة</option>
-                <option>تسويق</option>
-              </select>
-            </div>
-          </div>
-          <div class="sep"></div>
-          <div class="list" id="gigList"></div>
-        </div>
-
-        <!-- BUYER PAGE -->
-        <div class="view" id="view_buyer">
-          <h2>صفحة المشتري</h2>
-          <div class="item">
-            <div class="meta">
-              <b>ماذا تريد؟</b>
-              <small>انشر مشروع، أو وظّف خدمة جاهزة، وتابع طلباتك.</small>
-              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
-                <span class="badge ok">نشر مشروع</span>
-                <span class="badge warn">دفع Escrow</span>
-              </div>
-            </div>
-            <div class="iactions">
-              <button class="btn solid" id="btnNewRequest">نشر مشروع</button>
-              <button class="btn primary" onclick="go('#/home')">تصفح الخدمات</button>
-            </div>
-          </div>
-
-          <div class="sep"></div>
-
-          <h2>مشاريع مفتوحة (Requests)</h2>
-          <div class="list" id="requestList"></div>
-        </div>
-
-        <!-- FREELANCER PAGE -->
-        <div class="view" id="view_freelancer">
-          <h2>صفحة المستقل</h2>
-          <div class="item">
-            <div class="meta">
-              <b>أنشئ خدمة وابدأ عروض</b>
-              <small>انشر Gig، وقدّم عروض على مشاريع العملاء.</small>
-              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
-                <span class="badge ok">نشر خدمة</span>
-                <span class="badge">عروض Offers</span>
-              </div>
-            </div>
-            <div class="iactions">
-              <button class="btn solid" onclick="openGigModal()">نشر خدمة</button>
-              <button class="btn primary" onclick="go('#/buyer')">شوف مشاريع العملاء</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- ORDERS -->
-        <div class="view" id="view_orders">
-          <h2>الطلبات (Escrow)</h2>
-          <div class="item">
-            <div class="meta">
-              <b>حالات الطلب</b>
-              <small>pending_payment → paid → delivered → released</small>
-              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
-                <span class="badge warn">الـ UI بيتقفل لحد ما /complete ينجح 6</span>
-              </div>
-            </div>
-          </div>
-          <div class="sep"></div>
-          <div class="list" id="orderList"></div>
-        </div>
-
-        <!-- MESSAGES -->
-        <div class="view" id="view_messages">
-          <h2>الرسائل</h2>
-          <div class="fields">
-            <div class="field">
-              <label>Order ID</label>
-              <input id="chatOrderId" placeholder="مثال: 12" />
-            </div>
-            <div class="field">
-              <label>رسالة</label>
-              <input id="chatText" placeholder="اكتب رسالة..." />
-            </div>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
-            <button class="btn solid" id="btnSendMsg">إرسال</button>
-            <button class="btn primary" id="btnLoadMsgs">تحديث</button>
-          </div>
-          <div class="sep"></div>
-          <div class="list" id="msgList"></div>
-        </div>
-      </div>
-
-      <!-- SIDE: Profile + Wallet -->
-      <div class="card">
-        <h2>حسابك</h2>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <span class="badge" id="roleBadge">Role: Guest</span>
-          <span class="badge" id="statusBadge">Status: …</span>
-        </div>
-
-        <div class="sep"></div>
-
-        <div class="fields">
-          <div class="field">
-            <label>اسم العرض</label>
-            <input id="profileName" placeholder="اسمك" />
-          </div>
-          <div class="field">
-            <label>تخصص</label>
-            <input id="profileTitle" placeholder="مثال: مطور / مصمم" />
-          </div>
-          <div class="field">
-            <label>Pi Wallet Address (للسحب)</label>
-            <input id="profileWallet" class="mono" placeholder="G..." />
-          </div>
-          <div class="field">
-            <label>نبذة</label>
-            <input id="profileBio" placeholder="نبذة قصيرة" />
-          </div>
-        </div>
-
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
-          <button class="btn solid" id="btnSaveProfile">حفظ</button>
-          <button class="btn primary" id="btnReload">تحديث</button>
-        </div>
-
-        <div class="sep"></div>
-
-        <h2>المحفظة</h2>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <span class="badge ok">الرصيد: <b id="balanceText">0</b> Pi</span>
-          <span class="badge">عمولة: <b id="feeText">10%</b></span>
-        </div>
-
-        <div class="fields" style="margin-top:10px">
-          <div class="field">
-            <label>مبلغ السحب</label>
-            <input id="withdrawAmount" type="number" step="0.01" placeholder="مثال: 1.5"/>
-          </div>
-          <div class="field">
-            <label>إلى</label>
-            <input id="withdrawTo" class="mono" placeholder="Wallet Address"/>
-          </div>
-        </div>
-
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
-          <button class="btn primary" id="btnWithdraw">سحب</button>
-        </div>
-
-        <div class="hint">
-          السحب مربوط بـ <span class="mono">/api/withdraw</span> وبيراجع الرصيد من جدول
-          <b>donations - withdrawals</b> زي كود الباك إند عندك.
-        </div>
-      </div>
+    <div class="bottom-nav">
+        <a href="#" class="nav-item active" onclick="showView('home')"><i class="fas fa-search"></i>استكشف</a>
+        <a href="#" class="nav-item" onclick="showView('orders')"><i class="fas fa-briefcase"></i>طلباتي</a>
+        <a href="#" class="nav-item" onclick="showView('withdraw')"><i class="fas fa-wallet"></i>المحفظة</a>
+        <a href="#" class="nav-item" onclick="showView('profile')"><i class="fas fa-user-gear"></i>حسابي</a>
     </div>
-  </div>
 
-  <!-- Bottom nav (mobile) -->
-  <div class="bottom">
-    <div class="nav">
-      <div class="navbtn active" data-route="#/home">الرئيسية</div>
-      <div class="navbtn" data-route="#/buyer">المشتري</div>
-      <div class="navbtn" data-route="#/freelancer">المستقل</div>
-      <div class="navbtn" data-route="#/orders">الطلبات</div>
-      <div class="navbtn" data-route="#/messages">الرسائل</div>
-    </div>
-  </div>
+    <script>
+        const SB_URL = "https://axjkwrssmofzavaoqutq.supabase.co";
+        const SB_KEY = "sb_publishable_tiuMncgWhf1YRWoD-uYQ3Q_ziI8OKci";
+        const sb = supabase.createClient(SB_URL, SB_KEY);
 
-  <!-- Modal -->
-  <div class="mwrap" id="mwrap">
-    <div class="modal">
-      <div class="mhead">
-        <b id="mtitle">Modal</b>
-        <button class="btn" onclick="closeModal()">إغلاق</button>
-      </div>
-      <div class="sep"></div>
-      <div id="mbody"></div>
-    </div>
-  </div>
+        let currentUser = null;
 
-<script>
-/* =======================
-   CONFIG
-======================= */
-const SUPABASE_URL = "https://axjkwrssmofzavaoqutq.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_tiuMncgWhf1YRWoD-uYQ3Q_ziI8OKci";
-const API_BASE = ""; // نفس الدومين
-const PLATFORM_FEE = 0.10;
+        async function initPi() {
+            try {
+                // ضبط الإعدادات للإنتاج
+                await Pi.init({ version: "2.0", sandbox: false });
+                const auth = await Pi.authenticate(['username', 'payments'], onIncompletePayment);
+                currentUser = auth.user;
+                document.getElementById('username-text').innerText = currentUser.username;
+                fetchUserBalance();
+            } catch (err) {
+                console.error(err);
+                alert("تأكد من فتح التطبيق عبر Pi Browser");
+            }
+        }
 
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        function showView(viewId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById('view_' + viewId).classList.add('active');
+            
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+        }
 
-/* =======================
-   STATE
-======================= */
-let state = {
-  user: null,  // {uid, username, isGuest}
-  profile: null,
-  gigs: [],
-  requests: [],
-  orders: [],
-};
+        // --- وظيفة الدفع (مشتري -> تطبيق) ---
+        async function startOrder(amount, gigTitle) {
+            try {
+                const payment = await Pi.createPayment({
+                    amount: amount,
+                    memo: "دفع مقابل خدمة: " + gigTitle,
+                    metadata: { type: "escrow_payment" }
+                }, {
+                    onReadyForServerApproval: (id) => console.log("Approved ID:", id),
+                    onReadyForServerCompletion: async (id, txid) => {
+                        // حفظ الطلب في قاعدة البيانات كـ Escrow معلق
+                        await sb.from('orders').insert([{
+                            buyer: currentUser.username,
+                            amount: amount,
+                            txid: txid,
+                            status: 'paid'
+                        }]);
+                        alert("تم الدفع بنجاح! الرصيد الآن في أمان (Escrow)");
+                    }
+                });
+            } catch (e) { alert("فشل الدفع"); }
+        }
 
-const $ = (id)=>document.getElementById(id);
+        // --- وظيفة السحب (تطبيق -> مستخدم) ---
+        async function handleAppToUserWithdraw() {
+            const amount = parseFloat(document.getElementById('withdrawAmount').value);
+            const wallet = document.getElementById('withdrawWallet').value;
+            const currentBal = parseFloat(document.getElementById('balanceText').innerText);
 
-function toast(html, ms=2800){
-  const t = $("toast");
-  t.innerHTML = html;
-  t.classList.add("show");
-  clearTimeout(toast._t);
-  toast._t = setTimeout(()=>t.classList.remove("show"), ms);
-}
+            if (!wallet || amount <= 0) return alert("أكمل البيانات");
+            if (amount > currentBal) return alert("الرصيد غير كافٍ");
 
-function openModal(title, bodyHTML){
-  $("mtitle").textContent = title;
-  $("mbody").innerHTML = bodyHTML;
-  $("mwrap").classList.add("show");
-}
-function closeModal(){ $("mwrap").classList.remove("show"); }
-$("mwrap").addEventListener("click", (e)=>{ if(e.target.id==="mwrap") closeModal(); });
+            try {
+                // ميزة App-to-User تتطلب الموافقة من جانب التطبيق
+                const payment = await Pi.createPayment({
+                    amount: amount,
+                    memo: "سحب أرباح من Freelance Escrow",
+                    metadata: { type: "withdrawal", wallet: wallet }
+                }, {
+                    onReadyForServerApproval: (id) => console.log("Withdrawal Pending Approval:", id),
+                    onReadyForServerCompletion: async (id, txid) => {
+                        // تسجيل السحب وخصمه من رصيد قاعدة البيانات
+                        await sb.from('payouts').insert([{
+                            username: currentUser.username,
+                            amount: -amount,
+                            txid: txid
+                        }]);
+                        alert("تم السحب بنجاح إلى محفظتك!");
+                        fetchUserBalance();
+                    }
+                });
+            } catch (e) { alert("حدث خطأ أثناء السحب"); }
+        }
 
-function escapeHtml(s){
-  return (s??"").toString()
-    .replaceAll("&","&amp;").replaceAll("<","&lt;")
-    .replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
-}
+        async function fetchUserBalance() {
+            const { data } = await sb.from('payouts').select('amount').eq('username', currentUser.username);
+            const total = data ? data.reduce((acc, curr) => acc + curr.amount, 0) : 0;
+            document.getElementById('balanceText').innerText = total.toFixed(2);
+        }
 
-function requireUser(){
-  if(!state.user){
-    toast("<b>سجّل دخول</b><br><small>Pi أو زائر</small>");
-    throw new Error("Not logged in");
-  }
-}
+        function onIncompletePayment(p) { /* معالجة المدفوعات غير المكتملة */ }
 
-async function apiPost(path, body){
-  const r = await fetch(API_BASE + path, {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify(body)
-  });
-  let data = null;
-  try{ data = await r.json(); }catch(e){ data = await r.text(); }
-  if(!r.ok){
-    const msg = typeof data==="string" ? data : (data?.error?.error_message || data?.error?.message || JSON.stringify(data));
-    throw new Error(msg || ("HTTP "+r.status));
-  }
-  return data;
-}
+        window.onload = initPi;
+    </script>
+</body>
+</html>
 
-/* =======================
-   ROUTER (Pages)
-======================= */
-const routes = ["home","buyer","freelancer","orders","messages"];
-function go(hash){
-  location.hash = hash;
-}
-function setRoute(){
-  const hash = location.hash || "#/home";
-  const name = (hash.split("/")[1] || "home").toLowerCase();
-  const route = routes.includes(name) ? name : "home";
-
-  document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
-  $("view_"+route).classList.add("active");
-
-  document.querySelectorAll(".tab").forEach(t=>{
-    t.classList.toggle("active", t.dataset.route === "#/"+route);
-  });
-  document.querySelectorAll(".navbtn").forEach(b=>{
-    b.classList.toggle("active", b.dataset.route === "#/"+route);
-  });
-}
-window.addEventListener("hashchange", setRoute);
-
-document.querySelectorAll(".tab").forEach(t=>{
-  t.addEventListener("click", ()=>go(t.dataset.route));
-});
-document.querySelectorAll(".navbtn").forEach(b=>{
-  b.addEventListener("click", ()=>go(b.dataset.route));
-});
-
-/* =======================
-   PI SDK FIX (sandbox:false always)
-======================= */
-function initPiSdk(){
-  const Pi = window.Pi;
-  if(!Pi){
-    $("sdkBadge").textContent = "Pi SDK: غير متاح";
-    return { ok:false, reason:"Pi SDK script not loaded" };
-  }
-
-  // Required init (version 2.0) and sandbox flag 7
-  try{
-    if(typeof Pi.init === "function"){
-      Pi.init({ version: "2.0", sandbox: false });
-      $("sdkBadge").textContent = "Pi SDK: جاهز (prod)";
-      $("statusBadge").textContent = "Status: SDK ready";
-      return { ok:true };
-    }
-    $("sdkBadge").textContent = "Pi SDK: init غير موجود";
-    return { ok:false, reason:"Pi.init missing" };
-  }catch(e){
-    $("sdkBadge").textContent = "Pi SDK: init فشل";
-    return { ok:false, reason: e.message };
-  }
-}
-
-async function piLogin(){
-  const Pi = window.Pi;
-  const init = initPiSdk();
-  if(!init.ok){
-    toast("<b>Pi SDK مش جاهز</b><br><small>"+escapeHtml(init.reason||"")+"</small>", 4500);
-    return;
-  }
-
-  if(typeof Pi.authenticate !== "function"){
-    toast("<b>authenticate غير متاح</b><br><small>ا
