@@ -1,262 +1,690 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Pi Elite Hub 2026</title>
-    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    
-    <style>
-        :root {
-            --primary: #7c3aed;
-            --accent: #00f2fe;
-            --danger: #ef4444;
-            --glass: rgba(255, 255, 255, 0.08);
-            --bg: #0f172a;
-            --nav-h: 75px;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Pi Elite Hub 2026</title>
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-        body { 
-            margin: 0; background: var(--bg); color: white; 
-            font-family: system-ui, -apple-system, sans-serif; 
-            overflow-x: hidden; scroll-behavior: smooth;
-        }
+  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
-        .page { display: none; padding: 20px 15px calc(var(--nav-h) + 30px); min-height: 100vh; animation: fadeIn 0.3s ease; }
-        .page.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  <style>
+    :root{
+      --bg:#070A16;
+      --bg2:#0b1226;
+      --card:rgba(255,255,255,.07);
+      --stroke:rgba(255,255,255,.12);
 
-        .glass { background: var(--glass); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; }
+      --primary:#7c3aed;
+      --primary2:#a855f7;
+      --accent:#00f2fe;
 
-        /* شريط التنقل السفلي */
-        .tab-bar { 
-            position: fixed; bottom: 0; left: 0; right: 0; 
-            height: var(--nav-h); background: rgba(15, 23, 42, 0.95); 
-            display: flex; justify-content: space-around; align-items: center;
-            border-top: 1px solid rgba(255,255,255,0.1); z-index: 2000;
-            padding-bottom: env(safe-area-inset-bottom);
-        }
-        .tab-item { background: none; border: none; color: #94a3b8; font-size: 11px; display: flex; flex-direction: column; align-items: center; transition: 0.2s; width: 25%; }
-        .tab-item i { font-size: 22px; margin-bottom: 5px; }
-        .tab-item.active { color: var(--accent); }
+      --text:#ffffff;
+      --muted:#a7b0c3;
 
-        /* شبكة الإعلانات */
-        .ads-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .ad-card { position: relative; overflow: hidden; display: flex; flex-direction: column; cursor: pointer; }
-        .ad-card img { width: 100%; height: 140px; object-fit: cover; border-radius: 18px 18px 0 0; }
-        .ad-info { padding: 10px; }
-        .price { color: var(--accent); font-weight: 800; font-size: 1.1rem; }
+      --danger:#ef4444;
+      --success:#22c55e;
 
-        /* الدردشة */
-        .chat-container { height: 350px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 10px; }
-        .msg { padding: 10px 14px; border-radius: 18px; font-size: 13px; max-width: 80%; line-height: 1.4; }
-        .msg.me { background: var(--primary); align-self: flex-start; border-bottom-right-radius: 2px; }
-        .msg.them { background: #334155; align-self: flex-end; border-bottom-left-radius: 2px; }
-        
-        .btn-delete { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); padding: 6px; border-radius: 10px; font-size: 11px; margin-top: 5px; width: 100%; }
+      --r:22px;
+      --shadow: 0 18px 60px rgba(0,0,0,.45);
+      --nav-h: 76px;
 
-        input, textarea { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 14px; border-radius: 12px; margin-bottom: 10px; }
-        .btn-main { background: linear-gradient(90deg, var(--primary), #a855f7); color: white; border: none; padding: 15px; border-radius: 15px; font-weight: bold; width: 100%; }
-    </style>
+      --safe: env(safe-area-inset-bottom);
+    }
+
+    *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; outline:none;}
+    html,body{height:100%;}
+    body{
+      margin:0;
+      color:var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Tahoma, Arial;
+      background:
+        radial-gradient(900px 500px at 80% -10%, rgba(124,58,237,.35), transparent 60%),
+        radial-gradient(900px 500px at 10% 0%, rgba(0,242,254,.25), transparent 55%),
+        radial-gradient(1200px 700px at 50% 120%, rgba(168,85,247,.22), transparent 60%),
+        linear-gradient(180deg, var(--bg), var(--bg2));
+      overflow-x:hidden;
+      scroll-behavior:smooth;
+    }
+
+    /* Glass */
+    .glass{
+      background: var(--card);
+      border: 1px solid var(--stroke);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: var(--r);
+      box-shadow: var(--shadow);
+    }
+
+    /* Pages */
+    .page{
+      display:none;
+      padding: 18px 14px calc(var(--nav-h) + 26px + var(--safe));
+      min-height:100vh;
+      animation: fade .25s ease;
+    }
+    .page.active{display:block;}
+    @keyframes fade{from{opacity:0; transform:translateY(10px)}to{opacity:1; transform:translateY(0)}}
+
+    /* Top AppBar */
+    .appbar{
+      position: sticky;
+      top:0;
+      z-index: 50;
+      margin: 6px 0 14px;
+      padding: 14px 14px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .brand{
+      display:flex; align-items:center; gap:10px;
+      font-weight:900;
+      letter-spacing:.2px;
+    }
+    .brand .logo{
+      width:42px; height:42px; border-radius:14px;
+      display:grid; place-items:center;
+      background: linear-gradient(135deg, rgba(124,58,237,.9), rgba(0,242,254,.7));
+      box-shadow: 0 12px 30px rgba(124,58,237,.25);
+      border: 1px solid rgba(255,255,255,.14);
+    }
+    .brand small{display:block; color:var(--muted); font-weight:600; margin-top:2px;}
+
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color: var(--muted);
+      font-size: 12px;
+      white-space:nowrap;
+    }
+
+    /* Search */
+    .search{
+      margin: 10px 0 14px;
+      padding: 12px 14px;
+      display:flex; align-items:center; gap:10px;
+    }
+    .search i{color: var(--muted);}
+    .search input{
+      width:100%;
+      background:transparent;
+      border:none;
+      color:var(--text);
+      font-size:14px;
+      padding: 4px 0;
+    }
+    .search input::placeholder{color: rgba(167,176,195,.75);}
+
+    /* Grid */
+    .ads-grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .ad-card{
+      position:relative;
+      overflow:hidden;
+      cursor:pointer;
+      transform: translateZ(0);
+      transition: transform .18s ease, border-color .18s ease;
+    }
+    .ad-card:active{transform: scale(.98);}
+    .ad-card:hover{border-color: rgba(0,242,254,.25);}
+
+    .ad-thumb{
+      width:100%;
+      height:150px;
+      object-fit:cover;
+      display:block;
+    }
+
+    .ad-body{
+      padding: 12px;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+
+    .ad-title{
+      font-size: 12px;
+      line-height:1.25;
+      color: rgba(255,255,255,.92);
+      opacity:.92;
+      display:-webkit-box;
+      -webkit-line-clamp:2;
+      -webkit-box-orient:vertical;
+      overflow:hidden;
+      min-height: 32px;
+    }
+
+    .ad-meta{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+      margin-top:4px;
+    }
+
+    .price{
+      font-weight: 900;
+      font-size: 15px;
+      color: var(--accent);
+      letter-spacing:.2px;
+    }
+
+    .badge{
+      font-size: 11px;
+      color: rgba(255,255,255,.9);
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+    }
+
+    .btn-delete{
+      width:100%;
+      margin-top:10px;
+      padding:10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(239,68,68,.6);
+      background: rgba(239,68,68,.14);
+      color: #ffd3d3;
+      font-weight: 800;
+      font-size: 12px;
+    }
+
+    /* Buttons & inputs */
+    input, textarea, select{
+      width: 100%;
+      color: var(--text);
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 14px;
+      padding: 14px 14px;
+      font-size: 14px;
+      margin-bottom: 10px;
+      transition: border-color .18s ease, transform .18s ease;
+    }
+    textarea{min-height: 110px; resize: vertical;}
+    input:focus, textarea:focus{
+      border-color: rgba(0,242,254,.35);
+      box-shadow: 0 0 0 4px rgba(0,242,254,.06);
+    }
+
+    .btn-main{
+      width:100%;
+      padding: 14px 14px;
+      border:none;
+      border-radius: 16px;
+      color: white;
+      font-weight: 900;
+      background: linear-gradient(90deg, var(--primary), var(--primary2));
+      box-shadow: 0 14px 40px rgba(124,58,237,.25);
+      cursor:pointer;
+      transition: transform .16s ease, filter .16s ease;
+    }
+    .btn-main:active{transform: scale(.98);}
+
+    .btn-ghost{
+      width:100%;
+      padding: 13px 14px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.9);
+      font-weight: 800;
+      cursor:pointer;
+    }
+
+    /* Login */
+    .login-wrap{
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
+      padding: 20px;
+      gap: 14px;
+      text-align:center;
+    }
+    .hero{
+      width: 92px; height: 92px;
+      border-radius: 28px;
+      background: linear-gradient(135deg, rgba(124,58,237,.9), rgba(0,242,254,.7));
+      display:grid; place-items:center;
+      border: 1px solid rgba(255,255,255,.18);
+      box-shadow: 0 20px 70px rgba(124,58,237,.25);
+      animation: floaty 3s ease-in-out infinite;
+    }
+    @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+    .login-title{
+      font-size: 26px;
+      font-weight: 1000;
+      margin:0;
+    }
+    .login-sub{
+      color: var(--muted);
+      font-weight: 600;
+      margin: 0 0 6px;
+      font-size: 13px;
+      line-height:1.5;
+    }
+
+    /* Details Modal-like page */
+    .details-card{ overflow:hidden; }
+    .details-img{ width:100%; height: 210px; object-fit:cover; display:block;}
+    .details-body{ padding: 14px; }
+    .details-body h2{ margin:0 0 6px; font-size: 18px; }
+    .details-body p{ margin:10px 0; color: rgba(255,255,255,.86); line-height:1.6; font-size: 13px;}
+    .details-row{display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap;}
+    .seller{
+      display:flex; align-items:center; gap:8px;
+      color: rgba(255,255,255,.85);
+      font-size: 12px;
+    }
+    .seller i{color: rgba(255,255,255,.65);}
+
+    .cta-row{
+      display:flex; gap:10px; margin-top: 12px;
+    }
+    .cta-row button{
+      flex:1;
+    }
+    .btn-accent{
+      border:none;
+      border-radius: 16px;
+      padding: 13px 14px;
+      font-weight: 900;
+      color:#031016;
+      background: linear-gradient(90deg, rgba(0,242,254,.95), rgba(0,242,254,.6));
+      cursor:pointer;
+    }
+
+    /* Chat */
+    .chat-wrap{ margin-top: 12px; }
+    .chat-head{
+      display:flex; align-items:center; justify-content:space-between;
+      padding: 12px 12px;
+      margin-bottom: 10px;
+    }
+    .chat-head .hint{color: var(--muted); font-size: 12px;}
+    .chat-container{
+      height: 360px;
+      overflow-y:auto;
+      padding: 10px;
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+      scroll-behavior:smooth;
+    }
+    .bubble{
+      max-width: 82%;
+      padding: 10px 12px;
+      border-radius: 18px;
+      line-height: 1.55;
+      font-size: 13px;
+      position:relative;
+      border: 1px solid rgba(255,255,255,.10);
+    }
+    .bubble.me{
+      align-self: flex-start;
+      background: linear-gradient(180deg, rgba(124,58,237,.9), rgba(168,85,247,.65));
+      border-bottom-right-radius: 8px;
+    }
+    .bubble.them{
+      align-self: flex-end;
+      background: rgba(255,255,255,.08);
+      border-bottom-left-radius: 8px;
+    }
+    .bubble small{
+      display:block;
+      color: rgba(255,255,255,.8);
+      font-size: 10px;
+      margin-bottom: 4px;
+      opacity:.9;
+    }
+
+    .chat-input{
+      display:flex;
+      gap: 8px;
+      align-items:center;
+      padding: 10px;
+    }
+    .chat-input input{
+      margin:0;
+      padding: 12px 12px;
+      border-radius: 14px;
+    }
+    .send-btn{
+      width: 54px;
+      height: 46px;
+      border-radius: 14px;
+      border:none;
+      background: rgba(0,242,254,.92);
+      color: #001015;
+      font-weight: 900;
+      cursor:pointer;
+      box-shadow: 0 16px 40px rgba(0,242,254,.14);
+    }
+    .send-btn:active{transform: scale(.98);}
+
+    /* Inbox */
+    .inbox-card{
+      padding: 12px;
+      display:flex;
+      align-items:center;
+      gap: 12px;
+      margin-bottom: 10px;
+      cursor:pointer;
+      transition: transform .16s ease;
+    }
+    .inbox-card:active{transform: scale(.99);}
+    .inbox-thumb{
+      width: 54px;
+      height: 54px;
+      border-radius: 14px;
+      object-fit: cover;
+      border: 1px solid rgba(255,255,255,.12);
+    }
+    .inbox-title{
+      font-weight: 900;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+    .inbox-sub{
+      color: rgba(167,176,195,.92);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    /* Bottom tab bar */
+    .tab-bar{
+      position: fixed;
+      bottom:0; left:0; right:0;
+      height: var(--nav-h);
+      padding-bottom: var(--safe);
+      background: rgba(7,10,22,.92);
+      border-top: 1px solid rgba(255,255,255,.10);
+      display:flex;
+      align-items:center;
+      justify-content:space-around;
+      z-index: 2000;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+    .tab-item{
+      width:25%;
+      border:none;
+      background:none;
+      color: rgba(167,176,195,.9);
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap: 5px;
+      font-size: 11px;
+      padding: 10px 0;
+    }
+    .tab-item i{font-size: 22px;}
+    .tab-item.active{
+      color: var(--accent);
+      text-shadow: 0 0 18px rgba(0,242,254,.2);
+    }
+
+    /* Toast */
+    .toast{
+      position: fixed;
+      left: 14px;
+      right: 14px;
+      bottom: calc(var(--nav-h) + 14px + var(--safe));
+      z-index: 3000;
+      padding: 12px 14px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.35);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      display:none;
+      color: rgba(255,255,255,.92);
+      font-weight: 800;
+    }
+    .toast.show{display:block; animation: pop .2s ease;}
+    @keyframes pop{from{opacity:0; transform:translateY(8px)}to{opacity:1; transform:translateY(0)}}
+
+    /* Skeleton */
+    .sk-grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .sk{
+      border-radius: var(--r);
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.06);
+      overflow:hidden;
+      position:relative;
+    }
+    .sk:before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.10), transparent);
+      transform: translateX(-60%);
+      animation: shimmer 1.2s infinite;
+    }
+    @keyframes shimmer{to{transform: translateX(60%)}}
+    .sk .a{height:150px;}
+    .sk .b{height:70px;}
+
+    /* Helpers */
+    .row{display:flex; gap:10px;}
+    .mt{margin-top:12px;}
+    .muted{color:var(--muted);}
+  </style>
 </head>
 <body>
 
-    <div id="page-login" class="page active" style="text-align: center; padding-top: 30vh;">
-        <div style="font-size: 60px;">💠</div>
-        <h1>Pi Elite Hub</h1>
-        <button class="btn-main" onclick="initPi()" style="width: 200px;">دخول عبر Pi</button>
-    </div>
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
 
-    <div id="page-home" class="page">
-        <h2>السوق الرئيسي ✨</h2>
-        <div id="ads-grid" class="ads-grid"></div>
+  <!-- LOGIN -->
+  <div id="page-login" class="page active" style="padding:0">
+    <div class="login-wrap">
+      <div class="hero">💠</div>
+      <h1 class="login-title">Pi Elite Hub</h1>
+      <p class="login-sub">سوق بسيط + رسائل خاصة بينك وبين البائع. افتح من Pi Browser علشان تسجيل الدخول يشتغل.</p>
+      <button class="btn-main" style="max-width:280px" onclick="initPi()">دخول عبر Pi</button>
+      <button class="btn-ghost" style="max-width:280px" onclick="nav('home'); document.getElementById('navbar').style.display='flex'; toast('تقدر تتصفح كزائر، لكن الرسائل والنشر يحتاجوا دخول.');">تصفح كزائر</button>
+      <div class="pill"><i class="fa-solid fa-shield-halved"></i> محادثات منفصلة لكل مشتري مع نفس البائع</div>
     </div>
+  </div>
 
-    <div id="page-inbox" class="page">
-        <h2>رسائلي 💬</h2>
-        <div id="inbox-list"></div>
-    </div>
-
-    <div id="page-add" class="page">
-        <h2>نشر إعلان</h2>
-        <div class="glass" style="padding: 20px;">
-            <input type="file" id="p-img" accept="image/*">
-            <input type="text" id="p-title" placeholder="اسم المنتج">
-            <textarea id="p-desc" placeholder="وصف المنتج"></textarea>
-            <input type="number" id="p-price" placeholder="السعر بـ Pi">
-            <input type="tel" id="p-phone" placeholder="رقم الواتساب">
-            <button class="btn-main" onclick="uploadAd()">نشر الآن</button>
+  <!-- HOME -->
+  <div id="page-home" class="page">
+    <div class="appbar glass">
+      <div class="brand">
+        <div class="logo">💠</div>
+        <div>
+          Pi Elite Hub
+          <small>السوق الرئيسي</small>
         </div>
+      </div>
+      <div class="pill" id="whoami"><i class="fa-solid fa-user"></i> زائر</div>
     </div>
 
-    <div id="page-profile" class="page">
-        <div class="glass" style="padding: 20px; text-align: center; margin-bottom: 20px; background: var(--primary);">
-            <h3 id="user-display">جاري التحميل...</h3>
+    <div class="search glass">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input id="search" placeholder="ابحث عن منتج..." oninput="applyFilter()" />
+    </div>
+
+    <div id="home-skeleton" class="sk-grid"></div>
+    <div id="ads-grid" class="ads-grid"></div>
+  </div>
+
+  <!-- INBOX -->
+  <div id="page-inbox" class="page">
+    <div class="appbar glass">
+      <div class="brand">
+        <div class="logo"><i class="fa-solid fa-comments"></i></div>
+        <div>
+          الرسائل
+          <small>محادثاتك الخاصة</small>
         </div>
-        <h3>إعلاناتي</h3>
-        <div id="my-ads-grid" class="ads-grid"></div>
+      </div>
+      <div class="pill"><i class="fa-solid fa-lock"></i> خاص</div>
     </div>
 
-    <div id="page-details" class="page">
-        <div id="details-view"></div>
-        <div class="glass" style="padding: 15px; margin-top: 15px;">
-            <div id="chat-box" class="chat-container"></div>
-            <div style="display:flex; gap:8px;">
-                <input type="text" id="chat-input" placeholder="اكتب رسالة..." style="margin:0">
-                <button onclick="sendMsg()" id="send-btn" style="background:var(--accent); border:none; width:60px; border-radius:12px; color:black;">
-                    <i class="fas fa-paper-plane"></i>
-                </button>
-            </div>
+    <div id="inbox-list"></div>
+    <div id="inbox-empty" class="glass" style="padding:16px; display:none;">
+      <b>مفيش محادثات لسه</b>
+      <div class="muted" style="margin-top:6px; font-size:13px;">افتح أي إعلان وابدأ رسالة للبائع.</div>
+    </div>
+  </div>
+
+  <!-- ADD -->
+  <div id="page-add" class="page">
+    <div class="appbar glass">
+      <div class="brand">
+        <div class="logo"><i class="fa-solid fa-plus"></i></div>
+        <div>
+          نشر إعلان
+          <small>ارفع صورة + اكتب التفاصيل</small>
         </div>
-        <button onclick="nav('home')" style="width:100%; background:none; border:none; color:gray; margin-top:20px;">← العودة</button>
+      </div>
+      <div class="pill"><i class="fa-solid fa-wand-magic-sparkles"></i> سريع</div>
     </div>
 
-    <nav class="tab-bar" id="navbar" style="display:none">
-        <button class="tab-item active" onclick="nav('home', this)"><i class="fas fa-store"></i><span>السوق</span></button>
-        <button class="tab-item" onclick="nav('inbox', this)"><i class="fas fa-comment-dots"></i><span>الرسائل</span></button>
-        <button class="tab-item" onclick="nav('add', this)"><i class="fas fa-plus-circle"></i><span>نشر</span></button>
-        <button class="tab-item" onclick="nav('profile', this)"><i class="fas fa-user-circle"></i><span>حسابي</span></button>
-    </nav>
+    <div class="glass" style="padding: 16px;">
+      <input type="file" id="p-img" accept="image/*" />
+      <input type="text" id="p-title" placeholder="اسم المنتج" />
+      <textarea id="p-desc" placeholder="وصف المنتج"></textarea>
+      <div class="row">
+        <input type="number" id="p-price" placeholder="السعر بـ Pi" />
+        <input type="tel" id="p-phone" placeholder="واتساب (اختياري)" />
+      </div>
+      <button class="btn-main" onclick="uploadAd()">نشر الآن</button>
+      <div class="muted" style="margin-top:10px; font-size:12px; line-height:1.6;">
+        * النشر يحتاج تسجيل دخول. <br>
+        * رقم الواتساب اختياري: بيتعرض كبزرار تواصل في صفحة الإعلان.
+      </div>
+    </div>
+  </div>
 
-    <script>
-        const SB_URL = 'https://axjkwrssmofzavaoqutq.supabase.co';
-        const SB_KEY = 'sb_publishable_tiuMncgWhf1YRWoD-uYQ3Q_ziI8OKci';
-        const _sb = supabase.createClient(SB_URL, SB_KEY);
-        let user = null, activeAd = null;
+  <!-- PROFILE -->
+  <div id="page-profile" class="page">
+    <div class="appbar glass">
+      <div class="brand">
+        <div class="logo"><i class="fa-solid fa-user"></i></div>
+        <div>
+          حسابي
+          <small>إعلاناتي</small>
+        </div>
+      </div>
+      <button class="pill" onclick="logout()" style="cursor:pointer">
+        <i class="fa-solid fa-right-from-bracket"></i> خروج
+      </button>
+    </div>
 
-        async function initPi() {
-            try {
-                const Pi = window.Pi; Pi.init({ version: "2.0" });
-                const auth = await Pi.authenticate(['username'], (p) => {});
-                user = auth.user;
-                document.getElementById('user-display').innerText = "@" + user.username;
-                document.getElementById('page-login').classList.remove('active');
-                document.getElementById('navbar').style.display = 'flex';
-                nav('home');
-            } catch (e) { alert("افتح من Pi Browser"); }
-        }
+    <div class="glass" style="padding:16px; margin-bottom:14px;">
+      <div style="font-weight:1000; font-size:16px;" id="user-display">زائر</div>
+      <div class="muted" style="margin-top:6px; font-size:12px;">لو أنت البائع، هتلاقي زر حذف تحت كل إعلان.</div>
+    </div>
 
-        function nav(id, btn) {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.getElementById('page-' + id).classList.add('active');
-            if(btn) { document.querySelectorAll('.tab-item').forEach(i => i.classList.remove('active')); btn.classList.add('active'); }
-            if(id === 'home') loadAds();
-            if(id === 'profile') loadMyAds();
-            if(id === 'inbox') loadInbox();
-        }
+    <div id="my-ads-grid" class="ads-grid"></div>
+    <div id="my-empty" class="glass" style="padding:16px; display:none;">
+      <b>مفيش إعلانات</b>
+      <div class="muted" style="margin-top:6px; font-size:13px;">انشر أول إعلان من تبويب “نشر”.</div>
+    </div>
+  </div>
 
-        async function loadAds() {
-            const { data } = await _sb.from('ads').select('*').order('created_at', {ascending: false});
-            renderGrid(data, 'ads-grid', false);
-        }
+  <!-- DETAILS -->
+  <div id="page-details" class="page">
+    <div class="appbar glass">
+      <button class="pill" onclick="nav('home')" style="cursor:pointer"><i class="fa-solid fa-arrow-right"></i> رجوع</button>
+      <div class="pill"><i class="fa-solid fa-bolt"></i> تفاصيل</div>
+      <button class="pill" onclick="shareActive()" style="cursor:pointer"><i class="fa-solid fa-share-nodes"></i> مشاركة</button>
+    </div>
 
-        async function loadMyAds() {
-            const { data } = await _sb.from('ads').select('*').eq('seller_username', user.username);
-            renderGrid(data, 'my-ads-grid', true);
-        }
+    <div id="details-view"></div>
 
-        function renderGrid(data, containerId, isOwner) {
-            document.getElementById(containerId).innerHTML = data.map(ad => `
-                <div class="glass ad-card" onclick="openAd('${ad.id}')">
-                    <img src="${SB_URL}/storage/v1/object/public/ads-images/${ad.image_url}">
-                    <div class="ad-info">
-                        <div class="price">${ad.price} Pi</div>
-                        <div style="font-size:11px; opacity:0.8;">${ad.title}</div>
-                        ${isOwner ? `<button class="btn-delete" onclick="event.stopPropagation(); deleteAd('${ad.id}', '${ad.image_url}')">حذف</button>` : ''}
-                    </div>
-                </div>
-            `).join('');
-        }
+    <div class="chat-wrap glass mt">
+      <div class="chat-head">
+        <div>
+          <b>الدردشة الخاصة</b>
+          <div class="hint" id="chat-hint">—</div>
+        </div>
+        <div class="pill" id="conv-pill"><i class="fa-solid fa-circle"></i> —</div>
+      </div>
 
-        async function openAd(id) {
-            const { data: ad } = await _sb.from('ads').select('*').eq('id', id).single();
-            activeAd = ad;
-            document.getElementById('details-view').innerHTML = `
-                <div class="glass" style="overflow:hidden">
-                    <img src="${SB_URL}/storage/v1/object/public/ads-images/${ad.image_url}" style="width:100%;">
-                    <div style="padding:15px">
-                        <h2>${ad.title}</h2>
-                        <h1 style="color:var(--accent)">${ad.price} Pi</h1>
-                        <p>${ad.description}</p>
-                        <p style="font-size:12px">البائع: @${ad.seller_username}</p>
-                    </div>
-                </div>`;
-            nav('details');
-            loadMsgs();
-        }
+      <div id="chat-box" class="chat-container"></div>
 
-        async function loadMsgs() {
-            if(!activeAd || !user) return;
-            const { data } = await _sb.from('messages').select('*').eq('ad_id', activeAd.id)
-                .or(`sender_username.eq.${user.username},receiver_username.eq.${user.username}`)
-                .order('created_at', {ascending: true});
-            const box = document.getElementById('chat-box');
-            box.innerHTML = data.map(m => `<div class="msg ${m.sender_username === user.username ? 'me' : 'them'}"><small>${m.sender_username}</small><br>${m.text}</div>`).join('');
-            box.scrollTop = box.scrollHeight;
-        }
+      <div class="chat-input">
+        <input id="chat-input" placeholder="اكتب رسالة..." />
+        <button class="send-btn" id="send-btn" onclick="sendMsg()"><i class="fa-solid fa-paper-plane"></i></button>
+      </div>
+    </div>
+  </div>
 
-        async function sendMsg() {
-            try {
-                const inp = document.getElementById('chat-input');
-                const text = inp.value.trim();
-                if (!text || !activeAd || !user) return;
+  <!-- NAV -->
+  <nav class="tab-bar" id="navbar" style="display:none">
+    <button class="tab-item active" onclick="nav('home', this)"><i class="fas fa-store"></i><span>السوق</span></button>
+    <button class="tab-item" onclick="nav('inbox', this)"><i class="fas fa-comment-dots"></i><span>الرسائل</span></button>
+    <button class="tab-item" onclick="nav('add', this)"><i class="fas fa-plus-circle"></i><span>نشر</span></button>
+    <button class="tab-item" onclick="nav('profile', this)"><i class="fas fa-user-circle"></i><span>حسابي</span></button>
+  </nav>
 
-                const { error } = await _sb.from('messages').insert([{
-                    ad_id: activeAd.id,
-                    sender_username: user.username,
-                    receiver_username: activeAd.seller_username,
-                    text: text
-                }]);
+  <script>
+    // ====== Supabase ======
+    const SB_URL = 'https://axjkwrssmofzavaoqutq.supabase.co';
+    const SB_KEY = 'sb_publishable_tiuMncgWhf1YRWoD-uYQ3Q_ziI8OKci';
+    const _sb = supabase.createClient(SB_URL, SB_KEY);
 
-                if (error) throw error;
-                inp.value = ''; loadMsgs();
-            } catch (e) { alert("خطأ في الإرسال: " + e.message); }
-        }
+    // ====== State ======
+    let user = null;
+    let activeAd = null;
+    let activeConversationId = null;
+    let allAdsCache = [];
 
-        async function loadInbox() {
-            const { data } = await _sb.from('messages').select('*, ads(title, image_url)')
-                .or(`sender_username.eq.${user.username},receiver_username.eq.${user.username}`)
-                .order('created_at', {ascending: false});
-            const unique = []; const seen = new Set();
-            data.forEach(m => {
-                const partner = m.sender_username === user.username ? m.receiver_username : m.sender_username;
-                if(!seen.has(m.ad_id + partner)) { unique.push({m, partner}); seen.add(m.ad_id + partner); }
-            });
-            document.getElementById('inbox-list').innerHTML = unique.map(c => `
-                <div class="glass" style="padding:15px; margin-bottom:10px; display:flex; align-items:center; gap:12px;" onclick="openAd('${c.m.ad_id}')">
-                    <img src="${SB_URL}/storage/v1/object/public/ads-images/${c.m.ads.image_url}" style="width:50px; height:50px; border-radius:10px; object-fit:cover;">
-                    <div style="flex:1"><b>${c.partner}</b><br><small>${c.m.ads.title}: ${c.m.text.substring(0,20)}</small></div>
-                </div>`).join('');
-        }
+    // ====== UI helpers ======
+    function toast(msg){
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(()=> t.classList.remove('show'), 2500);
+    }
 
-        async function uploadAd() {
-            const f = document.getElementById('p-img').files[0];
-            const path = `img_${Date.now()}.png`;
-            if(!f) return alert("اختر صورة");
-            const { error: upErr } = await _sb.storage.from('ads-images').upload(path, f);
-            if(!upErr) {
-                await _sb.from('ads').insert([{
-                    title: document.getElementById('p-title').value,
-                    description: document.getElementById('p-desc').value,
-                    price: document.getElementById('p-price').value,
-                    phone: document.getElementById('p-phone').value,
-                    image_url: path, seller_username: user.username
-                }]);
-                alert("تم النشر!"); nav('home');
-            }
-        }
+    function setWho(){
+      const who = document.getElementById('whoami');
+      const ud = document.getElementById('user-display');
+      if(user?.username){
+        who.innerHTML = `<i class="fa-solid fa-user"></i> @${user.username}`;
+        ud.textContent = `@${user.username}`;
+      }else{
+        who.innerHTML = `<i class="fa-solid fa-user"></i> زائر`;
+        ud.textContent = `زائر`;
+      }
+    }
 
-        async function deleteAd(id, img) {
-            if(!confirm("حذف؟")) return;
-            await _sb.from('ads').delete().eq('id', id);
-            await _sb.storage.from('ads-images').remove([img]);
-            loadMyAds();
-        }
+    function showSkeleton(on=true){
+      const sk = document.getElementById('home-skeleton');
+      if(!on){ sk.innerHTML=''; sk.style.display='none'; return; }
+      sk.style.display='grid';
+      sk.innerHTML = Array.from({length:6}).map(()=> `
+        <div class="sk">
+          <div class="a"></div>
+          <div class="b"></div>
+        </div>
+      `).join('');
+    }
 
-        setInterval(() => { if(document.getElementById('page-details').classList.contains('active')) loadMsgs(); }, 4000);
-    </script>
-</body>
-</html>
+    function escapeHtml(str=''){
+      return String(str)
+      
