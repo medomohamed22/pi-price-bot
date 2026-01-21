@@ -3,226 +3,241 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pi Second-Hand Hub | 2026</title>
+    <title>Pi Elite Hub 2026</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
-            --primary: #633081;
-            --primary-light: #8a4cae;
-            --secondary: #ff9800;
-            --bg: #f0f2f5;
-            --card-bg: rgba(255, 255, 255, 0.9);
-            --danger: #ff4d4d;
+            --glass: rgba(255, 255, 255, 0.2);
+            --glass-border: rgba(255, 255, 255, 0.3);
+            --pi-grad: linear-gradient(135deg, #4a148c, #7b1fa2);
+            --accent: #00d2ff;
         }
 
-        * { box-sizing: border-box; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; background-color: var(--bg); color: #1a1a1b; padding-bottom: 80px; overflow-x: hidden; }
-
-        /* Modern Header */
-        .header { 
-            background: rgba(99, 48, 129, 0.95); 
-            backdrop-filter: blur(10px);
-            color: white; padding: 20px; text-align: center; 
-            position: sticky; top: 0; z-index: 1000; 
-            border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        body {
+            margin: 0; padding: 0; min-height: 100vh;
+            background: linear-gradient(45deg, #1a0a2e, #311b92, #1a0a2e);
+            background-attachment: fixed;
+            color: white; font-family: 'Segoe UI', Tahoma, sans-serif;
+            padding-bottom: 90px;
         }
 
-        /* Bottom Nav - App Style */
-        .nav-bottom { 
-            position: fixed; bottom: 15px; left: 15px; right: 15px;
-            background: rgba(255, 255, 255, 0.85); 
+        /* Glass Cards */
+        .glass {
+            background: var(--glass);
             backdrop-filter: blur(15px);
-            display: flex; justify-content: space-around; padding: 12px; 
-            border-radius: 25px; border: 1px solid rgba(255,255,255,0.3);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1); z-index: 1000; 
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
         }
-        .nav-item { border: none; background: none; color: #888; display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: 0.3s; font-size: 12px; }
-        .nav-item i { font-size: 20px; margin-bottom: 4px; }
-        .nav-item.active { color: var(--primary); transform: translateY(-5px); font-weight: bold; }
 
-        /* Container & Grid */
-        .container { max-width: 800px; margin: auto; padding: 15px; }
-        .page { display: none; animation: fadeIn 0.4s ease; }
-        .page.active { display: block; }
+        header {
+            padding: 20px; text-align: center;
+            border-bottom: 1px solid var(--glass-border);
+            margin-bottom: 20px; position: sticky; top: 0; z-index: 100;
+            background: rgba(26, 10, 46, 0.8);
+        }
 
-        .ads-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 15px; }
+        .container { padding: 15px; max-width: 600px; margin: auto; }
+
+        /* Login Screen */
+        #login-screen {
+            position: fixed; inset: 0; z-index: 2000;
+            background: #1a0a2e; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; text-align: center;
+        }
+
+        .pi-btn {
+            background: #ffc107; color: #4a148c; border: none;
+            padding: 15px 40px; border-radius: 30px; font-weight: bold;
+            font-size: 1.2rem; cursor: pointer; transition: 0.3s;
+            box-shadow: 0 0 20px rgba(255, 193, 7, 0.4);
+        }
+
+        /* Ads Grid */
+        .ads-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        
         .ad-card { 
-            background: var(--card-bg); border-radius: 20px; overflow: hidden; 
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05); border: 1px solid white;
-            transition: 0.3s; position: relative;
+            position: relative; overflow: hidden; transition: 0.4s;
+            cursor: pointer; display: flex; flex-direction: column;
         }
-        .ad-card:active { transform: scale(0.95); }
-        .ad-card img { width: 100%; height: 150px; object-fit: cover; }
+        .ad-card:hover { transform: translateY(-5px); }
+        .ad-card img { width: 100%; height: 140px; object-fit: cover; border-radius: 20px 20px 0 0; }
         .ad-info { padding: 12px; }
-        .ad-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 5px; height: 2.4em; overflow: hidden; }
-        .ad-price { color: var(--primary); font-weight: 800; font-size: 1.1rem; }
+        .ad-price { color: var(--accent); font-weight: 900; }
 
         /* Forms */
-        .glass-form { background: white; padding: 25px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
-        .input-group { margin-bottom: 20px; }
-        input, textarea { 
-            width: 100%; padding: 15px; border: 1px solid #eee; border-radius: 15px; 
-            background: #f9f9f9; font-size: 16px; outline: none; transition: 0.3s;
-        }
-        input:focus { border-color: var(--primary); background: white; }
-        .btn-primary { 
-            background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            color: white; border: none; padding: 18px; border-radius: 15px; width: 100%; font-size: 18px; font-weight: bold; cursor: pointer;
+        input, textarea {
+            width: 100%; background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border);
+            padding: 15px; border-radius: 12px; color: white; margin-bottom: 15px;
         }
 
-        /* Delete Button */
-        .delete-btn {
-            background: var(--danger); color: white; border: none; padding: 8px 12px;
-            border-radius: 10px; font-size: 12px; margin-top: 8px; width: 100%;
+        /* Navigation */
+        .nav-bar {
+            position: fixed; bottom: 20px; left: 20px; right: 20px;
+            display: flex; justify-content: space-around; padding: 15px;
+        }
+        .nav-btn { color: white; text-align: center; border: none; background: none; font-size: 12px; cursor: pointer; opacity: 0.6; }
+        .nav-btn.active { opacity: 1; color: var(--accent); }
+        .nav-btn i { font-size: 20px; display: block; margin-bottom: 5px; }
+
+        /* Delete Badge */
+        .del-badge {
+            background: rgba(255, 77, 77, 0.9); border: none; color: white;
+            padding: 5px 10px; border-radius: 8px; font-size: 10px; margin-top: 5px; width: 100%;
         }
 
-        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .view { display: none; animation: fadeIn 0.4s; }
+        .view.active { display: block; }
     </style>
 </head>
 <body>
 
-    <header class="header">
-        <h2 id="view-title">السوق المستعمل</h2>
+    <div id="login-screen">
+        <i class="fab fa-pi-network" style="font-size: 80px; color: #ffc107; margin-bottom: 20px;"></i>
+        <h1>مرحباً بك في Pi Elite</h1>
+        <p style="margin-bottom: 30px;">يرجى تسجيل الدخول لبدء التداول</p>
+        <button class="pi-btn" onclick="loginWithPi()">دخول عبر Pi Network</button>
+    </div>
+
+    <header class="glass" style="border-radius: 0 0 25px 25px;">
+        <h2 id="header-title">تصفح النخبة</h2>
     </header>
 
     <div class="container">
-        <section id="browse-view" class="page active">
-            <input type="text" id="searchBox" placeholder="🔍 ابحث عما تريد..." onkeyup="filterAds()">
+        <div id="view-browse" class="view active">
+            <input type="text" placeholder="🔍 ابحث عن شيء مميز..." onkeyup="search(this.value)">
             <div id="ads-list" class="ads-grid"></div>
-        </section>
+        </div>
 
-        <section id="publish-view" class="page">
-            <div class="glass-form">
-                <form id="uploadForm">
-                    <div class="input-group"><label>صورة المنتج</label><input type="file" id="pImg" accept="image/*" required></div>
-                    <div class="input-group"><input type="text" id="pTitle" placeholder="عنوان الإعلان" required></div>
-                    <div class="input-group"><textarea id="pDesc" rows="3" placeholder="وصف المنتج وحالته..." required></textarea></div>
-                    <div class="input-group"><input type="number" id="pPrice" placeholder="السعر بـ Pi" step="0.01" required></div>
-                    <div class="input-group"><input type="tel" id="pPhone" placeholder="رقم الواتساب" required></div>
-                    <button type="submit" class="btn-primary">🚀 انشر الآن</button>
-                </form>
-            </div>
-        </section>
+        <div id="view-post" class="view glass" style="padding: 20px;">
+            <form id="postForm">
+                <input type="file" id="f-img" accept="image/*" required>
+                <input type="text" id="f-title" placeholder="ماذا تبيع؟" required>
+                <textarea id="f-desc" placeholder="وصف موجز وجذاب..." required></textarea>
+                <input type="number" id="f-price" placeholder="السعر بعملة Pi" step="0.001" required>
+                <input type="tel" id="f-phone" placeholder="رقم الواتساب (بالكود الدولي)" required>
+                <button type="submit" class="pi-btn" style="width: 100%; box-shadow: none;">نشر الإعلان</button>
+            </form>
+        </div>
 
-        <section id="profile-view" class="page">
-            <div style="background: var(--primary); color: white; padding: 20px; border-radius: 20px; margin-bottom: 20px;">
-                <h3 id="user-name">مرحباً بك</h3>
-                <p>إدارة إعلاناتك النشطة</p>
+        <div id="view-profile" class="view">
+            <div class="glass" style="padding: 20px; margin-bottom: 20px; text-align: center;">
+                <p>المستخدم المتصل: <strong id="user-display">---</strong></p>
             </div>
+            <h3>إعلاناتي المعروضة</h3>
             <div id="my-ads-list" class="ads-grid"></div>
-        </section>
+        </div>
 
-        <section id="details-view" class="page">
-            <div id="details-content" class="glass-form"></div>
-        </section>
+        <div id="view-details" class="view glass" style="padding: 20px;">
+            <div id="details-box"></div>
+        </div>
     </div>
 
-    <nav class="nav-bottom">
-        <button class="nav-item active" onclick="nav('browse-view', this)"><i class="fas fa-th-large"></i>تصفح</button>
-        <button class="nav-item" onclick="nav('publish-view', this)"><i class="fas fa-plus-circle"></i>نشر</button>
-        <button class="nav-item" onclick="nav('profile-view', this)"><i class="fas fa-user-circle"></i>حسابي</button>
+    <nav class="nav-bar glass">
+        <button class="nav-btn active" onclick="show('browse', this)"><i class="fas fa-gem"></i>السوق</button>
+        <button class="nav-btn" onclick="show('post', this)"><i class="fas fa-plus-circle"></i>إضافة</button>
+        <button class="nav-btn" onclick="show('profile', this)"><i class="fas fa-user-astronaut"></i>حسابي</button>
     </nav>
 
     <script>
-        const SB_URL = 'https://axjkwrssmofzavaoqutq.supabase.co';
-        const SB_KEY = 'sb_publishable_tiuMncgWhf1YRWoD-uYQ3Q_ziI8OKci';
-        const client = supabase.createClient(SB_URL, SB_KEY);
-        const Pi = window.Pi;
-        let user = null;
-        let allAds = [];
+        const _URL = 'https://axjkwrssmofzavaoqutq.supabase.co';
+        const _KEY = 'sb_publishable_tiuMncgWhf1YRWoD-uYQ3Q_ziI8OKci';
+        const sb = supabase.createClient(_URL, _KEY);
+        let currentUser = null;
 
-        async function init() {
+        // 1. نظام الدخول
+        async function loginWithPi() {
             try {
+                const Pi = window.Pi;
                 Pi.init({ version: "2.0" });
-                const auth = await Pi.authenticate(['username', 'payments'], (p) => {});
-                user = auth.user;
-                document.getElementById('user-name').innerText = user.username;
+                const auth = await Pi.authenticate(['username'], (p) => {});
+                currentUser = auth.user;
+                document.getElementById('user-display').innerText = currentUser.username;
+                document.getElementById('login-screen').style.display = 'none';
                 loadAds();
-            } catch (e) { alert("افتح التطبيق من داخل Pi Browser"); }
+            } catch (err) { alert("يرجى الفتح من متصفح باي الرسمي"); }
         }
 
-        function nav(id, btn) {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+        // 2. التنقل
+        function show(view, btn) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById('view-' + view).classList.add('active');
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             if(btn) btn.classList.add('active');
-            if(id === 'profile-view') loadMyAds();
+            if(view === 'profile') loadMyAds();
         }
 
+        // 3. العمليات (جلب، حذف، إضافة)
         async function loadAds() {
-            const { data } = await client.from('ads').select('*').order('created_at', {ascending: false});
-            allAds = data;
+            const { data } = await sb.from('ads').select('*').order('created_at', {ascending: false});
             render(data, 'ads-list', false);
         }
 
         async function loadMyAds() {
-            const { data } = await client.from('ads').select('*').eq('seller_username', user.username);
+            const { data } = await sb.from('ads').select('*').eq('seller_username', currentUser.username);
             render(data, 'my-ads-list', true);
         }
 
-        function render(data, containerId, isOwner) {
-            const div = document.getElementById(containerId);
-            div.innerHTML = data.map(ad => `
-                <div class="ad-card">
-                    <img src="${SB_URL}/storage/v1/object/public/ads-images/${ad.image_url}" onclick="showAd('${ad.id}')">
+        function render(data, container, isOwner) {
+            const list = document.getElementById(container);
+            list.innerHTML = data.map(ad => `
+                <div class="ad-card glass">
+                    <img src="${_URL}/storage/v1/object/public/ads-images/${ad.image_url}" onclick="showDetail('${ad.id}')">
                     <div class="ad-info">
-                        <div class="ad-title">${ad.title}</div>
-                        <div class="ad-price">${ad.price} Pi</div>
-                        ${isOwner ? `<button class="delete-btn" onclick="deleteAd('${ad.id}', '${ad.image_url}')">حذف الإعلان</button>` : ''}
+                        <div style="font-size:14px; font-weight:bold; margin-bottom:5px;">${ad.title}</div>
+                        <div class="ad-price">${ad.price} π</div>
+                        ${isOwner ? `<button class="del-badge" onclick="handleDelete('${ad.id}', '${ad.image_url}')"><i class="fas fa-trash"></i> حذف نهائي</button>` : ''}
                     </div>
                 </div>
             `).join('');
         }
 
-        async function deleteAd(id, imgPath) {
-            if(confirm("هل تريد بالتأكيد حذف هذا الإعلان؟")) {
-                await client.from('ads').delete().eq('id', id);
-                await client.storage.from('ads-images').remove([imgPath]);
-                alert("تم الحذف");
+        async function handleDelete(id, path) {
+            if(!confirm("هل أنت متأكد من حذف هذا الإعلان نهائياً؟")) return;
+            
+            // ترتيب الحذف مهم: البيانات أولاً ثم الصورة
+            const { error: dataError } = await sb.from('ads').delete().match({ id: id });
+            
+            if(!dataError) {
+                await sb.storage.from('ads-images').remove([path]);
+                alert("تم الحذف بنجاح");
                 loadMyAds();
                 loadAds();
+            } else {
+                alert("فشل الحذف: " + dataError.message);
             }
         }
 
-        function showAd(id) {
-            const ad = allAds.find(a => a.id === id);
-            document.getElementById('details-content').innerHTML = `
-                <img src="${SB_URL}/storage/v1/object/public/ads-images/${ad.image_url}" style="width:100%; border-radius:15px; margin-bottom:15px;">
-                <h2>${ad.title}</h2>
-                <div class="ad-price" style="font-size:1.8rem">${ad.price} Pi</div>
-                <p style="color:#666; line-height:1.6; margin:15px 0;">${ad.description}</p>
-                <a href="https://wa.me/${ad.phone}" class="btn-primary" style="text-decoration:none; display:block; text-align:center;">اتصل بالبائع</a>
-                <button onclick="nav('browse-view')" style="margin-top:10px; width:100%; background:none; border:none; color:gray;">عودة</button>
-            `;
-            nav('details-view');
-        }
-
-        document.getElementById('uploadForm').onsubmit = async (e) => {
+        document.getElementById('postForm').onsubmit = async (e) => {
             e.preventDefault();
-            const file = document.getElementById('pImg').files[0];
-            const path = `${Date.now()}_${file.name}`;
-            
-            await client.storage.from('ads-images').upload(path, file);
-            await client.from('ads').insert([{
-                title: document.getElementById('pTitle').value,
-                description: document.getElementById('pDesc').value,
-                price: document.getElementById('pPrice').value,
-                phone: document.getElementById('pPhone').value,
+            const file = document.getElementById('f-img').files[0];
+            const path = `img_${Date.now()}.png`;
+
+            const { error: upErr } = await sb.storage.from('ads-images').upload(path, file);
+            if(upErr) return alert("خطأ في رفع الصورة");
+
+            await sb.from('ads').insert([{
+                title: document.getElementById('f-title').value,
+                description: document.getElementById('f-desc').value,
+                price: document.getElementById('f-price').value,
+                phone: document.getElementById('f-phone').value,
                 image_url: path,
-                seller_username: user.username
+                seller_username: currentUser.username
             }]);
 
-            alert("تم النشر!");
-            document.getElementById('uploadForm').reset();
-            nav('browse-view');
+            alert("تم النشر بنجاح!");
+            document.getElementById('postForm').reset();
+            show('browse');
             loadAds();
-        };
+        }
 
-        window.onload = init;
+        function showDetail(id) {
+            // منطق عرض التفاصيل في صفحة الـ Details
+        }
     </script>
 </body>
 </html>
