@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pi Elite Hub | Premium 2026</title>
+    <title>Pi Elite Hub v2</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -11,104 +11,121 @@
         :root {
             --primary: #7c3aed;
             --accent: #00f2fe;
-            --glass: rgba(255, 255, 255, 0.07);
-            --glass-border: rgba(255, 255, 255, 0.12);
-            --bg: #0f172a;
+            --glass: rgba(255, 255, 255, 0.08);
+            --nav-bg: rgba(15, 23, 42, 0.92);
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; background: var(--bg); color: white; font-family: 'Segoe UI', system-ui, sans-serif; overflow-x: hidden; }
+        body { 
+            margin: 0; background: #0f172a; color: white; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto; 
+            overflow-x: hidden; line-height: 1.6;
+        }
 
-        /* Modern Glassmorphism */
-        .glass { background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 24px; }
-        
-        /* Page Transitions */
-        .page { display: none; padding: 20px 15px 100px; animation: slideUp 0.4s cubic-bezier(0, 0, 0.2, 1); }
+        /* نظام الصفحات والتحريك */
+        .page { display: none; padding: 15px 15px 100px; min-height: 100vh; animation: fadeIn 0.3s ease; }
         .page.active { display: block; }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
 
-        /* Navigation Bar */
-        .nav-bar { position: fixed; bottom: 15px; left: 15px; right: 15px; height: 70px; display: flex; justify-content: space-around; align-items: center; z-index: 1000; box-shadow: 0 10px 40px rgba(0,0,0,0.4); }
-        .nav-item { border: none; background: none; color: #64748b; font-size: 11px; display: flex; flex-direction: column; align-items: center; transition: 0.3s; width: 20%; }
-        .nav-item i { font-size: 22px; margin-bottom: 4px; }
-        .nav-item.active { color: var(--accent); }
-        .nav-item.active i { transform: translateY(-5px); text-shadow: 0 0 15px var(--accent); }
+        /* الهيكل الزجاجي */
+        .glass { background: var(--glass); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; }
 
-        /* Ads Grid */
-        .ads-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
-        .ad-card { position: relative; overflow: hidden; }
-        .ad-card img { width: 100%; height: 160px; object-fit: cover; }
-        .ad-info { padding: 12px; }
+        /* شريط التنقل السفلي - متوافق مع جميع الهواتف */
+        .tab-bar { 
+            position: fixed; bottom: 0; left: 0; right: 0; 
+            height: 75px; background: var(--nav-bg); 
+            display: flex; justify-content: space-around; align-items: center;
+            border-top: 1px solid rgba(255,255,255,0.1); z-index: 2000;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .tab-item { 
+            background: none; border: none; color: #94a3b8; 
+            font-size: 10px; display: flex; flex-direction: column; align-items: center;
+            transition: 0.2s; width: 20%;
+        }
+        .tab-item i { font-size: 22px; margin-bottom: 4px; transition: 0.3s; }
+        .tab-item.active { color: var(--accent); }
+        .tab-item.active i { transform: translateY(-3px) scale(1.1); }
+
+        /* شبكة الإعلانات */
+        .ads-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .ad-card { position: relative; overflow: hidden; height: 260px; display: flex; flex-direction: column; }
+        .ad-card img { width: 100%; height: 140px; object-fit: cover; border-radius: 18px 18px 0 0; }
+        .ad-card .info { padding: 10px; flex-grow: 1; }
         .price { color: var(--accent); font-weight: 800; font-size: 1.1rem; }
-        .fav-btn { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.3); border: none; color: white; padding: 8px; border-radius: 50%; }
 
-        /* Chat System */
-        .chat-container { height: 60vh; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
-        .msg { max-width: 80%; padding: 12px 16px; border-radius: 18px; font-size: 14px; line-height: 1.4; }
-        .msg.me { background: var(--primary); align-self: flex-start; border-bottom-right-radius: 4px; }
-        .msg.them { background: #334155; align-self: flex-end; border-bottom-left-radius: 4px; }
+        /* أزرار الحذف والتحكم */
+        .btn-delete { 
+            background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444;
+            padding: 6px; border-radius: 10px; font-size: 11px; margin-top: 5px; width: 100%;
+        }
 
-        /* Inputs & Buttons */
-        .input-box { background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); padding: 15px; border-radius: 15px; color: white; width: 100%; margin-bottom: 15px; outline: none; }
-        .btn-action { background: linear-gradient(135deg, var(--primary), #a855f7); color: white; border: none; padding: 16px; border-radius: 18px; width: 100%; font-weight: bold; font-size: 1rem; cursor: pointer; }
-        
-        .badge-verified { color: #22c55e; font-size: 14px; margin-right: 5px; }
+        /* مدخلات الدردشة */
+        .chat-area { height: 350px; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+        .msg { padding: 10px; border-radius: 15px; font-size: 13px; max-width: 85%; }
+        .msg.me { background: var(--primary); align-self: flex-start; }
+        .msg.them { background: #334155; align-self: flex-end; }
+
+        input, textarea { 
+            width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); 
+            color: white; padding: 14px; border-radius: 12px; margin-bottom: 10px; outline: none;
+        }
+        .main-btn { 
+            background: linear-gradient(90deg, var(--primary), #a855f7); 
+            color: white; border: none; padding: 15px; border-radius: 15px; font-weight: bold; width: 100%;
+        }
     </style>
 </head>
 <body>
 
-    <div id="page-login" class="page active" style="text-align: center; padding-top: 100px;">
-        <div style="font-size: 80px; margin-bottom: 20px;">💠</div>
-        <h1 style="letter-spacing: -1px;">Pi Elite Hub</h1>
-        <p style="color: #94a3b8; margin-bottom: 50px;">سوق الرواد الموثوق لعام 2026</p>
-        <button class="btn-action" onclick="initPi()" style="max-width: 280px;">دخول عبر Pi Network</button>
-    </div>
-
-    <div id="page-home" class="page">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-            <h2 style="margin:0">السوق</h2>
-            <div style="background:var(--glass); padding:5px 15px; border-radius:20px; font-size:12px;">Pi Browser Ready</div>
-        </div>
+    <div id="page-home" class="page active">
+        <h2 style="margin: 10px 0 20px;">السوق 💠</h2>
         <div id="ads-grid" class="ads-grid"></div>
     </div>
 
-    <div id="page-details" class="page" style="padding:0">
-        <div id="details-content"></div>
-        <div style="padding:15px">
-            <h4 style="margin-bottom:15px"><i class="fas fa-comments"></i> دردشة خاصة</h4>
-            <div id="chat-screen" class="chat-container glass" style="margin-bottom:15px"></div>
-            <div style="display:flex; gap:10px;">
-                <input type="text" id="chat-input" class="input-box" style="margin:0" placeholder="اكتب رسالتك...">
-                <button onclick="sendMsg()" class="btn-action" style="width:70px;"><i class="fas fa-paper-plane"></i></button>
-            </div>
-            <button onclick="nav('home')" style="width:100%; background:none; border:none; color:#64748b; margin-top:15px;">إغلاق والعودة</button>
+    <div id="page-profile" class="page">
+        <div class="glass" style="padding: 20px; text-align: center; margin-bottom: 20px; background: var(--primary);">
+            <div style="font-size: 40px;">👤</div>
+            <h3 id="user-display">جاري التحميل...</h3>
+        </div>
+        <h4>عروضي المنشورة</h4>
+        <div id="my-ads-grid" class="ads-grid"></div>
+    </div>
+
+    <div id="page-add" class="page">
+        <h3>نشر منتج جديد</h3>
+        <div class="glass" style="padding: 20px;">
+            <input type="file" id="p-img" accept="image/*">
+            <input type="text" id="p-title" placeholder="عنوان المنتج">
+            <textarea id="p-desc" rows="3" placeholder="الوصف..."></textarea>
+            <input type="number" id="p-price" placeholder="السعر بـ Pi">
+            <input type="tel" id="p-phone" placeholder="رقم واتساب">
+            <button class="main-btn" onclick="uploadAd()">نشر الآن</button>
         </div>
     </div>
 
     <div id="page-inbox" class="page">
-        <h2>المحادثات ✉️</h2>
+        <h2>المحادثات 💬</h2>
         <div id="inbox-list"></div>
     </div>
 
-    <div id="page-add" class="page">
-        <div class="glass" style="padding: 25px;">
-            <h3>أنشئ عرضاً جديداً</h3>
-            <form id="adForm">
-                <input type="file" id="p-img" class="input-box" accept="image/*" required>
-                <input type="text" id="p-title" class="input-box" placeholder="عنوان الإعلان" required>
-                <textarea id="p-desc" class="input-box" rows="4" placeholder="التفاصيل..." required></textarea>
-                <input type="number" id="p-price" class="input-box" placeholder="السعر بـ Pi" step="0.001" required>
-                <input type="tel" id="p-phone" class="input-box" placeholder="رقم الواتساب" required>
-                <button type="submit" class="btn-action">نشر العرض الآن</button>
-            </form>
+    <div id="page-details" class="page">
+        <div id="details-view"></div>
+        <div class="glass" style="padding: 15px; margin-top: 15px;">
+            <div id="chat-box" class="chat-area"></div>
+            <div style="display:flex; gap:8px;">
+                <input type="text" id="chat-input" placeholder="اكتب ردك..." style="margin:0">
+                <button onclick="sendMsg()" style="background:var(--accent); border:none; padding:10px 15px; border-radius:10px; color:black;"><i class="fas fa-paper-plane"></i></button>
+            </div>
         </div>
+        <button onclick="nav('home')" style="width:100%; background:none; border:none; color:gray; margin-top:20px;">← العودة للسوق</button>
     </div>
 
-    <nav class="nav-bar glass" id="navbar" style="display:none">
-        <button class="nav-item active" onclick="nav('home', this)"><i class="fas fa-store"></i><span>السوق</span></button>
-        <button class="nav-item" onclick="nav('inbox', this)"><i class="fas fa-comment-dots"></i><span>الرسائل</span></button>
-        <button class="nav-item" onclick="nav('add', this)"><i class="fas fa-plus-circle"></i><span>نشر</span></button>
-        <button class="nav-item" onclick="nav('home')"><i class="fas fa-user-circle"></i><span>حسابي</span></button>
+    <nav class="tab-bar" id="navbar" style="display:none">
+        <button class="tab-item active" onclick="nav('home', this)"><i class="fas fa-store"></i><span>السوق</span></button>
+        <button class="tab-item" onclick="nav('inbox', this)"><i class="fas fa-comment-dots"></i><span>الرسائل</span></button>
+        <button class="tab-item" onclick="nav('add', this)"><i class="fas fa-plus-circle"></i><span>نشر</span></button>
+        <button class="tab-item" onclick="nav('profile', this)"><i class="fas fa-user-circle"></i><span>حسابي</span></button>
     </nav>
 
     <script>
@@ -117,142 +134,142 @@
         const _sb = supabase.createClient(SB_URL, SB_KEY);
         let user = null, activeAd = null;
 
-        // 1. نظام الدخول
+        // تهيئة Pi SDK
         async function initPi() {
             try {
                 const Pi = window.Pi; Pi.init({ version: "2.0" });
                 const auth = await Pi.authenticate(['username'], (p)=>{});
                 user = auth.user;
-                document.getElementById('page-login').classList.remove('active');
+                document.getElementById('user-display').innerText = "@" + user.username;
                 document.getElementById('navbar').style.display = 'flex';
-                nav('home');
-            } catch (e) { alert("يرجى فتح التطبيق من Pi Browser"); }
+                loadAds();
+            } catch (e) { alert("افتح من Pi Browser"); }
         }
 
-        // 2. التنقل
         function nav(id, btn) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById('page-' + id).classList.add('active');
-            if(btn) { document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active')); btn.classList.add('active'); }
+            if(btn) { document.querySelectorAll('.tab-item').forEach(i => i.classList.remove('active')); btn.classList.add('active'); }
             if(id === 'home') loadAds();
+            if(id === 'profile') loadMyAds();
             if(id === 'inbox') loadInbox();
             window.scrollTo(0,0);
         }
 
-        // 3. جلب الإعلانات
         async function loadAds() {
             const { data } = await _sb.from('ads').select('*').order('created_at', {ascending: false});
-            document.getElementById('ads-grid').innerHTML = data.map(ad => `
-                <div class="glass ad-card" onclick="showAd('${ad.id}')">
-                    <button class="fav-btn"><i class="far fa-heart"></i></button>
-                    <img src="${SB_URL}/storage/v1/object/public/ads-images/${ad.image_url}">
-                    <div class="ad-info">
+            renderGrid(data, 'ads-grid', false);
+        }
+
+        async function loadMyAds() {
+            const { data } = await _sb.from('ads').select('*').eq('seller_username', user.username);
+            renderGrid(data, 'my-ads-grid', true);
+        }
+
+        function renderGrid(data, containerId, isOwner) {
+            document.getElementById(containerId).innerHTML = data.map(ad => `
+                <div class="glass ad-card">
+                    <img src="${SB_URL}/storage/v1/object/public/ads-images/${ad.image_url}" onclick="openAd('${ad.id}')">
+                    <div class="info">
                         <div class="price">${ad.price} Pi</div>
-                        <div style="font-size:12px; opacity:0.7; overflow:hidden; white-space:nowrap;">${ad.title}</div>
+                        <div style="font-size:11px; opacity:0.8; height:32px; overflow:hidden">${ad.title}</div>
+                        ${isOwner ? `<button class="btn-delete" onclick="deleteAd('${ad.id}', '${ad.image_url}')"><i class="fas fa-trash"></i> حذف</button>` : ''}
                     </div>
                 </div>
             `).join('');
         }
 
-        // 4. صفحة التفاصيل والدردشة
-        async function showAd(id) {
+        async function deleteAd(id, img) {
+            if(!confirm("هل أنت متأكد من الحذف النهائي؟")) return;
+            const { error } = await _sb.from('ads').delete().eq('id', id);
+            if(!error) {
+                await _sb.storage.from('ads-images').remove([img]);
+                loadMyAds();
+            }
+        }
+
+        async function openAd(id) {
             const { data: ad } = await _sb.from('ads').select('*').eq('id', id).single();
             activeAd = ad;
-            document.getElementById('details-content').innerHTML = `
-                <img src="${SB_URL}/storage/v1/object/public/ads-images/${ad.image_url}" style="width:100%; height:300px; object-fit:cover;">
-                <div style="padding:20px;">
-                    <h2 style="margin:0">${ad.title}</h2>
-                    <h1 style="color:var(--accent); margin:10px 0;">${ad.price} Pi</h1>
-                    <p style="color:#94a3b8; line-height:1.6;">${ad.description}</p>
-                    <div style="font-size:13px; color:var(--primary);">البائع: @${ad.seller_username} <i class="fas fa-check-circle badge-verified"></i></div>
+            document.getElementById('details-view').innerHTML = `
+                <div class="glass">
+                    <img src="${SB_URL}/storage/v1/object/public/ads-images/${ad.image_url}" style="width:100%; border-radius:20px;">
+                    <div style="padding:15px">
+                        <h2 style="margin:0">${ad.title}</h2>
+                        <h1 style="color:var(--accent);">${ad.price} Pi</h1>
+                        <p style="opacity:0.7">${ad.description}</p>
+                        <p style="font-size:12px">بواسطة: @${ad.seller_username}</p>
+                    </div>
                 </div>
             `;
             nav('details');
             loadMsgs();
-            _sb.from('ads').update({ views_count: (ad.views_count || 0) + 1 }).eq('id', id).then();
         }
 
         async function loadMsgs() {
             if(!activeAd) return;
-            const { data } = await _sb.from('messages')
-                .select('*')
-                .eq('ad_id', activeAd.id)
+            const { data } = await _sb.from('messages').select('*').eq('ad_id', activeAd.id)
                 .or(`sender_username.eq.${user.username},receiver_username.eq.${user.username}`)
-                .order('created_at', { ascending: true });
-
-            const screen = document.getElementById('chat-screen');
-            screen.innerHTML = data.map(m => `
+                .order('created_at', {ascending: true});
+            
+            const box = document.getElementById('chat-box');
+            box.innerHTML = data.map(m => `
                 <div class="msg ${m.sender_username === user.username ? 'me' : 'them'}">
-                    <small style="font-size:9px; display:block; opacity:0.6">${m.sender_username}</small>
+                    <small style="display:block; font-size:9px; opacity:0.5">${m.sender_username}</small>
                     ${m.text}
                 </div>
             `).join('');
-            screen.scrollTop = screen.scrollHeight;
+            box.scrollTop = box.scrollHeight;
         }
 
         async function sendMsg() {
-            const input = document.getElementById('chat-input');
-            const text = input.value.trim();
-            if(!text || !activeAd) return;
-
-            const { error } = await _sb.from('messages').insert([{
-                ad_id: activeAd.id,
-                sender_username: user.username,
-                receiver_username: activeAd.seller_username,
-                text: text
+            const inp = document.getElementById('chat-input');
+            if(!inp.value || !activeAd) return;
+            await _sb.from('messages').insert([{
+                ad_id: activeAd.id, sender_username: user.username,
+                receiver_username: activeAd.seller_username, text: inp.value
             }]);
-
-            if(!error) { input.value = ''; loadMsgs(); }
+            inp.value = ''; loadMsgs();
         }
 
-        // 5. قائمة المحادثات (Inbox)
         async function loadInbox() {
-            const { data } = await _sb.from('messages')
-                .select('*, ads(title)')
+            const { data } = await _sb.from('messages').select('*, ads(title, image_url)')
                 .or(`sender_username.eq.${user.username},receiver_username.eq.${user.username}`)
-                .order('created_at', { ascending: false });
+                .order('created_at', {ascending: false});
 
-            const unique = [];
-            const seen = new Set();
+            const unique = []; const seen = new Set();
             data.forEach(m => {
                 const partner = m.sender_username === user.username ? m.receiver_username : m.sender_username;
-                if(!seen.has(m.ad_id + partner)) {
-                    unique.push({ partner, adId: m.ad_id, adTitle: m.ads.title, last: m.text });
-                    seen.add(m.ad_id + partner);
-                }
+                if(!seen.has(m.ad_id + partner)) { unique.push({m, partner}); seen.add(m.ad_id + partner); }
             });
 
             document.getElementById('inbox-list').innerHTML = unique.map(c => `
-                <div class="glass" style="padding:15px; margin-bottom:10px; display:flex; align-items:center; gap:15px;" 
-                     onclick="showAd('${c.adId}')">
-                    <div style="width:45px; height:45px; background:var(--primary); border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold;">${c.partner[0].toUpperCase()}</div>
+                <div class="glass" style="padding:12px; margin-bottom:10px; display:flex; align-items:center; gap:12px;" onclick="openAd('${c.m.ad_id}')">
+                    <img src="${SB_URL}/storage/v1/object/public/ads-images/${c.m.ads.image_url}" style="width:50px; height:50px; border-radius:10px; object-fit:cover;">
                     <div style="flex:1">
                         <div style="font-weight:bold">${c.partner}</div>
-                        <div style="font-size:12px; color:#64748b">${c.adTitle}: ${c.last}</div>
+                        <div style="font-size:11px; opacity:0.6">${c.m.ads.title}: ${c.m.text.substring(0,25)}...</div>
                     </div>
-                    <i class="fas fa-chevron-left" style="color:#334155"></i>
                 </div>
             `).join('');
         }
 
-        // 6. النشر
-        document.getElementById('adForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const file = document.getElementById('p-img').files[0];
+        async function uploadAd() {
+            const f = document.getElementById('p-img').files[0];
             const path = `img_${Date.now()}.png`;
-            await _sb.storage.from('ads-images').upload(path, file);
+            if(!f) return alert("اختر صورة أولاً");
+            await _sb.storage.from('ads-images').upload(path, f);
             await _sb.from('ads').insert([{
                 title: document.getElementById('p-title').value,
                 description: document.getElementById('p-desc').value,
                 price: document.getElementById('p-price').value,
                 phone: document.getElementById('p-phone').value,
-                image_url: path,
-                seller_username: user.username
+                image_url: path, seller_username: user.username
             }]);
-            alert("تم النشر بنجاح! 🚀"); nav('home');
-        };
+            alert("تم النشر!"); nav('home');
+        }
 
-        // تحديث الدردشة كل 4 ثوانٍ
+        initPi();
         setInterval(() => { if(document.getElementById('page-details').classList.contains('active')) loadMsgs(); }, 4000);
     </script>
 </body>
