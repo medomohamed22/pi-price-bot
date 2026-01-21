@@ -4,150 +4,91 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Gamaity Pro | جمعيتي</title>
-    
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
     <style>
-        :root {
-            --primary: #6c5ce7;
-            --secondary: #a29bfe;
-            --success: #00b894;
-            --danger: #d63031;
-            --warning: #fdcb6e;
-            --dark: #2d3436;
-            --light-bg: #f9f9fb;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: 'Segoe UI', Tahoma, sans-serif; }
-        body { background-color: var(--light-bg); color: var(--dark); line-height: 1.6; padding-bottom: 100px; }
-
-        /* نظام الإشعارات */
+        :root { --primary: #6c5ce7; --secondary: #a29bfe; --success: #00b894; --danger: #d63031; --dark: #2d3436; --light-bg: #f9f9fb; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--light-bg); color: var(--dark); padding-bottom: 100px; overflow-x: hidden; }
+        
+        /* الإشعارات */
         #toast-container { position: fixed; top: 20px; left: 20px; right: 20px; z-index: 9999; }
-        .toast { 
-            padding: 15px 20px; border-radius: 15px; margin-bottom: 10px; color: white;
-            display: flex; align-items: center; gap: 12px; box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-            animation: slideIn 0.4s forwards; font-weight: bold;
-        }
+        .toast { padding: 15px; border-radius: 15px; margin-bottom: 10px; color: white; display: flex; align-items: center; gap: 10px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); animation: slideIn 0.3s forwards; font-weight: bold; }
         @keyframes slideIn { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-        /* الهيدر */
-        .header {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            padding: 40px 20px 60px; color: white; border-radius: 0 0 40px 40px;
-            position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 20px rgba(108, 92, 231, 0.2);
-        }
-        .user-badge {
-            background: rgba(255,255,255,0.2); backdrop-filter: blur(10px);
-            padding: 8px 15px; border-radius: 50px; display: inline-flex;
-            align-items: center; gap: 8px; font-size: 0.85rem; margin-top: 15px;
-        }
-
-        /* الصفحات */
-        .page { display: none; padding: 20px; animation: fadeIn 0.4s ease; }
+        .header { background: linear-gradient(135deg, var(--primary), var(--secondary)); padding: 40px 20px 60px; color: white; border-radius: 0 0 40px 40px; position: sticky; top: 0; z-index: 100; }
+        .page { display: none; padding: 20px; animation: fadeIn 0.3s ease; }
         .page.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* البطاقات */
-        .card {
-            background: white; border-radius: 24px; padding: 20px; margin-bottom: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.01);
-        }
-        .circle-item {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 15px; border-bottom: 1px solid #f1f1f1;
-        }
+        .card { background: white; border-radius: 24px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.03); }
+        .btn { width: 100%; padding: 16px; border-radius: 18px; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.3s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
 
-        /* الأزرار */
-        .btn {
-            width: 100%; padding: 16px; border-radius: 18px; border: none; font-weight: bold;
-            font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
-            transition: 0.3s;
-        }
-        .btn-primary { background: var(--primary); color: white; box-shadow: 0 8px 15px rgba(108, 92, 231, 0.3); }
-        .btn-primary:active { transform: scale(0.97); }
-
-        /* التنقل السفلي */
-        .nav-bar {
-            position: fixed; bottom: 20px; left: 20px; right: 20px;
-            background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(15px);
-            height: 75px; border-radius: 25px; display: flex;
-            justify-content: space-around; align-items: center;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.5);
-        }
+        .nav-bar { position: fixed; bottom: 20px; left: 20px; right: 20px; background: rgba(255,255,255,0.9); backdrop-filter: blur(15px); height: 75px; border-radius: 25px; display: flex; justify-content: space-around; align-items: center; box-shadow: 0 15px 35px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.5); }
         .nav-item { color: #b2bec3; text-align: center; font-size: 0.75rem; cursor: pointer; }
         .nav-item.active { color: var(--primary); font-weight: bold; }
         .nav-item i { font-size: 1.5rem; display: block; margin-bottom: 4px; }
-
-        .loader { border: 3px solid #f3f3f3; border-top: 3px solid var(--primary); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 20px auto; }
+        
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid var(--primary); border-radius: 50%; width: 25px; height: 25px; animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
-
     <div id="toast-container"></div>
 
     <header class="header">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h1 style="font-weight: 900; letter-spacing: -1px;">جمعيتي <span style="color: var(--warning);">PRO</span></h1>
-            <i class="fas fa-bell"></i>
-        </div>
-        <div id="user-area" class="user-badge" style="display: none;">
-            <i class="fas fa-circle-user"></i> <span id="p-username">جاري التحميل...</span>
+            <h1>جمعيتي <span style="font-weight: 300;">PRO</span></h1>
+            <div id="user-tag" style="background: rgba(255,255,255,0.2); padding: 5px 12px; border-radius: 20px; font-size: 0.8rem;">
+                <i class="fas fa-user"></i> <span id="username-display">تحميل...</span>
+            </div>
         </div>
     </header>
 
     <div id="page-home" class="page active">
-        <h3 style="margin-bottom: 15px;">الجمعيات المتاحة</h3>
-        <div id="circles-list"><div class="loader"></div></div>
+        <h3 style="margin-bottom: 15px;">الجمعيات النشطة</h3>
+        <div id="circles-list"></div>
     </div>
 
     <div id="page-details" class="page">
         <div class="card" style="margin-top: -40px;">
-            <div onclick="showPage('home')" style="color: var(--primary); font-weight: bold; margin-bottom: 20px;">
-                <i class="fas fa-chevron-right"></i> العودة للرئيسية
-            </div>
+            <div onclick="showPage('home')" style="color: var(--primary); margin-bottom: 15px; cursor: pointer;"><i class="fas fa-arrow-right"></i> عودة</div>
             <h2 id="det-title">...</h2>
-            <p id="det-desc" style="color: #636e72; margin: 10px 0; font-size: 0.9rem;"></p>
-            
-            <div style="display: flex; gap: 10px; margin: 20px 0;">
+            <p id="det-desc" style="color: #636e72; font-size: 0.9rem; margin-bottom: 20px;"></p>
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
                 <div style="flex:1; background:#f8f9fa; padding:15px; border-radius:15px; text-align:center;">
-                    <small style="color:#888">القسط</small><br><strong id="det-amount" style="color:var(--primary)">0 π</strong>
+                    <small>القسط</small><br><b id="det-amount" style="color:var(--primary)">0 π</b>
                 </div>
                 <div style="flex:1; background:#f8f9fa; padding:15px; border-radius:15px; text-align:center;">
-                    <small style="color:#888">الأدوار</small><br><strong id="det-slots">0</strong>
+                    <small>الأدوار</small><br><b id="det-slots">0</b>
                 </div>
             </div>
-
-            <button id="btn-pay" class="btn btn-primary" onclick="handlePayment()">
-                <i class="fas fa-wallet"></i> اشترك وادفع القسط
+            <button id="btn-pay" class="btn btn-primary" onclick="startPayment()">
+                <i class="fas fa-credit-card"></i> دفع القسط والاشتراك
             </button>
         </div>
-
         <div class="card">
-            <h4 style="margin-bottom: 15px;"><i class="fas fa-users"></i> قائمة المشتركين</h4>
-            <div id="participants-list"></div>
+            <h4>المشتركون</h4>
+            <div id="participants-list" style="margin-top:10px;"></div>
         </div>
     </div>
 
     <div id="page-wallet" class="page">
         <div class="card" style="text-align: center; padding: 40px 20px; margin-top: -40px;">
-            <div style="font-size: 3rem; color: var(--primary); margin-bottom: 15px;"><i class="fas fa-piggy-bank"></i></div>
-            <p style="color: #888;">رصيدك المستحق (من الأدمن)</p>
+            <i class="fas fa-wallet" style="font-size: 3rem; color: var(--primary);"></i>
+            <p style="margin-top: 15px; color: #888;">إجمالي مستحقاتك المعتمدة</p>
             <h1 id="wallet-balance" style="font-size: 3.5rem; margin: 10px 0;">0.00 <small style="font-size: 1rem;">π</small></h1>
-            <div id="payout-status" style="margin-bottom: 25px;"></div>
-            <button class="btn btn-primary" onclick="showToast('سيتم التحويل لمحفظتك قريباً', 'warning')">طلب سحب الرصيد</button>
+            <div id="wallet-msg" style="margin-bottom: 20px; font-size: 0.9rem;"></div>
+            <button class="btn btn-primary" onclick="requestWithdraw()">طلب تحويل المبالغ</button>
         </div>
     </div>
 
     <nav class="nav-bar">
-        <div class="nav-item active" id="n-home" onclick="showPage('home')">
-            <i class="fas fa-home"></i><span>الرئيسية</span>
-        </div>
-        <div class="nav-item" id="n-wallet" onclick="showPage('wallet')">
-            <i class="fas fa-wallet"></i><span>المحفظة</span>
-        </div>
+        <div class="nav-item active" id="n-home" onclick="showPage('home')"><i class="fas fa-home"></i><span>الرئيسية</span></div>
+        <div class="nav-item" id="n-wallet" onclick="showPage('wallet')"><i class="fas fa-wallet"></i><span>المحفظة</span></div>
     </nav>
 
     <script>
@@ -156,121 +97,106 @@
         const _db = supabase.createClient(SB_URL, SB_KEY);
 
         let user = null;
-        let selectedCircle = null;
-
-        // نظام الإشعارات
-        function showToast(msg, type = "success") {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.style.background = type === "success" ? "#00b894" : (type === "error" ? "#d63031" : "#fdcb6e");
-            toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-info-circle'}"></i> ${msg}`;
-            container.appendChild(toast);
-            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 500); }, 3000);
-        }
+        let currentCircle = null;
 
         async function init() {
             try {
                 await Pi.init({ version: "2.0", sandbox: false });
-                const auth = await Pi.authenticate(['username', 'payments'], onIncomplete);
+                const auth = await Pi.authenticate(['username', 'payments'], onIncompletePayment);
                 user = auth.user;
-                
-                document.getElementById('p-username').innerText = user.username;
-                document.getElementById('user-area').style.display = 'inline-flex';
-                
+                document.getElementById('username-display').innerText = user.username;
                 loadCircles();
-                checkMyPayouts(); 
+                fetchWalletData();
             } catch (e) {
-                showToast("يرجى الفتح من داخل Pi Browser", "error");
+                showToast("تأكد من استخدام Pi Browser", "error");
             }
         }
 
         async function loadCircles() {
-            const list = document.getElementById('circles-list');
-            const { data, error } = await _db.from('circles').select('*').order('created_at', { ascending: false });
-
-            if (error) return showToast("خطأ في الاتصال", "error");
-
-            list.innerHTML = '';
+            const { data } = await _db.from('circles').select('*').order('created_at', { ascending: false });
+            const container = document.getElementById('circles-list');
+            container.innerHTML = '';
             data.forEach(c => {
                 const card = document.createElement('div');
                 card.className = 'card';
                 card.onclick = () => openCircle(c);
-                card.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div>
-                            <h3 style="font-size:1.1rem;">${c.title}</h3>
-                            <p style="font-size:0.8rem; color:#888;">${c.total_slots} مشاركين | ${c.installment_amount} π</p>
-                        </div>
-                        <i class="fas fa-chevron-left" style="color:#ddd"></i>
-                    </div>
-                `;
-                list.appendChild(card);
+                card.innerHTML = `<h3>${c.title}</h3><p>${c.installment_amount} π | ${c.total_slots} دور</p>`;
+                container.appendChild(card);
             });
         }
 
         async function openCircle(c) {
-            selectedCircle = c;
+            currentCircle = c;
             showPage('details');
             document.getElementById('det-title').innerText = c.title;
-            document.getElementById('det-desc').innerText = c.description || 'لا يوجد وصف متاح.';
+            document.getElementById('det-desc').innerText = c.description;
             document.getElementById('det-amount').innerText = c.installment_amount + ' π';
             document.getElementById('det-slots').innerText = c.total_slots;
             
-            const pList = document.getElementById('participants-list');
-            pList.innerHTML = '<div class="loader"></div>';
-
             const { data: members } = await _db.from('participants').select('*').eq('circle_id', c.id);
+            const pList = document.getElementById('participants-list');
             pList.innerHTML = '';
             for(let i=1; i<=c.total_slots; i++) {
-                const m = members ? members[i-1] : null;
-                pList.innerHTML += `
-                    <div class="circle-item">
-                        <span style="color:${m ? '#2d3436' : '#ccc'}"><b>${i}.</b> ${m ? m.username : 'مقعد شاغر'}</span>
-                        <i class="fas ${m ? 'fa-check-circle' : 'fa-circle'}" style="color:${m ? '#00b894' : '#eee'}"></i>
-                    </div>
-                `;
+                const m = members[i-1];
+                pList.innerHTML += `<div style="padding:10px 0; border-bottom:1px solid #f0f0f0; display:flex; justify-content:space-between;">
+                    <span>${i}. ${m ? m.username : 'مقعد متاح'}</span>
+                    <span>${m ? '<i class="fas fa-check-circle" style="color:var(--success)"></i>' : ''}</span>
+                </div>`;
             }
         }
 
-        async function handlePayment() {
+        // كود الدفع (Payment)
+        async function startPayment() {
             const btn = document.getElementById('btn-pay');
             btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري المعالجة...';
+            btn.innerHTML = '<div class="loader"></div> جاري معالجة الدفع...';
 
             try {
-                await Pi.createPayment({
-                    amount: selectedCircle.installment_amount,
-                    memo: "اشتراك في جمعية: " + selectedCircle.title,
-                    metadata: { circleId: selectedCircle.id }
+                const payment = await Pi.createPayment({
+                    amount: currentCircle.installment_amount,
+                    memo: `الاشتراك في جمعية: ${currentCircle.title}`,
+                    metadata: { circleId: currentCircle.id }
                 }, {
-                    onReadyForServerApproval: (id) => fetch('/approve', {method:'POST', body: JSON.stringify({id})}),
-                    onReadyForServerCompletion: async (id, txid) => {
+                    onReadyForServerApproval: async (paymentId) => {
+                        // في تطبيقات الـ Pi الحقيقية، هنا ترسل الـ ID لخادمك ليقوم بعمل Approve
+                        // لتجاوز ذلك في التطبيقات البسيطة، يمكن استخدام خادم وسيط أو محاكاة الحالة
+                        showToast("تم إرسال الطلب، بانتظار الموافقة...", "warning");
+                    },
+                    onReadyForServerCompletion: async (paymentId, txid) => {
                         await _db.from('participants').insert([{
-                            circle_id: selectedCircle.id,
+                            circle_id: currentCircle.id,
                             pi_user_id: user.uid,
                             username: user.username,
-                            amount: selectedCircle.installment_amount,
-                            transaction_id: txid,
-                            has_paid_current: true
+                            amount: currentCircle.installment_amount,
+                            transaction_id: txid
                         }]);
-                        showToast("تم الدفع والاشتراك بنجاح!");
-                        openCircle(selectedCircle);
+                        showToast("تم الدفع بنجاح!");
+                        openCircle(currentCircle);
                     },
-                    onCancel: () => { btn.disabled = false; btn.innerHTML = '<i class="fas fa-wallet"></i> اشترك وادفع القسط'; },
-                    onError: (e) => { showToast("فشل الدفع", "error"); btn.disabled = false; }
+                    onCancel: () => { btn.disabled = false; btn.innerHTML = '<i class="fas fa-credit-card"></i> دفع القسط والاشتراك'; },
+                    onError: (e) => { 
+                        showToast("حدث خطأ في الدفع: " + e.message, "error");
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fas fa-credit-card"></i> دفع القسط والاشتراك';
+                    }
                 });
-            } catch(e) { btn.disabled = false; }
+            } catch (e) {
+                btn.disabled = false;
+            }
         }
 
-        async function checkMyPayouts() {
+        async function fetchWalletData() {
             if(!user) return;
-            const { data } = await _db.from('payouts').select('amount').eq('pi_user_id', user.uid);
-            if(data && data.length > 0) {
-                const total = data.reduce((sum, p) => sum + Number(p.amount), 0);
-                document.getElementById('wallet-balance').innerText = total.toFixed(2) + " π";
-                document.getElementById('payout-status').innerHTML = '<span style="color:var(--success); font-weight:bold;"><i class="fas fa-gift"></i> لديك مبالغ جاهزة استلمها الأدمن!</span>';
+            const { data } = await _db.from('payouts').select('*').eq('pi_user_id', user.uid);
+            const balance = data.reduce((sum, p) => sum + Number(p.amount), 0);
+            document.getElementById('wallet-balance').innerText = balance.toFixed(2) + " π";
+            if(balance > 0) {
+                document.getElementById('wallet-msg').innerHTML = '<b style="color:var(--success)">الأدمن وافق على سحب مستحقاتك!</b>';
             }
+        }
+
+        function requestWithdraw() {
+            showToast("سيتم التواصل معك من قبل الأدمن لتحويل الـ Pi لمحفظتك", "success");
         }
 
         function showPage(p) {
@@ -281,7 +207,20 @@
             window.scrollTo(0,0);
         }
 
-        function onIncomplete(p) {}
+        function showToast(m, t="success") {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.style.background = t === "success" ? "#00b894" : (t === "error" ? "#d63031" : "#fdcb6e");
+            toast.innerHTML = `<i class="fas fa-info-circle"></i> ${m}`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+
+        function onIncompletePayment(p) {
+            // معالجة المدفوعات التي لم تكتمل
+        }
+
         window.onload = init;
     </script>
 </body>
