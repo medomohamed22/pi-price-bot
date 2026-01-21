@@ -9,12 +9,10 @@ function cors() {
 }
 
 function getSupabase() {
-  // نفس الداتا اللي عندك — الأفضل تحطهم env
-  const SUPABASE_URL = process.env.SUPABASE_URL || "https://xncapmzlwuisupkjlftb.supabase.co";
-  const SUPABASE_KEY = process.env.SUPABASE_KEY || "sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS";
+  const SUPABASE_URL = process.env.SUPABASE_URL || "https://axjkwrssmofzavaoqutq.supabase.co";
+  const SUPABASE_KEY = process.env.SUPABASE_KEY || "sb_publishable_tiuMncgWhf1YRWoD-uYQ3Q_ziI8OKci";
   return createClient(SUPABASE_URL, SUPABASE_KEY);
 }
-
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers: cors(), body: "" };
   if (event.httpMethod !== "POST") return { statusCode: 405, headers: cors(), body: "Method Not Allowed" };
