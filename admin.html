@@ -1,53 +1,185 @@
-<div class="card">
-    <h2><i class="fas fa-clock"></i> طلبات السحب المعلقة</h2>
-    <div id="withdrawal-requests-list">
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gamaity PRO | لوحة الإدارة</title>
+    
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root { --primary: #6c5ce7; --success: #00b894; --warning: #fdcb6e; --bg: #f4f7f6; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: var(--bg); color: #2d3436; padding: 20px; }
+        
+        .admin-container { max-width: 1200px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; }
+        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        
+        h2 { font-size: 1.2rem; margin-bottom: 20px; color: var(--primary); border-right: 4px solid var(--primary); padding-right: 10px; }
+        
+        input, select, textarea { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 12px; font-size: 0.9rem; }
+        .btn { width: 100%; padding: 14px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        
+        .request-item { background: #f9f9f9; padding: 15px; border-radius: 15px; border: 1px solid #eee; margin-bottom: 15px; }
+        .tag { padding: 4px 10px; border-radius: 50px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
+        .tag-pending { background: var(--warning); color: #856404; }
+    </style>
+</head>
+<body>
+
+<div class="admin-container">
+    <div class="header">
+        <h1>لوحة تحكم الإدارة <small style="font-size: 0.5em; color: var(--primary);">Gamaity PRO</small></h1>
+        <button class="btn" style="width:auto; background:#eee;" onclick="location.reload()"><i class="fas fa-sync"></i> تحديث</button>
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <h2><i class="fas fa-plus-circle"></i> إنشاء جمعية جديدة</h2>
+            <input type="text" id="c-title" placeholder="عنوان الجمعية">
+            <input type="number" id="c-amount" placeholder="مبلغ القسط (π)">
+            <input type="number" id="c-slots" placeholder="إجمالي عدد المشتركين">
+            <textarea id="c-desc" placeholder="وصف قصير للجمعية..."></textarea>
+            <button class="btn btn-primary" onclick="createCircle()">نشر الجمعية للمستخدمين</button>
         </div>
+
+        <div class="card">
+            <h2><i class="fas fa-award"></i> تحديد فائز بالدور</h2>
+            <label>اختر الجمعية:</label>
+            <select id="sel-circle" onchange="loadParticipants(this.value)"></select>
+            <label>اختر المشترك المستحق:</label>
+            <select id="sel-user"></select>
+            <input type="number" id="p-amount" placeholder="المبلغ المعتمد للفائز (π)">
+            <button class="btn btn-success" onclick="approveWinnerPayout()">إضافة الرصيد لمحفظة المستخدم</button>
+        </div>
+
+        <div class="card" style="grid-column: span 2;">
+            <h2><i class="fas fa-hand-holding-usd"></i> طلبات السحب المعلقة (App-to-User)</h2>
+            <div id="requests-list">جاري تحميل الطلبات...</div>
+        </div>
+    </div>
 </div>
 
 <script>
-async function loadWithdrawalRequests() {
-    const { data } = await _db.from('withdrawal_requests').select('*').eq('status', 'pending');
-    const container = document.getElementById('withdrawal-requests-list');
-    container.innerHTML = '';
+    // إعدادات Supabase
+    const SB_URL = 'https://axjkwrssmofzavaoqutq.supabase.co';
+    const SB_KEY = 'sb_publishable_tiuMncgWhf1YRWoD-uYQ3Q_ziI8OKci';
+    const _db = supabase.createClient(SB_URL, SB_KEY);
 
-    data.forEach(req => {
-        container.innerHTML += `
-            <div style="padding: 15px; border: 1px solid #eee; border-radius: 10px; margin-bottom: 10px; background: #fafafa;">
-                <p><b>المستخدم:</b> ${req.username}</p>
-                <p><b>المبلغ:</b> ${req.amount} π</p>
-                <p style="word-break: break-all;"><b>المحفظة:</b> ${req.wallet_address}</p>
-                <button class="btn" style="background:#00b894; margin-top:10px;" 
-                    onclick="executeAppToUserPayout('${req.id}', '${req.wallet_address}', ${req.amount})">
-                    تنفيذ التحويل الآن (App-to-User)
-                </button>
-            </div>
-        `;
-    });
-}
-
-// تنفيذ التحويل الفعلي من محفظة التطبيق للمستخدم
-async function executeAppToUserPayout(requestId, address, amount) {
-    try {
-        const payment = await Pi.createPayment({
-            amount: amount,
-            memo: "سحب أرباح من جمعيتي",
-            metadata: { requestId: requestId, wallet: address }
-        }, {
-            onReadyForServerApproval: (id) => { console.log("Approved:", id); },
-            onReadyForServerCompletion: async (id, txid) => {
-                // تحديث حالة الطلب في قاعدة البيانات بعد نجاح التحويل
-                await _db.from('withdrawal_requests').update({ status: 'completed' }).eq('id', requestId);
-                alert("تم التحويل بنجاح للمحفظة المذكورة!");
-                loadWithdrawalRequests();
-            }
-        });
-    } catch (e) {
-        alert("خطأ في التحويل: " + e.message);
+    async function initAdmin() {
+        // تهيئة Pi SDK للأدمن لتنفيذ عمليات App-to-User
+        try { await Pi.init({ version: "2.0", sandbox: false }); } catch(e){}
+        loadCirclesData();
+        loadWithdrawalRequests();
     }
-}
 
-window.onload = function() {
-    loadCircles();
-    loadWithdrawalRequests();
-};
+    // --- إدارة الجمعيات ---
+    async function loadCirclesData() {
+        const { data } = await _db.from('circles').select('*');
+        const sel = document.getElementById('sel-circle');
+        sel.innerHTML = '<option value="">-- اختر الجمعية --</option>';
+        data.forEach(c => sel.innerHTML += `<option value="${c.id}">${c.title}</option>`);
+    }
+
+    async function loadParticipants(circleId) {
+        if(!circleId) return;
+        const { data } = await _db.from('participants').select('pi_user_id, username').eq('circle_id', circleId);
+        const sel = document.getElementById('sel-user');
+        sel.innerHTML = '';
+        data.forEach(p => sel.innerHTML += `<option value="${p.pi_user_id}">${p.username}</option>`);
+    }
+
+    async function createCircle() {
+        const title = document.getElementById('c-title').value;
+        const amount = document.getElementById('c-amount').value;
+        const slots = document.getElementById('c-slots').value;
+        const desc = document.getElementById('c-desc').value;
+
+        if(!title || !amount) return alert("أكمل البيانات");
+        await _db.from('circles').insert([{ title, installment_amount: amount, total_slots: slots, description: desc }]);
+        alert("تم النشر!"); location.reload();
+    }
+
+    // --- توزيع الأرباح (داخلياً) ---
+    async function approveWinnerPayout() {
+        const cid = document.getElementById('sel-circle').value;
+        const uid = document.getElementById('sel-user').value;
+        const amount = document.getElementById('p-amount').value;
+        const uname = document.getElementById('sel-user').options[document.getElementById('sel-user').selectedIndex].text;
+
+        if(!uid || !amount) return alert("أكمل الاختيارات");
+
+        const { error } = await _db.from('payouts').insert([{
+            circle_id: cid, pi_user_id: uid, username: uname, amount: amount
+        }]);
+
+        if(!error) alert("تم إضافة الرصيد للمستخدم " + uname);
+    }
+
+    // --- إدارة السحب (تحويل حقيقي App-to-User) ---
+    async function loadWithdrawalRequests() {
+        const { data } = await _db.from('withdrawal_requests').select('*').eq('status', 'pending');
+        const list = document.getElementById('requests-list');
+        list.innerHTML = data.length === 0 ? '<p>لا توجد طلبات معلقة حالياً.</p>' : '';
+
+        data.forEach(req => {
+            const item = document.createElement('div');
+            item.className = 'request-item';
+            item.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="tag tag-pending">قيد الانتظار</span>
+                        <p style="margin-top:10px;"><b>المستخدم:</b> ${req.username}</p>
+                        <p><b>المبلغ المطلوب:</b> <span style="color:var(--success); font-weight:bold;">${req.amount} π</span></p>
+                        <p style="word-break:break-all; font-size:0.8rem; color:#666;"><b>عنوان المحفظة:</b> ${req.wallet_address}</p>
+                    </div>
+                    <button class="btn btn-primary" style="width:auto;" onclick="executePayout('${req.id}', '${req.wallet_address}', ${req.amount})">
+                        تأفيذ التحويل الآن
+                    </button>
+                </div>
+            `;
+            list.appendChild(item);
+        });
+    }
+
+    // الوظيفة الأساسية للسحب (withdraw.js logic)
+    async function executePayout(requestId, walletAddress, amount) {
+        if(!confirm(`هل أنت متأكد من تحويل ${amount} π إلى المحفظة:\n${walletAddress}?`)) return;
+
+        try {
+            // تنفيذ عملية App-to-User عبر شبكة Pi
+            const payment = await Pi.createPayment({
+                amount: amount,
+                memo: "تحويل أرباح جمعية - Gamaity PRO",
+                metadata: { requestId: requestId, wallet: walletAddress }
+            }, {
+                onReadyForServerApproval: (id) => {
+                    console.log("Payment approved on client, waiting for server approval:", id);
+                },
+                onReadyForServerCompletion: async (id, txid) => {
+                    // تحديث قاعدة البيانات عند نجاح التحويل في البلوكشين
+                    await _db.from('withdrawal_requests').update({ status: 'completed' }).eq('id', requestId);
+                    // خصم الرصيد من جدول payouts لضمان عدم السحب المزدوج (اختياري حسب منطقك)
+                    
+                    alert("تم التحويل بنجاح! رقم المعاملة: " + txid);
+                    loadWithdrawalRequests();
+                },
+                onError: (e) => alert("خطأ في التحويل: " + e.message),
+                onCancel: () => console.log("تم إلغاء العملية")
+            });
+        } catch (e) {
+            alert("فشل تنفيذ العملية: " + e.message);
+        }
+    }
+
+    window.onload = initAdmin;
 </script>
+</body>
+</html>
