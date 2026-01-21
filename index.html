@@ -687,4 +687,472 @@
 
     function escapeHtml(str=''){
       return String(str)
-      
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;')
+        .replaceAll('"','&quot;')
+        .replaceAll("'","&#039;");
+    }
+
+    // ====== Navigation ======
+    function nav(id, btn){
+      document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+      document.getElementById('page-' + id).classList.add('active');
+
+      if(btn){
+        document.querySelectorAll('.tab-item').forEach(i=>i.classList.remove('active'));
+        btn.classList.add('active');
+      }
+
+      if(id === 'home') loadAds();
+      if(id === 'profile') loadMyAds();
+      if(id === 'inbox') loadInbox();
+    }
+
+    // ====== Pi Auth ======
+    async function initPi(){
+      try{
+        const Pi = window.Pi;
+        Pi.init({ version: "2.0" });
+
+        const auth = await Pi.authenticate(['username'], () => {});
+        user = auth.user;
+
+        setWho();
+        document.getElementById('page-login').classList.remove('active');
+        document.getElementById('navbar').style.display = 'flex';
+        nav('home');
+
+        toast('تم تسجيل الدخول ✅');
+      }catch(e){
+        alert("لازم تفتح من Pi Browser علشان تسجيل الدخول يشتغل.");
+      }
+    }
+
+    function logout(){
+      user = null;
+      activeAd = null;
+      activeConversationId = null;
+      setWho();
+      toast('تم تسجيل الخروج');
+      document.getElementById('navbar').style.display = 'none';
+      document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+      document.getElementById('page-login').classList.add('active');
+    }
+
+    // ====== Ads ======
+    async function loadAds(){
+      showSkeleton(true);
+      document.getElementById('ads-grid').innerHTML = '';
+      try{
+        const { data, error } = await _sb.from('ads').select('*').order('created_at', {ascending:false});
+        if(error) throw error;
+        allAdsCache = data || [];
+        applyFilter();
+      }catch(e){
+        toast('خطأ في تحميل الإعلانات');
+      }finally{
+        showSkeleton(false);
+      }
+    }
+
+    function applyFilter(){
+      const q = (document.getElementById('search')?.value || '').trim().toLowerCase();
+      const filtered = !q ? allAdsCache : allAdsCache.filter(a =>
+        (a.title||'').toLowerCase().includes(q) || (a.description||'').toLowerCase().includes(q)
+      );
+      renderGrid(filtered, 'ads-grid', false);
+    }
+
+    async function loadMyAds(){
+      if(!user?.username){
+        document.getElementById('my-ads-grid').innerHTML = '';
+        document.getElementById('my-empty').style.display = 'block';
+        return;
+      }
+      const { data, error } = await _sb.from('ads').select('*').eq('seller_username', user.username).order('created_at', {ascending:false});
+      if(error){ toast('خطأ في تحميل إعلاناتك'); return; }
+
+      document.getElementById('my-empty').style.display = (data?.length ? 'none' : 'block');
+      renderGrid(data || [], 'my-ads-grid', true);
+    }
+
+    function renderGrid(data, containerId, isOwner){
+      const el = document.getElementById(containerId);
+      if(!data || !data.length){
+        el.innerHTML = '';
+        return;
+      }
+      el.innerHTML = data.map(ad => `
+        <div class="glass ad-card" onclick="openAd('${ad.id}')">
+          <img class="ad-thumb" src="${SB_URL}/storage/v1/object/public/ads-images/${encodeURIComponent(ad.image_url)}" alt="ad">
+          <div class="ad-body">
+            <div class="ad-title">${escapeHtml(ad.title)}</div>
+            <div class="ad-meta">
+              <div class="price">${escapeHtml(ad.price)} Pi</div>
+              <div class="badge">@${escapeHtml(ad.seller_username)}</div>
+            </div>
+            ${isOwner ? `
+              <button class="btn-delete" onclick="event.stopPropagation(); deleteAd('${ad.id}', '${ad.image_url}')">
+                <i class="fa-solid fa-trash"></i> حذف الإعلان
+              </button>` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function openAd(id){
+      try{
+        const { data: ad, error } = await _sb.from('ads').select('*').eq('id', id).single();
+        if(error) throw error;
+
+        activeAd = ad;
+        activeConversationId = buildConversationId(ad);
+
+        // details view
+        const wa = (ad.phone || '').trim();
+        const waLink = wa ? `https://wa.me/${wa.replace(/\D/g,'')}` : null;
+
+        document.getElementById('details-view').innerHTML = `
+          <div class="glass details-card">
+            <img class="details-img" src="${SB_URL}/storage/v1/object/public/ads-images/${encodeURIComponent(ad.image_url)}" alt="ad">
+            <div class="details-body">
+              <div class="details-row">
+                <div>
+                  <h2>${escapeHtml(ad.title)}</h2>
+                  <div class="price" style="font-size:18px">${escapeHtml(ad.price)} Pi</div>
+                </div>
+                <div class="seller"><i class="fa-solid fa-user"></i> البائع: <b>@${escapeHtml(ad.seller_username)}</b></div>
+              </div>
+
+              <p>${escapeHtml(ad.description || '')}</p>
+
+              <div class="cta-row">
+                <button class="btn-main" onclick="focusChat()"><i class="fa-solid fa-message"></i> راسل البائع</button>
+                <button class="btn-accent" ${waLink ? `onclick="window.open('${waLink}','_blank')"` : 'disabled style="opacity:.5; cursor:not-allowed"'} >
+                  <i class="fa-brands fa-whatsapp"></i> واتساب
+                </button>
+              </div>
+
+              ${(!user?.username && ad.seller_username) ? `
+                <div class="muted" style="margin-top:10px; font-size:12px; line-height:1.6;">
+                  * أنت بتتصفح كزائر. علشان تبعت رسائل لازم تعمل دخول من Pi.
+                </div>` : ''}
+            </div>
+          </div>
+        `;
+
+        // chat header
+        document.getElementById('chat-hint').textContent = `محادثة خاصة على إعلان: ${ad.title}`;
+        document.getElementById('conv-pill').innerHTML = `<i class="fa-solid fa-lock"></i> خاص`;
+
+        nav('details');
+        await loadMsgs(true);
+      }catch(e){
+        toast('تعذر فتح الإعلان');
+      }
+    }
+
+    function focusChat(){
+      document.getElementById('chat-input')?.focus();
+    }
+
+    // ====== Conversation logic (PRIVATE CHAT) ======
+    // For each Ad:
+    // - Seller is fixed: ad.seller_username
+    // - Buyer is the other party (current user) when chatting
+    // conversation_id is stable: "adId|seller|buyer"
+    function buildConversationId(ad){
+      if(!ad) return null;
+      if(!user?.username) return null; // guest can't have conversation
+      const seller = ad.seller_username;
+
+      // if seller opens his own ad: allow him to see conversations only via inbox entries (buyer-specific)
+      // but for the details view we still need a conversation id:
+      // - if seller is viewing, he should open via inbox so it sets buyer. If he opens from market, we default "self" and show hint.
+      const buyer = (user.username === seller) ? '__seller_view__' : user.username;
+
+      return `${ad.id}|${seller}|${buyer}`;
+    }
+
+    function isSellerViewingOwnAd(){
+      return !!(user?.username && activeAd?.seller_username && user.username === activeAd.seller_username);
+    }
+
+    // ====== Messages ======
+    async function loadMsgs(scrollToBottom=false){
+      const box = document.getElementById('chat-box');
+      if(!activeAd){ box.innerHTML = ''; return; }
+
+      if(!user?.username){
+        box.innerHTML = `<div class="muted" style="padding:12px; text-align:center;">سجّل دخول علشان تبدأ محادثة خاصة.</div>`;
+        return;
+      }
+
+      // If seller opened his own ad from market (no buyer selected), guide him
+      if(isSellerViewingOwnAd() && activeConversationId?.includes('__seller_view__')){
+        box.innerHTML = `<div class="muted" style="padding:12px; text-align:center;">
+          أنت البائع. هتشوف محادثات المشترين من تبويب <b>الرسائل</b> (Inbox) — كل مشتري له شات منفصل.
+        </div>`;
+        return;
+      }
+
+      try{
+        const { data, error } = await _sb
+          .from('messages')
+          .select('*')
+          .eq('conversation_id', activeConversationId)
+          .order('created_at', {ascending:true});
+
+        if(error) throw error;
+
+        const rows = data || [];
+        box.innerHTML = rows.map(m => `
+          <div class="bubble ${m.sender_username === user.username ? 'me' : 'them'}">
+            <small>${escapeHtml(m.sender_username)}</small>
+            ${escapeHtml(m.text)}
+          </div>
+        `).join('') || `<div class="muted" style="padding:12px; text-align:center;">ابدأ المحادثة ✨</div>`;
+
+        if(scrollToBottom){
+          box.scrollTop = box.scrollHeight;
+        }else{
+          // keep near bottom if user is already near bottom
+          const nearBottom = (box.scrollHeight - box.scrollTop - box.clientHeight) < 120;
+          if(nearBottom) box.scrollTop = box.scrollHeight;
+        }
+      }catch(e){
+        toast('خطأ في تحميل الرسائل');
+      }
+    }
+
+    async function sendMsg(){
+      try{
+        const inp = document.getElementById('chat-input');
+        const text = (inp.value || '').trim();
+        if(!text) return;
+
+        if(!user?.username){
+          toast('سجّل دخول الأول');
+          return;
+        }
+        if(!activeAd) return;
+
+        // prevent seller send in "seller_view" conversation
+        if(isSellerViewingOwnAd() && activeConversationId?.includes('__seller_view__')){
+          toast('افتح محادثة المشتري من الرسائل');
+          return;
+        }
+
+        // Determine buyer & receiver correctly
+        const seller = activeAd.seller_username;
+        const buyer = (user.username === seller) ? extractBuyerFromConversation(activeConversationId) : user.username;
+        const receiver = (user.username === seller) ? buyer : seller;
+
+        const payload = {
+          ad_id: activeAd.id,
+          conversation_id: activeConversationId,
+          seller_username: seller,
+          buyer_username: buyer,
+          sender_username: user.username,
+          receiver_username: receiver,
+          text
+        };
+
+        const { error } = await _sb.from('messages').insert([payload]);
+        if(error) throw error;
+
+        inp.value = '';
+        await loadMsgs(true);
+      }catch(e){
+        toast('خطأ في الإرسال');
+      }
+    }
+
+    function extractBuyerFromConversation(convId){
+      // conv = "adId|seller|buyer"
+      try{
+        const parts = String(convId).split('|');
+        return parts[2] || null;
+      }catch{
+        return null;
+      }
+    }
+
+    // ====== Inbox (by conversation_id) ======
+    async function loadInbox(){
+      if(!user?.username){
+        document.getElementById('inbox-list').innerHTML = '';
+        document.getElementById('inbox-empty').style.display = 'block';
+        return;
+      }
+
+      try{
+        // Get latest messages involving user, then dedupe by conversation_id
+        const { data, error } = await _sb
+          .from('messages')
+          .select('conversation_id, ad_id, text, created_at, seller_username, buyer_username, sender_username, receiver_username')
+          .or(`seller_username.eq.${user.username},buyer_username.eq.${user.username}`)
+          .order('created_at', {ascending:false});
+
+        if(error) throw error;
+
+        const rows = data || [];
+        const seen = new Set();
+        const convs = [];
+
+        for(const m of rows){
+          if(!m.conversation_id) continue;
+          if(seen.has(m.conversation_id)) continue;
+          seen.add(m.conversation_id);
+          convs.push(m);
+        }
+
+        document.getElementById('inbox-empty').style.display = convs.length ? 'none' : 'block';
+
+        // Fetch ad info for those conversations (batched)
+        const adIds = [...new Set(convs.map(c=>c.ad_id))];
+        let adsMap = {};
+        if(adIds.length){
+          const { data: ads, error: adErr } = await _sb.from('ads').select('id,title,image_url,seller_username').in('id', adIds);
+          if(!adErr && ads){
+            adsMap = Object.fromEntries(ads.map(a=>[a.id, a]));
+          }
+        }
+
+        document.getElementById('inbox-list').innerHTML = convs.map(c=>{
+          const ad = adsMap[c.ad_id] || {};
+          const partner = (user.username === c.seller_username) ? c.buyer_username : c.seller_username;
+          return `
+            <div class="glass inbox-card" onclick="openConversationFromInbox('${escapeHtml(c.conversation_id)}','${c.ad_id}')">
+              <img class="inbox-thumb" src="${SB_URL}/storage/v1/object/public/ads-images/${encodeURIComponent(ad.image_url || '')}" onerror="this.style.display='none'">
+              <div style="flex:1; min-width:0;">
+                <div class="inbox-title">${escapeHtml(partner || 'محادثة')}</div>
+                <div class="inbox-sub">
+                  <b>${escapeHtml(ad.title || '—')}</b><br>
+                  ${escapeHtml((c.text || '').slice(0, 40))}${(c.text || '').length > 40 ? '…' : ''}
+                </div>
+              </div>
+              <div class="pill"><i class="fa-solid fa-lock"></i></div>
+            </div>
+          `;
+        }).join('');
+      }catch(e){
+        toast('تعذر تحميل الرسائل');
+      }
+    }
+
+    async function openConversationFromInbox(conversationId, adId){
+      // Open ad details and force the right conversation (buyer-specific)
+      const { data: ad, error } = await _sb.from('ads').select('*').eq('id', adId).single();
+      if(error){ toast('تعذر فتح المحادثة'); return; }
+
+      activeAd = ad;
+      activeConversationId = conversationId;
+
+      document.getElementById('details-view').innerHTML = `
+        <div class="glass details-card">
+          <img class="details-img" src="${SB_URL}/storage/v1/object/public/ads-images/${encodeURIComponent(ad.image_url)}" alt="ad">
+          <div class="details-body">
+            <div class="details-row">
+              <div>
+                <h2>${escapeHtml(ad.title)}</h2>
+                <div class="price" style="font-size:18px">${escapeHtml(ad.price)} Pi</div>
+              </div>
+              <div class="seller"><i class="fa-solid fa-user"></i> البائع: <b>@${escapeHtml(ad.seller_username)}</b></div>
+            </div>
+            <p>${escapeHtml(ad.description || '')}</p>
+          </div>
+        </div>
+      `;
+
+      // chat header (show partner)
+      const buyer = extractBuyerFromConversation(conversationId);
+      const partner = (user.username === ad.seller_username) ? buyer : ad.seller_username;
+      document.getElementById('chat-hint').textContent = `محادثة خاصة مع @${partner} على إعلان: ${ad.title}`;
+      document.getElementById('conv-pill').innerHTML = `<i class="fa-solid fa-lock"></i> خاص`;
+
+      nav('details');
+      await loadMsgs(true);
+    }
+
+    // ====== Upload / Delete ======
+    async function uploadAd(){
+      try{
+        if(!user?.username){ toast('سجّل دخول الأول'); return; }
+
+        const f = document.getElementById('p-img').files[0];
+        if(!f) return toast('اختر صورة');
+
+        const title = document.getElementById('p-title').value.trim();
+        const description = document.getElementById('p-desc').value.trim();
+        const price = document.getElementById('p-price').value.trim();
+        const phone = document.getElementById('p-phone').value.trim();
+
+        if(!title || !price) return toast('اكتب الاسم والسعر');
+
+        const ext = (f.name.split('.').pop() || 'jpg').toLowerCase();
+        const path = `img_${Date.now()}_${Math.random().toString(16).slice(2)}.${ext}`;
+
+        toast('جاري رفع الصورة...');
+        const { error: upErr } = await _sb.storage.from('ads-images').upload(path, f, { cacheControl:'3600', upsert:false });
+        if(upErr) throw upErr;
+
+        const { error: insErr } = await _sb.from('ads').insert([{
+          title, description, price, phone,
+          image_url: path,
+          seller_username: user.username
+        }]);
+        if(insErr) throw insErr;
+
+        toast('تم النشر ✅');
+        document.getElementById('p-img').value = '';
+        document.getElementById('p-title').value = '';
+        document.getElementById('p-desc').value = '';
+        document.getElementById('p-price').value = '';
+        document.getElementById('p-phone').value = '';
+        nav('home');
+      }catch(e){
+        toast('فشل النشر');
+      }
+    }
+
+    async function deleteAd(id, img){
+      if(!confirm('حذف الإعلان؟')) return;
+      try{
+        const { error: delErr } = await _sb.from('ads').delete().eq('id', id);
+        if(delErr) throw delErr;
+        await _sb.storage.from('ads-images').remove([img]);
+        toast('تم الحذف');
+        loadMyAds();
+      }catch(e){
+        toast('فشل الحذف');
+      }
+    }
+
+    // ====== Share ======
+    async function shareActive(){
+      if(!activeAd) return;
+      const text = `شوف الإعلان: ${activeAd.title} — السعر ${activeAd.price} Pi`;
+      try{
+        if(navigator.share){
+          await navigator.share({ text });
+        }else{
+          await navigator.clipboard.writeText(text);
+          toast('تم النسخ ✅');
+        }
+      }catch{}
+    }
+
+    // ====== Auto refresh messages ======
+    setInterval(() => {
+      const isDetails = document.getElementById('page-details').classList.contains('active');
+      if(isDetails) loadMsgs(false);
+    }, 3500);
+
+    // ====== init ======
+    setWho();
+    loadAds();
+  </script>
+</body>
+</html>
