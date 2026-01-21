@@ -4,158 +4,206 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Gamaity Pro | جمعيتي</title>
+    
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
-        :root { --primary: #6c5ce7; --success: #00b894; --danger: #d63031; --bg: #f9f9fb; }
+        :root { --primary: #6c5ce7; --success: #00b894; --bg: #f9f9fb; --dark: #2d3436; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background: var(--bg); padding-bottom: 100px; }
-        .header { background: linear-gradient(135deg, var(--primary), #a29bfe); padding: 30px 20px; color: white; border-radius: 0 0 30px 30px; text-align: center; }
-        .card { background: white; margin: 20px; padding: 20px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
-        .btn { width: 100%; padding: 15px; border-radius: 15px; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        body { background-color: var(--bg); color: var(--dark); padding-bottom: 100px; }
+        
+        /* Header */
+        .header { background: linear-gradient(135deg, var(--primary), #a29bfe); padding: 40px 20px; color: white; border-radius: 0 0 35px 35px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        
+        /* Pages */
+        .page { display: none; padding: 20px; animation: fadeIn 0.3s ease; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* UI Components */
+        .card { background: white; border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.04); border: 1px solid #f0f0f0; }
+        .btn { width: 100%; padding: 15px; border-radius: 15px; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px; }
         .btn-primary { background: var(--primary); color: white; }
-        .nav-bar { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 15px; box-shadow: 0 -5px 15px rgba(0,0,0,0.05); }
-        .nav-item { color: #ccc; cursor: pointer; text-align: center; font-size: 0.8rem; }
-        .nav-item.active { color: var(--primary); }
-        .page { display: none; } .active-page { display: block; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 12px; outline: none; transition: 0.3s; }
+        input:focus { border-color: var(--primary); }
+
+        /* Navbar */
+        .nav-bar { position: fixed; bottom: 15px; left: 15px; right: 15px; background: white; height: 70px; border-radius: 20px; display: flex; justify-content: space-around; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .nav-item { color: #ccc; text-align: center; font-size: 0.75rem; cursor: pointer; }
+        .nav-item.active { color: var(--primary); font-weight: bold; }
+        .nav-item i { font-size: 1.4rem; display: block; margin-bottom: 2px; }
     </style>
 </head>
 <body>
 
-<div class="header">
-    <h1>جمعيتي <small>PRO</small></h1>
-    <p id="user-display">جاري التحقق من الهوية...</p>
-</div>
+    <header class="header">
+        <h1>جمعيتي <small>PRO</small></h1>
+        <p id="user-welcome" style="font-size: 0.9rem; opacity: 0.9; margin-top: 5px;">جاري التعرف على الحساب...</p>
+    </header>
 
-<div id="home-page" class="page active-page">
-    <div id="circles-list"></div>
-</div>
+    <div id="page-home" class="page active">
+        <h3 style="margin-bottom: 15px;">الجمعيات المتاحة</h3>
+        <div id="circles-list"></div>
+    </div>
 
-<div id="details-page" class="page">
-    <div class="card">
-        <button onclick="showPage('home')" style="background:none; border:none; color:var(--primary); cursor:pointer;"><i class="fas fa-arrow-right"></i> عودة</button>
-        <h2 id="det-title" style="margin-top:10px;"></h2>
-        <p id="det-desc" style="color:#666; margin:10px 0;"></p>
-        <div style="background:#f0f0ff; padding:15px; border-radius:10px; margin-bottom:15px;">
-            <p>المبلغ المطلوب: <b id="det-amount">0</b> π</p>
+    <div id="page-details" class="page">
+        <div class="card" style="margin-top:-40px;">
+            <div onclick="showPage('home')" style="color: var(--primary); cursor: pointer; margin-bottom: 15px;"><i class="fas fa-arrow-right"></i> عودة</div>
+            <h2 id="det-title">اسم الجمعية</h2>
+            <p id="det-desc" style="color: #666; margin: 10px 0;"></p>
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 12px; margin-bottom: 15px;">
+                <p>قيمة القسط: <b id="det-amount" style="color: var(--primary);">0 π</b></p>
+                <p>عدد الأدوار: <b id="det-slots">0</b></p>
+            </div>
+            <button id="btn-pay" class="btn btn-primary" onclick="handlePayment()">
+                <i class="fas fa-credit-card"></i> دفع الاشتراك الآن
+            </button>
         </div>
-        <button id="pay-button" class="btn btn-primary" onclick="processPayment()">ادفع الآن للاشتراك</button>
     </div>
-</div>
 
-<div id="wallet-page" class="page">
-    <div class="card" style="text-align:center;">
-        <i class="fas fa-wallet" style="font-size:3rem; color:var(--primary);"></i>
-        <h2 style="margin:15px 0;">رصيدك القابل للسحب</h2>
-        <h1 id="balance-display">0.00 π</h1>
-        <p id="payout-msg" style="margin-bottom:20px; color:var(--success);"></p>
-        <button class="btn btn-primary" onclick="claimPi()">سحب π إلى محفظتي</button>
+    <div id="page-wallet" class="page">
+        <div class="card" style="text-align: center; margin-top:-40px;">
+            <i class="fas fa-wallet" style="font-size: 3rem; color: var(--primary);"></i>
+            <h4 style="margin-top: 10px; color: #888;">رصيدك القابل للسحب</h4>
+            <h1 id="wallet-balance" style="font-size: 3rem; margin: 10px 0; color: var(--success);">0.00 <small>π</small></h1>
+            <p id="wallet-status" style="font-size: 0.8rem; margin-bottom: 15px;"></p>
+            
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+            
+            <div style="text-align: right;">
+                <label>عنوان محفظة Pi المستلمة:</label>
+                <input type="text" id="withdraw-address" placeholder="G..." maxlength="56">
+                
+                <label>المبلغ المراد سحبه:</label>
+                <input type="number" id="withdraw-amount" placeholder="0.00">
+            </div>
+
+            <button class="btn btn-primary" onclick="requestWithdraw()">
+                <i class="fas fa-paper-plane"></i> تقديم طلب سحب
+            </button>
+        </div>
     </div>
-</div>
 
-<nav class="nav-bar">
-    <div class="nav-item active" onclick="showPage('home')"><i class="fas fa-home fa-lg"></i><br>الرئيسية</div>
-    <div class="nav-item" onclick="showPage('wallet')"><i class="fas fa-wallet fa-lg"></i><br>المحفظة</div>
-</nav>
+    <nav class="nav-bar">
+        <div class="nav-item active" id="n-home" onclick="showPage('home')"><i class="fas fa-home"></i><span>الرئيسية</span></div>
+        <div class="nav-item" id="n-wallet" onclick="showPage('wallet')"><i class="fas fa-wallet"></i><span>المحفظة</span></div>
+    </nav>
 
-<script>
-    const SB_URL = 'https://axjkwrssmofzavaoqutq.supabase.co';
-    const SB_KEY = 'sb_publishable_tiuMncgWhf1YRWoD-uYQ3Q_ziI8OKci';
-    const _db = supabase.createClient(SB_URL, SB_KEY);
+    <script>
+        // إعدادات قاعدة البيانات
+        const SB_URL = 'https://axjkwrssmofzavaoqutq.supabase.co';
+        const SB_KEY = 'sb_publishable_tiuMncgWhf1YRWoD-uYQ3Q_ziI8OKci';
+        const _db = supabase.createClient(SB_URL, SB_KEY);
 
-    let user = null;
-    let activeCircle = null;
+        let user = null;
+        let selectedCircle = null;
 
-    async function init() {
-        try {
-            await Pi.init({ version: "2.0", sandbox: false });
-            const auth = await Pi.authenticate(['username', 'payments'], onIncomplete);
-            user = auth.user;
-            document.getElementById('user-display').innerText = "مرحباً، " + user.username;
-            loadCircles();
-            updateBalance();
-        } catch (e) { alert("افتح التطبيق من Pi Browser"); }
-    }
+        // تشغيل Pi SDK
+        async function init() {
+            try {
+                await Pi.init({ version: "2.0", sandbox: false });
+                const auth = await Pi.authenticate(['username', 'payments'], onIncomplete);
+                user = auth.user;
+                document.getElementById('user-welcome').innerText = "مرحباً، " + user.username;
+                loadCircles();
+                updateWalletBalance();
+            } catch (e) { alert("يرجى فتح التطبيق من Pi Browser"); }
+        }
 
-    async function loadCircles() {
-        const { data } = await _db.from('circles').select('*');
-        const container = document.getElementById('circles-list');
-        container.innerHTML = '';
-        data.forEach(c => {
-            container.innerHTML += `
-                <div class="card" onclick="openDetails(${JSON.stringify(c).replace(/"/g, '&quot;')})">
-                    <h3>${c.title}</h3>
-                    <p>${c.installment_amount} π - ${c.total_slots} دور</p>
-                </div>`;
-        });
-    }
-
-    function openDetails(c) {
-        activeCircle = c;
-        document.getElementById('det-title').innerText = c.title;
-        document.getElementById('det-desc').innerText = c.description;
-        document.getElementById('det-amount').innerText = c.installment_amount;
-        showPage('details');
-    }
-
-    // حل مشكلة الدفع 60%
-    async function processPayment() {
-        const btn = document.getElementById('pay-button');
-        btn.disabled = true;
-        btn.innerText = "جاري الاتصال بالشبكة...";
-
-        try {
-            const payment = await Pi.createPayment({
-                amount: activeCircle.installment_amount,
-                memo: "اشتراك جمعية: " + activeCircle.title,
-                metadata: { circleId: activeCircle.id }
-            }, {
-                onReadyForServerApproval: async (id) => {
-                    // ملاحظة: يجب أن يكون لديك Backend يقوم بعمل Approve. 
-                    // إذا لم يتوفر، ستظل العملية معلقة.
-                    console.log("Payment ID:", id);
-                },
-                onReadyForServerCompletion: async (id, txid) => {
-                    await _db.from('participants').insert([{
-                        circle_id: activeCircle.id,
-                        pi_user_id: user.uid,
-                        username: user.username,
-                        amount: activeCircle.installment_amount,
-                        transaction_id: txid
-                    }]);
-                    alert("تم الاشتراك بنجاح!");
-                    showPage('home');
-                },
-                onCancel: () => { btn.disabled = false; btn.innerText = "ادفع الآن للاشتراك"; },
-                onError: (e) => { alert("خطأ: " + e.message); btn.disabled = false; }
+        // جلب الجمعيات
+        async function loadCircles() {
+            const { data } = await _db.from('circles').select('*');
+            const container = document.getElementById('circles-list');
+            container.innerHTML = '';
+            data.forEach(c => {
+                container.innerHTML += `
+                    <div class="card" onclick="openCircle(${JSON.stringify(c).replace(/"/g, '&quot;')})">
+                        <h3>${c.title}</h3>
+                        <p style="color:#666">${c.installment_amount} π - ${c.total_slots} دور</p>
+                    </div>`;
             });
-        } catch (e) { btn.disabled = false; }
-    }
+        }
 
-    async function updateBalance() {
-        if(!user) return;
-        const { data } = await _db.from('payouts').select('amount').eq('pi_user_id', user.uid);
-        const total = data ? data.reduce((s, p) => s + Number(p.amount), 0) : 0;
-        document.getElementById('balance-display').innerText = total.toFixed(2) + " π";
-        if(total > 0) document.getElementById('payout-msg').innerText = "لديك مبالغ معتمدة جاهزة للسحب!";
-    }
+        function openCircle(c) {
+            selectedCircle = c;
+            showPage('details');
+            document.getElementById('det-title').innerText = c.title;
+            document.getElementById('det-desc').innerText = c.description;
+            document.getElementById('det-amount').innerText = c.installment_amount + ' π';
+            document.getElementById('det-slots').innerText = c.total_slots;
+        }
 
-    // كود السحب (App-to-User)
-    async function claimPi() {
-        const balance = parseFloat(document.getElementById('balance-display').innerText);
-        if(balance <= 0) return alert("رصيدك صفر حالياً");
-        
-        alert("طلبك قيد المعالجة. سيقوم الأدمن بتحويل Pi لمحفظتك فوراً.");
-        // يتم التحويل الفعلي من صفحة الأدمن عبر وظيفة App-to-User
-    }
+        // --- كود الدفع (User-to-App) ---
+        async function handlePayment() {
+            const btn = document.getElementById('btn-pay');
+            btn.disabled = true;
+            btn.innerText = "جاري الاتصال بمحفظة Pi...";
 
-    function showPage(p) {
-        document.querySelectorAll('.page').forEach(el => el.classList.remove('active-page'));
-        document.getElementById(p + '-page').classList.add('active-page');
-    }
-    function onIncomplete(p) {}
-    window.onload = init;
-</script>
+            try {
+                await Pi.createPayment({
+                    amount: selectedCircle.installment_amount,
+                    memo: "قسط جمعية: " + selectedCircle.title,
+                    metadata: { circleId: selectedCircle.id }
+                }, {
+                    onReadyForServerApproval: (id) => console.log("Payment waiting for approval:", id),
+                    onReadyForServerCompletion: async (id, txid) => {
+                        await _db.from('participants').insert([{
+                            circle_id: selectedCircle.id,
+                            pi_user_id: user.uid,
+                            username: user.username,
+                            amount: selectedCircle.installment_amount,
+                            transaction_id: txid
+                        }]);
+                        alert("تم دفع القسط والاشتراك بنجاح!");
+                        showPage('home');
+                    },
+                    onCancel: () => { btn.disabled = false; btn.innerText = "دفع الاشتراك الآن"; },
+                    onError: (e) => { alert("فشل الدفع: " + e.message); btn.disabled = false; }
+                });
+            } catch (e) { btn.disabled = false; }
+        }
+
+        // --- كود السحب (Request Withdrawal) ---
+        async function updateWalletBalance() {
+            if(!user) return;
+            const { data } = await _db.from('payouts').select('amount').eq('pi_user_id', user.uid);
+            const total = data ? data.reduce((s, p) => s + Number(p.amount), 0) : 0;
+            document.getElementById('wallet-balance').innerText = total.toFixed(2) + " π";
+        }
+
+        async function requestWithdraw() {
+            const addr = document.getElementById('withdraw-address').value;
+            const amt = parseFloat(document.getElementById('withdraw-amount').value);
+            const balance = parseFloat(document.getElementById('wallet-balance').innerText);
+
+            if (!addr || addr.length < 20) return alert("يرجى إدخال عنوان محفظة صحيح");
+            if (amt <= 0 || amt > balance) return alert("المبلغ غير متاح في رصيدك");
+
+            const { error } = await _db.from('withdrawal_requests').insert([{
+                pi_user_id: user.uid,
+                username: user.username,
+                wallet_address: addr,
+                amount: amt,
+                status: 'pending'
+            }]);
+
+            if(!error) {
+                alert("تم إرسال طلب السحب بنجاح. سيقوم الأدمن بمعالجته.");
+                document.getElementById('withdraw-amount').value = '';
+            }
+        }
+
+        function showPage(p) {
+            document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.getElementById('page-' + p).classList.add('active');
+            document.getElementById('n-' + p).classList.add('active');
+        }
+
+        function onIncomplete(p) {}
+        window.onload = init;
+    </script>
 </body>
 </html>
