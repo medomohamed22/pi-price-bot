@@ -10,7 +10,7 @@ function requireAdmin(event) {
   if (got !== need) throw new Error("Unauthorized (bad admin token)");
 }
 
-// ترتيب أصول Stellar canonical: native قبل credit، ثم code، ثم issuer
+// Stellar canonical ordering: native before credit, then code, then issuer
 function assetKey(a) {
   try {
     if (a?.isNative && a.isNative()) return "0|NATIVE||";
@@ -29,21 +29,57 @@ function assetLabel(a) {
   return `${code}:${issuer}`;
 }
 
-// استخراج poolId بشكل متوافق مع اختلاف نسخ stellar-sdk
+// Normalize fee for liquidity pools (should be 30 for constant product)
+function normalizePoolFee(StellarSdk) {
+  // safest: always 30
+  // بعض النسخ بتوفر LiquidityPoolFeeV18 بأشكال مختلفة
+  const cand = StellarSdk?.LiquidityPoolFeeV18;
+
+  if (typeof cand === "number" && Number.isFinite(cand)) return cand;
+  if (typeof cand === "string" && cand.trim()) {
+    const n = Number(cand.trim());
+    if (Number.isFinite(n)) return n;
+  }
+  if (cand && typeof cand === "object" && typeof cand.fee === "number") return cand.fee;
+
+  return 30;
+}
+
+// Create LiquidityPoolAsset in a version-compatible way
+function createPoolAssetCompat(StellarSdk, assetA, assetB, fee) {
+  // 1) Most common: new LiquidityPoolAsset(assetA, assetB, feeNumber)
+  try {
+    return new StellarSdk.LiquidityPoolAsset(assetA, assetB, fee);
+  } catch (e1) {
+    // 2) Some versions might expect fee constant
+    try {
+      return new StellarSdk.LiquidityPoolAsset(assetA, assetB, StellarSdk.LiquidityPoolFeeV18);
+    } catch (e2) {
+      // 3) Some versions may use object form (rare)
+      try {
+        return new StellarSdk.LiquidityPoolAsset(assetA, assetB, { fee });
+      } catch (e3) {
+        const msg =
+          `Failed to create LiquidityPoolAsset (SDK mismatch). ` +
+          `e1=${e1?.message || e1}, e2=${e2?.message || e2}, e3=${e3?.message || e3}`;
+        throw new Error(msg);
+      }
+    }
+  }
+}
+
+// Extract poolId in a version-compatible way
 function getPoolIdCompat({ StellarSdk, poolAsset, assetA, assetB, fee }) {
   let poolId = null;
 
-  // بعض النسخ فيها getLiquidityPoolId()
   if (poolAsset && typeof poolAsset.getLiquidityPoolId === "function") {
     poolId = poolAsset.getLiquidityPoolId();
   }
 
-  // بعض النسخ فيها liquidityPoolId property
   if (!poolId && poolAsset && poolAsset.liquidityPoolId) {
     poolId = poolAsset.liquidityPoolId;
   }
 
-  // بعض النسخ فيها helper عام
   if (!poolId && typeof StellarSdk.getLiquidityPoolId === "function") {
     poolId = StellarSdk.getLiquidityPoolId(assetA, assetB, fee);
   }
@@ -51,54 +87,48 @@ function getPoolIdCompat({ StellarSdk, poolAsset, assetA, assetB, fee }) {
   return poolId;
 }
 
-// إنشاء Pool Share Asset بشكل متوافق
+// Pool share asset trustline (version-compatible)
 function getPoolShareAssetCompat({ StellarSdk, poolId }) {
-  // newer: LiquidityPoolShareAsset
   if (typeof StellarSdk.LiquidityPoolShareAsset === "function") {
     return new StellarSdk.LiquidityPoolShareAsset(poolId);
   }
-
-  // older alt: Asset.liquidityPoolShare
   if (StellarSdk.Asset && typeof StellarSdk.Asset.liquidityPoolShare === "function") {
     return StellarSdk.Asset.liquidityPoolShare(poolId);
   }
-
   return null;
 }
 
 exports.handler = async (event) => {
-  if (event.httpMethod !== "POST")
-    return { statusCode: 405, body: "Method Not Allowed" };
+  if (event.httpMethod !== "POST") return { statusCode: 405, body: "Method Not Allowed" };
 
   try {
     requireAdmin(event);
 
-    const body = JSON.parse(event.body || "{}");
-    const assetCode = body.assetCode;
-    const tokenAmount = body.tokenAmount;
-    const piAmount = body.piAmount;
-    const minPrice = body.minPrice;
-    const maxPrice = body.maxPrice;
-
+    const { assetCode, tokenAmount, piAmount, minPrice, maxPrice } = JSON.parse(event.body || "{}");
     if (!assetCode || !tokenAmount || !piAmount) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: "Missing assetCode/tokenAmount/piAmount" }),
-      };
+      return { statusCode: 400, body: JSON.stringify({ error: "Missing assetCode/tokenAmount/piAmount" }) };
     }
 
     const ISSUER_SECRET = process.env.ISSUER_SECRET;
     const DISTRIBUTOR_SECRET = process.env.DISTRIBUTOR_SECRET;
-
     if (!ISSUER_SECRET || !DISTRIBUTOR_SECRET) {
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ error: "Missing ISSUER_SECRET/DISTRIBUTOR_SECRET env" }),
-      };
+      return { statusCode: 500, body: JSON.stringify({ error: "Missing ISSUER_SECRET/DISTRIBUTOR_SECRET env" }) };
     }
 
-    // تشخيص سريع (تشوفه في Netlify function logs)
-    console.log("stellar-sdk available keys:", Object.keys(StellarSdk));
+    // Debug info in Netlify logs
+    console.log("stellar-sdk keys:", Object.keys(StellarSdk));
+    console.log("LiquidityPoolAsset exists:", typeof StellarSdk.LiquidityPoolAsset === "function");
+    console.log("liquidityPoolDeposit exists:", typeof StellarSdk.Operation?.liquidityPoolDeposit === "function");
+
+    if (typeof StellarSdk.LiquidityPoolAsset !== "function" || typeof StellarSdk.Operation?.liquidityPoolDeposit !== "function") {
+      return {
+        statusCode: 500,
+        body: JSON.stringify({
+          error: "AMM is not supported by this stellar-sdk build",
+          hint: "Update stellar-sdk in package.json then Clear cache and deploy"
+        })
+      };
+    }
 
     const server = new StellarSdk.Horizon.Server(HORIZON);
 
@@ -108,23 +138,7 @@ exports.handler = async (event) => {
     const token = new StellarSdk.Asset(assetCode, issuerKP.publicKey());
     const pi = StellarSdk.Asset.native();
 
-    // نتأكد أن النسخة داعمة لـ AMM ops
-    const hasLPAsset = typeof StellarSdk.LiquidityPoolAsset === "function";
-    const hasLPDeposit = StellarSdk.Operation && typeof StellarSdk.Operation.liquidityPoolDeposit === "function";
-
-    if (!hasLPAsset || !hasLPDeposit) {
-      return {
-        statusCode: 500,
-        body: JSON.stringify({
-          error: "AMM is not supported by this stellar-sdk build",
-          hint: "Update stellar-sdk in package.json then Clear cache and deploy",
-          hasLiquidityPoolAsset: hasLPAsset,
-          hasLiquidityPoolDeposit: hasLPDeposit,
-        }),
-      };
-    }
-
-    // ✅ رتّب الأصول + رتّب الكميات معاهم
+    // ✅ Lexicographic ordering + bind amounts to the same order
     const pairs = [
       { asset: token, amount: String(tokenAmount) },
       { asset: pi, amount: String(piAmount) },
@@ -135,11 +149,12 @@ exports.handler = async (event) => {
     const maxAmountA = pairs[0].amount;
     const maxAmountB = pairs[1].amount;
 
-    // fee 30 bps (standard)
-    const fee = StellarSdk.LiquidityPoolFeeV18 || 30;
+    // ✅ Force/normalize pool fee (constant product)
+    const fee = normalizePoolFee(StellarSdk); // غالبًا 30
+    console.log("Pool fee used:", fee, "typeof:", typeof fee);
 
-    // إنشاء pool asset
-    const poolAsset = new StellarSdk.LiquidityPoolAsset(assetA, assetB, fee);
+    // ✅ Create pool asset compat (this is where 'liquidityPoolType invalid' often originates)
+    const poolAsset = createPoolAssetCompat(StellarSdk, assetA, assetB, fee);
 
     // ✅ Get poolId compat
     const poolId = getPoolIdCompat({ StellarSdk, poolAsset, assetA, assetB, fee });
@@ -148,23 +163,23 @@ exports.handler = async (event) => {
         statusCode: 500,
         body: JSON.stringify({
           error: "Could not determine liquidityPoolId with this stellar-sdk version",
-          hint: "Update stellar-sdk to a newer version (recommended)",
+          hint: "Update stellar-sdk then Clear cache and deploy",
           assetA: assetLabel(assetA),
           assetB: assetLabel(assetB),
-        }),
+          fee
+        })
       };
     }
 
-    // ✅ Pool share asset trustline compat
     const poolShare = getPoolShareAssetCompat({ StellarSdk, poolId });
     if (!poolShare) {
       return {
         statusCode: 500,
         body: JSON.stringify({
-          error: "Liquidity pool share asset is not supported by this stellar-sdk version",
-          hint: "Update stellar-sdk to a newer version (recommended)",
-          poolId,
-        }),
+          error: "LiquidityPoolShareAsset not supported by this stellar-sdk version",
+          hint: "Update stellar-sdk then Clear cache and deploy",
+          poolId
+        })
       };
     }
 
@@ -180,14 +195,16 @@ exports.handler = async (event) => {
       networkPassphrase: NETWORK_PASSPHRASE,
     });
 
+    // Trustline to pool shares (if needed)
     if (!hasPoolShare) {
       txb.addOperation(StellarSdk.Operation.changeTrust({ asset: poolShare }));
     }
 
-    // حماية سعرية واسعة افتراضيًا
+    // Wide guards by default
     const minP = (minPrice && String(minPrice)) || "0.000001";
     const maxP = (maxPrice && String(maxPrice)) || "1000000";
 
+    // Deposit liquidity
     txb.addOperation(
       StellarSdk.Operation.liquidityPoolDeposit({
         liquidityPoolId: poolId,
@@ -212,8 +229,9 @@ exports.handler = async (event) => {
         assetB: assetLabel(assetB),
         maxAmountA,
         maxAmountB,
+        fee,
         hash: res.hash,
-      }),
+      })
     };
   } catch (e) {
     return { statusCode: 500, body: JSON.stringify({ error: e.message || String(e) }) };
