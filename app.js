@@ -5,8 +5,8 @@
    ========================= */
 
 /* ====== Global Supabase (filled after initConfig) ====== */
-let SB_URL = "https://axjkwrssmofzavaoqutq.supabase.co";
-let SB_KEY = "sb_publishable_tiuMncgWhf1YRWoD-uYQ3Q_ziI8OKci";
+let SB_URL = "";
+let SB_KEY = "";
 let _sb = null;
 
 /* ====== State ====== */
