@@ -17,7 +17,7 @@
         <div class="logo">DW</div>
         <div class="meta">
           <h1>Donate Way</h1>
-          <p>Token + DEX + Pi Payments (Testnet Dashboard)</p>
+          <p>Token + DEX + AMM + Domain Verify (Testnet)</p>
         </div>
       </div>
 
@@ -27,7 +27,14 @@
       </div>
     </header>
 
-    <section class="grid">
+    <!-- Tabs -->
+    <nav class="tabs">
+      <button class="tab active" data-page="dashboard">Dashboard</button>
+      <button class="tab" data-page="domain">Domain Verification</button>
+    </nav>
+
+    <!-- PAGE: Dashboard -->
+    <section id="page-dashboard" class="grid page active">
       <div class="card">
         <h2>حالة Pi SDK</h2>
         <div class="kv">
@@ -36,7 +43,7 @@
           <div class="k">UID</div><div class="v mono" id="sdkUid">—</div>
           <div class="k">Access Token</div><div class="v mono" id="sdkToken">—</div>
         </div>
-        <small class="muted">مهم: ما تخزّنش accessToken عندك قبل ما تتحقق منه سيرفر سايد. 2</small>
+        <small class="muted">متخزّنش accessToken بشكل دائم على الفرونت.</small>
       </div>
 
       <div class="card">
@@ -54,7 +61,7 @@
             <input id="initialSupply" class="inp mono" value="1000000" />
           </div>
           <div>
-            <label class="lbl">Admin Token (للحماية)</label>
+            <label class="lbl">Admin Token (اختياري)</label>
             <input id="adminToken" class="inp mono" placeholder="X-Admin-Token" />
           </div>
         </div>
@@ -65,7 +72,13 @@
         </div>
 
         <div class="note">
-          <b>Bootstrap</b> = Distributor يعمل Trustline + Issuer يبعث الكمية للـ Distributor.
+          <b>Bootstrap</b> = Distributor Trustline + Issuer يبعث الكمية للـ Distributor.
+          <div class="muted" style="margin-top:6px">
+            Issuer PubKey: <span class="mono" id="issuerPub">—</span>
+          </div>
+          <div class="muted" style="margin-top:4px">
+            Distributor PubKey: <span class="mono" id="distPub">—</span>
+          </div>
         </div>
       </div>
 
@@ -84,8 +97,41 @@
         </div>
 
         <small class="muted">
-          في Stellar، سعر الـ Sell Offer غالبًا هو “كم Pi هتاخد مقابل 1 Token”.
-          ووجود Offer/سيولة بيخلي التوكن يظهر ويتصنّف أحسن على الدكس.
+          وجود Offer/سيولة بيساعد التوكن يظهر ويتصنّف على الدكس.
+        </small>
+      </div>
+
+      <div class="card">
+        <h2>AMM — Add Liquidity (Token/Pi)</h2>
+
+        <div class="row2">
+          <div>
+            <label class="lbl">Token Amount</label>
+            <input id="ammTokenAmount" class="inp mono" value="5000" />
+          </div>
+          <div>
+            <label class="lbl">Pi Amount</label>
+            <input id="ammPiAmount" class="inp mono" value="50" />
+          </div>
+        </div>
+
+        <div class="row2">
+          <div>
+            <label class="lbl">Min Price Guard (اختياري)</label>
+            <input id="ammMinPrice" class="inp mono" value="0.000001" />
+          </div>
+          <div>
+            <label class="lbl">Max Price Guard (اختياري)</label>
+            <input id="ammMaxPrice" class="inp mono" value="1000000" />
+          </div>
+        </div>
+
+        <div class="btnRow">
+          <button id="btnAddAmm" class="btn">3) Add AMM Liquidity</button>
+        </div>
+
+        <small class="muted">
+          لازم الـ Distributor يكون معاه Pi (native) + Token عشان يضيف سيولة.
         </small>
       </div>
 
@@ -104,10 +150,7 @@
         </div>
 
         <button id="btnDonate" class="btn primary">ادفع تبرع بـ Pi</button>
-
-        <small class="muted">
-          createPayment بيحتاج callbacks: approval & completion على السيرفر. 3
-        </small>
+        <small class="muted">الـ approve/complete لازم يتموا سيرفر سايد.</small>
       </div>
 
       <div class="card">
@@ -116,8 +159,77 @@
       </div>
     </section>
 
+    <!-- PAGE: Domain -->
+    <section id="page-domain" class="grid page">
+      <div class="card">
+        <h2>Domain Verification — Checklist</h2>
+
+        <ol class="checklist">
+          <li>اشتري/جهّز دومين (مثال: donateway.app).</li>
+          <li>اعمل صفحة/موقع بسيط عليه + HTTPS شغال.</li>
+          <li>أضف ملف: <span class="mono">/.well-known/stellar.toml</span> في جذر الدومين.</li>
+          <li>داخل الملف ضيف بيانات العملة (CODE + ISSUER) + عنوان مشروعك.</li>
+          <li>اختبر إن الملف بيتفتح على:
+            <span class="mono">https://YOURDOMAIN/.well-known/stellar.toml</span>
+          </li>
+          <li>بعدها شغّل “Check Domain” هنا للتأكد.</li>
+        </ol>
+
+        <div class="note">
+          الهدف: لما الناس تلاقي التوكن في الدكس يبقى مرتبط بدومينك وباين إنه رسمي.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>مولّد stellar.toml (انسخه وحطه على الدومين)</h2>
+
+        <label class="lbl">Domain</label>
+        <input id="verDomain" class="inp mono" placeholder="donateway.app" />
+
+        <div class="row2">
+          <div>
+            <label class="lbl">Asset Code</label>
+            <input id="verAssetCode" class="inp mono" value="DONATEWAY" />
+          </div>
+          <div>
+            <label class="lbl">Issuer Public Key</label>
+            <input id="verIssuer" class="inp mono" placeholder="G...." />
+          </div>
+        </div>
+
+        <label class="lbl">Project Name</label>
+        <input id="verName" class="inp" value="Donate Way" />
+
+        <label class="lbl">Description</label>
+        <input id="verDesc" class="inp" value="Donate Way token on Pi Testnet for donations." />
+
+        <div class="btnRow">
+          <button id="btnGenToml" class="btn">Generate stellar.toml</button>
+          <button id="btnCheckDomain" class="btn primary">Check Domain</button>
+        </div>
+
+        <label class="lbl">Generated TOML</label>
+        <textarea id="tomlOut" class="inp mono" rows="12" readonly></textarea>
+
+        <small class="muted">
+          حط المحتوى ده في:
+          <span class="mono">/.well-known/stellar.toml</span>
+        </small>
+      </div>
+
+      <div class="card">
+        <h2>نتيجة الفحص</h2>
+        <pre id="domainCheckOut" class="log"></pre>
+      </div>
+
+      <div class="card">
+        <h2>Logs</h2>
+        <pre id="log2" class="log"></pre>
+      </div>
+    </section>
+
     <footer class="foot">
-      <span class="muted">Testnet فقط — متحطّش Seeds أو API Keys في الواجهة أبدًا.</span>
+      <span class="muted">Testnet فقط — متحطّش Seeds أو API Keys في الفرونت.</span>
     </footer>
   </div>
 
