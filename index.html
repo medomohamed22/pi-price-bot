@@ -1,14 +1,14 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
   <title>Elite Used Market</title>
 
   <script src="https://sdk.minepi.com/pi-sdk.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
@@ -16,42 +16,36 @@
   <!-- Toast -->
   <div id="toast" class="toast"></div>
 
-  <!-- ✅ زر تسجيل الدخول ثابت فوق في الشمال -->
-  <button id="login-btn" class="login-fab" onclick="handleLoginButton()">
-    <i class="fa-solid fa-right-to-bracket"></i>
-    <span id="login-btn-text">تسجيل دخول</span>
-  </button>
-
   <!-- HOME -->
-<!-- HOME -->
-<div id="page-home" class="page">
-  <header class="topbar glass">
-    <!-- Left: Login -->
-    <button class="login-btn" id="login-btn" onclick="handleLoginButton()">
-      <i class="fa-solid fa-right-to-bracket"></i>
-      <span id="login-btn-text">تسجيل دخول</span>
-    </button>
+  <div id="page-home" class="page active">
+    <header class="topbar glass">
+      <!-- Left: Login -->
+      <button class="login-btn" id="login-btn" onclick="handleLoginButton()">
+        <i class="fa-solid fa-right-to-bracket"></i>
+        <span id="login-btn-text">تسجيل دخول</span>
+      </button>
 
-    <!-- Center: Brand -->
-    <div class="topbar-center">
-      <div class="brand-title">Elite Used Market</div>
-      <div class="brand-sub">السوق الرئيسي</div>
+      <!-- Center -->
+      <div class="topbar-center">
+        <div class="brand-title">Elite Used Market</div>
+        <div class="brand-sub">السوق الرئيسي</div>
+      </div>
+
+      <!-- Right -->
+      <div class="user-pill" id="whoami">
+        <i class="fa-solid fa-user"></i> زائر
+      </div>
+    </header>
+
+    <div class="search glass">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input id="search" placeholder="ابحث عن منتج..." oninput="applyFilter()" />
     </div>
 
-    <!-- Right: Who -->
-    <div class="user-pill" id="whoami">
-      <i class="fa-solid fa-user"></i> زائر
-    </div>
-  </header>
-
-  <div class="search glass">
-    <i class="fa-solid fa-magnifying-glass"></i>
-    <input id="search" placeholder="ابحث عن منتج..." oninput="applyFilter()" />
+    <div id="home-skeleton" class="sk-grid"></div>
+    <div id="ads-grid" class="ads-grid"></div>
   </div>
 
-  <div id="home-skeleton" class="sk-grid"></div>
-  <div id="ads-grid" class="ads-grid"></div>
-</div>
   <!-- INBOX -->
   <div id="page-inbox" class="page">
     <div class="appbar glass">
@@ -66,9 +60,9 @@
     </div>
 
     <div id="inbox-list"></div>
-    <div id="inbox-empty" class="glass" style="padding:16px; display:none;">
+    <div id="inbox-empty" class="glass empty-box" style="display:none;">
       <b>مفيش محادثات لسه</b>
-      <div class="muted" style="margin-top:6px; font-size:13px;">افتح أي إعلان وابدأ رسالة للبائع.</div>
+      <div class="muted" style="margin-top:6px;">افتح أي إعلان وابدأ رسالة للبائع.</div>
     </div>
   </div>
 
@@ -85,16 +79,19 @@
       <div class="pill"><i class="fa-solid fa-wand-magic-sparkles"></i> سريع</div>
     </div>
 
-    <div class="glass" style="padding: 16px;">
+    <div class="glass form-card">
       <input type="file" id="p-img" accept="image/*" />
       <input type="text" id="p-title" placeholder="اسم المنتج" />
       <textarea id="p-desc" placeholder="وصف المنتج"></textarea>
+
       <div class="row">
         <input type="number" id="p-price" placeholder="السعر بـ Pi" />
         <input type="tel" id="p-phone" placeholder="واتساب (اختياري)" />
       </div>
+
       <button class="btn-main" onclick="uploadAd()">نشر الآن</button>
-      <div class="muted" style="margin-top:10px; font-size:12px; line-height:1.6;">
+
+      <div class="muted note">
         * النشر يحتاج تسجيل دخول. <br>
         * رقم الواتساب اختياري: بيتعرض كبزرار تواصل في صفحة الإعلان.
       </div>
@@ -111,27 +108,33 @@
           <small>إعلاناتي</small>
         </div>
       </div>
-      <div class="pill" id="user-pill"><i class="fa-solid fa-id-badge"></i> —</div>
+      <div class="pill" id="user-pill"><i class="fa-solid fa-id-badge"></i> زائر</div>
     </div>
 
-    <div class="glass" style="padding:16px; margin-bottom:14px;">
-      <div style="font-weight:1000; font-size:16px;" id="user-display">زائر</div>
-      <div class="muted" style="margin-top:6px; font-size:12px;">لو أنت البائع، هتلاقي زر حذف تحت كل إعلان.</div>
+    <div class="glass profile-head">
+      <div class="profile-name" id="user-display">زائر</div>
+      <div class="muted" style="margin-top:6px; font-size:12px;">
+        لو أنت البائع، هتلاقي زر الحذف وزر “اجعل إعلانك مميز”.
+      </div>
     </div>
 
     <div id="my-ads-grid" class="ads-grid"></div>
-    <div id="my-empty" class="glass" style="padding:16px; display:none;">
+    <div id="my-empty" class="glass empty-box" style="display:none;">
       <b>مفيش إعلانات</b>
-      <div class="muted" style="margin-top:6px; font-size:13px;">انشر أول إعلان من تبويب “نشر”.</div>
+      <div class="muted" style="margin-top:6px;">انشر أول إعلان من تبويب “نشر”.</div>
     </div>
   </div>
 
   <!-- DETAILS -->
   <div id="page-details" class="page">
     <div class="appbar glass">
-      <button class="pill" onclick="nav('home')" style="cursor:pointer"><i class="fa-solid fa-arrow-right"></i> رجوع</button>
+      <button class="pill" onclick="nav('home')" style="cursor:pointer">
+        <i class="fa-solid fa-arrow-right"></i> رجوع
+      </button>
       <div class="pill"><i class="fa-solid fa-bolt"></i> تفاصيل</div>
-      <button class="pill" onclick="shareActive()" style="cursor:pointer"><i class="fa-solid fa-share-nodes"></i> مشاركة</button>
+      <button class="pill" onclick="shareActive()" style="cursor:pointer">
+        <i class="fa-solid fa-share-nodes"></i> مشاركة
+      </button>
     </div>
 
     <div id="details-view"></div>
@@ -149,12 +152,12 @@
 
       <div class="chat-input">
         <input id="chat-input" placeholder="اكتب رسالة..." />
-        <button class="send-btn" id="send-btn" onclick="sendMsg()"><i class="fa-solid fa-paper-plane"></i></button>
+        <button class="send-btn" onclick="sendMsg()"><i class="fa-solid fa-paper-plane"></i></button>
       </div>
     </div>
   </div>
 
-  <!-- NAV (✅ ظاهر دايمًا) -->
+  <!-- NAV -->
   <nav class="tab-bar" id="navbar">
     <button class="tab-item active" onclick="nav('home', this)"><i class="fas fa-store"></i><span>السوق</span></button>
     <button class="tab-item" onclick="nav('inbox', this)"><i class="fas fa-comment-dots"></i><span>الرسائل</span></button>
