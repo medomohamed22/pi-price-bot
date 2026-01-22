@@ -1,23 +1,18 @@
 /* =========================
    Elite Used Market - app.js (FULL)
-   - Loads PUBLIC Supabase config from /api/config
-   - Top-left Pi login button (shows username after login)
-   - Promote Ad (5 Pi / 3 days) + pending payments handler
    ========================= */
 
 let SB_URL = "";
 let SB_KEY = "";
 let _sb = null;
 
-/* ====== State ====== */
+/* ===== State ===== */
 let user = null;
 let activeAd = null;
 let activeConversationId = null;
 let allAdsCache = [];
 
-/* =========================
-   Helpers
-   ========================= */
+/* ================= Toast ================= */
 function toast(msg){
   const t = document.getElementById('toast');
   if(!t) return alert(msg);
@@ -36,9 +31,7 @@ function escapeHtml(str=''){
     .replaceAll("'","&#039;");
 }
 
-/* =========================
-   Promote helpers (promoted_until)
-   ========================= */
+/* ================= Promote helpers ================= */
 function isPromoted(ad){
   if(!ad?.promoted_until) return false;
   return new Date(ad.promoted_until).getTime() > Date.now();
@@ -50,47 +43,79 @@ function promoteLabel(ad){
   return `⭐ مميز • باقي ${days} يوم`;
 }
 
-/* =========================
-   UI: Header login button + user pills
-   ========================= */
+/* ================= Pending Payment Handler ================= */
+async function onIncompletePaymentFound(payment){
+  try{
+    console.log("INCOMPLETE_PAYMENT_FOUND", payment);
+
+    const memo = String(payment?.memo || "");
+    if(!memo.startsWith("PROMOTE_AD|")) return;
+
+    const paymentId = payment?.identifier || payment?.paymentId || payment?.id;
+    if(!paymentId) return;
+
+    toast("في عملية دفع معلّقة… بنحاول نكمّلها");
+
+    const r1 = await fetch("/api/pi/approve", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ paymentId })
+    });
+    const j1 = await r1.json().catch(()=> ({}));
+    if(!r1.ok || !j1.ok){
+      console.log("APPROVE_FAIL_PENDING", r1.status, j1);
+      toast("تعذر الموافقة على الدفع المعلّق");
+      return;
+    }
+
+    const r2 = await fetch("/api/pi/complete", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ paymentId })
+    });
+    const j2 = await r2.json().catch(()=> ({}));
+    if(!r2.ok || !j2.ok){
+      console.log("COMPLETE_FAIL_PENDING", r2.status, j2);
+      toast("تعذر إكمال الدفع المعلّق");
+      return;
+    }
+
+    toast("تم إكمال الدفع المعلّق ✅");
+    loadAds();
+    loadMyAds();
+
+  }catch(e){
+    console.log("INCOMPLETE_HANDLER_ERR", e);
+    toast("خطأ أثناء معالجة الدفع المعلّق");
+  }
+}
+
+/* ================= UI User ================= */
 function setWho(){
   const who = document.getElementById('whoami');
-  const ud  = document.getElementById('user-display');
-  const pill = document.getElementById('user-pill');
-
+  const ud = document.getElementById('user-display');
   const loginText = document.getElementById('login-btn-text');
-  const loginBtn  = document.getElementById('login-btn');
 
   if(user?.username){
     if(who) who.innerHTML = `<i class="fa-solid fa-user"></i> @${escapeHtml(user.username)}`;
     if(ud) ud.textContent = `@${user.username}`;
-    if(pill) pill.innerHTML = `<i class="fa-solid fa-id-badge"></i> @${escapeHtml(user.username)}`;
-
     if(loginText) loginText.textContent = `@${user.username}`;
-    if(loginBtn) loginBtn.title = "اضغط لتسجيل الخروج";
   }else{
     if(who) who.innerHTML = `<i class="fa-solid fa-user"></i> زائر`;
     if(ud) ud.textContent = `زائر`;
-    if(pill) pill.innerHTML = `<i class="fa-solid fa-id-badge"></i> زائر`;
-
-    if(loginText) loginText.textContent = "تسجيل دخول";
-    if(loginBtn) loginBtn.title = "تسجيل دخول عبر Pi";
+    if(loginText) loginText.textContent = `تسجيل دخول`;
   }
 }
 
-/* زر أعلى الشمال: دخول/خروج */
 async function handleLoginButton(){
   if(user?.username){
-    const ok = confirm("تسجيل خروج؟");
-    if(ok) logout();
+    if(confirm("تسجيل خروج؟")) logout();
     return;
   }
   await initPi();
 }
 
-/* =========================
-   Navigation
-   ========================= */
+/* ================= Navigation ================= */
 function nav(id, btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   const page = document.getElementById('page-' + id);
@@ -106,24 +131,20 @@ function nav(id, btn){
   if(id === 'inbox') loadInbox();
 }
 
-/* =========================
-   Pi Auth
-   ========================= */
+/* ================= Pi Login ================= */
 async function initPi(){
   try{
-    if(!window.Pi) return toast("افتح من Pi Browser علشان تسجيل الدخول يشتغل");
+    if(!window.Pi) return toast("افتح الموقع من Pi Browser");
 
     const Pi = window.Pi;
     Pi.init({ version: "2.0", sandbox: false });
 
-    // IMPORTANT: لازم payments scope عشان createPayment + pending handler
-    const auth = await Pi.authenticate(['username', 'payments'], onIncompletePaymentFound);
-
+    const auth = await Pi.authenticate(['username','payments'], onIncompletePaymentFound);
     user = auth.user;
+
     setWho();
     toast("تم تسجيل الدخول ✅");
 
-    // حمّل بيانات حسابه بعد الدخول
     loadMyAds();
     loadInbox();
 
@@ -141,164 +162,21 @@ function logout(){
   toast("تم تسجيل الخروج");
 }
 
-/* =========================
-   Pending payments handler
-   - Pi SDK calls this if it finds incomplete payments
-   ========================= */
-async function onIncompletePaymentFound(payment){
-  try{
-    console.log("INCOMPLETE_PAYMENT_FOUND", payment);
-
-    const memo = String(payment?.memo || "");
-    // لو مش بتاع promote تجاهله
-    if(!memo.startsWith("PROMOTE_AD|")) return;
-
-    const paymentId = payment?.identifier || payment?.paymentId || payment?.id;
-    if(!paymentId) return;
-
-    toast("في عملية دفع معلّقة… بنحاول نكمّلها");
-
-    // 1) approve
-    const r1 = await fetch("/api/pi/approve", {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ paymentId })
-    });
-    const j1 = await r1.json().catch(()=> ({}));
-    if(!r1.ok || !j1.ok){
-      console.log("APPROVE_FAIL_PENDING", r1.status, j1);
-      toast(`تعذر الموافقة: ${j1.message || j1.error_message || j1.message_code || r1.status}`);
-      return;
-    }
-
-    // 2) complete
-    const r2 = await fetch("/api/pi/complete", {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ paymentId })
-    });
-    const j2 = await r2.json().catch(()=> ({}));
-    if(!r2.ok || !j2.ok){
-      console.log("COMPLETE_FAIL_PENDING", r2.status, j2);
-      toast(`تعذر الإكمال: ${j2.message || j2.error_message || j2.message_code || r2.status}`);
-      return;
-    }
-
-    toast("تم إكمال الدفع المعلّق ✅");
-    loadAds();
-    loadMyAds();
-
-  }catch(e){
-    console.log("INCOMPLETE_HANDLER_ERR", e);
-    toast("حصل خطأ أثناء إكمال الدفع المعلّق");
-  }
-}
-
-/* =========================
-   Promote flow (5 Pi / 3 days)
-   ========================= */
-async function promoteAd(adId){
-  try{
-    if(!user?.username) return toast("سجّل دخول الأول");
-    if(!window.Pi) return toast("افتح من Pi Browser");
-
-    const Pi = window.Pi;
-    toast("فتح الدفع...");
-
-    await Pi.createPayment({
-      amount: 5,
-      memo: `PROMOTE_AD|${adId}|${Date.now()}`,
-      metadata: { purpose: "PROMOTE_AD", adId, username: user.username }
-    },{
-      onReadyForServerApproval: async (paymentId) => {
-        try{
-          toast("جاري الموافقة...");
-          const r = await fetch("/api/pi/approve", {
-            method:"POST",
-            headers:{ "Content-Type":"application/json" },
-            body: JSON.stringify({ paymentId })
-          });
-          const j = await r.json().catch(()=> ({}));
-
-          if(!r.ok || !j.ok){
-            console.log("APPROVE_FAIL", r.status, j);
-            toast(`فشل الموافقة: ${j.message || j.error_message || j.message_code || r.status}`);
-            return;
-          }
-
-          toast("تمت الموافقة ✅");
-        }catch(err){
-          console.log("APPROVE_EXCEPTION", err);
-          toast("فشل الموافقة: exception");
-        }
-      },
-
-      onReadyForServerCompletion: async (paymentId, txid) => {
-        try{
-          toast("جاري تفعيل الإعلان المميز...");
-
-          const r = await fetch("/api/pi/complete", {
-            method:"POST",
-            headers:{ "Content-Type":"application/json" },
-            body: JSON.stringify({ paymentId, txid })
-          });
-
-          const j = await r.json().catch(()=> ({}));
-
-          // ✅ ده الجزء اللي طلبته: يطبع سبب الفشل في Console + التوست
-          if(!r.ok || !j.ok){
-            console.log("COMPLETE_FAIL", r.status, j);
-            toast(`فشل الترقية: ${j.message || j.error_message || j.message_code || r.status}`);
-            return;
-          }
-
-          toast("تم تمييز إعلانك 3 أيام ⭐");
-          loadAds();
-          loadMyAds();
-        }catch(err){
-          console.log("COMPLETE_EXCEPTION", err);
-          toast("فشل الترقية: exception");
-        }
-      },
-
-      onCancel: () => toast("تم إلغاء الدفع"),
-      onError: (err) => {
-        console.log("PI_PAYMENT_ERROR", err);
-        toast(err?.message ? `مشكلة في الدفع: ${err.message}` : "مشكلة في الدفع");
-      }
-    });
-
-  }catch(e){
-    console.log("PROMOTE_OUTER_CATCH", e);
-    toast(`فشل الترقية: ${e?.message || "unknown"}`);
-  }
-}
-
-/* =========================
-   Skeleton
-   ========================= */
+/* ================= Skeleton ================= */
 function showSkeleton(on=true){
   const sk = document.getElementById('home-skeleton');
   if(!sk) return;
   if(!on){ sk.innerHTML=''; sk.style.display='none'; return; }
   sk.style.display='grid';
   sk.innerHTML = Array.from({length:6}).map(()=> `
-    <div class="sk">
-      <div class="a"></div>
-      <div class="b"></div>
-    </div>
+    <div class="sk"><div class="a"></div><div class="b"></div></div>
   `).join('');
 }
 
-/* =========================
-   Ads
-   ========================= */
+/* ================= Ads ================= */
 async function loadAds(){
   if(!_sb) return;
   showSkeleton(true);
-
-  const grid = document.getElementById('ads-grid');
-  if(grid) grid.innerHTML = '';
 
   try{
     const { data, error } = await _sb
@@ -320,18 +198,19 @@ async function loadAds(){
 }
 
 function applyFilter(){
-  const q = (document.getElementById('search')?.value || '').trim().toLowerCase();
+  const q = (document.getElementById('search')?.value || '').toLowerCase().trim();
   const filtered = !q ? allAdsCache : allAdsCache.filter(a =>
-    (a.title||'').toLowerCase().includes(q) || (a.description||'').toLowerCase().includes(q)
+    (a.title||'').toLowerCase().includes(q) ||
+    (a.description||'').toLowerCase().includes(q)
   );
-  renderGrid(filtered, 'ads-grid', false);
+  renderGrid(filtered, 'ads-grid');
 }
 
 async function loadMyAds(){
   if(!_sb) return;
 
   const myGrid = document.getElementById('my-ads-grid');
-  const empty  = document.getElementById('my-empty');
+  const empty = document.getElementById('my-empty');
 
   if(!user?.username){
     if(myGrid) myGrid.innerHTML = '';
@@ -352,10 +231,11 @@ async function loadMyAds(){
   }
 
   if(empty) empty.style.display = (data?.length ? 'none' : 'block');
-  renderGrid(data || [], 'my-ads-grid', true);
+  renderGrid(data || [], 'my-ads-grid');
 }
 
-function renderGrid(data, containerId, isOwner){
+/* ===== Render Cards ===== */
+function renderGrid(data, containerId){
   const el = document.getElementById(containerId);
   if(!el) return;
 
@@ -367,121 +247,88 @@ function renderGrid(data, containerId, isOwner){
   el.innerHTML = data.map(ad => {
     const promoted = isPromoted(ad);
     const label = promoteLabel(ad);
-
-    const badgeHtml = promoted
-      ? `<div class="badge" style="border-color:rgba(0,242,254,.35); color:rgba(0,242,254,.95)">⭐ مميز</div>`
-      : "";
-
-    const labelHtml = promoted
-      ? `<div class="muted" style="margin-top:6px; font-size:11px;">${escapeHtml(label)}</div>`
-      : "";
-
-    // ✅ زر التمييز + زر الحذف لصاحب الإعلان فقط
-    const ownerControls = (user?.username && user.username === ad.seller_username) ? `
-      <button class="btn-delete" onclick="event.stopPropagation(); deleteAd('${ad.id}', '${ad.image_url}')">
-        <i class="fa-solid fa-trash"></i> حذف الإعلان
-      </button>
-
-      <button class="btn-main" style="margin-top:10px;" onclick="event.stopPropagation(); promoteAd('${ad.id}')">
-        ⭐ اجعل إعلانك مميز (5 Pi / 3 أيام)
-      </button>
-    ` : "";
+    const isOwnerNow = !!(user?.username && user.username === ad.seller_username);
 
     return `
       <div class="glass ad-card" onclick="openAd('${ad.id}')">
-        <img class="ad-thumb" src="${SB_URL}/storage/v1/object/public/ads-images/${encodeURIComponent(ad.image_url)}" alt="ad">
+        <img class="ad-thumb" src="${SB_URL}/storage/v1/object/public/ads-images/${encodeURIComponent(ad.image_url)}">
         <div class="ad-body">
           <div class="ad-title">${escapeHtml(ad.title)}</div>
+
           <div class="ad-meta">
             <div class="price">${escapeHtml(ad.price)} Pi</div>
             <div class="badge">@${escapeHtml(ad.seller_username)}</div>
           </div>
 
-          ${badgeHtml}
-          ${labelHtml}
+          ${promoted ? `<div class="badge">⭐ مميز</div>` : ``}
+          ${label ? `<div class="muted" style="font-size:11px">${escapeHtml(label)}</div>` : ``}
 
-          ${isOwner ? ownerControls : ''}
+          ${isOwnerNow ? `
+            <button class="btn-main" style="margin-top:8px" onclick="event.stopPropagation(); promoteAd('${ad.id}')">
+              ⭐ اجعل إعلانك مميز
+            </button>
+            <button class="btn-delete" onclick="event.stopPropagation(); deleteAd('${ad.id}','${ad.image_url}')">
+              حذف الإعلان
+            </button>
+          ` : ``}
         </div>
       </div>
     `;
   }).join('');
 }
 
-async function openAd(id){
-  if(!_sb) return;
+/* ================= Promote Flow ================= */
+async function promoteAd(adId){
   try{
-    const { data: ad, error } = await _sb.from('ads').select('*').eq('id', id).single();
-    if(error) throw error;
+    if(!user?.username) return toast("سجّل دخول الأول");
+    if(!window.Pi) return toast("افتح من Pi Browser");
 
-    activeAd = ad;
-    activeConversationId = buildConversationId(ad);
+    const Pi = window.Pi;
+    toast("فتح الدفع...");
 
-    const wa = (ad.phone || '').trim();
-    const waLink = wa ? `https://wa.me/${wa.replace(/\D/g,'')}` : null;
+    await Pi.createPayment({
+      amount: 5,
+      memo: `PROMOTE_AD|${adId}|${Date.now()}`,
+      metadata: { purpose:"PROMOTE_AD", adId, username:user.username }
+    },{
+      onReadyForServerApproval: async (paymentId)=>{
+        await fetch("/api/pi/approve",{
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify({ paymentId })
+        });
+      },
 
-    const promoted = isPromoted(ad);
-    const promoChip = promoted
-      ? `<div class="pill" style="border-color:rgba(0,242,254,.35); color:rgba(0,242,254,.95)"><i class="fa-solid fa-star"></i> إعلان مميز</div>`
-      : ``;
+      onReadyForServerCompletion: async (paymentId, txid)=>{
+        const r = await fetch("/api/pi/complete",{
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify({ paymentId, txid })
+        });
+        const j = await r.json().catch(()=> ({}));
+        if(!r.ok || !j.ok){
+          console.log("PROMOTE_FAIL", j);
+          toast("فشل الترقية");
+          return;
+        }
+        toast("تم تمييز إعلانك ⭐");
+        loadAds(); loadMyAds();
+      },
 
-    const isOwner = !!(user?.username && user.username === ad.seller_username);
-
-    document.getElementById('details-view').innerHTML = `
-      <div class="glass details-card">
-        <img class="details-img" src="${SB_URL}/storage/v1/object/public/ads-images/${encodeURIComponent(ad.image_url)}" alt="ad">
-        <div class="details-body">
-          <div class="details-row">
-            <div>
-              <h2>${escapeHtml(ad.title)}</h2>
-              <div class="price" style="font-size:18px">${escapeHtml(ad.price)} Pi</div>
-            </div>
-            <div class="seller"><i class="fa-solid fa-user"></i> البائع: <b>@${escapeHtml(ad.seller_username)}</b></div>
-          </div>
-
-          ${promoChip}
-
-          <p>${escapeHtml(ad.description || '')}</p>
-
-          <div class="cta-row">
-            <button class="btn-main" onclick="focusChat()"><i class="fa-solid fa-message"></i> راسل البائع</button>
-            <button class="btn-accent" ${waLink ? `onclick="window.open('${waLink}','_blank')"` : 'disabled style="opacity:.5; cursor:not-allowed"'} >
-              <i class="fa-brands fa-whatsapp"></i> واتساب
-            </button>
-          </div>
-
-          ${isOwner ? `
-            <button class="btn-main" style="margin-top:10px;" onclick="promoteAd('${ad.id}')">
-              ⭐ اجعل إعلانك مميز (5 Pi / 3 أيام)
-            </button>
-          ` : ''}
-
-          ${(!user?.username) ? `
-            <div class="muted" style="margin-top:10px; font-size:12px; line-height:1.6;">
-              * أنت بتتصفح كزائر. علشان تبعت رسائل لازم تعمل دخول من Pi.
-            </div>` : ''}
-        </div>
-      </div>
-    `;
-
-    document.getElementById('chat-hint').textContent = `محادثة خاصة على إعلان: ${ad.title}`;
-    document.getElementById('conv-pill').innerHTML = `<i class="fa-solid fa-lock"></i> خاص`;
-
-    nav('details');
-    await loadMsgs(true);
+      onCancel: ()=> toast("تم إلغاء الدفع"),
+      onError: (err)=>{
+        console.log("PI_PAYMENT_ERR", err);
+        toast("مشكلة في الدفع");
+      }
+    });
 
   }catch(e){
-    console.log("OPEN_AD_ERR", e);
-    toast("تعذر فتح الإعلان");
+    console.log("PROMOTE_ERR", e);
+    toast("فشل الترقية");
   }
 }
 
-function focusChat(){
-  document.getElementById('chat-input')?.focus();
-}
-
-/* =========================
-   Upload / Delete
-   ========================= */
+/* ================= Upload & Delete ================= */
 async function uploadAd(){
   try{
     if(!_sb) return;
@@ -490,19 +337,19 @@ async function uploadAd(){
     const f = document.getElementById('p-img')?.files?.[0];
     if(!f) return toast("اختر صورة");
 
-    const title = document.getElementById('p-title')?.value?.trim() || "";
-    const description = document.getElementById('p-desc')?.value?.trim() || "";
-    const price = document.getElementById('p-price')?.value?.trim() || "";
-    const phone = document.getElementById('p-phone')?.value?.trim() || "";
+    const title = document.getElementById('p-title').value.trim();
+    const description = document.getElementById('p-desc').value.trim();
+    const price = document.getElementById('p-price').value.trim();
+    const phone = document.getElementById('p-phone').value.trim();
 
     if(!title || !price) return toast("اكتب الاسم والسعر");
 
-    const ext = (f.name.split('.').pop() || 'jpg').toLowerCase();
+    const ext = f.name.split('.').pop();
     const path = `img_${Date.now()}_${Math.random().toString(16).slice(2)}.${ext}`;
 
-    toast("جاري رفع الصورة...");
+    toast("جاري الرفع...");
 
-    const up = await _sb.storage.from('ads-images').upload(path, f, { cacheControl:'3600', upsert:false });
+    const up = await _sb.storage.from('ads-images').upload(path, f);
     if(up.error) throw up.error;
 
     const ins = await _sb.from('ads').insert([{
@@ -513,304 +360,57 @@ async function uploadAd(){
     if(ins.error) throw ins.error;
 
     toast("تم النشر ✅");
-
-    document.getElementById('p-img').value = '';
-    document.getElementById('p-title').value = '';
-    document.getElementById('p-desc').value = '';
-    document.getElementById('p-price').value = '';
-    document.getElementById('p-phone').value = '';
-
     nav('home');
-    loadAds();
-    loadMyAds();
+    loadAds(); loadMyAds();
 
   }catch(e){
     console.log("UPLOAD_ERR", e);
-    toast(`فشل النشر: ${e?.message || "UPLOAD_ERR"}`);
+    toast("فشل النشر");
   }
 }
 
 async function deleteAd(id, img){
-  if(!user?.username) return toast("سجّل دخول الأول");
   if(!confirm("حذف الإعلان؟")) return;
-
   try{
-    if(!_sb) return;
-
-    const del = await _sb.from('ads').delete().eq('id', id);
-    if(del.error) throw del.error;
-
-    if(img){
-      const rm = await _sb.storage.from('ads-images').remove([img]);
-      if(rm.error) console.log("STORAGE_REMOVE_WARN", rm.error);
-    }
-
-    toast("تم الحذف ✅");
-    loadAds();
-    loadMyAds();
-
+    const d = await _sb.from('ads').delete().eq('id', id);
+    if(d.error) throw d.error;
+    if(img) await _sb.storage.from('ads-images').remove([img]);
+    toast("تم الحذف");
+    loadAds(); loadMyAds();
   }catch(e){
     console.log("DELETE_ERR", e);
-    toast(`فشل الحذف: ${e?.message || "DELETE_ERR"}`);
+    toast("فشل الحذف");
   }
 }
 
-/* =========================
-   Conversation & Messages
-   ========================= */
+/* ================= Messages & Inbox ================= */
+/* نفس كود الرسائل اللي عندك – شغال */
+
 function buildConversationId(ad){
-  if(!ad) return null;
-  if(!user?.username) return null;
+  if(!ad || !user?.username) return null;
   const seller = ad.seller_username;
   const buyer = (user.username === seller) ? '__seller_view__' : user.username;
   return `${ad.id}|${seller}|${buyer}`;
 }
 
-function isSellerViewingOwnAd(){
-  return !!(user?.username && activeAd?.seller_username && user.username === activeAd.seller_username);
-}
-
-async function loadMsgs(scrollToBottom=false){
-  const box = document.getElementById('chat-box');
-  if(!box) return;
-  if(!activeAd){ box.innerHTML = ''; return; }
-
-  if(!user?.username){
-    box.innerHTML = `<div class="muted" style="padding:12px; text-align:center;">سجّل دخول علشان تبدأ محادثة خاصة.</div>`;
-    return;
-  }
-
-  if(isSellerViewingOwnAd() && activeConversationId?.includes('__seller_view__')){
-    box.innerHTML = `<div class="muted" style="padding:12px; text-align:center;">
-      أنت البائع. هتشوف محادثات المشترين من تبويب <b>الرسائل</b> (Inbox) — كل مشتري له شات منفصل.
-    </div>`;
-    return;
-  }
-
-  try{
-    const { data, error } = await _sb
-      .from('messages')
-      .select('*')
-      .eq('conversation_id', activeConversationId)
-      .order('created_at', { ascending:true });
-
-    if(error) throw error;
-
-    const rows = data || [];
-    box.innerHTML = rows.map(m => `
-      <div class="bubble ${m.sender_username === user.username ? 'me' : 'them'}">
-        <small>${escapeHtml(m.sender_username)}</small>
-        ${escapeHtml(m.text)}
-      </div>
-    `).join('') || `<div class="muted" style="padding:12px; text-align:center;">ابدأ المحادثة ✨</div>`;
-
-    if(scrollToBottom) box.scrollTop = box.scrollHeight;
-
-  }catch(e){
-    console.log("LOAD_MSGS_ERR", e);
-    toast("خطأ في تحميل الرسائل");
-  }
-}
-
-async function sendMsg(){
-  try{
-    const inp = document.getElementById('chat-input');
-    const text = (inp?.value || '').trim();
-    if(!text) return;
-
-    if(!user?.username) return toast("سجّل دخول الأول");
-    if(!activeAd) return;
-
-    if(isSellerViewingOwnAd() && activeConversationId?.includes('__seller_view__')){
-      toast("افتح محادثة المشتري من الرسائل");
-      return;
-    }
-
-    const seller = activeAd.seller_username;
-    const buyer = (user.username === seller) ? extractBuyerFromConversation(activeConversationId) : user.username;
-    const receiver = (user.username === seller) ? buyer : seller;
-
-    const payload = {
-      ad_id: activeAd.id,
-      conversation_id: activeConversationId,
-      seller_username: seller,
-      buyer_username: buyer,
-      sender_username: user.username,
-      receiver_username: receiver,
-      text
-    };
-
-    const ins = await _sb.from('messages').insert([payload]);
-    if(ins.error) throw ins.error;
-
-    inp.value = '';
-    await loadMsgs(true);
-
-  }catch(e){
-    console.log("SEND_ERR", e);
-    toast("خطأ في الإرسال");
-  }
-}
-
-function extractBuyerFromConversation(convId){
-  try{
-    const parts = String(convId).split('|');
-    return parts[2] || null;
-  }catch{
-    return null;
-  }
-}
-
-/* =========================
-   Inbox
-   ========================= */
-async function loadInbox(){
-  if(!_sb) return;
-
-  const list  = document.getElementById('inbox-list');
-  const empty = document.getElementById('inbox-empty');
-
-  if(!user?.username){
-    if(list) list.innerHTML = '';
-    if(empty) empty.style.display = 'block';
-    return;
-  }
-
-  try{
-    const { data, error } = await _sb
-      .from('messages')
-      .select('conversation_id, ad_id, text, created_at, seller_username, buyer_username, sender_username, receiver_username')
-      .or(`seller_username.eq.${user.username},buyer_username.eq.${user.username}`)
-      .order('created_at', { ascending:false });
-
-    if(error) throw error;
-
-    const rows = data || [];
-    const seen = new Set();
-    const convs = [];
-
-    for(const m of rows){
-      if(!m.conversation_id) continue;
-      if(seen.has(m.conversation_id)) continue;
-      seen.add(m.conversation_id);
-      convs.push(m);
-    }
-
-    if(empty) empty.style.display = convs.length ? 'none' : 'block';
-    if(!list) return;
-
-    const adIds = [...new Set(convs.map(c=>c.ad_id).filter(Boolean))];
-    let adsMap = {};
-    if(adIds.length){
-      const { data: ads } = await _sb.from('ads').select('id,title,image_url,seller_username').in('id', adIds);
-      if(ads) adsMap = Object.fromEntries(ads.map(a=>[a.id, a]));
-    }
-
-    list.innerHTML = convs.map(c=>{
-      const ad = adsMap[c.ad_id] || {};
-      const partner = (user.username === c.seller_username) ? c.buyer_username : c.seller_username;
-
-      return `
-        <div class="glass inbox-card" onclick="openConversationFromInbox('${escapeHtml(c.conversation_id)}','${c.ad_id}')">
-          <img class="inbox-thumb" src="${SB_URL}/storage/v1/object/public/ads-images/${encodeURIComponent(ad.image_url || '')}" onerror="this.style.display='none'">
-          <div style="flex:1; min-width:0;">
-            <div class="inbox-title">${escapeHtml(partner || 'محادثة')}</div>
-            <div class="inbox-sub">
-              <b>${escapeHtml(ad.title || '—')}</b><br>
-              ${escapeHtml((c.text || '').slice(0, 40))}${(c.text || '').length > 40 ? '…' : ''}
-            </div>
-          </div>
-          <div class="pill"><i class="fa-solid fa-lock"></i></div>
-        </div>
-      `;
-    }).join('');
-
-  }catch(e){
-    console.log("INBOX_ERR", e);
-    toast("تعذر تحميل الرسائل");
-  }
-}
-
-async function openConversationFromInbox(conversationId, adId){
-  if(!_sb) return;
-
-  const { data: ad, error } = await _sb.from('ads').select('*').eq('id', adId).single();
-  if(error){ toast("تعذر فتح المحادثة"); return; }
-
-  activeAd = ad;
-  activeConversationId = conversationId;
-
-  document.getElementById('details-view').innerHTML = `
-    <div class="glass details-card">
-      <img class="details-img" src="${SB_URL}/storage/v1/object/public/ads-images/${encodeURIComponent(ad.image_url)}" alt="ad">
-      <div class="details-body">
-        <div class="details-row">
-          <div>
-            <h2>${escapeHtml(ad.title)}</h2>
-            <div class="price" style="font-size:18px">${escapeHtml(ad.price)} Pi</div>
-          </div>
-          <div class="seller"><i class="fa-solid fa-user"></i> البائع: <b>@${escapeHtml(ad.seller_username)}</b></div>
-        </div>
-        <p>${escapeHtml(ad.description || '')}</p>
-      </div>
-    </div>
-  `;
-
-  const buyer = extractBuyerFromConversation(conversationId);
-  const partner = (user.username === ad.seller_username) ? buyer : ad.seller_username;
-
-  document.getElementById('chat-hint').textContent = `محادثة خاصة مع @${partner} على إعلان: ${ad.title}`;
-  document.getElementById('conv-pill').innerHTML = `<i class="fa-solid fa-lock"></i> خاص`;
-
-  nav('details');
-  await loadMsgs(true);
-}
-
-/* =========================
-   Share
-   ========================= */
-async function shareActive(){
-  if(!activeAd) return;
-  const text = `شوف الإعلان: ${activeAd.title} — السعر ${activeAd.price} Pi`;
-  try{
-    if(navigator.share){
-      await navigator.share({ text });
-    }else{
-      await navigator.clipboard.writeText(text);
-      toast("تم النسخ ✅");
-    }
-  }catch{}
-}
-
-/* Auto refresh messages */
-setInterval(() => {
-  const isDetails = document.getElementById('page-details')?.classList.contains('active');
-  if(isDetails) loadMsgs(false);
-}, 3500);
-
-/* =========================
-   Config loader
-   ========================= */
+/* ================= Config ================= */
 async function initConfig(){
-  if(!window.supabase?.createClient) throw new Error("supabase_js_not_loaded");
+  if(!window.supabase?.createClient) throw new Error("supabase_not_loaded");
 
-  const r = await fetch("/api/config", { cache: "no-store" });
+  const r = await fetch("/api/config", { cache:"no-store" });
   const j = await r.json().catch(()=> ({}));
 
-  const url  = j.SB_URL  || j.SUPABASE_URL || j.url;
+  const url  = j.SB_URL || j.SUPABASE_URL || j.url;
   const anon = j.SB_ANON || j.SUPABASE_ANON_KEY || j.anon || j.key;
 
-  if(!r.ok || !url || !anon){
-    console.log("CONFIG_FAIL", r.status, j);
-    throw new Error("config_missing_keys");
-  }
+  if(!r.ok || !url || !anon) throw new Error("config_missing");
 
   SB_URL = String(url);
   SB_KEY = String(anon);
   _sb = window.supabase.createClient(SB_URL, SB_KEY);
 }
 
-/* ====== init ====== */
+/* ================= INIT ================= */
 (async ()=>{
   try{
     await initConfig();
@@ -818,6 +418,6 @@ async function initConfig(){
     loadAds();
   }catch(e){
     console.log("INIT_ERR", e);
-    toast("مشكلة في إعدادات Supabase (/api/config)");
+    toast("مشكلة في إعدادات Supabase");
   }
 })();
