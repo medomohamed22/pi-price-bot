@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <title>Donate Way — Token & DEX Dashboard (Testnet)</title>
+
+  <!-- Pi SDK -->
+  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="top">
+      <div class="brand">
+        <div class="logo">DW</div>
+        <div class="meta">
+          <h1>Donate Way</h1>
+          <p>Token + DEX + Pi Payments (Testnet Dashboard)</p>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="btnInit" class="btn ghost">Init SDK</button>
+        <button id="btnAuth" class="btn primary">تسجيل دخول Pi</button>
+      </div>
+    </header>
+
+    <section class="grid">
+      <div class="card">
+        <h2>حالة Pi SDK</h2>
+        <div class="kv">
+          <div class="k">Connected</div><div class="v" id="sdkConnected">—</div>
+          <div class="k">User</div><div class="v" id="sdkUser">—</div>
+          <div class="k">UID</div><div class="v mono" id="sdkUid">—</div>
+          <div class="k">Access Token</div><div class="v mono" id="sdkToken">—</div>
+        </div>
+        <small class="muted">مهم: ما تخزّنش accessToken عندك قبل ما تتحقق منه سيرفر سايد. 2</small>
+      </div>
+
+      <div class="card">
+        <h2>إعدادات التوكن (Pi Testnet)</h2>
+
+        <label class="lbl">Display Name</label>
+        <input id="displayName" class="inp" value="Donate Way" />
+
+        <label class="lbl">Asset Code (1–12 Uppercase)</label>
+        <input id="assetCode" class="inp mono" value="DONATEWAY" />
+
+        <div class="row2">
+          <div>
+            <label class="lbl">Initial Supply</label>
+            <input id="initialSupply" class="inp mono" value="1000000" />
+          </div>
+          <div>
+            <label class="lbl">Admin Token (للحماية)</label>
+            <input id="adminToken" class="inp mono" placeholder="X-Admin-Token" />
+          </div>
+        </div>
+
+        <div class="btnRow">
+          <button id="btnBootstrap" class="btn">1) Create/Bootstrap Token</button>
+          <button id="btnSellOffer" class="btn">2) Create Sell Offer (DEX)</button>
+        </div>
+
+        <div class="note">
+          <b>Bootstrap</b> = Distributor يعمل Trustline + Issuer يبعث الكمية للـ Distributor.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>DEX Sell Offer (Token/Pi)</h2>
+
+        <div class="row2">
+          <div>
+            <label class="lbl">Amount (Token)</label>
+            <input id="offerAmount" class="inp mono" value="10000" />
+          </div>
+          <div>
+            <label class="lbl">Price (Pi per 1 Token)</label>
+            <input id="offerPrice" class="inp mono" value="0.01" />
+          </div>
+        </div>
+
+        <small class="muted">
+          في Stellar، سعر الـ Sell Offer غالبًا هو “كم Pi هتاخد مقابل 1 Token”.
+          ووجود Offer/سيولة بيخلي التوكن يظهر ويتصنّف أحسن على الدكس.
+        </small>
+      </div>
+
+      <div class="card">
+        <h2>Pi Payments (تبرعات داخل التطبيق)</h2>
+
+        <div class="row2">
+          <div>
+            <label class="lbl">Donation Amount (π)</label>
+            <input id="donAmount" class="inp mono" value="1" />
+          </div>
+          <div>
+            <label class="lbl">Memo</label>
+            <input id="donMemo" class="inp" value="Donate Way — Donation" />
+          </div>
+        </div>
+
+        <button id="btnDonate" class="btn primary">ادفع تبرع بـ Pi</button>
+
+        <small class="muted">
+          createPayment بيحتاج callbacks: approval & completion على السيرفر. 3
+        </small>
+      </div>
+
+      <div class="card">
+        <h2>Logs</h2>
+        <pre id="log" class="log"></pre>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <span class="muted">Testnet فقط — متحطّش Seeds أو API Keys في الواجهة أبدًا.</span>
+    </footer>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
