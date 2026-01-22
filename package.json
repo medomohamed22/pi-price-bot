@@ -1,9 +1,0 @@
-{
-  "name": "pi-chama",
-  "version": "1.0.0",
-  "type": "commonjs",
-  "dependencies": {
-    "@supabase/supabase-js": "^2.49.0",
-    "stellar-sdk": "^12.1.0"
-  }
-}
