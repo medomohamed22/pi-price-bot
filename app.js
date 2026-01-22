@@ -175,7 +175,8 @@ async function initPi(){
     const Pi = window.Pi;
     Pi.init({ version: "2.0", sandbox: false });
 
-    const auth = await Pi.authenticate(['username'], () => {});
+    // لازم تضيف payments هنا
+    const auth = await Pi.authenticate(['username', 'payments'], () => {});
     user = auth.user;
 
     setWho();
@@ -186,9 +187,11 @@ async function initPi(){
 
     toast('تم تسجيل الدخول ✅');
   }catch(e){
-    alert("لازم تفتح من Pi Browser علشان تسجيل الدخول يشتغل.");
+    console.log(e);
+    alert("لازم تفتح من Pi Browser علشان تسجيل الدخول يشتغل + وافق على صلاحية Payments.");
   }
 }
+
 
 function logout(){
   user = null;
