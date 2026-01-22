@@ -12,93 +12,89 @@
   <style>
     :root {
       --bg: #030712;
-      --card: rgba(17, 24, 39, 0.7);
-      --stroke: rgba(255, 255, 255, 0.08);
+      --card: rgba(17, 24, 39, 0.75);
+      --stroke: rgba(255, 255, 255, 0.1);
       --primary: #8b5cf6;
-      --primary-dark: #6d28d9;
+      --primary-glow: rgba(139, 92, 246, 0.4);
       --accent: #22d3ee;
       --gold: #f59e0b;
       --text: #f9fafb;
       --muted: #9ca3af;
-      --r-lg: 24px;
-      --r-md: 16px;
-      --nav-h: 70px;
+      --nav-h: 75px;
       --safe: env(safe-area-inset-bottom);
     }
 
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
     
     body {
-      margin: 0; color: var(--text); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0; color: var(--text); font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
       background: radial-gradient(circle at top left, #1e1b4b, #030712);
       min-height: 100vh; overflow-x: hidden;
     }
 
-    /* Glass Effect */
-    .glass { background: var(--card); border: 1px solid var(--stroke); backdrop-filter: blur(20px); border-radius: var(--r-md); }
+    .glass { background: var(--card); border: 1px solid var(--stroke); backdrop-filter: blur(15px); }
 
-    /* Layout */
+    /* Header */
     .app-header {
       display: flex; justify-content: space-between; align-items: center;
       padding: 15px 20px; position: sticky; top: 0; z-index: 1000;
-      border-bottom: 1px solid var(--stroke); background: rgba(3, 7, 18, 0.8);
+      border-bottom: 1px solid var(--stroke); background: rgba(3, 7, 18, 0.85);
+      backdrop-filter: blur(10px);
     }
 
-    .page { display: none; padding: 20px 16px calc(var(--nav-h) + 40px + var(--safe)); max-width: 600px; margin: 0 auto; animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+    .logo-box { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; }
+    .logo-box i { color: var(--primary); text-shadow: 0 0 10px var(--primary-glow); }
+
+    /* Pages Navigation */
+    .page { display: none; padding: 20px 16px calc(var(--nav-h) + 40px + var(--safe)); animation: slideUp 0.4s ease; }
     .page.active { display: block; }
-    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* Ads Grid */
-    .ads-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
-    .ad-card { position: relative; border-radius: var(--r-md); overflow: hidden; transition: transform 0.2s; background: var(--card); border: 1px solid var(--stroke); }
-    .ad-card:active { transform: scale(0.96); }
+    /* Ads System */
+    .ads-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .ad-card { border-radius: 20px; overflow: hidden; background: var(--card); border: 1px solid var(--stroke); position: relative; transition: 0.3s; }
+    .ad-card.promoted { border: 2.5px solid var(--gold); box-shadow: 0 0 20px rgba(245, 158, 11, 0.2); }
     
-    .featured-ring { border: 2px solid var(--gold); box-shadow: 0 0 20px rgba(245, 158, 11, 0.15); }
-    .badge-gold {
+    .crown-badge {
       position: absolute; top: 10px; right: 10px; background: var(--gold);
-      color: #000; padding: 4px 10px; border-radius: 8px; font-size: 10px; font-weight: 800; z-index: 10;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      color: #000; padding: 4px 8px; border-radius: 8px; font-size: 10px; font-weight: 900; z-index: 5;
     }
 
-    .ad-image { width: 100%; height: 160px; object-fit: cover; }
-    .ad-content { padding: 12px; }
-    .ad-price { font-size: 18px; font-weight: 800; color: var(--accent); margin-bottom: 4px; }
-    .ad-title { font-size: 14px; color: var(--text); opacity: 0.9; height: 38px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+    .ad-img { width: 100%; height: 150px; object-fit: cover; background: #111; }
+    .ad-body { padding: 12px; }
+    .ad-price { font-size: 19px; font-weight: 900; color: var(--accent); margin-bottom: 4px; }
+    .ad-title { font-size: 13px; opacity: 0.9; height: 35px; overflow: hidden; line-height: 1.4; }
 
-    /* Buttons */
+    /* Forms & Buttons */
     .btn {
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      padding: 12px 20px; border: none; border-radius: 14px; cursor: pointer;
-      font-weight: 700; transition: all 0.2s; font-size: 14px; width: 100%;
+      width: 100%; padding: 14px; border: none; border-radius: 15px;
+      font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: 0.2s; font-size: 14px;
     }
-    .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; }
-    .btn-gold { background: var(--gold); color: #000; margin-top: 10px; }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-main { background: linear-gradient(135deg, var(--primary), #6d28d9); color: white; }
+    .btn-gold { background: var(--gold); color: #000; }
+    .btn:active { transform: scale(0.97); }
 
-    /* Bottom Navigation */
+    input, textarea {
+      width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--stroke);
+      padding: 14px; border-radius: 15px; color: white; margin-bottom: 12px;
+    }
+
+    /* Bottom Nav */
     .nav-bar {
       position: fixed; bottom: 0; left: 0; right: 0; height: calc(var(--nav-h) + var(--safe));
       background: rgba(17, 24, 39, 0.95); border-top: 1px solid var(--stroke);
-      display: flex; align-items: center; justify-content: space-around; padding-bottom: var(--safe); z-index: 1000;
+      display: flex; align-items: center; justify-content: space-around; padding-bottom: var(--safe);
     }
-    .nav-link { color: var(--muted); background: none; border: none; font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; transition: 0.3s; }
-    .nav-link.active { color: var(--primary); }
-    .nav-link i { font-size: 22px; }
+    .nav-btn { background: none; border: none; color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 5px; flex: 1; font-size: 11px; }
+    .nav-btn.active { color: var(--primary); }
+    .nav-btn i { font-size: 22px; }
 
-    /* Inputs */
-    .input-group { margin-bottom: 15px; }
-    .input-group label { display: block; margin-bottom: 8px; font-size: 13px; color: var(--muted); }
-    input, textarea {
-      width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--stroke);
-      padding: 14px; border-radius: 12px; color: white; font-size: 15px;
-    }
-    input:focus { border-color: var(--primary); }
-
-    /* Toast */
+    /* Toast Notification */
     #toast {
-      position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-      padding: 12px 24px; border-radius: 50px; background: #22c55e; color: white;
-      font-weight: 600; font-size: 14px; z-index: 9999; display: none; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.9); border: 1px solid var(--primary); color: white;
+      padding: 10px 25px; border-radius: 30px; font-size: 13px; z-index: 9999; display: none;
     }
   </style>
 </head>
@@ -107,194 +103,164 @@
   <div id="toast"></div>
 
   <header class="app-header">
-    <div style="display: flex; align-items: center; gap: 10px;">
-      <div style="width: 35px; height: 35px; background: var(--primary); border-radius: 10px; display: grid; place-items: center;">
-        <i class="fas fa-bolt"></i>
-      </div>
-      <b style="font-size: 18px; letter-spacing: 0.5px;">Elite Hub</b>
-    </div>
-    <div id="user-area">
-      <button class="btn-primary btn" style="padding: 6px 14px; border-radius: 10px;" onclick="initPi()">
-        <i class="fas fa-sign-in-alt"></i> دخول
-      </button>
+    <div class="logo-box"><i class="fas fa-gem"></i> Elite Hub</div>
+    <div id="auth-section">
+      <button class="btn-main btn" style="padding: 7px 15px; border-radius: 10px;" onclick="initPi()">دخول</button>
     </div>
   </header>
 
   <main>
-    <div id="home" class="page active">
-      <div class="ads-grid" id="market-grid"></div>
+    <div id="page-home" class="page active">
+      <div class="ads-grid" id="main-ads-list"></div>
     </div>
 
-    <div id="add" class="page">
-      <div class="glass" style="padding: 24px;">
-        <h2 style="margin-top:0">إضافة إعلان</h2>
-        <div class="input-group">
-          <label>صورة المنتج</label>
-          <input type="file" id="file" accept="image/*">
-        </div>
-        <div class="input-group">
-          <input type="text" id="title" placeholder="ماذا تبيع؟">
-        </div>
-        <div class="input-group">
-          <input type="number" id="price" placeholder="السعر بـ Pi">
-        </div>
-        <div class="input-group">
-          <textarea id="desc" rows="4" placeholder="وصف المنتج وحالته..."></textarea>
-        </div>
-        <button class="btn btn-primary" id="up-btn" onclick="uploadAd()">
-          <i class="fas fa-paper-plane"></i> نشر الإعلان
+    <div id="page-add" class="page">
+      <div class="glass" style="padding: 20px; border-radius: 25px;">
+        <h3 style="margin-top:0">نشر إعلان جديد</h3>
+        <input type="file" id="file-input" accept="image/*">
+        <input type="text" id="title-input" placeholder="اسم المنتج">
+        <input type="number" id="price-input" placeholder="السعر بـ Pi">
+        <textarea id="desc-input" rows="4" placeholder="تفاصيل المنتج..."></textarea>
+        <button class="btn btn-main" id="publish-btn" onclick="handleUpload()">
+          <i class="fas fa-plus"></i> نشر الآن
         </button>
       </div>
     </div>
 
-    <div id="profile" class="page">
-      <div id="my-profile-info" style="margin-bottom: 20px;"></div>
-      <h3 style="margin-bottom: 15px;"><i class="fas fa-box-open"></i> إعلاناتي</h3>
-      <div class="ads-grid" id="my-ads-grid"></div>
+    <div id="page-profile" class="page">
+      <div class="glass" style="padding: 15px; border-radius: 20px; margin-bottom: 20px; text-align: center;" id="user-info-card">
+        <i class="fas fa-user-circle fa-3x" style="color: var(--muted);"></i>
+        <p>يرجى تسجيل الدخول لعرض إعلاناتك</p>
+      </div>
+      <h4 style="margin-bottom: 15px;">إعلاناتي</h4>
+      <div class="ads-grid" id="my-ads-list"></div>
     </div>
   </main>
 
   <nav class="nav-bar">
-    <button class="nav-link active" onclick="nav('home', this)"><i class="fas fa-home"></i><span>السوق</span></button>
-    <button class="nav-link" onclick="nav('add', this)"><i class="fas fa-plus-circle"></i><span>نشر</span></button>
-    <button class="nav-link" onclick="nav('profile', this)"><i class="fas fa-user"></i><span>حسابي</span></button>
+    <button class="nav-btn active" onclick="switchNav('home', this)"><i class="fas fa-store"></i>السوق</button>
+    <button class="nav-btn" onclick="switchNav('add', this)"><i class="fas fa-plus-circle"></i>نشر</button>
+    <button class="nav-btn" onclick="switchNav('profile', this)"><i class="fas fa-user"></i>حسابي</button>
   </nav>
 
   <script>
-    let _sb = null;
-    let currentUser = null;
+    let _supabase = null;
+    let _user = null;
 
-    // Boot App
+    // 1. بداية التشغيل وجلب الإعدادات
     window.onload = async () => {
       try {
         const res = await fetch('/api/config');
         const config = await res.json();
-        _sb = supabase.createClient(config.SB_URL, config.SB_ANON);
-        loadAds();
-      } catch (err) { showToast("فشل تحميل الإعدادات", "#ef4444"); }
+        _supabase = supabase.createClient(config.SB_URL, config.SB_ANON);
+        loadAllAds();
+      } catch (e) { notify("خطأ في الاتصال بالسيرفر", "#ef4444"); }
     };
 
-    // Pi Authentication
+    // 2. تسجيل الدخول عبر Pi
     async function initPi() {
       try {
         const Pi = window.Pi;
         Pi.init({ version: "2.0", sandbox: false });
-        
         const auth = await Pi.authenticate(['username'], (p) => {});
-        currentUser = auth.user;
+        _user = auth.user;
         
-        document.getElementById('user-area').innerHTML = `
-          <div style="text-align: right;">
-            <div style="font-size: 12px; font-weight: 800;">@${currentUser.username}</div>
-            <div style="font-size: 10px; color: var(--accent);">متحقق منه ✅</div>
-          </div>
-        `;
-        showToast("مرحباً بك مجدداً!");
-        if(document.getElementById('profile').classList.contains('active')) loadMyAds();
-      } catch (err) { alert("عذراً، يجب استخدام متصفح Pi"); }
+        document.getElementById('auth-section').innerHTML = `<span style="font-size:12px; font-weight:bold;">@${_user.username}</span>`;
+        document.getElementById('user-info-card').innerHTML = `<h3>@${_user.username}</h3><p>مرحباً بك في Pi Elite Hub</p>`;
+        notify("تم تسجيل الدخول!");
+      } catch (e) { alert("يرجى الدخول من Pi Browser"); }
     }
 
-    // Navigation
-    function nav(pageId, el) {
+    // 3. التنقل بين الصفحات
+    function switchNav(id, btn) {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-      document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-      document.getElementById(pageId).classList.add('active');
-      el.classList.add('active');
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('page-' + id).classList.add('active');
+      btn.classList.add('active');
       
-      if(pageId === 'home') loadAds();
-      if(pageId === 'profile') {
-        if(!currentUser) showToast("سجل دخولك أولاً", "#f59e0b");
-        else loadMyAds();
-      }
+      if(id === 'home') loadAllAds();
+      if(id === 'profile' && _user) loadMyAds();
     }
 
-    // Load Ads
-    async function loadAds() {
-      if(!_sb) return;
-      const { data } = await _sb.from('ads').select('*').order('created_at', {ascending: false});
-      render(data || [], 'market-grid', false);
+    // 4. جلب وعرض البيانات
+    async function loadAllAds() {
+      if(!_supabase) return;
+      const { data } = await _supabase.from('ads').select('*').order('created_at', {ascending: false});
+      renderAds(data || [], 'main-ads-list', false);
     }
 
     async function loadMyAds() {
-      const { data } = await _sb.from('ads').select('*').eq('seller_username', currentUser.username);
-      render(data || [], 'my-ads-grid', true);
+      const { data } = await _supabase.from('ads').select('*').eq('seller_username', _user.username);
+      renderAds(data || [], 'my-ads-list', true);
     }
 
-    function render(data, gridId, isOwner) {
+    function renderAds(list, gridId, isOwner) {
       const grid = document.getElementById(gridId);
       const now = new Date();
       
-      const sorted = data.sort((a,b) => {
-        const bp = b.promoted_until && new Date(b.promoted_until) > now;
-        const ap = a.promoted_until && new Date(a.promoted_until) > now;
-        return bp - ap;
+      // ترتيب: المميز يظهر أولاً
+      list.sort((a,b) => {
+        const aP = a.promoted_until && new Date(a.promoted_until) > now;
+        const bP = b.promoted_until && new Date(b.promoted_until) > now;
+        return bP - aP;
       });
 
-      grid.innerHTML = sorted.map(ad => {
+      grid.innerHTML = list.map(ad => {
         const isPromoted = ad.promoted_until && new Date(ad.promoted_until) > now;
         return `
-          <div class="ad-card ${isPromoted ? 'featured-ring' : ''}">
-            ${isPromoted ? '<div class="badge-gold"><i class="fas fa-crown"></i> مميز</div>' : ''}
-            <img class="ad-image" src="${_sb.storageUrl}/object/public/ads-images/${ad.image_url}" onerror="this.src='https://via.placeholder.com/300x200?text=Elite+Hub'">
-            <div class="ad-content">
+          <div class="ad-card ${isPromoted ? 'promoted' : ''}">
+            ${isPromoted ? '<div class="crown-badge"><i class="fas fa-crown"></i> مميز</div>' : ''}
+            <img class="ad-img" src="${_supabase.storageUrl}/object/public/ads-images/${ad.image_url}" onerror="this.src='https://via.placeholder.com/200'">
+            <div class="ad-body">
               <div class="ad-price">${ad.price} Pi</div>
               <div class="ad-title">${ad.title}</div>
-              ${isOwner ? `
-                <button class="btn btn-gold" onclick="promoteAd('${ad.id}')">
-                  <i class="fas fa-rocket"></i> تمييز الإعلان
-                </button>
-              ` : ''}
+              ${isOwner ? `<button class="btn btn-gold" style="margin-top:10px; font-size:11px; padding:8px;" onclick="startPromotion('${ad.id}')">تمييز الإعلان (5 Pi)</button>` : ''}
             </div>
-          </div>
-        `;
+          </div>`;
       }).join('');
     }
 
-    // Upload Ad
-    async function uploadAd() {
-      if(!currentUser) return showToast("يجب تسجيل الدخول", "#f59e0b");
+    // 5. رفع الإعلانات
+    async function handleUpload() {
+      if(!_user) return notify("سجل دخول أولاً", "#f59e0b");
       
-      const file = document.getElementById('file').files[0];
-      const title = document.getElementById('title').value;
-      const price = document.getElementById('price').value;
-      const desc = document.getElementById('desc').value;
+      const file = document.getElementById('file-input').files[0];
+      const title = document.getElementById('title-input').value;
+      const price = document.getElementById('price-input').value;
+      const desc = document.getElementById('desc-input').value;
 
-      if(!file || !title || !price) return showToast("يرجى ملء كافة البيانات", "#f59e0b");
+      if(!file || !title || !price) return notify("أكمل كافة الحقول", "#f59e0b");
 
-      const btn = document.getElementById('up-btn');
+      const btn = document.getElementById('publish-btn');
       btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الرفع...';
 
       try {
-        const fileName = `${Date.now()}_${currentUser.username}.${file.name.split('.').pop()}`;
-        const { error: upErr } = await _sb.storage.from('ads-images').upload(fileName, file);
+        const fileName = `${Date.now()}_${_user.username}.${file.name.split('.').pop()}`;
+        const { error: upErr } = await _supabase.storage.from('ads-images').upload(fileName, file);
         if(upErr) throw upErr;
 
-        const { error: dbErr } = await _sb.from('ads').insert([{
+        const { error: dbErr } = await _supabase.from('ads').insert([{
           title, price: parseFloat(price), description: desc,
-          image_url: fileName, seller_username: currentUser.username
+          image_url: fileName, seller_username: _user.username
         }]);
         if(dbErr) throw dbErr;
 
-        showToast("✅ تم النشر بنجاح!");
-        nav('home', document.querySelector('.nav-link'));
-      } catch (err) { 
-        showToast("خطأ أثناء الرفع", "#ef4444"); 
-      } finally {
-        btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> نشر الإعلان';
-      }
+        notify("✅ تم النشر بنجاح!");
+        switchNav('home', document.querySelector('.nav-btn'));
+      } catch (e) { notify("حدث خطأ أثناء الرفع", "#ef4444"); }
+      finally { btn.disabled = false; btn.innerHTML = '<i class="fas fa-plus"></i> نشر الآن'; }
     }
 
-    // Promotion / Payments
-    async function promoteAd(adId) {
-      if(!currentUser) return;
+    // 6. نظام الدفع والتمييز (مع كاشف الأخطاء)
+    async function startPromotion(adId) {
+      if(!_user) return;
+      notify("جاري تهيئة المعاملة...");
       
       try {
-        showToast("جاري معالجة الطلب...", "#8b5cf6");
-        
         await Pi.createPayment({
           amount: 5.0,
-          memo: `PROMOTE_AD|${adId}`,
-          metadata: { adId: adId, username: currentUser.username },
+          memo: `PROMOTE_AD|${adId}`, // التنسيق المطلوب للسيرفر
+          metadata: { adId: adId, username: _user.username },
         }, {
           onReadyForServerApproval: async (paymentId) => {
             const res = await fetch('/api/pi/approve', {
@@ -303,7 +269,10 @@
               body: JSON.stringify({ paymentId })
             });
             const info = await res.json();
-            if(!res.ok) throw new Error(info.message || "فشل التأكيد");
+            if(!res.ok) {
+                alert("خطأ في مرحلة Approval:\n" + JSON.stringify(info));
+                throw new Error("Approve Failed");
+            }
             return info;
           },
           onReadyForServerCompletion: async (paymentId, txid) => {
@@ -313,24 +282,25 @@
               body: JSON.stringify({ paymentId, txid })
             });
             const info = await res.json();
-            if(!res.ok) throw new Error(info.message || "فشل الإكمال");
-            showToast("🚀 إعلانك الآن في الواجهة!");
-            loadAds();
+            if(!res.ok) {
+                alert("خطأ في مرحلة Completion:\n" + JSON.stringify(info));
+                throw new Error("Complete Failed");
+            }
+            notify("🚀 تم تمييز إعلانك!");
+            loadAllAds();
             return info;
           },
-          onCancel: () => showToast("تم إلغاء الدفع", "#6b7280"),
-          onError: (err) => alert("خطأ في الدفع: " + err.message)
+          onCancel: () => notify("تم إلغاء الدفع", "#6b7280"),
+          onError: (err) => alert("خطأ من محفظة Pi:\n" + err.message)
         });
-      } catch (err) {
-        showToast("فشل البدء بالدفع", "#ef4444");
-      }
+      } catch (e) { console.error(e); }
     }
 
-    function showToast(msg, bg = "#22c55e") {
+    function notify(msg, bg = "#8b5cf6") {
       const t = document.getElementById('toast');
       t.textContent = msg; t.style.background = bg;
       t.style.display = 'block';
-      setTimeout(() => t.style.display = 'none', 3500);
+      setTimeout(() => t.style.display = 'none', 3000);
     }
   </script>
 </body>
