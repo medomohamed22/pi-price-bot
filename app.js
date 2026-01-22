@@ -1,13 +1,15 @@
 /* =========================
-   Elite Used Market - app.js
+   Elite Used Market - app.js (FULL)
    - Loads PUBLIC Supabase config from /api/config
-   - Pi login button top-left
+   - Top-left Pi login button (shows username after login)
+   - Promote Ad (5 Pi / 3 days) + pending payments handler
    ========================= */
 
 let SB_URL = "";
 let SB_KEY = "";
 let _sb = null;
 
+/* ====== State ====== */
 let user = null;
 let activeAd = null;
 let activeConversationId = null;
@@ -22,7 +24,7 @@ function toast(msg){
   t.textContent = msg;
   t.classList.add('show');
   clearTimeout(window.__toastTimer);
-  window.__toastTimer = setTimeout(()=> t.classList.remove('show'), 2500);
+  window.__toastTimer = setTimeout(()=> t.classList.remove('show'), 2600);
 }
 
 function escapeHtml(str=''){
@@ -35,7 +37,7 @@ function escapeHtml(str=''){
 }
 
 /* =========================
-   Promote helpers (لو عندك promoted_until)
+   Promote helpers (promoted_until)
    ========================= */
 function isPromoted(ad){
   if(!ad?.promoted_until) return false;
@@ -49,64 +51,15 @@ function promoteLabel(ad){
 }
 
 /* =========================
-   Pending payments handler
-   ========================= */
-async function onIncompletePaymentFound(payment){
-  try{
-    console.log("INCOMPLETE_PAYMENT_FOUND", payment);
-
-    const memo = String(payment?.memo || "");
-    if(!memo.startsWith("PROMOTE_AD|")) return;
-
-    const paymentId = payment?.identifier || payment?.paymentId || payment?.id;
-    if(!paymentId) return;
-
-    toast("في عملية دفع معلّقة… بنحاول نكمّلها");
-
-    const r1 = await fetch("/api/pi/approve", {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ paymentId })
-    });
-    const j1 = await r1.json().catch(()=> ({}));
-    if(!r1.ok || !j1.ok){
-      console.log("APPROVE_FAIL_PENDING", r1.status, j1);
-      toast(`تعذر الموافقة: ${j1.message || j1.error_message || r1.status}`);
-      return;
-    }
-
-    const r2 = await fetch("/api/pi/complete", {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ paymentId })
-    });
-    const j2 = await r2.json().catch(()=> ({}));
-    if(!r2.ok || !j2.ok){
-      console.log("COMPLETE_FAIL_PENDING", r2.status, j2);
-      toast(`تعذر الإكمال: ${j2.message || j2.error_message || r2.status}`);
-      return;
-    }
-
-    toast("تم إكمال الدفع المعلّق ✅");
-    loadAds();
-    loadMyAds();
-
-  }catch(e){
-    console.log("INCOMPLETE_HANDLER_ERR", e);
-    toast("حصل خطأ أثناء إكمال الدفع المعلّق");
-  }
-}
-
-/* =========================
-   UI: Update user display + login button
+   UI: Header login button + user pills
    ========================= */
 function setWho(){
   const who = document.getElementById('whoami');
-  const ud = document.getElementById('user-display');
+  const ud  = document.getElementById('user-display');
   const pill = document.getElementById('user-pill');
 
   const loginText = document.getElementById('login-btn-text');
-  const loginBtn = document.getElementById('login-btn');
+  const loginBtn  = document.getElementById('login-btn');
 
   if(user?.username){
     if(who) who.innerHTML = `<i class="fa-solid fa-user"></i> @${escapeHtml(user.username)}`;
@@ -125,7 +78,7 @@ function setWho(){
   }
 }
 
-/* ✅ زر أعلى الشمال: دخول/خروج */
+/* زر أعلى الشمال: دخول/خروج */
 async function handleLoginButton(){
   if(user?.username){
     const ok = confirm("تسجيل خروج؟");
@@ -163,7 +116,7 @@ async function initPi(){
     const Pi = window.Pi;
     Pi.init({ version: "2.0", sandbox: false });
 
-    // IMPORTANT: لازم payments scope عشان createPayment
+    // IMPORTANT: لازم payments scope عشان createPayment + pending handler
     const auth = await Pi.authenticate(['username', 'payments'], onIncompletePaymentFound);
 
     user = auth.user;
@@ -186,6 +139,139 @@ function logout(){
   activeConversationId = null;
   setWho();
   toast("تم تسجيل الخروج");
+}
+
+/* =========================
+   Pending payments handler
+   - Pi SDK calls this if it finds incomplete payments
+   ========================= */
+async function onIncompletePaymentFound(payment){
+  try{
+    console.log("INCOMPLETE_PAYMENT_FOUND", payment);
+
+    const memo = String(payment?.memo || "");
+    // لو مش بتاع promote تجاهله
+    if(!memo.startsWith("PROMOTE_AD|")) return;
+
+    const paymentId = payment?.identifier || payment?.paymentId || payment?.id;
+    if(!paymentId) return;
+
+    toast("في عملية دفع معلّقة… بنحاول نكمّلها");
+
+    // 1) approve
+    const r1 = await fetch("/api/pi/approve", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ paymentId })
+    });
+    const j1 = await r1.json().catch(()=> ({}));
+    if(!r1.ok || !j1.ok){
+      console.log("APPROVE_FAIL_PENDING", r1.status, j1);
+      toast(`تعذر الموافقة: ${j1.message || j1.error_message || j1.message_code || r1.status}`);
+      return;
+    }
+
+    // 2) complete
+    const r2 = await fetch("/api/pi/complete", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ paymentId })
+    });
+    const j2 = await r2.json().catch(()=> ({}));
+    if(!r2.ok || !j2.ok){
+      console.log("COMPLETE_FAIL_PENDING", r2.status, j2);
+      toast(`تعذر الإكمال: ${j2.message || j2.error_message || j2.message_code || r2.status}`);
+      return;
+    }
+
+    toast("تم إكمال الدفع المعلّق ✅");
+    loadAds();
+    loadMyAds();
+
+  }catch(e){
+    console.log("INCOMPLETE_HANDLER_ERR", e);
+    toast("حصل خطأ أثناء إكمال الدفع المعلّق");
+  }
+}
+
+/* =========================
+   Promote flow (5 Pi / 3 days)
+   ========================= */
+async function promoteAd(adId){
+  try{
+    if(!user?.username) return toast("سجّل دخول الأول");
+    if(!window.Pi) return toast("افتح من Pi Browser");
+
+    const Pi = window.Pi;
+    toast("فتح الدفع...");
+
+    await Pi.createPayment({
+      amount: 5,
+      memo: `PROMOTE_AD|${adId}|${Date.now()}`,
+      metadata: { purpose: "PROMOTE_AD", adId, username: user.username }
+    },{
+      onReadyForServerApproval: async (paymentId) => {
+        try{
+          toast("جاري الموافقة...");
+          const r = await fetch("/api/pi/approve", {
+            method:"POST",
+            headers:{ "Content-Type":"application/json" },
+            body: JSON.stringify({ paymentId })
+          });
+          const j = await r.json().catch(()=> ({}));
+
+          if(!r.ok || !j.ok){
+            console.log("APPROVE_FAIL", r.status, j);
+            toast(`فشل الموافقة: ${j.message || j.error_message || j.message_code || r.status}`);
+            return;
+          }
+
+          toast("تمت الموافقة ✅");
+        }catch(err){
+          console.log("APPROVE_EXCEPTION", err);
+          toast("فشل الموافقة: exception");
+        }
+      },
+
+      onReadyForServerCompletion: async (paymentId, txid) => {
+        try{
+          toast("جاري تفعيل الإعلان المميز...");
+
+          const r = await fetch("/api/pi/complete", {
+            method:"POST",
+            headers:{ "Content-Type":"application/json" },
+            body: JSON.stringify({ paymentId, txid })
+          });
+
+          const j = await r.json().catch(()=> ({}));
+
+          // ✅ ده الجزء اللي طلبته: يطبع سبب الفشل في Console + التوست
+          if(!r.ok || !j.ok){
+            console.log("COMPLETE_FAIL", r.status, j);
+            toast(`فشل الترقية: ${j.message || j.error_message || j.message_code || r.status}`);
+            return;
+          }
+
+          toast("تم تمييز إعلانك 3 أيام ⭐");
+          loadAds();
+          loadMyAds();
+        }catch(err){
+          console.log("COMPLETE_EXCEPTION", err);
+          toast("فشل الترقية: exception");
+        }
+      },
+
+      onCancel: () => toast("تم إلغاء الدفع"),
+      onError: (err) => {
+        console.log("PI_PAYMENT_ERROR", err);
+        toast(err?.message ? `مشكلة في الدفع: ${err.message}` : "مشكلة في الدفع");
+      }
+    });
+
+  }catch(e){
+    console.log("PROMOTE_OUTER_CATCH", e);
+    toast(`فشل الترقية: ${e?.message || "unknown"}`);
+  }
 }
 
 /* =========================
@@ -245,7 +331,7 @@ async function loadMyAds(){
   if(!_sb) return;
 
   const myGrid = document.getElementById('my-ads-grid');
-  const empty = document.getElementById('my-empty');
+  const empty  = document.getElementById('my-empty');
 
   if(!user?.username){
     if(myGrid) myGrid.innerHTML = '';
@@ -281,8 +367,25 @@ function renderGrid(data, containerId, isOwner){
   el.innerHTML = data.map(ad => {
     const promoted = isPromoted(ad);
     const label = promoteLabel(ad);
-    const badgeHtml = promoted ? `<div class="badge" style="border-color:rgba(0,242,254,.35); color:rgba(0,242,254,.95)">⭐ مميز</div>` : "";
-    const labelHtml = promoted ? `<div class="muted" style="margin-top:6px; font-size:11px;">${escapeHtml(label)}</div>` : "";
+
+    const badgeHtml = promoted
+      ? `<div class="badge" style="border-color:rgba(0,242,254,.35); color:rgba(0,242,254,.95)">⭐ مميز</div>`
+      : "";
+
+    const labelHtml = promoted
+      ? `<div class="muted" style="margin-top:6px; font-size:11px;">${escapeHtml(label)}</div>`
+      : "";
+
+    // ✅ زر التمييز + زر الحذف لصاحب الإعلان فقط
+    const ownerControls = (user?.username && user.username === ad.seller_username) ? `
+      <button class="btn-delete" onclick="event.stopPropagation(); deleteAd('${ad.id}', '${ad.image_url}')">
+        <i class="fa-solid fa-trash"></i> حذف الإعلان
+      </button>
+
+      <button class="btn-main" style="margin-top:10px;" onclick="event.stopPropagation(); promoteAd('${ad.id}')">
+        ⭐ اجعل إعلانك مميز (5 Pi / 3 أيام)
+      </button>
+    ` : "";
 
     return `
       <div class="glass ad-card" onclick="openAd('${ad.id}')">
@@ -293,14 +396,11 @@ function renderGrid(data, containerId, isOwner){
             <div class="price">${escapeHtml(ad.price)} Pi</div>
             <div class="badge">@${escapeHtml(ad.seller_username)}</div>
           </div>
+
           ${badgeHtml}
           ${labelHtml}
 
-          ${isOwner ? `
-            <button class="btn-delete" onclick="event.stopPropagation(); deleteAd('${ad.id}', '${ad.image_url}')">
-              <i class="fa-solid fa-trash"></i> حذف الإعلان
-            </button>
-          ` : ''}
+          ${isOwner ? ownerControls : ''}
         </div>
       </div>
     `;
@@ -323,6 +423,8 @@ async function openAd(id){
     const promoChip = promoted
       ? `<div class="pill" style="border-color:rgba(0,242,254,.35); color:rgba(0,242,254,.95)"><i class="fa-solid fa-star"></i> إعلان مميز</div>`
       : ``;
+
+    const isOwner = !!(user?.username && user.username === ad.seller_username);
 
     document.getElementById('details-view').innerHTML = `
       <div class="glass details-card">
@@ -347,11 +449,16 @@ async function openAd(id){
             </button>
           </div>
 
+          ${isOwner ? `
+            <button class="btn-main" style="margin-top:10px;" onclick="promoteAd('${ad.id}')">
+              ⭐ اجعل إعلانك مميز (5 Pi / 3 أيام)
+            </button>
+          ` : ''}
+
           ${(!user?.username) ? `
             <div class="muted" style="margin-top:10px; font-size:12px; line-height:1.6;">
               * أنت بتتصفح كزائر. علشان تبعت رسائل لازم تعمل دخول من Pi.
             </div>` : ''}
-
         </div>
       </div>
     `;
@@ -361,6 +468,7 @@ async function openAd(id){
 
     nav('details');
     await loadMsgs(true);
+
   }catch(e){
     console.log("OPEN_AD_ERR", e);
     toast("تعذر فتح الإعلان");
@@ -372,8 +480,7 @@ function focusChat(){
 }
 
 /* =========================
-   Upload/Delete (✅ ده كان غالبًا سبب زر النشر مش بيعمل حاجة)
-   - لازم تبقى الدوال موجودة فعلاً في app.js
+   Upload / Delete
    ========================= */
 async function uploadAd(){
   try{
@@ -419,7 +526,7 @@ async function uploadAd(){
 
   }catch(e){
     console.log("UPLOAD_ERR", e);
-    toast("فشل النشر (افتح Console وشوف UPLOAD_ERR)");
+    toast(`فشل النشر: ${e?.message || "UPLOAD_ERR"}`);
   }
 }
 
@@ -433,7 +540,6 @@ async function deleteAd(id, img){
     const del = await _sb.from('ads').delete().eq('id', id);
     if(del.error) throw del.error;
 
-    // حذف الصورة من Storage
     if(img){
       const rm = await _sb.storage.from('ads-images').remove([img]);
       if(rm.error) console.log("STORAGE_REMOVE_WARN", rm.error);
@@ -445,7 +551,7 @@ async function deleteAd(id, img){
 
   }catch(e){
     console.log("DELETE_ERR", e);
-    toast("فشل الحذف (افتح Console وشوف DELETE_ERR)");
+    toast(`فشل الحذف: ${e?.message || "DELETE_ERR"}`);
   }
 }
 
@@ -555,11 +661,13 @@ function extractBuyerFromConversation(convId){
   }
 }
 
-/* Inbox */
+/* =========================
+   Inbox
+   ========================= */
 async function loadInbox(){
   if(!_sb) return;
 
-  const list = document.getElementById('inbox-list');
+  const list  = document.getElementById('inbox-list');
   const empty = document.getElementById('inbox-empty');
 
   if(!user?.username){
@@ -650,6 +758,7 @@ async function openConversationFromInbox(conversationId, adId){
 
   const buyer = extractBuyerFromConversation(conversationId);
   const partner = (user.username === ad.seller_username) ? buyer : ad.seller_username;
+
   document.getElementById('chat-hint').textContent = `محادثة خاصة مع @${partner} على إعلان: ${ad.title}`;
   document.getElementById('conv-pill').innerHTML = `<i class="fa-solid fa-lock"></i> خاص`;
 
@@ -657,7 +766,9 @@ async function openConversationFromInbox(conversationId, adId){
   await loadMsgs(true);
 }
 
-/* Share */
+/* =========================
+   Share
+   ========================= */
 async function shareActive(){
   if(!activeAd) return;
   const text = `شوف الإعلان: ${activeAd.title} — السعر ${activeAd.price} Pi`;
