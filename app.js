@@ -54,20 +54,26 @@ async function promoteAd(adId){
         toast("تمت الموافقة ✅");
       },
 
-      onReadyForServerCompletion: async (paymentId, txid) => {
-        toast("جاري تفعيل الإعلان المميز...");
-        const r = await fetch("/api/pi/complete", {
-          method:"POST",
-          headers:{ "Content-Type":"application/json" },
-          body: JSON.stringify({ paymentId, txid })
-        });
-        const j = await r.json().catch(()=> ({}));
-        if(!r.ok || !j.ok) throw new Error("complete_failed");
+     onReadyForServerCompletion: async (paymentId, txid) => {
+  toast("جاري تفعيل الإعلان المميز...");
 
-        toast("تم تمييز إعلانك 3 أيام ⭐");
-        loadAds();
-        loadMyAds();
-      },
+  const r = await fetch("/api/pi/complete", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ paymentId, txid })
+  });
+
+  const j = await r.json().catch(()=> ({}));
+  if(!r.ok || !j.ok){
+    console.log("COMPLETE_FAIL", r.status, j);
+    return toast(`فشل الترقية: ${j.message || j.error_message || r.status}`);
+  }
+
+  toast("تم تمييز إعلانك 3 أيام ⭐");
+  loadAds();
+  loadMyAds();
+},
+
 
       onCancel: () => toast("تم إلغاء الدفع"),
       onError: (err) => {
