@@ -1,4 +1,5 @@
 
+
 /* =========================
    Pi Elite Hub - app.js
    - Loads PUBLIC Supabase config from /api/config (Netlify Function reads ENV)
