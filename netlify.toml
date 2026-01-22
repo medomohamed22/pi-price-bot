@@ -13,15 +13,3 @@ from = "/api/pi/complete"
 to = "/.netlify/functions/complete"
 status = 200
 force = true
-
-[[redirects]]
-from = "/api/pi/balance"
-to = "/.netlify/functions/balance"
-status = 200
-force = true
-
-[[redirects]]
-from = "/api/pi/withdraw"
-to = "/.netlify/functions/withdraw"
-status = 200
-force = true
