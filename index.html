@@ -23,28 +23,35 @@
   </button>
 
   <!-- HOME -->
-  <div id="page-home" class="page active">
-    <div class="appbar glass">
-      <div class="brand">
-        <div class="logo">💠</div>
-        <div>
-          Elite Used Market
-          <small>السوق الرئيسي</small>
-        </div>
-      </div>
+<!-- HOME -->
+<div id="page-home" class="page">
+  <header class="topbar glass">
+    <!-- Left: Login -->
+    <button class="login-btn" id="login-btn" onclick="handleLoginButton()">
+      <i class="fa-solid fa-right-to-bracket"></i>
+      <span id="login-btn-text">تسجيل دخول</span>
+    </button>
 
-      <div class="pill" id="whoami"><i class="fa-solid fa-user"></i> زائر</div>
+    <!-- Center: Brand -->
+    <div class="topbar-center">
+      <div class="brand-title">Elite Used Market</div>
+      <div class="brand-sub">السوق الرئيسي</div>
     </div>
 
-    <div class="search glass">
-      <i class="fa-solid fa-magnifying-glass"></i>
-      <input id="search" placeholder="ابحث عن منتج..." oninput="applyFilter()" />
+    <!-- Right: Who -->
+    <div class="user-pill" id="whoami">
+      <i class="fa-solid fa-user"></i> زائر
     </div>
+  </header>
 
-    <div id="home-skeleton" class="sk-grid"></div>
-    <div id="ads-grid" class="ads-grid"></div>
+  <div class="search glass">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <input id="search" placeholder="ابحث عن منتج..." oninput="applyFilter()" />
   </div>
 
+  <div id="home-skeleton" class="sk-grid"></div>
+  <div id="ads-grid" class="ads-grid"></div>
+</div>
   <!-- INBOX -->
   <div id="page-inbox" class="page">
     <div class="appbar glass">
