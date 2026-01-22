@@ -1,84 +1,104 @@
-const { createClient } = require("@supabase/supabase-js");
+import { createClient } from "@supabase/supabase-js";
 
-function cors() {
-  return {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type",
-    "Access-Control-Allow-Methods": "POST,OPTIONS"
-  };
-}
-
-function getSupabase() {
-  const SUPABASE_URL = process.env.SUPABASE_URL || "https://axjkwrssmofzavaoqutq.supabase.co";
-  const SUPABASE_KEY = process.env.SUPABASE_KEY || "sb_publishable_tiuMncgWhf1YRWoD-uYQ3Q_ziI8OKci";
-  return createClient(SUPABASE_URL, SUPABASE_KEY);
-}
-exports.handler = async (event) => {
-  if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers: cors(), body: "" };
-  if (event.httpMethod !== "POST") return { statusCode: 405, headers: cors(), body: "Method Not Allowed" };
+export const handler = async (event) => {
+  if (event.httpMethod !== "POST") {
+    return { statusCode: 405, body: "Method Not Allowed" };
+  }
   
   try {
     const { paymentId, txid } = JSON.parse(event.body || "{}");
-    if (!paymentId || !txid) {
-      return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "Missing paymentId or txid" }) };
-    }
+    if (!paymentId) return { statusCode: 400, body: JSON.stringify({ error: "Missing paymentId" }) };
     
     const PI_SECRET_KEY = process.env.PI_SECRET_KEY;
-    if (!PI_SECRET_KEY) return { statusCode: 500, headers: cors(), body: JSON.stringify({ error: "PI_SECRET_KEY not set" }) };
+    const SUPABASE_URL = process.env.SUPABASE_URL;
+    const SUPABASE_SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE;
     
-    // 1) Complete payment with Pi API
-    const url = `https://api.minepi.com/v2/payments/${paymentId}/complete`;
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Authorization": `Key ${PI_SECRET_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ txid })
+    if (!PI_SECRET_KEY) return { statusCode: 500, body: JSON.stringify({ error: "Missing PI_SECRET_KEY" }) };
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE) {
+      return { statusCode: 500, body: JSON.stringify({ error: "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE" }) };
+    }
+    
+    const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE);
+    
+    // 1) Get payment info from Pi
+    const pr = await fetch(`https://api.minepi.com/v2/payments/${encodeURIComponent(paymentId)}`, {
+      headers: { Authorization: `Key ${PI_SECRET_KEY}` },
     });
     
-    const paymentDTO = await response.json().catch(() => ({}));
+    const p = await pr.json().catch(() => null);
+    if (!pr.ok || !p) return { statusCode: pr.status || 500, body: JSON.stringify({ error: "Failed to fetch payment", raw: p }) };
     
-    if (!response.ok) {
-      return { statusCode: response.status, headers: cors(), body: JSON.stringify({ error: paymentDTO }) };
+    // Expected fields from front metadata
+    const meta = p.metadata || {};
+    const purpose = String(p.purpose || meta.purpose || "");
+    const amount = Number(p.amount);
+    
+    const adId = meta.adId || meta.ad_id;
+    const username = String(meta.username || "");
+    
+    if (!adId) return { statusCode: 400, body: JSON.stringify({ error: "Missing adId in payment metadata" }) };
+    if (purpose !== "PROMOTE_AD") return { statusCode: 400, body: JSON.stringify({ error: "Invalid purpose", purpose }) };
+    if (amount !== 5) return { statusCode: 400, body: JSON.stringify({ error: "Invalid amount", amount }) };
+    if (!username) return { statusCode: 400, body: JSON.stringify({ error: "Missing username in metadata" }) };
+    
+    // 2) Complete
+    const cr = await fetch(`https://api.minepi.com/v2/payments/${encodeURIComponent(paymentId)}/complete`, {
+      method: "POST",
+      headers: {
+        Authorization: `Key ${PI_SECRET_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ txid: txid || p.txid || null }),
+    });
+    
+    const cdata = await cr.json().catch(() => ({}));
+    if (!cr.ok) {
+      await sb.from("pi_payments").upsert([{
+        payment_id: paymentId,
+        txid: txid || null,
+        ad_id: adId,
+        username,
+        amount,
+        purpose,
+        status: "failed",
+        raw: { payment: p, complete: cdata }
+      }], { onConflict: "payment_id" });
+      
+      return { statusCode: cr.status, body: JSON.stringify({ ok: false, error: "Complete failed", data: cdata }) };
     }
     
-    // 2) Safety: لازم تكون verified (الدوك بتحذر من اعتماد الدفع قبل complete success)
-    const verified = !!paymentDTO?.transaction?.verified || !!paymentDTO?.status?.transaction_verified;
-    if (!verified) {
-      return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: "Transaction not verified by Pi Servers", paymentDTO }) };
-    }
+    // 3) Verify ad belongs to this seller
+    const { data: ad, error: adErr } = await sb.from("ads").select("id,seller_username").eq("id", adId).single();
+    if (adErr || !ad) return { statusCode: 404, body: JSON.stringify({ error: "Ad not found" }) };
+    if (ad.seller_username !== username) return { statusCode: 403, body: JSON.stringify({ error: "Not ad owner" }) };
     
-    // 3) Save donation to Supabase (donations table)
-    const supabase = getSupabase();
-    const donationRow = {
-      pi_user_id: paymentDTO.Pioneer_uid || paymentDTO.pioneer_uid || paymentDTO.pioneer_uid?.toString(),
-      username: (paymentDTO?.metadata?.username) || null,
-      amount: Number(paymentDTO.amount || 0),
-      payment_id: paymentDTO.identifier || paymentId,
-      txid: paymentDTO?.transaction?.txid || txid,
-      memo: paymentDTO.memo || null,
-      metadata: paymentDTO.metadata || null,
-      created_at: new Date().toISOString()
-    };
+    // 4) Set promoted for 3 days
+    const promotedUntil = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
     
-    // Idempotent: لو نفس payment_id اتسجّل قبل كده ما يعيدش
-    // لازم تعمل UNIQUE على payment_id في الجدول
-    const { error: insErr } = await supabase
-      .from("donations")
-      .insert([donationRow]);
+    const { error: upErr } = await sb
+      .from("ads")
+      .update({ promoted_until: promotedUntil, promoted_by: username })
+      .eq("id", adId);
     
-    // لو فشل بسبب duplicate، تجاهله
-    if (insErr) {
-      const msg = (insErr.message || "").toLowerCase();
-      if (!msg.includes("duplicate") && !msg.includes("unique")) {
-        return { statusCode: 500, headers: cors(), body: JSON.stringify({ error: "DB insert failed", details: insErr }) };
-      }
-    }
+    if (upErr) return { statusCode: 500, body: JSON.stringify({ error: "Failed to update ad", details: upErr.message }) };
     
-    return { statusCode: 200, headers: cors(), body: JSON.stringify({ completed: true, paymentDTO }) };
+    // 5) Save payment record
+    await sb.from("pi_payments").upsert([{
+      payment_id: paymentId,
+      txid: txid || cdata.txid || p.txid || null,
+      ad_id: adId,
+      username,
+      amount,
+      purpose,
+      status: "completed",
+      approved_at: new Date().toISOString(),
+      completed_at: new Date().toISOString(),
+      raw: { payment: p, complete: cdata }
+    }], { onConflict: "payment_id" });
     
-  } catch (err) {
-    return { statusCode: 500, headers: cors(), body: JSON.stringify({ error: err.message }) };
+    return { statusCode: 200, body: JSON.stringify({ ok: true, promoted_until: promotedUntil }) };
+    
+  } catch (e) {
+    return { statusCode: 500, body: JSON.stringify({ error: "Server error", details: String(e) }) };
   }
 };
