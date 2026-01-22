@@ -1,11 +1,12 @@
 /* =========================
    Pi Elite Hub - app.js
-   - Loads PUBLIC Supabase config from /api/config to avoid Netlify secrets scan issues
+   - Loads PUBLIC Supabase config from /api/config (Netlify Function reads ENV)
+   - No hardcoded Supabase URL/KEY (avoids Netlify secrets scan)
    ========================= */
 
 /* ====== Global Supabase (filled after initConfig) ====== */
-let SB_URL = "";
-let SB_KEY = "";
+let SB_URL = "https://axjkwrssmofzavaoqutq.supabase.co";
+let SB_KEY = "sb_publishable_tiuMncgWhf1YRWoD-uYQ3Q_ziI8OKci";
 let _sb = null;
 
 /* ====== State ====== */
@@ -181,7 +182,7 @@ async function loadAds(){
   const grid = document.getElementById('ads-grid');
   if(grid) grid.innerHTML = '';
   try{
-    // IMPORTANT: promoted first, then newest
+    // promoted first, then newest
     const { data, error } = await _sb
       .from('ads')
       .select('*')
@@ -216,6 +217,7 @@ async function loadMyAds(){
     if(empty) empty.style.display = 'block';
     return;
   }
+
   const { data, error } = await _sb
     .from('ads')
     .select('*')
@@ -422,6 +424,7 @@ async function sendMsg(){
     const receiver = (user.username === seller) ? buyer : seller;
 
     const payload = {
+      // NOTE: لازم يكون عندك عمود ad_id فعلاً في جدول messages
       ad_id: activeAd.id,
       conversation_id: activeConversationId,
       seller_username: seller,
@@ -636,24 +639,37 @@ setInterval(() => {
 }, 3500);
 
 /* =========================
-   Config loader (IMPORTANT)
+   Config loader
+   - Reads config from /api/config (server reads ENV)
    ========================= */
 async function initConfig(){
   try{
+    // Must have supabase-js loaded in index.html
+    if(!window.supabase?.createClient){
+      throw new Error("supabase_js_not_loaded");
+    }
+
     const r = await fetch("/api/config", { cache: "no-store" });
     if(!r.ok) throw new Error("config_http_" + r.status);
-    const j = await r.json();
 
-    if(!j?.SB_URL || !j?.SB_ANON){
+    const j = await r.json().catch(()=> ({}));
+
+    // Accept multiple possible keys (just in case your function names differ)
+    const url = j.SB_URL || j.SUPABASE_URL || j.url;
+    const anon = j.SB_ANON || j.SUPABASE_ANON_KEY || j.anon || j.key;
+
+    if(!url || !anon){
       throw new Error("config_missing_keys");
     }
 
-    SB_URL = j.SB_URL;
-    SB_KEY = j.SB_ANON;
-    _sb = supabase.createClient(SB_URL, SB_KEY);
+    SB_URL = String(url);
+    SB_KEY = String(anon);
+
+    _sb = window.supabase.createClient(SB_URL, SB_KEY);
+
   }catch(e){
     console.log(e);
-    toast("مشكلة في إعدادات Supabase (config). تأكد من /api/config و ENV.");
+    toast("مشكلة في إعدادات Supabase. تأكد من Function /api/config و ENV.");
     throw e;
   }
 }
