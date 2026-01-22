@@ -17,7 +17,7 @@
         <div class="logo">DW</div>
         <div class="meta">
           <h1>Donate Way</h1>
-          <p>Token + DEX + AMM + Domain Verify (Testnet)</p>
+          <p>Token + DEX + AMM + Domain Verify + Home Domain (Testnet)</p>
         </div>
       </div>
 
@@ -35,6 +35,7 @@
 
     <!-- PAGE: Dashboard -->
     <section id="page-dashboard" class="grid page active">
+
       <div class="card">
         <h2>حالة Pi SDK</h2>
         <div class="kv">
@@ -135,6 +136,35 @@
         </small>
       </div>
 
+      <!-- ✅ NEW CARD: home_domain linking -->
+      <div class="card">
+        <h2>ربط التوكن بالدومين على السلسلة (Issuer home_domain)</h2>
+
+        <div class="note">
+          <b>مهم جدًا:</b> علشان Pi DEX يربط توكنك بـ <span class="mono">stellar.toml</span> لازم تحط
+          <span class="mono">home_domain</span> على حساب الـ Issuer (Hostname فقط).
+          <div class="muted" style="margin-top:6px">
+            مثال: <span class="mono">pi-links.netlify.app</span> (من غير https://)
+          </div>
+        </div>
+
+        <label class="lbl">Home Domain (Hostname فقط)</label>
+        <input id="hdDomain" class="inp mono" placeholder="pi-links.netlify.app" />
+
+        <div class="btnRow">
+          <button id="btnSetHomeDomain" class="btn">Set home_domain (Issuer)</button>
+          <button id="btnCheckHomeDomain" class="btn primary">Check Issuer home_domain</button>
+        </div>
+
+        <label class="lbl">Result</label>
+        <pre id="homeDomainOut" class="log"></pre>
+
+        <small class="muted">
+          لازم يكون عندك Function: <span class="mono">set_home_domain.js</span> (على Netlify Functions).
+          وكمان هنحتاج Function صغيرة اسمها <span class="mono">get_issuer_info.js</span> علشان زر Check.
+        </small>
+      </div>
+
       <div class="card">
         <h2>Pi Payments (تبرعات داخل التطبيق)</h2>
 
@@ -165,18 +195,20 @@
         <h2>Domain Verification — Checklist</h2>
 
         <ol class="checklist">
-          <li>اشتري/جهّز دومين (مثال: donateway.app).</li>
-          <li>اعمل صفحة/موقع بسيط عليه + HTTPS شغال.</li>
-          <li>أضف ملف: <span class="mono">/.well-known/stellar.toml</span> في جذر الدومين.</li>
-          <li>داخل الملف ضيف بيانات العملة (CODE + ISSUER) + عنوان مشروعك.</li>
-          <li>اختبر إن الملف بيتفتح على:
+          <li>جهّز دومين + HTTPS شغال.</li>
+          <li>أضف الملف: <span class="mono">/.well-known/stellar.toml</span> على الدومين.</li>
+          <li>تأكد إنه بيتفتح على:
             <span class="mono">https://YOURDOMAIN/.well-known/stellar.toml</span>
           </li>
-          <li>بعدها شغّل “Check Domain” هنا للتأكد.</li>
+          <li><b>خطوة مهمة جدًا:</b> ارجع للـ Dashboard واضغط
+            <span class="mono">Set home_domain</span> للـ Issuer بنفس الدومين.
+          </li>
+          <li>بعدها اعمل Offers/سيولة على زوج <span class="mono">Token/PI</span> علشان يظهر على الدكس.</li>
         </ol>
 
         <div class="note">
-          الهدف: لما الناس تلاقي التوكن في الدكس يبقى مرتبط بدومينك وباين إنه رسمي.
+          وجود <span class="mono">stellar.toml</span> + <span class="mono">home_domain</span> + سوق (Offers/AMM)
+          = أفضل فرصة إن التوكن يظهر في Pi DEX.
         </div>
       </div>
 
@@ -184,7 +216,7 @@
         <h2>مولّد stellar.toml (انسخه وحطه على الدومين)</h2>
 
         <label class="lbl">Domain</label>
-        <input id="verDomain" class="inp mono" placeholder="donateway.app" />
+        <input id="verDomain" class="inp mono" placeholder="pi-links.netlify.app" />
 
         <div class="row2">
           <div>
@@ -218,7 +250,7 @@
       </div>
 
       <div class="card">
-        <h2>نتيجة الفحص</h2>
+        <h2>نتيجة فحص الدومين</h2>
         <pre id="domainCheckOut" class="log"></pre>
       </div>
 
