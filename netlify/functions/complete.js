@@ -10,8 +10,8 @@ export const handler = async (event) => {
     if (!paymentId) return { statusCode: 400, body: JSON.stringify({ error: "Missing paymentId" }) };
     
     const PI_SECRET_KEY = process.env.PI_SECRET_KEY;
-    const SUPABASE_URL = process.env.SUPABASE_URL;
-    const SUPABASE_SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE;
+    const SUPABASE_URL = process.env.PUBLIC_SUPABASE_URL;
+    const SUPABASE_SERVICE_ROLE = process.env.PUBLIC_SUPABASE_ANON_KEY;
     
     if (!PI_SECRET_KEY) return { statusCode: 500, body: JSON.stringify({ error: "Missing PI_SECRET_KEY" }) };
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE) {
