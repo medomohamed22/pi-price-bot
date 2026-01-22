@@ -1,12 +1,3 @@
-/* =========================================================
-   Pi Elite Hub 2026 - style.css (FULL)
-   - Purple/White glass UI
-   - Consistent product cards
-   - Strong interactions (hover/press/glow)
-   - Fix: overlays won't block clicks (pointer-events)
-   - Mobile friendly grid
-   ========================================================= */
-
 :root{
   --bg:#070A16;
   --bg2:#0b1226;
@@ -30,14 +21,7 @@
   --safe: env(safe-area-inset-bottom);
 }
 
-/* =========================
-   Base / Reset
-   ========================= */
-*{
-  box-sizing:border-box;
-  -webkit-tap-highlight-color:transparent;
-  outline:none;
-}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent; outline:none;}
 html,body{height:100%;}
 body{
   margin:0;
@@ -51,9 +35,6 @@ body{
   overflow-x:hidden;
   scroll-behavior:smooth;
 }
-a{color:inherit; text-decoration:none;}
-button{font-family:inherit;}
-img{max-width:100%; display:block;}
 
 /* =========================
    Glass
@@ -65,14 +46,6 @@ img{max-width:100%; display:block;}
   -webkit-backdrop-filter: blur(16px);
   border-radius: var(--r);
   box-shadow: var(--shadow);
-  position: relative; /* مهم علشان الـ ::after glow */
-}
-
-/* ✅ FIX: أي طبقات/شيمر ما تمنعش الضغط */
-.glass::before, .glass::after,
-.ad-card::before, .ad-card::after,
-.sk::before{
-  pointer-events:none !important;
 }
 
 /* =========================
@@ -91,7 +64,7 @@ img{max-width:100%; display:block;}
 }
 
 /* =========================
-   Top AppBar
+   AppBar
    ========================= */
 .appbar{
   position: sticky;
@@ -104,17 +77,13 @@ img{max-width:100%; display:block;}
   justify-content:space-between;
   gap:10px;
 }
-
 .brand{
-  display:flex;
-  align-items:center;
-  gap:10px;
+  display:flex; align-items:center; gap:10px;
   font-weight:900;
   letter-spacing:.2px;
 }
 .brand .logo{
-  width:42px; height:42px;
-  border-radius:14px;
+  width:42px; height:42px; border-radius:14px;
   display:grid; place-items:center;
   background: linear-gradient(135deg, rgba(124,58,237,.9), rgba(0,242,254,.7));
   box-shadow: 0 12px 30px rgba(124,58,237,.25);
@@ -128,9 +97,7 @@ img{max-width:100%; display:block;}
 }
 
 .pill{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
+  display:inline-flex; align-items:center; gap:8px;
   padding: 10px 12px;
   border-radius: 999px;
   border: 1px solid rgba(255,255,255,.14);
@@ -141,14 +108,42 @@ img{max-width:100%; display:block;}
 }
 
 /* =========================
+   ✅ Login Button (Top-Left)
+   ========================= */
+.login-fab{
+  position: fixed;
+  top: 14px;
+  left: 14px;     /* ✅ فوق الشمال */
+  z-index: 5000;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.08);
+  color: rgba(255,255,255,.92);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 18px 60px rgba(0,0,0,.35);
+  transition: transform .16s ease, border-color .16s ease, background .16s ease;
+}
+.login-fab:hover{ border-color: rgba(0,242,254,.25); background: rgba(255,255,255,.10); }
+.login-fab:active{ transform: scale(.98); }
+.login-fab i{ color: rgba(0,242,254,.95); }
+.login-fab span{ font-size: 12px; }
+
+/* =========================
    Search
    ========================= */
 .search{
   margin: 10px 0 14px;
   padding: 12px 14px;
-  display:flex;
-  align-items:center;
-  gap:10px;
+  display:flex; align-items:center; gap:10px;
 }
 .search i{color: var(--muted);}
 .search input{
@@ -162,84 +157,70 @@ img{max-width:100%; display:block;}
 .search input::placeholder{color: rgba(167,176,195,.75);}
 
 /* =========================
-   Grid + Cards (✅ متناسق)
+   Grid
    ========================= */
 .ads-grid{
   display:grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
-  align-items: stretch;
 }
 
-/* موبايل صغير: كارت واحد */
-@media (max-width: 420px){
+/* موبايلات صغيرة */
+@media (max-width: 360px){
   .ads-grid{ grid-template-columns: 1fr; }
 }
 
+/* تابلت */
+@media (min-width: 720px){
+  .ads-grid{ grid-template-columns: 1fr 1fr 1fr; }
+}
+
+/* =========================
+   ✅ Product Card (Improved)
+   ========================= */
 .ad-card{
   position:relative;
   overflow:hidden;
   cursor:pointer;
   transform: translateZ(0);
-  transition:
-    transform .18s ease,
-    border-color .18s ease,
-    box-shadow .18s ease,
-    filter .18s ease;
-  display:flex;
-  flex-direction:column;
-  min-height: 282px; /* ✅ يخلي كل الكروت شبه بعض */
-  will-change: transform;
+  transition: transform .18s ease, border-color .18s ease;
 }
+.ad-card:hover{border-color: rgba(0,242,254,.25);}
+.ad-card:active{transform: scale(.985);}
 
-/* Hover/Active تفاعلي */
-.ad-card:hover{
-  border-color: rgba(0,242,254,.35);
-  box-shadow: 0 22px 70px rgba(0,0,0,.55);
-  filter: brightness(1.04);
-}
-.ad-card:active{ transform: scale(.985); }
-
-/* Glow خفيف */
-.ad-card::after{
-  content:"";
-  position:absolute;
-  inset:-40px;
-  background: radial-gradient(600px 260px at 50% 0%,
-    rgba(0,242,254,.10),
-    rgba(124,58,237,.10),
-    transparent 60%);
-  opacity:0;
-  transition: opacity .18s ease;
-}
-.ad-card:hover::after{ opacity:1; }
-
+/* ✅ صورة المنتج "كاملة" بدون قص */
 .ad-thumb{
   width:100%;
-  height: 160px; /* ✅ ثابت */
-  object-fit:cover;
+  height: 170px;
   display:block;
-  background: rgba(255,255,255,.04);
+
+  object-fit: contain;      /* ✅ كاملة */
+  object-position: center;
+  background: rgba(255,255,255,.04); /* خلفية للصورة لو فيها فراغات */
+}
+
+/* تحسين للموبايل */
+@media (max-width: 420px){
+  .ad-thumb{ height: 185px; }
 }
 
 .ad-body{
-  flex:1;
   padding: 12px;
   display:flex;
   flex-direction:column;
-  gap:8px;
+  gap:6px;
 }
 
 .ad-title{
-  font-size: 13px;
+  font-size: 12px;
   line-height:1.25;
   color: rgba(255,255,255,.92);
-  opacity:.95;
+  opacity:.92;
   display:-webkit-box;
   -webkit-line-clamp:2;
   -webkit-box-orient:vertical;
   overflow:hidden;
-  min-height: 34px; /* ✅ ثابت */
+  min-height: 32px;
 }
 
 .ad-meta{
@@ -247,11 +228,11 @@ img{max-width:100%; display:block;}
   align-items:center;
   justify-content:space-between;
   gap:8px;
-  margin-top:auto; /* ✅ يخلي السعر/اسم البائع تحت دايمًا */
+  margin-top:4px;
 }
 
 .price{
-  font-weight: 900;
+  font-weight: 1000;
   font-size: 15px;
   color: var(--accent);
   letter-spacing:.2px;
@@ -266,8 +247,23 @@ img{max-width:100%; display:block;}
   background: rgba(255,255,255,.06);
 }
 
+/* زر حذف داخل الكارت */
+.btn-delete{
+  width:100%;
+  margin-top:10px;
+  padding:10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(239,68,68,.6);
+  background: rgba(239,68,68,.14);
+  color: #ffd3d3;
+  font-weight: 900;
+  font-size: 12px;
+  cursor:pointer;
+}
+.btn-delete:active{ transform: scale(.99); }
+
 /* =========================
-   Buttons & Inputs
+   Inputs & Buttons
    ========================= */
 input, textarea, select{
   width: 100%;
@@ -278,7 +274,7 @@ input, textarea, select{
   padding: 14px 14px;
   font-size: 14px;
   margin-bottom: 10px;
-  transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease;
+  transition: border-color .18s ease, transform .18s ease;
 }
 textarea{min-height: 110px; resize: vertical;}
 input:focus, textarea:focus{
@@ -292,14 +288,14 @@ input:focus, textarea:focus{
   border:none;
   border-radius: 16px;
   color: white;
-  font-weight: 900;
+  font-weight: 1000;
   background: linear-gradient(90deg, var(--primary), var(--primary2));
   box-shadow: 0 14px 40px rgba(124,58,237,.25);
   cursor:pointer;
-  transition: transform .16s ease, filter .16s ease, box-shadow .16s ease;
+  transition: transform .16s ease, filter .16s ease;
 }
-.btn-main:hover{ filter: brightness(1.06); }
-.btn-main:active{ transform: scale(.985); }
+.btn-main:hover{ filter: brightness(1.05); }
+.btn-main:active{transform: scale(.98);}
 
 .btn-ghost{
   width:100%;
@@ -308,98 +304,23 @@ input:focus, textarea:focus{
   border: 1px solid rgba(255,255,255,.14);
   background: rgba(255,255,255,.06);
   color: rgba(255,255,255,.9);
-  font-weight: 800;
-  cursor:pointer;
-  transition: transform .16s ease, filter .16s ease;
-}
-.btn-ghost:active{ transform: scale(.985); }
-
-.btn-delete{
-  width:100%;
-  margin-top:10px;
-  padding:10px 12px;
-  border-radius: 14px;
-  border: 1px solid rgba(239,68,68,.6);
-  background: rgba(239,68,68,.14);
-  color: #ffd3d3;
-  font-weight: 800;
-  font-size: 12px;
-  cursor:pointer;
-  position: relative;
-  z-index: 10;
-  pointer-events: auto;
-}
-.btn-delete:hover{
-  filter: brightness(1.08);
-  box-shadow: 0 14px 40px rgba(239,68,68,.10);
-}
-.btn-delete:active{ transform: scale(.985); }
-
-.btn-accent{
-  border:none;
-  border-radius: 16px;
-  padding: 13px 14px;
   font-weight: 900;
-  color:#031016;
-  background: linear-gradient(90deg, rgba(0,242,254,.95), rgba(0,242,254,.6));
   cursor:pointer;
-  transition: transform .16s ease, filter .16s ease;
 }
-.btn-accent:hover{ filter: brightness(1.05); }
-.btn-accent:active{ transform: scale(.985); }
-
-/* Focus visible */
-button:focus-visible,
-input:focus-visible,
-textarea:focus-visible{
-  outline: 2px solid rgba(0,242,254,.55);
-  outline-offset: 3px;
-}
-
-/* =========================
-   Login
-   ========================= */
-.login-wrap{
-  min-height:100vh;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  padding: 20px;
-  gap: 14px;
-  text-align:center;
-}
-.hero{
-  width: 92px; height: 92px;
-  border-radius: 28px;
-  background: linear-gradient(135deg, rgba(124,58,237,.9), rgba(0,242,254,.7));
-  display:grid; place-items:center;
-  border: 1px solid rgba(255,255,255,.18);
-  box-shadow: 0 20px 70px rgba(124,58,237,.25);
-  animation: floaty 3s ease-in-out infinite;
-}
-@keyframes floaty{
-  0%,100%{transform:translateY(0)}
-  50%{transform:translateY(-8px)}
-}
-.login-title{
-  font-size: 26px;
-  font-weight: 1000;
-  margin:0;
-}
-.login-sub{
-  color: var(--muted);
-  font-weight: 600;
-  margin: 0 0 6px;
-  font-size: 13px;
-  line-height:1.5;
-}
+.btn-ghost:active{transform: scale(.99);}
 
 /* =========================
    Details
    ========================= */
 .details-card{ overflow:hidden; }
-.details-img{ width:100%; height: 210px; object-fit:cover; display:block;}
+.details-img{
+  width:100%;
+  height: 240px;
+  object-fit: contain;  /* ✅ كمان في التفاصيل كاملة */
+  object-position:center;
+  display:block;
+  background: rgba(255,255,255,.04);
+}
 .details-body{ padding: 14px; }
 .details-body h2{ margin:0 0 6px; font-size: 18px; }
 .details-body p{
@@ -409,7 +330,8 @@ textarea:focus-visible{
   font-size: 13px;
 }
 .details-row{
-  display:flex; gap:10px;
+  display:flex;
+  gap:10px;
   align-items:center;
   justify-content:space-between;
   flex-wrap:wrap;
@@ -421,17 +343,28 @@ textarea:focus-visible{
 }
 .seller i{color: rgba(255,255,255,.65);}
 
-.cta-row{ display:flex; gap:10px; margin-top: 12px; }
+.cta-row{
+  display:flex; gap:10px; margin-top: 12px;
+}
 .cta-row button{ flex:1; }
+
+.btn-accent{
+  border:none;
+  border-radius: 16px;
+  padding: 13px 14px;
+  font-weight: 1000;
+  color:#031016;
+  background: linear-gradient(90deg, rgba(0,242,254,.95), rgba(0,242,254,.6));
+  cursor:pointer;
+}
+.btn-accent:active{transform: scale(.98);}
 
 /* =========================
    Chat
    ========================= */
 .chat-wrap{ margin-top: 12px; }
 .chat-head{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
+  display:flex; align-items:center; justify-content:space-between;
   padding: 12px 12px;
   margin-bottom: 10px;
 }
@@ -445,13 +378,6 @@ textarea:focus-visible{
   flex-direction:column;
   gap: 10px;
   scroll-behavior:smooth;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,.18) transparent;
-}
-.chat-container::-webkit-scrollbar{ width: 8px; }
-.chat-container::-webkit-scrollbar-thumb{
-  background: rgba(255,255,255,.16);
-  border-radius: 999px;
 }
 
 .bubble{
@@ -492,6 +418,7 @@ textarea:focus-visible{
   padding: 12px 12px;
   border-radius: 14px;
 }
+
 .send-btn{
   width: 54px;
   height: 46px;
@@ -499,13 +426,13 @@ textarea:focus-visible{
   border:none;
   background: rgba(0,242,254,.92);
   color: #001015;
-  font-weight: 900;
+  font-weight: 1000;
   cursor:pointer;
   box-shadow: 0 16px 40px rgba(0,242,254,.14);
   transition: transform .16s ease, filter .16s ease;
 }
 .send-btn:hover{ filter: brightness(1.05); }
-.send-btn:active{ transform: scale(.985); }
+.send-btn:active{transform: scale(.98);}
 
 /* =========================
    Inbox
@@ -517,13 +444,10 @@ textarea:focus-visible{
   gap: 12px;
   margin-bottom: 10px;
   cursor:pointer;
-  transition: transform .16s ease, border-color .16s ease, filter .16s ease;
+  transition: transform .16s ease, border-color .16s ease;
 }
-.inbox-card:hover{
-  border-color: rgba(0,242,254,.25);
-  filter: brightness(1.03);
-}
-.inbox-card:active{ transform: scale(.99); }
+.inbox-card:hover{ border-color: rgba(0,242,254,.2); }
+.inbox-card:active{transform: scale(.99);}
 
 .inbox-thumb{
   width: 54px;
@@ -531,9 +455,10 @@ textarea:focus-visible{
   border-radius: 14px;
   object-fit: cover;
   border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.04);
 }
 .inbox-title{
-  font-weight: 900;
+  font-weight: 1000;
   font-size: 13px;
   margin-bottom: 4px;
 }
@@ -572,8 +497,10 @@ textarea:focus-visible{
   font-size: 11px;
   padding: 10px 0;
   cursor:pointer;
+  transition: color .16s ease, transform .16s ease;
 }
 .tab-item i{font-size: 22px;}
+.tab-item:active{ transform: scale(.98); }
 .tab-item.active{
   color: var(--accent);
   text-shadow: 0 0 18px rgba(0,242,254,.2);
@@ -596,7 +523,7 @@ textarea:focus-visible{
   -webkit-backdrop-filter: blur(14px);
   display:none;
   color: rgba(255,255,255,.92);
-  font-weight: 800;
+  font-weight: 900;
 }
 .toast.show{display:block; animation: pop .2s ease;}
 @keyframes pop{
@@ -609,11 +536,8 @@ textarea:focus-visible{
    ========================= */
 .sk-grid{
   display:grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
-}
-@media (max-width: 420px){
-  .sk-grid{ grid-template-columns: 1fr; }
 }
 .sk{
   border-radius: var(--r);
@@ -631,7 +555,7 @@ textarea:focus-visible{
   animation: shimmer 1.2s infinite;
 }
 @keyframes shimmer{to{transform: translateX(60%)}}
-.sk .a{height:160px;}
+.sk .a{height:170px;}
 .sk .b{height:70px;}
 
 /* =========================
@@ -641,15 +565,7 @@ textarea:focus-visible{
 .mt{margin-top:12px;}
 .muted{color:var(--muted);}
 
-/* =========================
-   Small UX tweaks
-   ========================= */
-#page-add input[type="file"]{
-  padding: 12px;
-  cursor:pointer;
+/* تحسين لمساحات صغيرة */
+@media (max-width: 420px){
+  .row{ flex-direction:column; }
 }
-#page-add textarea{
-  line-height: 1.55;
-}
-
-/* End of file */
