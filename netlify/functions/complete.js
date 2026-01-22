@@ -1,4 +1,5 @@
 
+
 // netlify/functions/complete.js
 const PI_API_BASE = "https://api.minepi.com/v2";
 const DAYS = 3;
