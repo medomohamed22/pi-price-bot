@@ -11,6 +11,7 @@ const state = {
 function log(elId, ...args){
   const line = args.map(a => typeof a === "string" ? a : JSON.stringify(a, null, 2)).join(" ");
   const el = $(elId);
+  if (!el) return;
   el.textContent = `${new Date().toLocaleTimeString()}  ${line}\n` + el.textContent;
 }
 
@@ -26,6 +27,11 @@ function setStatus(){
 
   // Domain page prefill
   if ($("verIssuer")) $("verIssuer").value = $("verIssuer").value || state.issuerPub || "";
+
+  // Home domain card prefill (لو موجود)
+  if ($("hdDomain")) {
+    $("hdDomain").value = $("hdDomain").value || localStorage.getItem("dw_home_domain") || "";
+  }
 }
 
 function normalizeAssetCode(code){
@@ -118,7 +124,6 @@ $("btnBootstrap").addEventListener("click", async () => {
       initialSupply,
     }, adminToken);
 
-    // حفظ pubkeys للـ Domain page
     if (data?.asset?.issuer) {
       state.issuerPub = data.asset.issuer;
       localStorage.setItem("dw_issuerPub", state.issuerPub);
@@ -194,6 +199,64 @@ $("btnAddAmm").addEventListener("click", async () => {
     log("log", "❌ AMM error:", e.message || e);
   }
 });
+
+/** ✅ NEW: Set home_domain on Issuer */
+const btnSetHD = $("btnSetHomeDomain");
+if (btnSetHD) {
+  btnSetHD.addEventListener("click", async () => {
+    const adminToken = ($("adminToken")?.value || "").trim();
+    const homeDomainRaw = ($("hdDomain")?.value || "").trim();
+
+    if (!homeDomainRaw) return log("log", "❌ اكتب Home Domain (مثال: pi-links.netlify.app)");
+
+    // نحفظه محليًا
+    const clean = homeDomainRaw
+      .replace(/^https?:\/\//i, "")
+      .replace(/\/.*$/, "");
+
+    localStorage.setItem("dw_home_domain", clean);
+    if ($("homeDomainOut")) $("homeDomainOut").textContent = "";
+
+    try{
+      log("log", "⏳ Setting issuer home_domain...", { homeDomain: clean });
+
+      const data = await apiPost("/.netlify/functions/set_home_domain", {
+        homeDomain: clean
+      }, adminToken);
+
+      if ($("homeDomainOut")) $("homeDomainOut").textContent = JSON.stringify(data, null, 2);
+      log("log", "✅ home_domain set:", data);
+    }catch(e){
+      if ($("homeDomainOut")) $("homeDomainOut").textContent = JSON.stringify({ error: e.message || String(e) }, null, 2);
+      log("log", "❌ Set home_domain error:", e.message || e);
+    }
+  });
+}
+
+/** ✅ NEW: Check issuer home_domain from Horizon */
+const btnCheckHD = $("btnCheckHomeDomain");
+if (btnCheckHD) {
+  btnCheckHD.addEventListener("click", async () => {
+    const adminToken = ($("adminToken")?.value || "").trim();
+    if ($("homeDomainOut")) $("homeDomainOut").textContent = "";
+
+    try{
+      log("log", "⏳ Checking issuer info from Horizon...");
+      const data = await apiPost("/.netlify/functions/get_issuer_info", {}, adminToken);
+      if ($("homeDomainOut")) $("homeDomainOut").textContent = JSON.stringify(data, null, 2);
+      log("log", "✅ Issuer info:", data);
+
+      // لو رجع home_domain احفظه
+      if (data?.home_domain) {
+        localStorage.setItem("dw_home_domain", data.home_domain);
+        if ($("hdDomain")) $("hdDomain").value = data.home_domain;
+      }
+    }catch(e){
+      if ($("homeDomainOut")) $("homeDomainOut").textContent = JSON.stringify({ error: e.message || String(e) }, null, 2);
+      log("log", "❌ Check home_domain error:", e.message || e);
+    }
+  });
+}
 
 /** Pi Payment: Donation */
 $("btnDonate").addEventListener("click", async () => {
