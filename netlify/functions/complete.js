@@ -12,6 +12,8 @@ exports.handler = async (event) => {
     if (!paymentId) return res(400, { ok: false, message: "Missing paymentId" });
 
     const PI_SECRET_KEY = process.env.PI_SECRET_KEY;
+
+    // Server-side privileged key
     const SUPABASE_URL = process.env.PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
     const SUPABASE_SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE;
 
@@ -46,14 +48,8 @@ exports.handler = async (event) => {
       return res(400, { ok: false, message: "invalid_amount", amount });
     }
 
-    // (اختياري) لو الدفع already completed متكملش تاني
-    // pay.status ممكن تختلف حسب Pi — بس بنحاول نتجنب التكرار
-    if (String(pay?.status || "").toLowerCase() === "completed") {
-      return res(200, { ok: true, already_completed: true, paymentId, adId });
-    }
-
-    // 4) Check/insert promotions (optional)
-    // لو جدول promotions مش موجود، هيسيبها ويكمل
+    // 4) Optional: Prevent double processing by promotions table
+    // لو جدول promotions مش موجود، هنتجاهل
     let alreadyRecorded = false;
     try {
       const promoCheck = await fetch(
@@ -68,19 +64,13 @@ exports.handler = async (event) => {
 
       if (promoCheck.ok) {
         const existed = await promoCheck.json().catch(() => []);
-        if (Array.isArray(existed) && existed.length) {
-          alreadyRecorded = true;
-        }
+        if (Array.isArray(existed) && existed.length) alreadyRecorded = true;
       }
     } catch (e) {
-      console.log("PROMO_CHECK_SKIP", String(e));
+      // ignore
     }
 
-    if (alreadyRecorded) {
-      return res(200, { ok: true, already_completed: true, paymentId, adId });
-    }
-
-    // 5) Load ad (also get current promoted_until to extend)
+    // 5) Load ad (get current promoted_until to extend)
     const adR = await fetch(
       `${SUPABASE_URL}/rest/v1/ads?id=eq.${encodeURIComponent(adId)}&select=id,seller_username,promoted_until`,
       {
@@ -97,32 +87,61 @@ exports.handler = async (event) => {
     }
 
     const seller = adJ[0].seller_username;
-    const currentPromoted = adJ[0].promoted_until ? new Date(adJ[0].promoted_until).getTime() : 0;
+    const currentPromotedMs = adJ[0].promoted_until ? new Date(adJ[0].promoted_until).getTime() : 0;
 
-    const payerUsername = pay?.metadata?.username; // من الـ createPayment metadata
+    // 6) Ownership check (optional)
+    const payerUsername = pay?.metadata?.username;
     if (payerUsername && seller && String(payerUsername) !== String(seller)) {
       console.log("NOT_OWNER", { seller, payerUsername });
       return res(403, { ok: false, message: "not_owner_of_ad", seller, payerUsername });
     }
 
-    // 6) Complete Pi payment
-    const completeR = await fetch(`${PI_API_BASE}/payments/${paymentId}/complete`, {
-      method: "POST",
-      headers: {
-        Authorization: `Key ${PI_SECRET_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(txid ? { txid } : {}),
-    });
+    // 7) Complete Pi payment (IDEMPOTENT)
+    // لو already completed: نكمل تحديث الإعلان/تسجيل promotions
+    let completedOk = false;
 
-    const completeJ = await completeR.json().catch(() => ({}));
-    if (!completeR.ok) {
-      console.log("PI_COMPLETE_FAIL", completeR.status, completeJ);
-      return res(completeR.status, { ok: false, message: "pi_complete_failed", error: completeJ });
+    const statusLower = String(pay?.status || "").toLowerCase();
+    if (statusLower === "completed") {
+      completedOk = true;
+    } else {
+      const completeR = await fetch(`${PI_API_BASE}/payments/${paymentId}/complete`, {
+        method: "POST",
+        headers: {
+          Authorization: `Key ${PI_SECRET_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(txid ? { txid } : {}),
+      });
+
+      const completeJ = await completeR.json().catch(() => ({}));
+
+      if (!completeR.ok) {
+        // ✅ Idempotent: لو Pi قال already completed نعتبره نجاح
+        const msg = String(
+          completeJ?.error_message ||
+          completeJ?.message ||
+          completeJ?.error ||
+          ""
+        ).toLowerCase();
+
+        const alreadyCompleted =
+          msg.includes("already") && msg.includes("complete");
+
+        if (!alreadyCompleted) {
+          console.log("PI_COMPLETE_FAIL", completeR.status, completeJ);
+          return res(completeR.status, { ok: false, message: "pi_complete_failed", error: completeJ });
+        }
+      }
+
+      completedOk = true;
     }
 
-    // 7) Promote/Extend
-    const base = Math.max(Date.now(), currentPromoted || 0);
+    if (!completedOk) {
+      return res(500, { ok: false, message: "complete_unknown_state" });
+    }
+
+    // 8) Promote/Extend
+    const base = Math.max(Date.now(), currentPromotedMs || 0);
     const promotedUntil = new Date(base + DAYS * 24 * 60 * 60 * 1000).toISOString();
 
     const sbR = await fetch(`${SUPABASE_URL}/rest/v1/ads?id=eq.${encodeURIComponent(adId)}`, {
@@ -142,20 +161,22 @@ exports.handler = async (event) => {
       return res(sbR.status, { ok: false, message: "supabase_update_failed", error: sbJ });
     }
 
-    // 8) Save promotion record (optional)
-    try {
-      await fetch(`${SUPABASE_URL}/rest/v1/promotions`, {
-        method: "POST",
-        headers: {
-          apikey: SUPABASE_SERVICE_ROLE,
-          Authorization: `Bearer ${SUPABASE_SERVICE_ROLE}`,
-          "Content-Type": "application/json",
-          Prefer: "return=minimal",
-        },
-        body: JSON.stringify({ payment_id: paymentId, ad_id: adId }),
-      });
-    } catch (e) {
-      console.log("PROMO_INSERT_SKIP", String(e));
+    // 9) Save promotion record (optional)
+    if (!alreadyRecorded) {
+      try {
+        await fetch(`${SUPABASE_URL}/rest/v1/promotions`, {
+          method: "POST",
+          headers: {
+            apikey: SUPABASE_SERVICE_ROLE,
+            Authorization: `Bearer ${SUPABASE_SERVICE_ROLE}`,
+            "Content-Type": "application/json",
+            Prefer: "return=minimal",
+          },
+          body: JSON.stringify({ payment_id: paymentId, ad_id: adId }),
+        });
+      } catch (e) {
+        // ignore
+      }
     }
 
     return res(200, {
@@ -163,7 +184,6 @@ exports.handler = async (event) => {
       completed: true,
       adId,
       promoted_until: promotedUntil,
-      pi: completeJ,
     });
 
   } catch (e) {
