@@ -1,571 +1,712 @@
-:root{
-  --bg:#070A16;
-  --bg2:#0b1226;
-  --card:rgba(255,255,255,.07);
-  --stroke:rgba(255,255,255,.12);
+/* =========================
+   Elite Used Market - app.js
+   - Loads PUBLIC Supabase config from /api/config
+   - Pi login button top-left
+   ========================= */
 
-  --primary:#7c3aed;
-  --primary2:#a855f7;
-  --accent:#00f2fe;
+let SB_URL = "";
+let SB_KEY = "";
+let _sb = null;
 
-  --text:#ffffff;
-  --muted:#a7b0c3;
+let user = null;
+let activeAd = null;
+let activeConversationId = null;
+let allAdsCache = [];
 
-  --danger:#ef4444;
-  --success:#22c55e;
-
-  --r:22px;
-  --shadow: 0 18px 60px rgba(0,0,0,.45);
-  --nav-h: 76px;
-
-  --safe: env(safe-area-inset-bottom);
+/* =========================
+   Helpers
+   ========================= */
+function toast(msg){
+  const t = document.getElementById('toast');
+  if(!t) return alert(msg);
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer = setTimeout(()=> t.classList.remove('show'), 2500);
 }
 
-*{box-sizing:border-box; -webkit-tap-highlight-color:transparent; outline:none;}
-html,body{height:100%;}
-body{
-  margin:0;
-  color:var(--text);
-  font-family: system-ui, -apple-system, "Segoe UI", Tahoma, Arial;
-  background:
-    radial-gradient(900px 500px at 80% -10%, rgba(124,58,237,.35), transparent 60%),
-    radial-gradient(900px 500px at 10% 0%, rgba(0,242,254,.25), transparent 55%),
-    radial-gradient(1200px 700px at 50% 120%, rgba(168,85,247,.22), transparent 60%),
-    linear-gradient(180deg, var(--bg), var(--bg2));
-  overflow-x:hidden;
-  scroll-behavior:smooth;
+function escapeHtml(str=''){
+  return String(str)
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;')
+    .replaceAll("'","&#039;");
 }
 
 /* =========================
-   Glass
+   Promote helpers (لو عندك promoted_until)
    ========================= */
-.glass{
-  background: var(--card);
-  border: 1px solid var(--stroke);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-radius: var(--r);
-  box-shadow: var(--shadow);
+function isPromoted(ad){
+  if(!ad?.promoted_until) return false;
+  return new Date(ad.promoted_until).getTime() > Date.now();
+}
+function promoteLabel(ad){
+  if(!isPromoted(ad)) return "";
+  const ms = new Date(ad.promoted_until).getTime() - Date.now();
+  const days = Math.ceil(ms / (24*60*60*1000));
+  return `⭐ مميز • باقي ${days} يوم`;
 }
 
 /* =========================
-   Pages
+   Pending payments handler
    ========================= */
-.page{
-  display:none;
-  padding: 18px 14px calc(var(--nav-h) + 26px + var(--safe));
-  min-height:100vh;
-  animation: fade .25s ease;
-}
-.page.active{display:block;}
-@keyframes fade{
-  from{opacity:0; transform:translateY(10px)}
-  to{opacity:1; transform:translateY(0)}
+async function onIncompletePaymentFound(payment){
+  try{
+    console.log("INCOMPLETE_PAYMENT_FOUND", payment);
+
+    const memo = String(payment?.memo || "");
+    if(!memo.startsWith("PROMOTE_AD|")) return;
+
+    const paymentId = payment?.identifier || payment?.paymentId || payment?.id;
+    if(!paymentId) return;
+
+    toast("في عملية دفع معلّقة… بنحاول نكمّلها");
+
+    const r1 = await fetch("/api/pi/approve", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ paymentId })
+    });
+    const j1 = await r1.json().catch(()=> ({}));
+    if(!r1.ok || !j1.ok){
+      console.log("APPROVE_FAIL_PENDING", r1.status, j1);
+      toast(`تعذر الموافقة: ${j1.message || j1.error_message || r1.status}`);
+      return;
+    }
+
+    const r2 = await fetch("/api/pi/complete", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ paymentId })
+    });
+    const j2 = await r2.json().catch(()=> ({}));
+    if(!r2.ok || !j2.ok){
+      console.log("COMPLETE_FAIL_PENDING", r2.status, j2);
+      toast(`تعذر الإكمال: ${j2.message || j2.error_message || r2.status}`);
+      return;
+    }
+
+    toast("تم إكمال الدفع المعلّق ✅");
+    loadAds();
+    loadMyAds();
+
+  }catch(e){
+    console.log("INCOMPLETE_HANDLER_ERR", e);
+    toast("حصل خطأ أثناء إكمال الدفع المعلّق");
+  }
 }
 
 /* =========================
-   AppBar
+   UI: Update user display + login button
    ========================= */
-.appbar{
-  position: sticky;
-  top:0;
-  z-index: 50;
-  margin: 6px 0 14px;
-  padding: 14px 14px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-}
-.brand{
-  display:flex; align-items:center; gap:10px;
-  font-weight:900;
-  letter-spacing:.2px;
-}
-.brand .logo{
-  width:42px; height:42px; border-radius:14px;
-  display:grid; place-items:center;
-  background: linear-gradient(135deg, rgba(124,58,237,.9), rgba(0,242,254,.7));
-  box-shadow: 0 12px 30px rgba(124,58,237,.25);
-  border: 1px solid rgba(255,255,255,.14);
-}
-.brand small{
-  display:block;
-  color:var(--muted);
-  font-weight:600;
-  margin-top:2px;
+function setWho(){
+  const who = document.getElementById('whoami');
+  const ud = document.getElementById('user-display');
+  const pill = document.getElementById('user-pill');
+
+  const loginText = document.getElementById('login-btn-text');
+  const loginBtn = document.getElementById('login-btn');
+
+  if(user?.username){
+    if(who) who.innerHTML = `<i class="fa-solid fa-user"></i> @${escapeHtml(user.username)}`;
+    if(ud) ud.textContent = `@${user.username}`;
+    if(pill) pill.innerHTML = `<i class="fa-solid fa-id-badge"></i> @${escapeHtml(user.username)}`;
+
+    if(loginText) loginText.textContent = `@${user.username}`;
+    if(loginBtn) loginBtn.title = "اضغط لتسجيل الخروج";
+  }else{
+    if(who) who.innerHTML = `<i class="fa-solid fa-user"></i> زائر`;
+    if(ud) ud.textContent = `زائر`;
+    if(pill) pill.innerHTML = `<i class="fa-solid fa-id-badge"></i> زائر`;
+
+    if(loginText) loginText.textContent = "تسجيل دخول";
+    if(loginBtn) loginBtn.title = "تسجيل دخول عبر Pi";
+  }
 }
 
-.pill{
-  display:inline-flex; align-items:center; gap:8px;
-  padding: 10px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,.14);
-  background: rgba(255,255,255,.06);
-  color: var(--muted);
-  font-size: 12px;
-  white-space:nowrap;
+/* ✅ زر أعلى الشمال: دخول/خروج */
+async function handleLoginButton(){
+  if(user?.username){
+    const ok = confirm("تسجيل خروج؟");
+    if(ok) logout();
+    return;
+  }
+  await initPi();
 }
 
 /* =========================
-   ✅ Login Button (Top-Left)
+   Navigation
    ========================= */
-.login-fab{
-  position: fixed;
-  top: 14px;
-  left: 14px;     /* ✅ فوق الشمال */
-  z-index: 5000;
+function nav(id, btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  const page = document.getElementById('page-' + id);
+  if(page) page.classList.add('active');
 
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+  if(btn){
+    document.querySelectorAll('.tab-item').forEach(i=>i.classList.remove('active'));
+    btn.classList.add('active');
+  }
 
-  padding: 10px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,.14);
-  background: rgba(255,255,255,.08);
-  color: rgba(255,255,255,.92);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  font-weight: 900;
-  cursor: pointer;
-  box-shadow: 0 18px 60px rgba(0,0,0,.35);
-  transition: transform .16s ease, border-color .16s ease, background .16s ease;
-}
-.login-fab:hover{ border-color: rgba(0,242,254,.25); background: rgba(255,255,255,.10); }
-.login-fab:active{ transform: scale(.98); }
-.login-fab i{ color: rgba(0,242,254,.95); }
-.login-fab span{ font-size: 12px; }
-
-/* =========================
-   Search
-   ========================= */
-.search{
-  margin: 10px 0 14px;
-  padding: 12px 14px;
-  display:flex; align-items:center; gap:10px;
-}
-.search i{color: var(--muted);}
-.search input{
-  width:100%;
-  background:transparent;
-  border:none;
-  color:var(--text);
-  font-size:14px;
-  padding: 4px 0;
-}
-.search input::placeholder{color: rgba(167,176,195,.75);}
-
-/* =========================
-   Grid
-   ========================= */
-.ads-grid{
-  display:grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-/* موبايلات صغيرة */
-@media (max-width: 360px){
-  .ads-grid{ grid-template-columns: 1fr; }
-}
-
-/* تابلت */
-@media (min-width: 720px){
-  .ads-grid{ grid-template-columns: 1fr 1fr 1fr; }
+  if(id === 'home') loadAds();
+  if(id === 'profile') loadMyAds();
+  if(id === 'inbox') loadInbox();
 }
 
 /* =========================
-   ✅ Product Card (Improved)
+   Pi Auth
    ========================= */
-.ad-card{
-  position:relative;
-  overflow:hidden;
-  cursor:pointer;
-  transform: translateZ(0);
-  transition: transform .18s ease, border-color .18s ease;
-}
-.ad-card:hover{border-color: rgba(0,242,254,.25);}
-.ad-card:active{transform: scale(.985);}
+async function initPi(){
+  try{
+    if(!window.Pi) return toast("افتح من Pi Browser علشان تسجيل الدخول يشتغل");
 
-/* ✅ صورة المنتج "كاملة" بدون قص */
-.ad-thumb{
-  width:100%;
-  height: 170px;
-  display:block;
+    const Pi = window.Pi;
+    Pi.init({ version: "2.0", sandbox: false });
 
-  object-fit: contain;      /* ✅ كاملة */
-  object-position: center;
-  background: rgba(255,255,255,.04); /* خلفية للصورة لو فيها فراغات */
-}
+    // IMPORTANT: لازم payments scope عشان createPayment
+    const auth = await Pi.authenticate(['username', 'payments'], onIncompletePaymentFound);
 
-/* تحسين للموبايل */
-@media (max-width: 420px){
-  .ad-thumb{ height: 185px; }
+    user = auth.user;
+    setWho();
+    toast("تم تسجيل الدخول ✅");
+
+    // حمّل بيانات حسابه بعد الدخول
+    loadMyAds();
+    loadInbox();
+
+  }catch(e){
+    console.log("PI_AUTH_ERR", e);
+    toast("فشل تسجيل الدخول أو لم يتم منح صلاحية Payments");
+  }
 }
 
-.ad-body{
-  padding: 12px;
-  display:flex;
-  flex-direction:column;
-  gap:6px;
-}
-
-.ad-title{
-  font-size: 12px;
-  line-height:1.25;
-  color: rgba(255,255,255,.92);
-  opacity:.92;
-  display:-webkit-box;
-  -webkit-line-clamp:2;
-  -webkit-box-orient:vertical;
-  overflow:hidden;
-  min-height: 32px;
-}
-
-.ad-meta{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:8px;
-  margin-top:4px;
-}
-
-.price{
-  font-weight: 1000;
-  font-size: 15px;
-  color: var(--accent);
-  letter-spacing:.2px;
-}
-
-.badge{
-  font-size: 11px;
-  color: rgba(255,255,255,.9);
-  padding: 7px 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,.12);
-  background: rgba(255,255,255,.06);
-}
-
-/* زر حذف داخل الكارت */
-.btn-delete{
-  width:100%;
-  margin-top:10px;
-  padding:10px 12px;
-  border-radius: 14px;
-  border: 1px solid rgba(239,68,68,.6);
-  background: rgba(239,68,68,.14);
-  color: #ffd3d3;
-  font-weight: 900;
-  font-size: 12px;
-  cursor:pointer;
-}
-.btn-delete:active{ transform: scale(.99); }
-
-/* =========================
-   Inputs & Buttons
-   ========================= */
-input, textarea, select{
-  width: 100%;
-  color: var(--text);
-  background: rgba(255,255,255,.06);
-  border: 1px solid rgba(255,255,255,.12);
-  border-radius: 14px;
-  padding: 14px 14px;
-  font-size: 14px;
-  margin-bottom: 10px;
-  transition: border-color .18s ease, transform .18s ease;
-}
-textarea{min-height: 110px; resize: vertical;}
-input:focus, textarea:focus{
-  border-color: rgba(0,242,254,.35);
-  box-shadow: 0 0 0 4px rgba(0,242,254,.06);
-}
-
-.btn-main{
-  width:100%;
-  padding: 14px 14px;
-  border:none;
-  border-radius: 16px;
-  color: white;
-  font-weight: 1000;
-  background: linear-gradient(90deg, var(--primary), var(--primary2));
-  box-shadow: 0 14px 40px rgba(124,58,237,.25);
-  cursor:pointer;
-  transition: transform .16s ease, filter .16s ease;
-}
-.btn-main:hover{ filter: brightness(1.05); }
-.btn-main:active{transform: scale(.98);}
-
-.btn-ghost{
-  width:100%;
-  padding: 13px 14px;
-  border-radius: 16px;
-  border: 1px solid rgba(255,255,255,.14);
-  background: rgba(255,255,255,.06);
-  color: rgba(255,255,255,.9);
-  font-weight: 900;
-  cursor:pointer;
-}
-.btn-ghost:active{transform: scale(.99);}
-
-/* =========================
-   Details
-   ========================= */
-.details-card{ overflow:hidden; }
-.details-img{
-  width:100%;
-  height: 240px;
-  object-fit: contain;  /* ✅ كمان في التفاصيل كاملة */
-  object-position:center;
-  display:block;
-  background: rgba(255,255,255,.04);
-}
-.details-body{ padding: 14px; }
-.details-body h2{ margin:0 0 6px; font-size: 18px; }
-.details-body p{
-  margin:10px 0;
-  color: rgba(255,255,255,.86);
-  line-height:1.6;
-  font-size: 13px;
-}
-.details-row{
-  display:flex;
-  gap:10px;
-  align-items:center;
-  justify-content:space-between;
-  flex-wrap:wrap;
-}
-.seller{
-  display:flex; align-items:center; gap:8px;
-  color: rgba(255,255,255,.85);
-  font-size: 12px;
-}
-.seller i{color: rgba(255,255,255,.65);}
-
-.cta-row{
-  display:flex; gap:10px; margin-top: 12px;
-}
-.cta-row button{ flex:1; }
-
-.btn-accent{
-  border:none;
-  border-radius: 16px;
-  padding: 13px 14px;
-  font-weight: 1000;
-  color:#031016;
-  background: linear-gradient(90deg, rgba(0,242,254,.95), rgba(0,242,254,.6));
-  cursor:pointer;
-}
-.btn-accent:active{transform: scale(.98);}
-
-/* =========================
-   Chat
-   ========================= */
-.chat-wrap{ margin-top: 12px; }
-.chat-head{
-  display:flex; align-items:center; justify-content:space-between;
-  padding: 12px 12px;
-  margin-bottom: 10px;
-}
-.chat-head .hint{color: var(--muted); font-size: 12px;}
-
-.chat-container{
-  height: 360px;
-  overflow-y:auto;
-  padding: 10px;
-  display:flex;
-  flex-direction:column;
-  gap: 10px;
-  scroll-behavior:smooth;
-}
-
-.bubble{
-  max-width: 82%;
-  padding: 10px 12px;
-  border-radius: 18px;
-  line-height: 1.55;
-  font-size: 13px;
-  position:relative;
-  border: 1px solid rgba(255,255,255,.10);
-}
-.bubble.me{
-  align-self: flex-start;
-  background: linear-gradient(180deg, rgba(124,58,237,.9), rgba(168,85,247,.65));
-  border-bottom-right-radius: 8px;
-}
-.bubble.them{
-  align-self: flex-end;
-  background: rgba(255,255,255,.08);
-  border-bottom-left-radius: 8px;
-}
-.bubble small{
-  display:block;
-  color: rgba(255,255,255,.8);
-  font-size: 10px;
-  margin-bottom: 4px;
-  opacity:.9;
-}
-
-.chat-input{
-  display:flex;
-  gap: 8px;
-  align-items:center;
-  padding: 10px;
-}
-.chat-input input{
-  margin:0;
-  padding: 12px 12px;
-  border-radius: 14px;
-}
-
-.send-btn{
-  width: 54px;
-  height: 46px;
-  border-radius: 14px;
-  border:none;
-  background: rgba(0,242,254,.92);
-  color: #001015;
-  font-weight: 1000;
-  cursor:pointer;
-  box-shadow: 0 16px 40px rgba(0,242,254,.14);
-  transition: transform .16s ease, filter .16s ease;
-}
-.send-btn:hover{ filter: brightness(1.05); }
-.send-btn:active{transform: scale(.98);}
-
-/* =========================
-   Inbox
-   ========================= */
-.inbox-card{
-  padding: 12px;
-  display:flex;
-  align-items:center;
-  gap: 12px;
-  margin-bottom: 10px;
-  cursor:pointer;
-  transition: transform .16s ease, border-color .16s ease;
-}
-.inbox-card:hover{ border-color: rgba(0,242,254,.2); }
-.inbox-card:active{transform: scale(.99);}
-
-.inbox-thumb{
-  width: 54px;
-  height: 54px;
-  border-radius: 14px;
-  object-fit: cover;
-  border: 1px solid rgba(255,255,255,.12);
-  background: rgba(255,255,255,.04);
-}
-.inbox-title{
-  font-weight: 1000;
-  font-size: 13px;
-  margin-bottom: 4px;
-}
-.inbox-sub{
-  color: rgba(167,176,195,.92);
-  font-size: 12px;
-  line-height: 1.35;
-}
-
-/* =========================
-   Bottom Tab Bar
-   ========================= */
-.tab-bar{
-  position: fixed;
-  bottom:0; left:0; right:0;
-  height: var(--nav-h);
-  padding-bottom: var(--safe);
-  background: rgba(7,10,22,.92);
-  border-top: 1px solid rgba(255,255,255,.10);
-  display:flex;
-  align-items:center;
-  justify-content:space-around;
-  z-index: 2000;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-}
-.tab-item{
-  width:25%;
-  border:none;
-  background:none;
-  color: rgba(167,176,195,.9);
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap: 5px;
-  font-size: 11px;
-  padding: 10px 0;
-  cursor:pointer;
-  transition: color .16s ease, transform .16s ease;
-}
-.tab-item i{font-size: 22px;}
-.tab-item:active{ transform: scale(.98); }
-.tab-item.active{
-  color: var(--accent);
-  text-shadow: 0 0 18px rgba(0,242,254,.2);
-}
-
-/* =========================
-   Toast
-   ========================= */
-.toast{
-  position: fixed;
-  left: 14px;
-  right: 14px;
-  bottom: calc(var(--nav-h) + 14px + var(--safe));
-  z-index: 3000;
-  padding: 12px 14px;
-  border-radius: 18px;
-  border: 1px solid rgba(255,255,255,.14);
-  background: rgba(0,0,0,.35);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  display:none;
-  color: rgba(255,255,255,.92);
-  font-weight: 900;
-}
-.toast.show{display:block; animation: pop .2s ease;}
-@keyframes pop{
-  from{opacity:0; transform:translateY(8px)}
-  to{opacity:1; transform:translateY(0)}
+function logout(){
+  user = null;
+  activeAd = null;
+  activeConversationId = null;
+  setWho();
+  toast("تم تسجيل الخروج");
 }
 
 /* =========================
    Skeleton
    ========================= */
-.sk-grid{
-  display:grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+function showSkeleton(on=true){
+  const sk = document.getElementById('home-skeleton');
+  if(!sk) return;
+  if(!on){ sk.innerHTML=''; sk.style.display='none'; return; }
+  sk.style.display='grid';
+  sk.innerHTML = Array.from({length:6}).map(()=> `
+    <div class="sk">
+      <div class="a"></div>
+      <div class="b"></div>
+    </div>
+  `).join('');
 }
-.sk{
-  border-radius: var(--r);
-  border: 1px solid rgba(255,255,255,.10);
-  background: rgba(255,255,255,.06);
-  overflow:hidden;
-  position:relative;
-}
-.sk:before{
-  content:"";
-  position:absolute;
-  inset:0;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,.10), transparent);
-  transform: translateX(-60%);
-  animation: shimmer 1.2s infinite;
-}
-@keyframes shimmer{to{transform: translateX(60%)}}
-.sk .a{height:170px;}
-.sk .b{height:70px;}
 
 /* =========================
-   Helpers
+   Ads
    ========================= */
-.row{display:flex; gap:10px;}
-.mt{margin-top:12px;}
-.muted{color:var(--muted);}
+async function loadAds(){
+  if(!_sb) return;
+  showSkeleton(true);
 
-/* تحسين لمساحات صغيرة */
-@media (max-width: 420px){
-  .row{ flex-direction:column; }
+  const grid = document.getElementById('ads-grid');
+  if(grid) grid.innerHTML = '';
+
+  try{
+    const { data, error } = await _sb
+      .from('ads')
+      .select('*')
+      .order('promoted_until', { ascending:false, nullsFirst:false })
+      .order('created_at', { ascending:false });
+
+    if(error) throw error;
+    allAdsCache = data || [];
+    applyFilter();
+
+  }catch(e){
+    console.log("LOAD_ADS_ERR", e);
+    toast("خطأ في تحميل الإعلانات");
+  }finally{
+    showSkeleton(false);
+  }
 }
+
+function applyFilter(){
+  const q = (document.getElementById('search')?.value || '').trim().toLowerCase();
+  const filtered = !q ? allAdsCache : allAdsCache.filter(a =>
+    (a.title||'').toLowerCase().includes(q) || (a.description||'').toLowerCase().includes(q)
+  );
+  renderGrid(filtered, 'ads-grid', false);
+}
+
+async function loadMyAds(){
+  if(!_sb) return;
+
+  const myGrid = document.getElementById('my-ads-grid');
+  const empty = document.getElementById('my-empty');
+
+  if(!user?.username){
+    if(myGrid) myGrid.innerHTML = '';
+    if(empty) empty.style.display = 'block';
+    return;
+  }
+
+  const { data, error } = await _sb
+    .from('ads')
+    .select('*')
+    .eq('seller_username', user.username)
+    .order('created_at', { ascending:false });
+
+  if(error){
+    console.log("LOAD_MY_ADS_ERR", error);
+    toast("خطأ في تحميل إعلاناتك");
+    return;
+  }
+
+  if(empty) empty.style.display = (data?.length ? 'none' : 'block');
+  renderGrid(data || [], 'my-ads-grid', true);
+}
+
+function renderGrid(data, containerId, isOwner){
+  const el = document.getElementById(containerId);
+  if(!el) return;
+
+  if(!data || !data.length){
+    el.innerHTML = '';
+    return;
+  }
+
+  el.innerHTML = data.map(ad => {
+    const promoted = isPromoted(ad);
+    const label = promoteLabel(ad);
+    const badgeHtml = promoted ? `<div class="badge" style="border-color:rgba(0,242,254,.35); color:rgba(0,242,254,.95)">⭐ مميز</div>` : "";
+    const labelHtml = promoted ? `<div class="muted" style="margin-top:6px; font-size:11px;">${escapeHtml(label)}</div>` : "";
+
+    return `
+      <div class="glass ad-card" onclick="openAd('${ad.id}')">
+        <img class="ad-thumb" src="${SB_URL}/storage/v1/object/public/ads-images/${encodeURIComponent(ad.image_url)}" alt="ad">
+        <div class="ad-body">
+          <div class="ad-title">${escapeHtml(ad.title)}</div>
+          <div class="ad-meta">
+            <div class="price">${escapeHtml(ad.price)} Pi</div>
+            <div class="badge">@${escapeHtml(ad.seller_username)}</div>
+          </div>
+          ${badgeHtml}
+          ${labelHtml}
+
+          ${isOwner ? `
+            <button class="btn-delete" onclick="event.stopPropagation(); deleteAd('${ad.id}', '${ad.image_url}')">
+              <i class="fa-solid fa-trash"></i> حذف الإعلان
+            </button>
+          ` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function openAd(id){
+  if(!_sb) return;
+  try{
+    const { data: ad, error } = await _sb.from('ads').select('*').eq('id', id).single();
+    if(error) throw error;
+
+    activeAd = ad;
+    activeConversationId = buildConversationId(ad);
+
+    const wa = (ad.phone || '').trim();
+    const waLink = wa ? `https://wa.me/${wa.replace(/\D/g,'')}` : null;
+
+    const promoted = isPromoted(ad);
+    const promoChip = promoted
+      ? `<div class="pill" style="border-color:rgba(0,242,254,.35); color:rgba(0,242,254,.95)"><i class="fa-solid fa-star"></i> إعلان مميز</div>`
+      : ``;
+
+    document.getElementById('details-view').innerHTML = `
+      <div class="glass details-card">
+        <img class="details-img" src="${SB_URL}/storage/v1/object/public/ads-images/${encodeURIComponent(ad.image_url)}" alt="ad">
+        <div class="details-body">
+          <div class="details-row">
+            <div>
+              <h2>${escapeHtml(ad.title)}</h2>
+              <div class="price" style="font-size:18px">${escapeHtml(ad.price)} Pi</div>
+            </div>
+            <div class="seller"><i class="fa-solid fa-user"></i> البائع: <b>@${escapeHtml(ad.seller_username)}</b></div>
+          </div>
+
+          ${promoChip}
+
+          <p>${escapeHtml(ad.description || '')}</p>
+
+          <div class="cta-row">
+            <button class="btn-main" onclick="focusChat()"><i class="fa-solid fa-message"></i> راسل البائع</button>
+            <button class="btn-accent" ${waLink ? `onclick="window.open('${waLink}','_blank')"` : 'disabled style="opacity:.5; cursor:not-allowed"'} >
+              <i class="fa-brands fa-whatsapp"></i> واتساب
+            </button>
+          </div>
+
+          ${(!user?.username) ? `
+            <div class="muted" style="margin-top:10px; font-size:12px; line-height:1.6;">
+              * أنت بتتصفح كزائر. علشان تبعت رسائل لازم تعمل دخول من Pi.
+            </div>` : ''}
+
+        </div>
+      </div>
+    `;
+
+    document.getElementById('chat-hint').textContent = `محادثة خاصة على إعلان: ${ad.title}`;
+    document.getElementById('conv-pill').innerHTML = `<i class="fa-solid fa-lock"></i> خاص`;
+
+    nav('details');
+    await loadMsgs(true);
+  }catch(e){
+    console.log("OPEN_AD_ERR", e);
+    toast("تعذر فتح الإعلان");
+  }
+}
+
+function focusChat(){
+  document.getElementById('chat-input')?.focus();
+}
+
+/* =========================
+   Upload/Delete (✅ ده كان غالبًا سبب زر النشر مش بيعمل حاجة)
+   - لازم تبقى الدوال موجودة فعلاً في app.js
+   ========================= */
+async function uploadAd(){
+  try{
+    if(!_sb) return;
+    if(!user?.username) return toast("سجّل دخول الأول");
+
+    const f = document.getElementById('p-img')?.files?.[0];
+    if(!f) return toast("اختر صورة");
+
+    const title = document.getElementById('p-title')?.value?.trim() || "";
+    const description = document.getElementById('p-desc')?.value?.trim() || "";
+    const price = document.getElementById('p-price')?.value?.trim() || "";
+    const phone = document.getElementById('p-phone')?.value?.trim() || "";
+
+    if(!title || !price) return toast("اكتب الاسم والسعر");
+
+    const ext = (f.name.split('.').pop() || 'jpg').toLowerCase();
+    const path = `img_${Date.now()}_${Math.random().toString(16).slice(2)}.${ext}`;
+
+    toast("جاري رفع الصورة...");
+
+    const up = await _sb.storage.from('ads-images').upload(path, f, { cacheControl:'3600', upsert:false });
+    if(up.error) throw up.error;
+
+    const ins = await _sb.from('ads').insert([{
+      title, description, price, phone,
+      image_url: path,
+      seller_username: user.username
+    }]);
+    if(ins.error) throw ins.error;
+
+    toast("تم النشر ✅");
+
+    document.getElementById('p-img').value = '';
+    document.getElementById('p-title').value = '';
+    document.getElementById('p-desc').value = '';
+    document.getElementById('p-price').value = '';
+    document.getElementById('p-phone').value = '';
+
+    nav('home');
+    loadAds();
+    loadMyAds();
+
+  }catch(e){
+    console.log("UPLOAD_ERR", e);
+    toast("فشل النشر (افتح Console وشوف UPLOAD_ERR)");
+  }
+}
+
+async function deleteAd(id, img){
+  if(!user?.username) return toast("سجّل دخول الأول");
+  if(!confirm("حذف الإعلان؟")) return;
+
+  try{
+    if(!_sb) return;
+
+    const del = await _sb.from('ads').delete().eq('id', id);
+    if(del.error) throw del.error;
+
+    // حذف الصورة من Storage
+    if(img){
+      const rm = await _sb.storage.from('ads-images').remove([img]);
+      if(rm.error) console.log("STORAGE_REMOVE_WARN", rm.error);
+    }
+
+    toast("تم الحذف ✅");
+    loadAds();
+    loadMyAds();
+
+  }catch(e){
+    console.log("DELETE_ERR", e);
+    toast("فشل الحذف (افتح Console وشوف DELETE_ERR)");
+  }
+}
+
+/* =========================
+   Conversation & Messages
+   ========================= */
+function buildConversationId(ad){
+  if(!ad) return null;
+  if(!user?.username) return null;
+  const seller = ad.seller_username;
+  const buyer = (user.username === seller) ? '__seller_view__' : user.username;
+  return `${ad.id}|${seller}|${buyer}`;
+}
+
+function isSellerViewingOwnAd(){
+  return !!(user?.username && activeAd?.seller_username && user.username === activeAd.seller_username);
+}
+
+async function loadMsgs(scrollToBottom=false){
+  const box = document.getElementById('chat-box');
+  if(!box) return;
+  if(!activeAd){ box.innerHTML = ''; return; }
+
+  if(!user?.username){
+    box.innerHTML = `<div class="muted" style="padding:12px; text-align:center;">سجّل دخول علشان تبدأ محادثة خاصة.</div>`;
+    return;
+  }
+
+  if(isSellerViewingOwnAd() && activeConversationId?.includes('__seller_view__')){
+    box.innerHTML = `<div class="muted" style="padding:12px; text-align:center;">
+      أنت البائع. هتشوف محادثات المشترين من تبويب <b>الرسائل</b> (Inbox) — كل مشتري له شات منفصل.
+    </div>`;
+    return;
+  }
+
+  try{
+    const { data, error } = await _sb
+      .from('messages')
+      .select('*')
+      .eq('conversation_id', activeConversationId)
+      .order('created_at', { ascending:true });
+
+    if(error) throw error;
+
+    const rows = data || [];
+    box.innerHTML = rows.map(m => `
+      <div class="bubble ${m.sender_username === user.username ? 'me' : 'them'}">
+        <small>${escapeHtml(m.sender_username)}</small>
+        ${escapeHtml(m.text)}
+      </div>
+    `).join('') || `<div class="muted" style="padding:12px; text-align:center;">ابدأ المحادثة ✨</div>`;
+
+    if(scrollToBottom) box.scrollTop = box.scrollHeight;
+
+  }catch(e){
+    console.log("LOAD_MSGS_ERR", e);
+    toast("خطأ في تحميل الرسائل");
+  }
+}
+
+async function sendMsg(){
+  try{
+    const inp = document.getElementById('chat-input');
+    const text = (inp?.value || '').trim();
+    if(!text) return;
+
+    if(!user?.username) return toast("سجّل دخول الأول");
+    if(!activeAd) return;
+
+    if(isSellerViewingOwnAd() && activeConversationId?.includes('__seller_view__')){
+      toast("افتح محادثة المشتري من الرسائل");
+      return;
+    }
+
+    const seller = activeAd.seller_username;
+    const buyer = (user.username === seller) ? extractBuyerFromConversation(activeConversationId) : user.username;
+    const receiver = (user.username === seller) ? buyer : seller;
+
+    const payload = {
+      ad_id: activeAd.id,
+      conversation_id: activeConversationId,
+      seller_username: seller,
+      buyer_username: buyer,
+      sender_username: user.username,
+      receiver_username: receiver,
+      text
+    };
+
+    const ins = await _sb.from('messages').insert([payload]);
+    if(ins.error) throw ins.error;
+
+    inp.value = '';
+    await loadMsgs(true);
+
+  }catch(e){
+    console.log("SEND_ERR", e);
+    toast("خطأ في الإرسال");
+  }
+}
+
+function extractBuyerFromConversation(convId){
+  try{
+    const parts = String(convId).split('|');
+    return parts[2] || null;
+  }catch{
+    return null;
+  }
+}
+
+/* Inbox */
+async function loadInbox(){
+  if(!_sb) return;
+
+  const list = document.getElementById('inbox-list');
+  const empty = document.getElementById('inbox-empty');
+
+  if(!user?.username){
+    if(list) list.innerHTML = '';
+    if(empty) empty.style.display = 'block';
+    return;
+  }
+
+  try{
+    const { data, error } = await _sb
+      .from('messages')
+      .select('conversation_id, ad_id, text, created_at, seller_username, buyer_username, sender_username, receiver_username')
+      .or(`seller_username.eq.${user.username},buyer_username.eq.${user.username}`)
+      .order('created_at', { ascending:false });
+
+    if(error) throw error;
+
+    const rows = data || [];
+    const seen = new Set();
+    const convs = [];
+
+    for(const m of rows){
+      if(!m.conversation_id) continue;
+      if(seen.has(m.conversation_id)) continue;
+      seen.add(m.conversation_id);
+      convs.push(m);
+    }
+
+    if(empty) empty.style.display = convs.length ? 'none' : 'block';
+    if(!list) return;
+
+    const adIds = [...new Set(convs.map(c=>c.ad_id).filter(Boolean))];
+    let adsMap = {};
+    if(adIds.length){
+      const { data: ads } = await _sb.from('ads').select('id,title,image_url,seller_username').in('id', adIds);
+      if(ads) adsMap = Object.fromEntries(ads.map(a=>[a.id, a]));
+    }
+
+    list.innerHTML = convs.map(c=>{
+      const ad = adsMap[c.ad_id] || {};
+      const partner = (user.username === c.seller_username) ? c.buyer_username : c.seller_username;
+
+      return `
+        <div class="glass inbox-card" onclick="openConversationFromInbox('${escapeHtml(c.conversation_id)}','${c.ad_id}')">
+          <img class="inbox-thumb" src="${SB_URL}/storage/v1/object/public/ads-images/${encodeURIComponent(ad.image_url || '')}" onerror="this.style.display='none'">
+          <div style="flex:1; min-width:0;">
+            <div class="inbox-title">${escapeHtml(partner || 'محادثة')}</div>
+            <div class="inbox-sub">
+              <b>${escapeHtml(ad.title || '—')}</b><br>
+              ${escapeHtml((c.text || '').slice(0, 40))}${(c.text || '').length > 40 ? '…' : ''}
+            </div>
+          </div>
+          <div class="pill"><i class="fa-solid fa-lock"></i></div>
+        </div>
+      `;
+    }).join('');
+
+  }catch(e){
+    console.log("INBOX_ERR", e);
+    toast("تعذر تحميل الرسائل");
+  }
+}
+
+async function openConversationFromInbox(conversationId, adId){
+  if(!_sb) return;
+
+  const { data: ad, error } = await _sb.from('ads').select('*').eq('id', adId).single();
+  if(error){ toast("تعذر فتح المحادثة"); return; }
+
+  activeAd = ad;
+  activeConversationId = conversationId;
+
+  document.getElementById('details-view').innerHTML = `
+    <div class="glass details-card">
+      <img class="details-img" src="${SB_URL}/storage/v1/object/public/ads-images/${encodeURIComponent(ad.image_url)}" alt="ad">
+      <div class="details-body">
+        <div class="details-row">
+          <div>
+            <h2>${escapeHtml(ad.title)}</h2>
+            <div class="price" style="font-size:18px">${escapeHtml(ad.price)} Pi</div>
+          </div>
+          <div class="seller"><i class="fa-solid fa-user"></i> البائع: <b>@${escapeHtml(ad.seller_username)}</b></div>
+        </div>
+        <p>${escapeHtml(ad.description || '')}</p>
+      </div>
+    </div>
+  `;
+
+  const buyer = extractBuyerFromConversation(conversationId);
+  const partner = (user.username === ad.seller_username) ? buyer : ad.seller_username;
+  document.getElementById('chat-hint').textContent = `محادثة خاصة مع @${partner} على إعلان: ${ad.title}`;
+  document.getElementById('conv-pill').innerHTML = `<i class="fa-solid fa-lock"></i> خاص`;
+
+  nav('details');
+  await loadMsgs(true);
+}
+
+/* Share */
+async function shareActive(){
+  if(!activeAd) return;
+  const text = `شوف الإعلان: ${activeAd.title} — السعر ${activeAd.price} Pi`;
+  try{
+    if(navigator.share){
+      await navigator.share({ text });
+    }else{
+      await navigator.clipboard.writeText(text);
+      toast("تم النسخ ✅");
+    }
+  }catch{}
+}
+
+/* Auto refresh messages */
+setInterval(() => {
+  const isDetails = document.getElementById('page-details')?.classList.contains('active');
+  if(isDetails) loadMsgs(false);
+}, 3500);
+
+/* =========================
+   Config loader
+   ========================= */
+async function initConfig(){
+  if(!window.supabase?.createClient) throw new Error("supabase_js_not_loaded");
+
+  const r = await fetch("/api/config", { cache: "no-store" });
+  const j = await r.json().catch(()=> ({}));
+
+  const url  = j.SB_URL  || j.SUPABASE_URL || j.url;
+  const anon = j.SB_ANON || j.SUPABASE_ANON_KEY || j.anon || j.key;
+
+  if(!r.ok || !url || !anon){
+    console.log("CONFIG_FAIL", r.status, j);
+    throw new Error("config_missing_keys");
+  }
+
+  SB_URL = String(url);
+  SB_KEY = String(anon);
+  _sb = window.supabase.createClient(SB_URL, SB_KEY);
+}
+
+/* ====== init ====== */
+(async ()=>{
+  try{
+    await initConfig();
+    setWho();
+    loadAds();
+  }catch(e){
+    console.log("INIT_ERR", e);
+    toast("مشكلة في إعدادات Supabase (/api/config)");
+  }
+})();
