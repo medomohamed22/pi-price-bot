@@ -29,6 +29,7 @@ function promoteLabel(ad){
 }
 
 /* ====== Promote flow (5 Pi / 3 days) ====== */
+/* ====== Promote flow (5 Pi / 3 days) ====== */
 async function promoteAd(adId){
   try{
     if(!user?.username) return toast("سجّل دخول الأول");
@@ -43,50 +44,70 @@ async function promoteAd(adId){
       metadata: { purpose: "PROMOTE_AD", adId, username: user.username }
     }, {
       onReadyForServerApproval: async (paymentId) => {
-        toast("جاري الموافقة...");
-        const r = await fetch("/api/pi/approve", {
-          method:"POST",
-          headers:{ "Content-Type":"application/json" },
-          body: JSON.stringify({ paymentId })
-        });
-        const j = await r.json().catch(()=> ({}));
-        if(!r.ok || !j.ok) throw new Error("approve_failed");
-        toast("تمت الموافقة ✅");
+        try{
+          toast("جاري الموافقة...");
+          const r = await fetch("/api/pi/approve", {
+            method:"POST",
+            headers:{ "Content-Type":"application/json" },
+            body: JSON.stringify({ paymentId })
+          });
+
+          const j = await r.json().catch(()=> ({}));
+
+          if(!r.ok || !j.ok){
+            console.log("APPROVE_FAIL", r.status, j);
+            toast(`فشل الموافقة: ${j.message || j.error_message || j.message_code || r.status}`);
+            // مهم: ما تعملش throw هنا
+            return;
+          }
+
+          toast("تمت الموافقة ✅");
+        }catch(err){
+          console.log("APPROVE_EXCEPTION", err);
+          toast("فشل الموافقة: exception");
+        }
       },
 
-     onReadyForServerCompletion: async (paymentId, txid) => {
-  toast("جاري تفعيل الإعلان المميز...");
+      onReadyForServerCompletion: async (paymentId, txid) => {
+        try{
+          toast("جاري تفعيل الإعلان المميز...");
+          const r = await fetch("/api/pi/complete", {
+            method:"POST",
+            headers:{ "Content-Type":"application/json" },
+            body: JSON.stringify({ paymentId, txid })
+          });
 
-  const r = await fetch("/api/pi/complete", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ paymentId, txid })
-  });
+          const j = await r.json().catch(()=> ({}));
 
-  const j = await r.json().catch(()=> ({}));
-  if(!r.ok || !j.ok){
-    console.log("COMPLETE_FAIL", r.status, j);
-    return toast(`فشل الترقية: ${j.message || j.error_message || r.status}`);
-  }
+          if(!r.ok || !j.ok){
+            console.log("COMPLETE_FAIL", r.status, j);
+            toast(`فشل الترقية: ${j.message || j.error_message || j.message_code || r.status}`);
+            // مهم: ما تعملش throw هنا
+            return;
+          }
 
-  toast("تم تمييز إعلانك 3 أيام ⭐");
-  loadAds();
-  loadMyAds();
-},
-
+          toast("تم تمييز إعلانك 3 أيام ⭐");
+          loadAds();
+          loadMyAds();
+        }catch(err){
+          console.log("COMPLETE_EXCEPTION", err);
+          toast("فشل الترقية: exception");
+        }
+      },
 
       onCancel: () => toast("تم إلغاء الدفع"),
       onError: (err) => {
-        console.log(err);
-        toast("مشكلة في الدفع");
+        console.log("PI_SDK_ERROR", err);
+        toast(`مشكلة في الدفع: ${err?.message || "pi_sdk_error"}`);
       }
     });
 
   }catch(e){
-    console.log(e);
-    toast("فشل الترقية");
+    console.log("PROMOTE_OUTER_CATCH", e);
+    toast(`فشل الترقية: ${e?.message || "unknown"}`);
   }
 }
+
 
 /* ====== UI helpers ====== */
 function toast(msg){
