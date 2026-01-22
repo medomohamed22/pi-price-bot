@@ -12,7 +12,6 @@ exports.handler = async (event) => {
     const PI_SECRET_KEY = process.env.PI_SECRET_KEY;
     if (!PI_SECRET_KEY) return res(500, { ok: false, message: "Missing PI_SECRET_KEY" });
 
-    // Approve payment
     const approveR = await fetch(`${PI_API_BASE}/payments/${paymentId}/approve`, {
       method: "POST",
       headers: {
@@ -24,7 +23,23 @@ exports.handler = async (event) => {
 
     const approveJ = await approveR.json().catch(() => ({}));
 
+    // ✅ Idempotent handling:
+    // بعض الأحيان Pi بيرجع خطأ "already approved" - نعتبره ok
     if (!approveR.ok) {
+      const msg = String(
+        approveJ?.error_message ||
+        approveJ?.message ||
+        approveJ?.error ||
+        ""
+      ).toLowerCase();
+
+      const alreadyApproved =
+        msg.includes("already") && msg.includes("approv");
+
+      if (alreadyApproved) {
+        return res(200, { ok: true, approved: true, already_approved: true, pi: approveJ });
+      }
+
       console.log("APPROVE_FAIL", approveR.status, approveJ);
       return res(approveR.status, { ok: false, message: "pi_approve_failed", error: approveJ });
     }
