@@ -1,59 +1,20 @@
-// ====== Supabase ======
-const SB_URL = 'https://axjkwrssmofzavaoqutq.supabase.co';
-const SB_KEY = 'sb_publishable_tiuMncgWhf1YRWoD-uYQ3Q_ziI8OKci';
-const _sb = supabase.createClient(SB_URL, SB_KEY);
+/* =========================
+   Pi Elite Hub - app.js
+   - Loads PUBLIC Supabase config from /api/config to avoid Netlify secrets scan issues
+   ========================= */
 
-// ====== State ======
+/* ====== Global Supabase (filled after initConfig) ====== */
+let SB_URL = "";
+let SB_KEY = "";
+let _sb = null;
+
+/* ====== State ====== */
 let user = null;
 let activeAd = null;
 let activeConversationId = null;
 let allAdsCache = [];
 
-// ====== UI helpers ======
-function toast(msg){
-  const t = document.getElementById('toast');
-  if(!t) return alert(msg);
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(window.__toastTimer);
-  window.__toastTimer = setTimeout(()=> t.classList.remove('show'), 2500);
-}
-
-function setWho(){
-  const who = document.getElementById('whoami');
-  const ud = document.getElementById('user-display');
-  if(user?.username){
-    if(who) who.innerHTML = `<i class="fa-solid fa-user"></i> @${user.username}`;
-    if(ud) ud.textContent = `@${user.username}`;
-  }else{
-    if(who) who.innerHTML = `<i class="fa-solid fa-user"></i> زائر`;
-    if(ud) ud.textContent = `زائر`;
-  }
-}
-
-function showSkeleton(on=true){
-  const sk = document.getElementById('home-skeleton');
-  if(!sk) return;
-  if(!on){ sk.innerHTML=''; sk.style.display='none'; return; }
-  sk.style.display='grid';
-  sk.innerHTML = Array.from({length:6}).map(()=> `
-    <div class="sk">
-      <div class="a"></div>
-      <div class="b"></div>
-    </div>
-  `).join('');
-}
-
-function escapeHtml(str=''){
-  return String(str)
-    .replaceAll('&','&amp;')
-    .replaceAll('<','&lt;')
-    .replaceAll('>','&gt;')
-    .replaceAll('"','&quot;')
-    .replaceAll("'","&#039;");
-}
-
-// ====== Promote helpers ======
+/* ====== Promote helpers ====== */
 function isPromoted(ad){
   if(!ad?.promoted_until) return false;
   return new Date(ad.promoted_until).getTime() > Date.now();
@@ -62,11 +23,11 @@ function isPromoted(ad){
 function promoteLabel(ad){
   if(!isPromoted(ad)) return "";
   const ms = new Date(ad.promoted_until).getTime() - Date.now();
-  const days = Math.max(1, Math.ceil(ms / (24*60*60*1000)));
+  const days = Math.ceil(ms / (24*60*60*1000));
   return `⭐ مميز • باقي ${days} يوم`;
 }
 
-// ====== Promote flow (5 Pi / 3 days) ======
+/* ====== Promote flow (5 Pi / 3 days) ====== */
 async function promoteAd(adId){
   try{
     if(!user?.username) return toast("سجّل دخول الأول");
@@ -120,10 +81,55 @@ async function promoteAd(adId){
   }
 }
 
-// ====== Navigation ======
+/* ====== UI helpers ====== */
+function toast(msg){
+  const t = document.getElementById('toast');
+  if(!t) return alert(msg);
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer = setTimeout(()=> t.classList.remove('show'), 2500);
+}
+
+function setWho(){
+  const who = document.getElementById('whoami');
+  const ud = document.getElementById('user-display');
+  if(user?.username){
+    if(who) who.innerHTML = `<i class="fa-solid fa-user"></i> @${user.username}`;
+    if(ud) ud.textContent = `@${user.username}`;
+  }else{
+    if(who) who.innerHTML = `<i class="fa-solid fa-user"></i> زائر`;
+    if(ud) ud.textContent = `زائر`;
+  }
+}
+
+function showSkeleton(on=true){
+  const sk = document.getElementById('home-skeleton');
+  if(!sk) return;
+  if(!on){ sk.innerHTML=''; sk.style.display='none'; return; }
+  sk.style.display='grid';
+  sk.innerHTML = Array.from({length:6}).map(()=> `
+    <div class="sk">
+      <div class="a"></div>
+      <div class="b"></div>
+    </div>
+  `).join('');
+}
+
+function escapeHtml(str=''){
+  return String(str)
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;')
+    .replaceAll("'","&#039;");
+}
+
+/* ====== Navigation ====== */
 function nav(id, btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.getElementById('page-' + id)?.classList.add('active');
+  const page = document.getElementById('page-' + id);
+  if(page) page.classList.add('active');
 
   if(btn){
     document.querySelectorAll('.tab-item').forEach(i=>i.classList.remove('active'));
@@ -135,7 +141,7 @@ function nav(id, btn){
   if(id === 'inbox') loadInbox();
 }
 
-// ====== Pi Auth ======
+/* ====== Pi Auth ====== */
 async function initPi(){
   try{
     const Pi = window.Pi;
@@ -146,8 +152,8 @@ async function initPi(){
 
     setWho();
     document.getElementById('page-login')?.classList.remove('active');
-    const navb = document.getElementById('navbar');
-    if(navb) navb.style.display = 'flex';
+    const navbar = document.getElementById('navbar');
+    if(navbar) navbar.style.display = 'flex';
     nav('home');
 
     toast('تم تسجيل الدخول ✅');
@@ -162,36 +168,28 @@ function logout(){
   activeConversationId = null;
   setWho();
   toast('تم تسجيل الخروج');
-  const navb = document.getElementById('navbar');
-  if(navb) navb.style.display = 'none';
+  const navbar = document.getElementById('navbar');
+  if(navbar) navbar.style.display = 'none';
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-login')?.classList.add('active');
 }
 
-// ====== Ads ======
+/* ====== Ads ====== */
 async function loadAds(){
+  if(!_sb) return; // config not ready
   showSkeleton(true);
   const grid = document.getElementById('ads-grid');
   if(grid) grid.innerHTML = '';
   try{
-    const { data, error } = await _sb.from('ads').select('*').order('created_at', {ascending:false});
+    // IMPORTANT: promoted first, then newest
+    const { data, error } = await _sb
+      .from('ads')
+      .select('*')
+      .order('promoted_until', { ascending:false, nullsFirst:false })
+      .order('created_at', { ascending:false });
+
     if(error) throw error;
-
-    // ✅ sort promoted first
-    allAdsCache = (data || []).sort((a,b)=>{
-      const ap = isPromoted(a) ? 1 : 0;
-      const bp = isPromoted(b) ? 1 : 0;
-      if(bp !== ap) return bp - ap;
-
-      const aut = a.promoted_until ? new Date(a.promoted_until).getTime() : 0;
-      const but = b.promoted_until ? new Date(b.promoted_until).getTime() : 0;
-      if(bp && ap && but !== aut) return but - aut;
-
-      const ac = new Date(a.created_at || 0).getTime();
-      const bc = new Date(b.created_at || 0).getTime();
-      return bc - ac;
-    });
-
+    allAdsCache = data || [];
     applyFilter();
   }catch(e){
     console.log(e);
@@ -210,61 +208,71 @@ function applyFilter(){
 }
 
 async function loadMyAds(){
-  const myGrid = document.getElementById('my-ads-grid');
-  const myEmpty = document.getElementById('my-empty');
-
+  if(!_sb) return;
   if(!user?.username){
+    const myGrid = document.getElementById('my-ads-grid');
     if(myGrid) myGrid.innerHTML = '';
-    if(myEmpty) myEmpty.style.display = 'block';
+    const empty = document.getElementById('my-empty');
+    if(empty) empty.style.display = 'block';
     return;
   }
+  const { data, error } = await _sb
+    .from('ads')
+    .select('*')
+    .eq('seller_username', user.username)
+    .order('created_at', {ascending:false});
 
-  const { data, error } = await _sb.from('ads').select('*').eq('seller_username', user.username).order('created_at', {ascending:false});
   if(error){ toast('خطأ في تحميل إعلاناتك'); return; }
 
-  if(myEmpty) myEmpty.style.display = (data?.length ? 'none' : 'block');
+  const empty = document.getElementById('my-empty');
+  if(empty) empty.style.display = (data?.length ? 'none' : 'block');
+
   renderGrid(data || [], 'my-ads-grid', true);
 }
 
 function renderGrid(data, containerId, isOwner){
   const el = document.getElementById(containerId);
   if(!el) return;
-
   if(!data || !data.length){
     el.innerHTML = '';
     return;
   }
 
-  el.innerHTML = data.map(ad => `
-    <div class="glass ad-card" onclick="openAd('${ad.id}')">
-      <img class="ad-thumb" src="${SB_URL}/storage/v1/object/public/ads-images/${encodeURIComponent(ad.image_url)}" alt="ad">
-      <div class="ad-body">
-        <div class="ad-title">${escapeHtml(ad.title)}</div>
+  el.innerHTML = data.map(ad => {
+    const promoted = isPromoted(ad);
+    const label = promoteLabel(ad);
+    const badgeHtml = promoted ? `<div class="badge" style="border-color:rgba(0,242,254,.35); color:rgba(0,242,254,.95)">⭐ مميز</div>` : "";
+    const labelHtml = promoted ? `<div class="muted" style="margin-top:6px; font-size:11px;">${escapeHtml(label)}</div>` : "";
 
-        <div class="ad-meta">
-          <div class="price">${escapeHtml(ad.price)} Pi</div>
-
-          <div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
-            ${isPromoted(ad) ? `<div class="badge" style="border-color: rgba(0,242,254,.35); color:#d9feff;">${escapeHtml(promoteLabel(ad))}</div>` : ``}
+    return `
+      <div class="glass ad-card" onclick="openAd('${ad.id}')">
+        <img class="ad-thumb" src="${SB_URL}/storage/v1/object/public/ads-images/${encodeURIComponent(ad.image_url)}" alt="ad">
+        <div class="ad-body">
+          <div class="ad-title">${escapeHtml(ad.title)}</div>
+          <div class="ad-meta">
+            <div class="price">${escapeHtml(ad.price)} Pi</div>
             <div class="badge">@${escapeHtml(ad.seller_username)}</div>
           </div>
+          ${badgeHtml}
+          ${labelHtml}
+
+          ${isOwner ? `
+            <button class="btn-delete" onclick="event.stopPropagation(); deleteAd('${ad.id}', '${ad.image_url}')">
+              <i class="fa-solid fa-trash"></i> حذف الإعلان
+            </button>
+
+            <button class="btn-main" style="margin-top:10px;" onclick="event.stopPropagation(); promoteAd('${ad.id}')">
+              ⭐ اجعل إعلانك مميز (5 Pi / 3 أيام)
+            </button>
+          ` : ''}
         </div>
-
-        ${isOwner ? `
-          <button class="btn-ghost" style="margin-top:10px"
-            onclick="event.stopPropagation(); ${isPromoted(ad) ? `toast('إعلانك مميز بالفعل ✅');` : `promoteAd('${ad.id}')`}">
-            <i class="fa-solid fa-bolt"></i> ${isPromoted(ad) ? `مميز بالفعل ✅` : `ترقية الإعلان (5 Pi / 3 أيام)`}
-          </button>
-
-          <button class="btn-delete" onclick="event.stopPropagation(); deleteAd('${ad.id}', '${ad.image_url}')">
-            <i class="fa-solid fa-trash"></i> حذف الإعلان
-          </button>` : ''}
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 async function openAd(id){
+  if(!_sb) return;
   try{
     const { data: ad, error } = await _sb.from('ads').select('*').eq('id', id).single();
     if(error) throw error;
@@ -275,11 +283,9 @@ async function openAd(id){
     const wa = (ad.phone || '').trim();
     const waLink = wa ? `https://wa.me/${wa.replace(/\D/g,'')}` : null;
 
-    // ✅ add promote button in details for owner
-    const ownerPromoteBtn = (user?.username && user.username === ad.seller_username)
-      ? `<button class="btn-ghost" onclick="${isPromoted(ad) ? `toast('إعلانك مميز بالفعل ✅')` : `promoteAd('${ad.id}')`}">
-           <i class="fa-solid fa-bolt"></i> ${isPromoted(ad) ? `مميز ✅` : `تمييز (5 Pi)`}
-         </button>`
+    const promoted = isPromoted(ad);
+    const promoChip = promoted
+      ? `<div class="pill" style="border-color:rgba(0,242,254,.35); color:rgba(0,242,254,.95)"><i class="fa-solid fa-star"></i> إعلان مميز</div>`
       : ``;
 
     document.getElementById('details-view').innerHTML = `
@@ -294,7 +300,7 @@ async function openAd(id){
             <div class="seller"><i class="fa-solid fa-user"></i> البائع: <b>@${escapeHtml(ad.seller_username)}</b></div>
           </div>
 
-          ${isPromoted(ad) ? `<div class="badge" style="margin-top:10px; display:inline-block; border-color: rgba(0,242,254,.35); color:#d9feff;">${escapeHtml(promoteLabel(ad))}</div>` : ``}
+          ${promoChip}
 
           <p>${escapeHtml(ad.description || '')}</p>
 
@@ -303,8 +309,13 @@ async function openAd(id){
             <button class="btn-accent" ${waLink ? `onclick="window.open('${waLink}','_blank')"` : 'disabled style="opacity:.5; cursor:not-allowed"'} >
               <i class="fa-brands fa-whatsapp"></i> واتساب
             </button>
-            ${ownerPromoteBtn}
           </div>
+
+          ${(user?.username && user.username === ad.seller_username) ? `
+            <button class="btn-main" style="margin-top:10px;" onclick="promoteAd('${ad.id}')">
+              ⭐ اجعل إعلانك مميز (5 Pi / 3 أيام)
+            </button>
+          ` : ''}
 
           ${(!user?.username && ad.seller_username) ? `
             <div class="muted" style="margin-top:10px; font-size:12px; line-height:1.6;">
@@ -329,7 +340,7 @@ function focusChat(){
   document.getElementById('chat-input')?.focus();
 }
 
-// ====== Conversation logic (PRIVATE CHAT) ======
+/* ====== Conversation logic ====== */
 function buildConversationId(ad){
   if(!ad) return null;
   if(!user?.username) return null;
@@ -342,11 +353,10 @@ function isSellerViewingOwnAd(){
   return !!(user?.username && activeAd?.seller_username && user.username === activeAd.seller_username);
 }
 
-// ====== Messages ======
+/* ====== Messages ====== */
 async function loadMsgs(scrollToBottom=false){
   const box = document.getElementById('chat-box');
   if(!box) return;
-
   if(!activeAd){ box.innerHTML = ''; return; }
 
   if(!user?.username){
@@ -387,15 +397,6 @@ async function loadMsgs(scrollToBottom=false){
   }catch(e){
     console.log(e);
     toast('خطأ في تحميل الرسائل');
-  }
-}
-
-function extractBuyerFromConversation(convId){
-  try{
-    const parts = String(convId).split('|');
-    return parts[2] || null;
-  }catch{
-    return null;
   }
 }
 
@@ -441,14 +442,23 @@ async function sendMsg(){
   }
 }
 
-// ====== Inbox (by conversation_id) ======
-async function loadInbox(){
-  const inboxList = document.getElementById('inbox-list');
-  const inboxEmpty = document.getElementById('inbox-empty');
+function extractBuyerFromConversation(convId){
+  try{
+    const parts = String(convId).split('|');
+    return parts[2] || null;
+  }catch{
+    return null;
+  }
+}
 
+/* ====== Inbox ====== */
+async function loadInbox(){
+  if(!_sb) return;
   if(!user?.username){
-    if(inboxList) inboxList.innerHTML = '';
-    if(inboxEmpty) inboxEmpty.style.display = 'block';
+    const list = document.getElementById('inbox-list');
+    if(list) list.innerHTML = '';
+    const empty = document.getElementById('inbox-empty');
+    if(empty) empty.style.display = 'block';
     return;
   }
 
@@ -472,36 +482,42 @@ async function loadInbox(){
       convs.push(m);
     }
 
-    if(inboxEmpty) inboxEmpty.style.display = convs.length ? 'none' : 'block';
+    const empty = document.getElementById('inbox-empty');
+    if(empty) empty.style.display = convs.length ? 'none' : 'block';
 
-    const adIds = [...new Set(convs.map(c=>c.ad_id))];
+    const adIds = [...new Set(convs.map(c=>c.ad_id).filter(Boolean))];
     let adsMap = {};
     if(adIds.length){
-      const { data: ads, error: adErr } = await _sb.from('ads').select('id,title,image_url,seller_username').in('id', adIds);
+      const { data: ads, error: adErr } = await _sb
+        .from('ads')
+        .select('id,title,image_url,seller_username')
+        .in('id', adIds);
+
       if(!adErr && ads){
         adsMap = Object.fromEntries(ads.map(a=>[a.id, a]));
       }
     }
 
-    if(inboxList){
-      inboxList.innerHTML = convs.map(c=>{
-        const ad = adsMap[c.ad_id] || {};
-        const partner = (user.username === c.seller_username) ? c.buyer_username : c.seller_username;
-        return `
-          <div class="glass inbox-card" onclick="openConversationFromInbox('${escapeHtml(c.conversation_id)}','${c.ad_id}')">
-            <img class="inbox-thumb" src="${SB_URL}/storage/v1/object/public/ads-images/${encodeURIComponent(ad.image_url || '')}" onerror="this.style.display='none'">
-            <div style="flex:1; min-width:0;">
-              <div class="inbox-title">${escapeHtml(partner || 'محادثة')}</div>
-              <div class="inbox-sub">
-                <b>${escapeHtml(ad.title || '—')}</b><br>
-                ${escapeHtml((c.text || '').slice(0, 40))}${(c.text || '').length > 40 ? '…' : ''}
-              </div>
+    const list = document.getElementById('inbox-list');
+    if(!list) return;
+
+    list.innerHTML = convs.map(c=>{
+      const ad = adsMap[c.ad_id] || {};
+      const partner = (user.username === c.seller_username) ? c.buyer_username : c.seller_username;
+      return `
+        <div class="glass inbox-card" onclick="openConversationFromInbox('${escapeHtml(c.conversation_id)}','${c.ad_id}')">
+          <img class="inbox-thumb" src="${SB_URL}/storage/v1/object/public/ads-images/${encodeURIComponent(ad.image_url || '')}" onerror="this.style.display='none'">
+          <div style="flex:1; min-width:0;">
+            <div class="inbox-title">${escapeHtml(partner || 'محادثة')}</div>
+            <div class="inbox-sub">
+              <b>${escapeHtml(ad.title || '—')}</b><br>
+              ${escapeHtml((c.text || '').slice(0, 40))}${(c.text || '').length > 40 ? '…' : ''}
             </div>
-            <div class="pill"><i class="fa-solid fa-lock"></i></div>
           </div>
-        `;
-      }).join('');
-    }
+          <div class="pill"><i class="fa-solid fa-lock"></i></div>
+        </div>
+      `;
+    }).join('');
   }catch(e){
     console.log(e);
     toast('تعذر تحميل الرسائل');
@@ -509,6 +525,7 @@ async function loadInbox(){
 }
 
 async function openConversationFromInbox(conversationId, adId){
+  if(!_sb) return;
   const { data: ad, error } = await _sb.from('ads').select('*').eq('id', adId).single();
   if(error){ toast('تعذر فتح المحادثة'); return; }
 
@@ -540,18 +557,19 @@ async function openConversationFromInbox(conversationId, adId){
   await loadMsgs(true);
 }
 
-// ====== Upload / Delete ======
+/* ====== Upload / Delete ====== */
 async function uploadAd(){
   try{
+    if(!_sb) return;
     if(!user?.username){ toast('سجّل دخول الأول'); return; }
 
     const f = document.getElementById('p-img')?.files?.[0];
     if(!f) return toast('اختر صورة');
 
-    const title = document.getElementById('p-title')?.value?.trim() || '';
-    const description = document.getElementById('p-desc')?.value?.trim() || '';
-    const price = document.getElementById('p-price')?.value?.trim() || '';
-    const phone = document.getElementById('p-phone')?.value?.trim() || '';
+    const title = document.getElementById('p-title')?.value?.trim() || "";
+    const description = document.getElementById('p-desc')?.value?.trim() || "";
+    const price = document.getElementById('p-price')?.value?.trim() || "";
+    const phone = document.getElementById('p-phone')?.value?.trim() || "";
 
     if(!title || !price) return toast('اكتب الاسم والسعر');
 
@@ -570,13 +588,11 @@ async function uploadAd(){
     if(insErr) throw insErr;
 
     toast('تم النشر ✅');
-
     document.getElementById('p-img').value = '';
     document.getElementById('p-title').value = '';
     document.getElementById('p-desc').value = '';
     document.getElementById('p-price').value = '';
     document.getElementById('p-phone').value = '';
-
     nav('home');
   }catch(e){
     console.log(e);
@@ -587,23 +603,19 @@ async function uploadAd(){
 async function deleteAd(id, img){
   if(!confirm('حذف الإعلان؟')) return;
   try{
+    if(!_sb) return;
     const { error: delErr } = await _sb.from('ads').delete().eq('id', id);
     if(delErr) throw delErr;
-
-    if(img){
-      await _sb.storage.from('ads-images').remove([img]);
-    }
-
+    await _sb.storage.from('ads-images').remove([img]);
     toast('تم الحذف');
     loadMyAds();
-    loadAds();
   }catch(e){
     console.log(e);
     toast('فشل الحذف');
   }
 }
 
-// ====== Share ======
+/* ====== Share ====== */
 async function shareActive(){
   if(!activeAd) return;
   const text = `شوف الإعلان: ${activeAd.title} — السعر ${activeAd.price} Pi`;
@@ -617,12 +629,38 @@ async function shareActive(){
   }catch{}
 }
 
-// ====== Auto refresh messages ======
+/* ====== Auto refresh messages ====== */
 setInterval(() => {
   const isDetails = document.getElementById('page-details')?.classList.contains('active');
   if(isDetails) loadMsgs(false);
 }, 3500);
 
-// ====== init ======
-setWho();
-loadAds();
+/* =========================
+   Config loader (IMPORTANT)
+   ========================= */
+async function initConfig(){
+  try{
+    const r = await fetch("/api/config", { cache: "no-store" });
+    if(!r.ok) throw new Error("config_http_" + r.status);
+    const j = await r.json();
+
+    if(!j?.SB_URL || !j?.SB_ANON){
+      throw new Error("config_missing_keys");
+    }
+
+    SB_URL = j.SB_URL;
+    SB_KEY = j.SB_ANON;
+    _sb = supabase.createClient(SB_URL, SB_KEY);
+  }catch(e){
+    console.log(e);
+    toast("مشكلة في إعدادات Supabase (config). تأكد من /api/config و ENV.");
+    throw e;
+  }
+}
+
+/* ====== init ====== */
+(async ()=>{
+  await initConfig();   // <-- must be first
+  setWho();
+  loadAds();
+})();
