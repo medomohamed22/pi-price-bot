@@ -17,7 +17,7 @@
       --r:22px; --nav-h: 76px; --safe: env(safe-area-inset-bottom);
     }
 
-    *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+    *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; outline:none;}
     body{
       margin:0; color:var(--text); font-family: system-ui, -apple-system, sans-serif;
       background: radial-gradient(circle at top, #1e1b4b, var(--bg));
@@ -36,19 +36,15 @@
       border-radius: 12px; font-weight: bold; font-size: 13px; cursor: pointer;
     }
 
-    /* Navigation & Pages */
+    /* Pages */
     .page{ display:none; padding: 10px 14px calc(var(--nav-h) + 30px + var(--safe)); animation: fade .3s ease; }
     .page.active{ display:block; }
     @keyframes fade{ from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:translateY(0)} }
 
-    /* Ads Grid & Cards */
+    /* Ads Grid */
     .ads-grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .ad-card{ position:relative; overflow:hidden; transition: 0.2s; border: 1px solid var(--stroke); }
-    .ad-card.featured {
-      border: 2px solid var(--gold);
-      background: linear-gradient(145deg, rgba(245, 158, 11, 0.1), var(--card));
-      box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);
-    }
+    .ad-card.featured { border: 2px solid var(--gold); box-shadow: 0 0 15px rgba(245, 158, 11, 0.2); }
     .featured-badge {
       position: absolute; top: 8px; left: 8px; background: var(--gold);
       color: #000; padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 900; z-index: 10;
@@ -58,7 +54,7 @@
     .ad-title{ font-size: 13px; font-weight: 600; height: 34px; overflow: hidden; margin-bottom: 4px; }
     .ad-price{ color: var(--accent); font-weight: 900; font-size: 16px; }
 
-    /* Controls */
+    /* Nav Bar */
     .tab-bar{
       position: fixed; bottom:0; left:0; right:0; height: var(--nav-h);
       background: rgba(7,10,22,0.95); border-top: 1px solid var(--stroke);
@@ -84,7 +80,7 @@
     .toast{
       position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
       background: rgba(0,0,0,0.9); color: #fff; padding: 10px 20px;
-      border-radius: 20px; font-size: 14px; display: none; z-index: 9999; border: 1px solid var(--primary);
+      border-radius: 20px; font-size: 14px; display: none; z-index: 9999; border: 1px solid var(--primary); text-align: center;
     }
   </style>
 </head>
@@ -99,32 +95,30 @@
     </div>
     <div id="auth-ui">
       <button class="btn-login" id="login-btn" onclick="initPi()">تسجيل دخول</button>
-      <div id="user-info" style="display:none; text-align:left;">
+      <div id="user-info" style="display:none;">
         <span id="username-display" class="muted" style="font-size:12px; font-weight:bold;"></span>
       </div>
     </div>
   </header>
 
   <main>
-    <div id="page-home" class="page active">
-      <div id="ads-grid" class="ads-grid"></div>
-    </div>
+    <div id="page-home" class="page active"><div id="ads-grid" class="ads-grid"></div></div>
 
     <div id="page-add" class="page">
       <div class="glass" style="padding: 20px;">
-        <h3 style="margin-top:0">انشر إعلانك الجديد</h3>
+        <h3>انشر إعلانك</h3>
         <input type="file" id="p-img" accept="image/*" />
-        <input type="text" id="p-title" placeholder="عنوان الإعلان (مثال: ايفون 15 للبيع)" />
-        <input type="number" id="p-price" placeholder="السعر بعملة Pi" />
-        <textarea id="p-desc" placeholder="اكتب تفاصيل المنتج، الحالة، ومكان التواجد..."></textarea>
-        <button class="btn-main" onclick="uploadAd()">نشر الإعلان الآن</button>
+        <input type="text" id="p-title" placeholder="عنوان المنتج" />
+        <input type="number" id="p-price" placeholder="السعر بـ Pi" />
+        <textarea id="p-desc" placeholder="تفاصيل المنتج..."></textarea>
+        <button class="btn-main" id="upload-btn" onclick="uploadAd()">نشر الآن</button>
       </div>
     </div>
 
     <div id="page-profile" class="page">
       <div class="glass" style="padding:15px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center;">
           <h3 style="margin:0">إعلاناتي</h3>
-          <button class="btn-login btn-gold" onclick="requestWithdraw()" style="padding:5px 12px">سحب الرصيد</button>
+          <button class="btn-login btn-gold" onclick="requestWithdraw()">سحب Pi</button>
       </div>
       <div id="my-ads-grid" class="ads-grid"></div>
     </div>
@@ -140,51 +134,38 @@
     let _sb = null;
     let user = null;
 
-    // 1. جلب الإعدادات والبدء (Config & Boot)
+    // تشغيل التطبيق وجلب الإعدادات
     window.onload = async () => {
       try {
         const res = await fetch('/api/config');
         const config = await res.json();
         _sb = supabase.createClient(config.SB_URL, config.SB_ANON);
-        loadAds(); // تحميل الإعلانات فوراً
-      } catch (e) {
-        toast("خطأ في الاتصال بالسيرفر");
-      }
+        loadAds();
+      } catch (e) { toast("خطأ في الاتصال بالسيرفر"); }
     };
 
-    // 2. نظام تسجيل الدخول (Pi Auth)
     async function initPi(){
       try {
         const Pi = window.Pi;
         Pi.init({ version: "2.0" });
-        const auth = await Pi.authenticate(['username'], (payment) => {});
+        const auth = await Pi.authenticate(['username'], (p) => {});
         user = auth.user;
-        
         document.getElementById('login-btn').style.display = 'none';
         document.getElementById('user-info').style.display = 'block';
         document.getElementById('username-display').textContent = `@${user.username}`;
-        
-        toast("أهلاً بك، " + user.username);
-      } catch (e) {
-        alert("يرجى فتح الموقع من داخل متصفح Pi Browser");
-      }
+        toast("أهلاً بك " + user.username);
+      } catch (e) { alert("افتح التطبيق من Pi Browser"); }
     }
 
-    // 3. التنقل بين الصفحات
     function nav(id, btn){
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
       document.getElementById('page-' + id).classList.add('active');
       document.querySelectorAll('.tab-item').forEach(i => i.classList.remove('active'));
       if(btn) btn.classList.add('active');
-
       if(id === 'home') loadAds();
-      if(id === 'profile') {
-        if(!user) toast("يرجى تسجيل الدخول أولاً");
-        else loadMyAds();
-      }
+      if(id === 'profile') user ? loadMyAds() : toast("سجل دخول أولاً");
     }
 
-    // 4. تحميل وعرض الإعلانات
     async function loadAds(){
       if(!_sb) return;
       const { data } = await _sb.from('ads').select('*').order('created_at', {ascending: false});
@@ -199,82 +180,73 @@
     function renderGrid(data, containerId, isOwner){
       const container = document.getElementById(containerId);
       const now = new Date();
-      
-      // الترتيب: المميز أولاً (Featured First)
-      const sorted = data.sort((a, b) => {
-        const aF = a.featured_until && new Date(a.featured_until) > now;
-        const bF = b.featured_until && new Date(b.featured_until) > now;
-        return bF - aF;
-      });
+      const sorted = data.sort((a,b) => (b.featured_until && new Date(b.featured_until)>now) - (a.featured_until && new Date(a.featured_until)>now));
 
       container.innerHTML = sorted.map(ad => {
         const isFeatured = ad.featured_until && new Date(ad.featured_until) > now;
         return `
           <div class="glass ad-card ${isFeatured ? 'featured' : ''}">
-            ${isFeatured ? '<div class="featured-badge"><i class="fas fa-crown"></i> مميز</div>' : ''}
-            <img class="ad-thumb" src="${_sb.storageUrl}/object/public/ads-images/${ad.image_url}" onerror="this.src='https://via.placeholder.com/150?text=No+Image'">
+            ${isFeatured ? '<div class="featured-badge">مميز</div>' : ''}
+            <img class="ad-thumb" src="${_sb.storageUrl}/object/public/ads-images/${ad.image_url}" onerror="this.src='https://via.placeholder.com/150'">
             <div class="ad-info">
               <div class="ad-title">${ad.title}</div>
               <div class="ad-price">${ad.price} Pi</div>
-              ${isOwner ? `
-                <div style="margin-top:10px; display:flex; gap:5px;">
-                   <button class="btn-login" style="background:#ef4444; flex:1;" onclick="deleteAd('${ad.id}')"><i class="fas fa-trash"></i></button>
-                   <button class="btn-login btn-gold" style="flex:3; font-size:11px;" onclick="featureAd('${ad.id}')">تمييز (5 Pi)</button>
-                </div>
-              ` : ''}
+              ${isOwner ? `<button class="btn-login btn-gold" style="width:100%; margin-top:5px; font-size:10px" onclick="featureAd('${ad.id}')">تمييز بـ 5 Pi</button>` : ''}
             </div>
-          </div>
-        `;
+          </div>`;
       }).join('');
     }
 
-    // 5. نظام الدفع (Pi Payments) لتمييز الإعلان
-    async function featureAd(adId) {
-      if(!user) return toast("سجل دخولك أولاً");
+    // --- دالة الرفع الفعلية ---
+    async function uploadAd() {
+      if (!user) return toast("سجل دخول أولاً");
+      const fileInput = document.getElementById('p-img');
+      const title = document.getElementById('p-title').value;
+      const price = document.getElementById('p-price').value;
+      const desc = document.getElementById('p-desc').value;
+
+      if (!fileInput.files[0] || !title || !price) return toast("أكمل البيانات والصورة");
+
+      const btn = document.getElementById('upload-btn');
+      btn.disabled = true; btn.textContent = "جاري الرفع...";
+
       try {
-        const payment = await Pi.createPayment({
-          amount: 5.0,
-          memo: "تمييز إعلان لمدة 3 أيام على Elite Hub",
-          metadata: { adId: adId, type: "feature_ad" },
-        }, {
-          onReadyForServerApproval: (paymentId) => {
-            fetch('/api/pi/approve', {
-              method: 'POST',
-              headers: {'Content-Type': 'application/json'},
-              body: JSON.stringify({ paymentId, adId })
-            });
-          },
-          onReadyForServerCompletion: (paymentId, txid) => {
-            fetch('/api/pi/complete', {
-              method: 'POST',
-              headers: {'Content-Type': 'application/json'},
-              body: JSON.stringify({ paymentId, txid, adId })
-            }).then(() => {
-              toast("تم التمييز بنجاح! ⭐");
-              loadAds();
-            });
-          },
-          onCancel: () => toast("تم إلغاء العملية"),
-          onError: () => toast("حدث خطأ في الدفع")
-        });
-      } catch (e) { toast("فشل بدء عملية الدفع"); }
+        const file = fileInput.files[0];
+        const fileName = `${Date.now()}_${user.username}.${file.name.split('.').pop()}`;
+
+        // 1. رفع الصورة
+        const { error: upErr } = await _sb.storage.from('ads-images').upload(fileName, file);
+        if (upErr) throw upErr;
+
+        // 2. حفظ البيانات
+        const { error: insErr } = await _sb.from('ads').insert([{
+          title, price: parseFloat(price), description: desc,
+          image_url: fileName, seller_username: user.username
+        }]);
+        if (insErr) throw insErr;
+
+        toast("✅ تم النشر بنجاح");
+        nav('home');
+      } catch (e) { toast("خطأ: " + e.message); }
+      finally { btn.disabled = false; btn.textContent = "نشر الآن"; }
     }
 
-    // --- وظائف إضافية ---
+    async function featureAd(adId) {
+      if(!user) return toast("سجل دخول أولاً");
+      try {
+        await Pi.createPayment({
+          amount: 5.0, memo: "تمييز إعلان", metadata: { adId, type: "feature_ad" },
+        }, {
+          onReadyForServerApproval: (pId) => fetch('/api/pi/approve', {method:'POST', body: JSON.stringify({paymentId:pId, adId})}),
+          onReadyForServerCompletion: (pId, txid) => fetch('/api/pi/complete', {method:'POST', body: JSON.stringify({paymentId:pId, txid, adId})}).then(()=>loadAds()),
+        });
+      } catch(e) { toast("فشل الدفع"); }
+    }
+
     function toast(msg){
       const t = document.getElementById('toast');
       t.textContent = msg; t.style.display = 'block';
       setTimeout(() => t.style.display = 'none', 3000);
-    }
-
-    async function uploadAd() {
-        if(!user) return toast("سجل دخول أولاً للنشر");
-        toast("جاري رفع الإعلان...");
-        // منطق الرفع للسوبابيز يوضع هنا
-    }
-
-    function requestWithdraw() {
-        toast("سيتم مراجعة طلب السحب من قبل الإدارة");
     }
   </script>
 </body>
