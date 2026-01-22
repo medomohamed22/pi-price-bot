@@ -13,3 +13,8 @@ from = "/api/pi/complete"
 to = "/.netlify/functions/pi_complete"
 status = 200
 force = true
+[[redirects]]
+  from = "/.well-known/stellar.toml"
+  to = "/.well-known/stellar.toml"
+  status = 200
+  force = true
