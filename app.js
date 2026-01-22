@@ -1,36 +1,21 @@
 /* =========================
-   Pi Elite Hub - app.js (FULL)
-   - Loads PUBLIC Supabase config from /api/config (Netlify Function reads ENV)
-   - Pi Auth + Payments scope + Pending payments handler
-   - Ads: list/search/details/upload/delete
-   - Chat: private per ad + inbox
-   - Promote Ad: approve + complete + extend promoted_until
+   Elite Used Market - app.js
+   - Loads PUBLIC Supabase config from /api/config
+   - Pi login button top-left
    ========================= */
 
-/* ====== Global Supabase (filled after initConfig) ====== */
 let SB_URL = "";
 let SB_KEY = "";
 let _sb = null;
 
-/* ====== State ====== */
 let user = null;
 let activeAd = null;
 let activeConversationId = null;
 let allAdsCache = [];
 
-/* ====== Promote helpers ====== */
-function isPromoted(ad){
-  if(!ad?.promoted_until) return false;
-  return new Date(ad.promoted_until).getTime() > Date.now();
-}
-function promoteLabel(ad){
-  if(!isPromoted(ad)) return "";
-  const ms = new Date(ad.promoted_until).getTime() - Date.now();
-  const days = Math.ceil(ms / (24*60*60*1000));
-  return `⭐ مميز • باقي ${days} يوم`;
-}
-
-/* ====== UI helpers ====== */
+/* =========================
+   Helpers
+   ========================= */
 function toast(msg){
   const t = document.getElementById('toast');
   if(!t) return alert(msg);
@@ -38,31 +23,6 @@ function toast(msg){
   t.classList.add('show');
   clearTimeout(window.__toastTimer);
   window.__toastTimer = setTimeout(()=> t.classList.remove('show'), 2500);
-}
-
-function setWho(){
-  const who = document.getElementById('whoami');
-  const ud = document.getElementById('user-display');
-  if(user?.username){
-    if(who) who.innerHTML = `<i class="fa-solid fa-user"></i> @${user.username}`;
-    if(ud) ud.textContent = `@${user.username}`;
-  }else{
-    if(who) who.innerHTML = `<i class="fa-solid fa-user"></i> زائر`;
-    if(ud) ud.textContent = `زائر`;
-  }
-}
-
-function showSkeleton(on=true){
-  const sk = document.getElementById('home-skeleton');
-  if(!sk) return;
-  if(!on){ sk.innerHTML=''; sk.style.display='none'; return; }
-  sk.style.display='grid';
-  sk.innerHTML = Array.from({length:6}).map(()=> `
-    <div class="sk">
-      <div class="a"></div>
-      <div class="b"></div>
-    </div>
-  `).join('');
 }
 
 function escapeHtml(str=''){
@@ -74,36 +34,28 @@ function escapeHtml(str=''){
     .replaceAll("'","&#039;");
 }
 
-function focusChat(){
-  document.getElementById('chat-input')?.focus();
+/* =========================
+   Promote helpers (لو عندك promoted_until)
+   ========================= */
+function isPromoted(ad){
+  if(!ad?.promoted_until) return false;
+  return new Date(ad.promoted_until).getTime() > Date.now();
 }
-
-/* ====== Navigation ====== */
-function nav(id, btn){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  const page = document.getElementById('page-' + id);
-  if(page) page.classList.add('active');
-
-  if(btn){
-    document.querySelectorAll('.tab-item').forEach(i=>i.classList.remove('active'));
-    btn.classList.add('active');
-  }
-
-  if(id === 'home') loadAds();
-  if(id === 'profile') loadMyAds();
-  if(id === 'inbox') loadInbox();
+function promoteLabel(ad){
+  if(!isPromoted(ad)) return "";
+  const ms = new Date(ad.promoted_until).getTime() - Date.now();
+  const days = Math.ceil(ms / (24*60*60*1000));
+  return `⭐ مميز • باقي ${days} يوم`;
 }
 
 /* =========================
-   Pending payments handler (IMPORTANT)
-   - Called by Pi SDK when it finds incomplete/pending payments
+   Pending payments handler
    ========================= */
 async function onIncompletePaymentFound(payment){
   try{
     console.log("INCOMPLETE_PAYMENT_FOUND", payment);
 
     const memo = String(payment?.memo || "");
-    // بنكمّل بس مدفوعات الـ Promote
     if(!memo.startsWith("PROMOTE_AD|")) return;
 
     const paymentId = payment?.identifier || payment?.paymentId || payment?.id;
@@ -111,7 +63,6 @@ async function onIncompletePaymentFound(payment){
 
     toast("في عملية دفع معلّقة… بنحاول نكمّلها");
 
-    // 1) approve
     const r1 = await fetch("/api/pi/approve", {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
@@ -124,7 +75,6 @@ async function onIncompletePaymentFound(payment){
       return;
     }
 
-    // 2) complete
     const r2 = await fetch("/api/pi/complete", {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
@@ -147,28 +97,86 @@ async function onIncompletePaymentFound(payment){
   }
 }
 
-/* ====== Pi Auth ====== */
+/* =========================
+   UI: Update user display + login button
+   ========================= */
+function setWho(){
+  const who = document.getElementById('whoami');
+  const ud = document.getElementById('user-display');
+  const pill = document.getElementById('user-pill');
+
+  const loginText = document.getElementById('login-btn-text');
+  const loginBtn = document.getElementById('login-btn');
+
+  if(user?.username){
+    if(who) who.innerHTML = `<i class="fa-solid fa-user"></i> @${escapeHtml(user.username)}`;
+    if(ud) ud.textContent = `@${user.username}`;
+    if(pill) pill.innerHTML = `<i class="fa-solid fa-id-badge"></i> @${escapeHtml(user.username)}`;
+
+    if(loginText) loginText.textContent = `@${user.username}`;
+    if(loginBtn) loginBtn.title = "اضغط لتسجيل الخروج";
+  }else{
+    if(who) who.innerHTML = `<i class="fa-solid fa-user"></i> زائر`;
+    if(ud) ud.textContent = `زائر`;
+    if(pill) pill.innerHTML = `<i class="fa-solid fa-id-badge"></i> زائر`;
+
+    if(loginText) loginText.textContent = "تسجيل دخول";
+    if(loginBtn) loginBtn.title = "تسجيل دخول عبر Pi";
+  }
+}
+
+/* ✅ زر أعلى الشمال: دخول/خروج */
+async function handleLoginButton(){
+  if(user?.username){
+    const ok = confirm("تسجيل خروج؟");
+    if(ok) logout();
+    return;
+  }
+  await initPi();
+}
+
+/* =========================
+   Navigation
+   ========================= */
+function nav(id, btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  const page = document.getElementById('page-' + id);
+  if(page) page.classList.add('active');
+
+  if(btn){
+    document.querySelectorAll('.tab-item').forEach(i=>i.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  if(id === 'home') loadAds();
+  if(id === 'profile') loadMyAds();
+  if(id === 'inbox') loadInbox();
+}
+
+/* =========================
+   Pi Auth
+   ========================= */
 async function initPi(){
   try{
-    if(!window.Pi) return toast("افتح من Pi Browser");
+    if(!window.Pi) return toast("افتح من Pi Browser علشان تسجيل الدخول يشتغل");
 
     const Pi = window.Pi;
     Pi.init({ version: "2.0", sandbox: false });
 
-    // IMPORTANT: لازم payments scope وإلا createPayment هتفشل
+    // IMPORTANT: لازم payments scope عشان createPayment
     const auth = await Pi.authenticate(['username', 'payments'], onIncompletePaymentFound);
+
     user = auth.user;
-
     setWho();
-    document.getElementById('page-login')?.classList.remove('active');
-    const navbar = document.getElementById('navbar');
-    if(navbar) navbar.style.display = 'flex';
-    nav('home');
+    toast("تم تسجيل الدخول ✅");
 
-    toast('تم تسجيل الدخول ✅');
+    // حمّل بيانات حسابه بعد الدخول
+    loadMyAds();
+    loadInbox();
+
   }catch(e){
     console.log("PI_AUTH_ERR", e);
-    alert("لازم تفتح من Pi Browser علشان تسجيل الدخول يشتغل + وافق على صلاحية Payments.");
+    toast("فشل تسجيل الدخول أو لم يتم منح صلاحية Payments");
   }
 }
 
@@ -177,99 +185,35 @@ function logout(){
   activeAd = null;
   activeConversationId = null;
   setWho();
-  toast('تم تسجيل الخروج');
-  const navbar = document.getElementById('navbar');
-  if(navbar) navbar.style.display = 'none';
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.getElementById('page-login')?.classList.add('active');
+  toast("تم تسجيل الخروج");
 }
 
 /* =========================
-   Promote flow (5 Pi / 3 days)
+   Skeleton
    ========================= */
-async function promoteAd(adId){
-  try{
-    if(!user?.username) return toast("سجّل دخول الأول");
-    if(!window.Pi) return toast("افتح من Pi Browser");
-
-    const Pi = window.Pi;
-    toast("فتح الدفع...");
-
-    await Pi.createPayment({
-      amount: 5,
-      memo: `PROMOTE_AD|${adId}|${Date.now()}`,
-      metadata: { purpose: "PROMOTE_AD", adId, username: user.username }
-    },{
-      onReadyForServerApproval: async (paymentId) => {
-        try{
-          toast("جاري الموافقة...");
-          const r = await fetch("/api/pi/approve", {
-            method:"POST",
-            headers:{ "Content-Type":"application/json" },
-            body: JSON.stringify({ paymentId })
-          });
-
-          const j = await r.json().catch(()=> ({}));
-
-          if(!r.ok || !j.ok){
-            console.log("APPROVE_FAIL", r.status, j);
-            toast(`فشل الموافقة: ${j.message || j.error_message || j.message_code || r.status}`);
-            return;
-          }
-
-          toast("تمت الموافقة ✅");
-        }catch(err){
-          console.log("APPROVE_EXCEPTION", err);
-          toast("فشل الموافقة");
-        }
-      },
-
-      onReadyForServerCompletion: async (paymentId, txid) => {
-        try{
-          toast("جاري تفعيل الإعلان المميز...");
-
-          const r = await fetch("/api/pi/complete", {
-            method:"POST",
-            headers:{ "Content-Type":"application/json" },
-            body: JSON.stringify({ paymentId, txid })
-          });
-
-          const j = await r.json().catch(()=> ({}));
-
-          if(!r.ok || !j.ok){
-            console.log("COMPLETE_FAIL", r.status, j);
-            toast(`فشل الترقية: ${j.message || j.error_message || j.message_code || r.status}`);
-            return;
-          }
-
-          toast("تم تمييز إعلانك 3 أيام ⭐");
-          loadAds();
-          loadMyAds();
-        }catch(err){
-          console.log("COMPLETE_EXCEPTION", err);
-          toast("فشل الترقية");
-        }
-      },
-
-      onCancel: () => toast("تم إلغاء الدفع"),
-      onError: (err) => {
-        console.log("PI_PAYMENT_ERROR", err);
-        toast(err?.message ? `مشكلة في الدفع: ${err.message}` : "مشكلة في الدفع");
-      }
-    });
-
-  }catch(e){
-    console.log("PROMOTE_OUTER_CATCH", e);
-    toast(`فشل الترقية: ${e?.message || "unknown"}`);
-  }
+function showSkeleton(on=true){
+  const sk = document.getElementById('home-skeleton');
+  if(!sk) return;
+  if(!on){ sk.innerHTML=''; sk.style.display='none'; return; }
+  sk.style.display='grid';
+  sk.innerHTML = Array.from({length:6}).map(()=> `
+    <div class="sk">
+      <div class="a"></div>
+      <div class="b"></div>
+    </div>
+  `).join('');
 }
 
-/* ====== Ads ====== */
+/* =========================
+   Ads
+   ========================= */
 async function loadAds(){
   if(!_sb) return;
   showSkeleton(true);
+
   const grid = document.getElementById('ads-grid');
   if(grid) grid.innerHTML = '';
+
   try{
     const { data, error } = await _sb
       .from('ads')
@@ -280,9 +224,10 @@ async function loadAds(){
     if(error) throw error;
     allAdsCache = data || [];
     applyFilter();
+
   }catch(e){
     console.log("LOAD_ADS_ERR", e);
-    toast('خطأ في تحميل الإعلانات');
+    toast("خطأ في تحميل الإعلانات");
   }finally{
     showSkeleton(false);
   }
@@ -298,10 +243,12 @@ function applyFilter(){
 
 async function loadMyAds(){
   if(!_sb) return;
+
+  const myGrid = document.getElementById('my-ads-grid');
+  const empty = document.getElementById('my-empty');
+
   if(!user?.username){
-    const myGrid = document.getElementById('my-ads-grid');
     if(myGrid) myGrid.innerHTML = '';
-    const empty = document.getElementById('my-empty');
     if(empty) empty.style.display = 'block';
     return;
   }
@@ -310,23 +257,22 @@ async function loadMyAds(){
     .from('ads')
     .select('*')
     .eq('seller_username', user.username)
-    .order('created_at', {ascending:false});
+    .order('created_at', { ascending:false });
 
   if(error){
     console.log("LOAD_MY_ADS_ERR", error);
-    toast('خطأ في تحميل إعلاناتك');
+    toast("خطأ في تحميل إعلاناتك");
     return;
   }
 
-  const empty = document.getElementById('my-empty');
   if(empty) empty.style.display = (data?.length ? 'none' : 'block');
-
   renderGrid(data || [], 'my-ads-grid', true);
 }
 
 function renderGrid(data, containerId, isOwner){
   const el = document.getElementById(containerId);
   if(!el) return;
+
   if(!data || !data.length){
     el.innerHTML = '';
     return;
@@ -340,7 +286,7 @@ function renderGrid(data, containerId, isOwner){
 
     return `
       <div class="glass ad-card" onclick="openAd('${ad.id}')">
-        <img class="ad-thumb" src="${SB_URL}/storage/v1/object/public/ads-images/${encodeURIComponent(ad.image_url || '')}" alt="ad" onerror="this.style.display='none'">
+        <img class="ad-thumb" src="${SB_URL}/storage/v1/object/public/ads-images/${encodeURIComponent(ad.image_url)}" alt="ad">
         <div class="ad-body">
           <div class="ad-title">${escapeHtml(ad.title)}</div>
           <div class="ad-meta">
@@ -351,12 +297,8 @@ function renderGrid(data, containerId, isOwner){
           ${labelHtml}
 
           ${isOwner ? `
-            <button type="button" class="btn-delete" onclick="event.stopPropagation(); deleteAd('${ad.id}', '${ad.image_url || ''}')">
+            <button class="btn-delete" onclick="event.stopPropagation(); deleteAd('${ad.id}', '${ad.image_url}')">
               <i class="fa-solid fa-trash"></i> حذف الإعلان
-            </button>
-
-            <button type="button" class="btn-main" style="margin-top:10px;" onclick="event.stopPropagation(); promoteAd('${ad.id}')">
-              ⭐ اجعل إعلانك مميز (5 Pi / 3 أيام)
             </button>
           ` : ''}
         </div>
@@ -384,7 +326,7 @@ async function openAd(id){
 
     document.getElementById('details-view').innerHTML = `
       <div class="glass details-card">
-        <img class="details-img" src="${SB_URL}/storage/v1/object/public/ads-images/${encodeURIComponent(ad.image_url || '')}" alt="ad" onerror="this.style.display='none'">
+        <img class="details-img" src="${SB_URL}/storage/v1/object/public/ads-images/${encodeURIComponent(ad.image_url)}" alt="ad">
         <div class="details-body">
           <div class="details-row">
             <div>
@@ -399,22 +341,17 @@ async function openAd(id){
           <p>${escapeHtml(ad.description || '')}</p>
 
           <div class="cta-row">
-            <button type="button" class="btn-main" onclick="focusChat()"><i class="fa-solid fa-message"></i> راسل البائع</button>
-            <button type="button" class="btn-accent" ${waLink ? `onclick="window.open('${waLink}','_blank')"` : 'disabled style="opacity:.5; cursor:not-allowed"'} >
+            <button class="btn-main" onclick="focusChat()"><i class="fa-solid fa-message"></i> راسل البائع</button>
+            <button class="btn-accent" ${waLink ? `onclick="window.open('${waLink}','_blank')"` : 'disabled style="opacity:.5; cursor:not-allowed"'} >
               <i class="fa-brands fa-whatsapp"></i> واتساب
             </button>
           </div>
 
-          ${(user?.username && user.username === ad.seller_username) ? `
-            <button type="button" class="btn-main" style="margin-top:10px;" onclick="promoteAd('${ad.id}')">
-              ⭐ اجعل إعلانك مميز (5 Pi / 3 أيام)
-            </button>
-          ` : ''}
-
-          ${(!user?.username && ad.seller_username) ? `
+          ${(!user?.username) ? `
             <div class="muted" style="margin-top:10px; font-size:12px; line-height:1.6;">
               * أنت بتتصفح كزائر. علشان تبعت رسائل لازم تعمل دخول من Pi.
             </div>` : ''}
+
         </div>
       </div>
     `;
@@ -426,11 +363,95 @@ async function openAd(id){
     await loadMsgs(true);
   }catch(e){
     console.log("OPEN_AD_ERR", e);
-    toast('تعذر فتح الإعلان');
+    toast("تعذر فتح الإعلان");
   }
 }
 
-/* ====== Conversation logic ====== */
+function focusChat(){
+  document.getElementById('chat-input')?.focus();
+}
+
+/* =========================
+   Upload/Delete (✅ ده كان غالبًا سبب زر النشر مش بيعمل حاجة)
+   - لازم تبقى الدوال موجودة فعلاً في app.js
+   ========================= */
+async function uploadAd(){
+  try{
+    if(!_sb) return;
+    if(!user?.username) return toast("سجّل دخول الأول");
+
+    const f = document.getElementById('p-img')?.files?.[0];
+    if(!f) return toast("اختر صورة");
+
+    const title = document.getElementById('p-title')?.value?.trim() || "";
+    const description = document.getElementById('p-desc')?.value?.trim() || "";
+    const price = document.getElementById('p-price')?.value?.trim() || "";
+    const phone = document.getElementById('p-phone')?.value?.trim() || "";
+
+    if(!title || !price) return toast("اكتب الاسم والسعر");
+
+    const ext = (f.name.split('.').pop() || 'jpg').toLowerCase();
+    const path = `img_${Date.now()}_${Math.random().toString(16).slice(2)}.${ext}`;
+
+    toast("جاري رفع الصورة...");
+
+    const up = await _sb.storage.from('ads-images').upload(path, f, { cacheControl:'3600', upsert:false });
+    if(up.error) throw up.error;
+
+    const ins = await _sb.from('ads').insert([{
+      title, description, price, phone,
+      image_url: path,
+      seller_username: user.username
+    }]);
+    if(ins.error) throw ins.error;
+
+    toast("تم النشر ✅");
+
+    document.getElementById('p-img').value = '';
+    document.getElementById('p-title').value = '';
+    document.getElementById('p-desc').value = '';
+    document.getElementById('p-price').value = '';
+    document.getElementById('p-phone').value = '';
+
+    nav('home');
+    loadAds();
+    loadMyAds();
+
+  }catch(e){
+    console.log("UPLOAD_ERR", e);
+    toast("فشل النشر (افتح Console وشوف UPLOAD_ERR)");
+  }
+}
+
+async function deleteAd(id, img){
+  if(!user?.username) return toast("سجّل دخول الأول");
+  if(!confirm("حذف الإعلان؟")) return;
+
+  try{
+    if(!_sb) return;
+
+    const del = await _sb.from('ads').delete().eq('id', id);
+    if(del.error) throw del.error;
+
+    // حذف الصورة من Storage
+    if(img){
+      const rm = await _sb.storage.from('ads-images').remove([img]);
+      if(rm.error) console.log("STORAGE_REMOVE_WARN", rm.error);
+    }
+
+    toast("تم الحذف ✅");
+    loadAds();
+    loadMyAds();
+
+  }catch(e){
+    console.log("DELETE_ERR", e);
+    toast("فشل الحذف (افتح Console وشوف DELETE_ERR)");
+  }
+}
+
+/* =========================
+   Conversation & Messages
+   ========================= */
 function buildConversationId(ad){
   if(!ad) return null;
   if(!user?.username) return null;
@@ -438,19 +459,11 @@ function buildConversationId(ad){
   const buyer = (user.username === seller) ? '__seller_view__' : user.username;
   return `${ad.id}|${seller}|${buyer}`;
 }
+
 function isSellerViewingOwnAd(){
   return !!(user?.username && activeAd?.seller_username && user.username === activeAd.seller_username);
 }
-function extractBuyerFromConversation(convId){
-  try{
-    const parts = String(convId).split('|');
-    return parts[2] || null;
-  }catch{
-    return null;
-  }
-}
 
-/* ====== Messages ====== */
 async function loadMsgs(scrollToBottom=false){
   const box = document.getElementById('chat-box');
   if(!box) return;
@@ -473,7 +486,7 @@ async function loadMsgs(scrollToBottom=false){
       .from('messages')
       .select('*')
       .eq('conversation_id', activeConversationId)
-      .order('created_at', {ascending:true});
+      .order('created_at', { ascending:true });
 
     if(error) throw error;
 
@@ -485,15 +498,11 @@ async function loadMsgs(scrollToBottom=false){
       </div>
     `).join('') || `<div class="muted" style="padding:12px; text-align:center;">ابدأ المحادثة ✨</div>`;
 
-    if(scrollToBottom){
-      box.scrollTop = box.scrollHeight;
-    }else{
-      const nearBottom = (box.scrollHeight - box.scrollTop - box.clientHeight) < 120;
-      if(nearBottom) box.scrollTop = box.scrollHeight;
-    }
+    if(scrollToBottom) box.scrollTop = box.scrollHeight;
+
   }catch(e){
     console.log("LOAD_MSGS_ERR", e);
-    toast('خطأ في تحميل الرسائل');
+    toast("خطأ في تحميل الرسائل");
   }
 }
 
@@ -503,11 +512,11 @@ async function sendMsg(){
     const text = (inp?.value || '').trim();
     if(!text) return;
 
-    if(!user?.username) return toast('سجّل دخول الأول');
+    if(!user?.username) return toast("سجّل دخول الأول");
     if(!activeAd) return;
 
     if(isSellerViewingOwnAd() && activeConversationId?.includes('__seller_view__')){
-      toast('افتح محادثة المشتري من الرسائل');
+      toast("افتح محادثة المشتري من الرسائل");
       return;
     }
 
@@ -525,24 +534,36 @@ async function sendMsg(){
       text
     };
 
-    const { error } = await _sb.from('messages').insert([payload]);
-    if(error) throw error;
+    const ins = await _sb.from('messages').insert([payload]);
+    if(ins.error) throw ins.error;
 
     inp.value = '';
     await loadMsgs(true);
+
   }catch(e){
-    console.log("SEND_MSG_ERR", e);
-    toast('خطأ في الإرسال');
+    console.log("SEND_ERR", e);
+    toast("خطأ في الإرسال");
   }
 }
 
-/* ====== Inbox ====== */
+function extractBuyerFromConversation(convId){
+  try{
+    const parts = String(convId).split('|');
+    return parts[2] || null;
+  }catch{
+    return null;
+  }
+}
+
+/* Inbox */
 async function loadInbox(){
   if(!_sb) return;
+
+  const list = document.getElementById('inbox-list');
+  const empty = document.getElementById('inbox-empty');
+
   if(!user?.username){
-    const list = document.getElementById('inbox-list');
     if(list) list.innerHTML = '';
-    const empty = document.getElementById('inbox-empty');
     if(empty) empty.style.display = 'block';
     return;
   }
@@ -552,13 +573,14 @@ async function loadInbox(){
       .from('messages')
       .select('conversation_id, ad_id, text, created_at, seller_username, buyer_username, sender_username, receiver_username')
       .or(`seller_username.eq.${user.username},buyer_username.eq.${user.username}`)
-      .order('created_at', {ascending:false});
+      .order('created_at', { ascending:false });
 
     if(error) throw error;
 
     const rows = data || [];
     const seen = new Set();
     const convs = [];
+
     for(const m of rows){
       if(!m.conversation_id) continue;
       if(seen.has(m.conversation_id)) continue;
@@ -566,28 +588,20 @@ async function loadInbox(){
       convs.push(m);
     }
 
-    const empty = document.getElementById('inbox-empty');
     if(empty) empty.style.display = convs.length ? 'none' : 'block';
+    if(!list) return;
 
     const adIds = [...new Set(convs.map(c=>c.ad_id).filter(Boolean))];
     let adsMap = {};
     if(adIds.length){
-      const { data: ads, error: adErr } = await _sb
-        .from('ads')
-        .select('id,title,image_url,seller_username')
-        .in('id', adIds);
-
-      if(!adErr && ads){
-        adsMap = Object.fromEntries(ads.map(a=>[a.id, a]));
-      }
+      const { data: ads } = await _sb.from('ads').select('id,title,image_url,seller_username').in('id', adIds);
+      if(ads) adsMap = Object.fromEntries(ads.map(a=>[a.id, a]));
     }
-
-    const list = document.getElementById('inbox-list');
-    if(!list) return;
 
     list.innerHTML = convs.map(c=>{
       const ad = adsMap[c.ad_id] || {};
       const partner = (user.username === c.seller_username) ? c.buyer_username : c.seller_username;
+
       return `
         <div class="glass inbox-card" onclick="openConversationFromInbox('${escapeHtml(c.conversation_id)}','${c.ad_id}')">
           <img class="inbox-thumb" src="${SB_URL}/storage/v1/object/public/ads-images/${encodeURIComponent(ad.image_url || '')}" onerror="this.style.display='none'">
@@ -602,23 +616,25 @@ async function loadInbox(){
         </div>
       `;
     }).join('');
+
   }catch(e){
-    console.log("LOAD_INBOX_ERR", e);
-    toast('تعذر تحميل الرسائل');
+    console.log("INBOX_ERR", e);
+    toast("تعذر تحميل الرسائل");
   }
 }
 
 async function openConversationFromInbox(conversationId, adId){
   if(!_sb) return;
+
   const { data: ad, error } = await _sb.from('ads').select('*').eq('id', adId).single();
-  if(error){ toast('تعذر فتح المحادثة'); return; }
+  if(error){ toast("تعذر فتح المحادثة"); return; }
 
   activeAd = ad;
   activeConversationId = conversationId;
 
   document.getElementById('details-view').innerHTML = `
     <div class="glass details-card">
-      <img class="details-img" src="${SB_URL}/storage/v1/object/public/ads-images/${encodeURIComponent(ad.image_url || '')}" alt="ad" onerror="this.style.display='none'">
+      <img class="details-img" src="${SB_URL}/storage/v1/object/public/ads-images/${encodeURIComponent(ad.image_url)}" alt="ad">
       <div class="details-body">
         <div class="details-row">
           <div>
@@ -641,101 +657,7 @@ async function openConversationFromInbox(conversationId, adId){
   await loadMsgs(true);
 }
 
-/* ====== Upload / Delete ====== */
-async function uploadAd(){
-  try{
-    console.log("UPLOAD_CLICKED");
-    if(!_sb) return toast("Supabase مش جاهز");
-    if(!user?.username) return toast("سجّل دخول الأول");
-
-    const f = document.getElementById('p-img')?.files?.[0];
-    if(!f) return toast('اختر صورة');
-
-    const title = document.getElementById('p-title')?.value?.trim() || "";
-    const description = document.getElementById('p-desc')?.value?.trim() || "";
-    const price = document.getElementById('p-price')?.value?.trim() || "";
-    const phone = document.getElementById('p-phone')?.value?.trim() || "";
-
-    if(!title || !price) return toast('اكتب الاسم والسعر');
-
-    const ext = (f.name.split('.').pop() || 'jpg').toLowerCase();
-    const path = `img_${Date.now()}_${Math.random().toString(16).slice(2)}.${ext}`;
-
-    toast('جاري رفع الصورة...');
-    const up = await _sb.storage.from('ads-images').upload(path, f, {
-      cacheControl: '3600',
-      upsert: false
-    });
-
-    if(up?.error){
-      console.log("UPLOAD_STORAGE_FAIL", up.error);
-      return toast("فشل رفع الصورة");
-    }
-
-    toast('جاري نشر الإعلان...');
-    const ins = await _sb.from('ads').insert([{
-      title,
-      description,
-      price,
-      phone,
-      image_url: path,
-      seller_username: user.username
-    }]);
-
-    if(ins?.error){
-      console.log("INSERT_AD_FAIL", ins.error);
-      try{ await _sb.storage.from('ads-images').remove([path]); }catch(_){}
-      return toast("فشل نشر الإعلان (قاعدة البيانات)");
-    }
-
-    toast('تم النشر ✅');
-
-    document.getElementById('p-img').value = '';
-    document.getElementById('p-title').value = '';
-    document.getElementById('p-desc').value = '';
-    document.getElementById('p-price').value = '';
-    document.getElementById('p-phone').value = '';
-
-    nav('home');
-
-  }catch(e){
-    console.log("UPLOAD_ERR", e);
-    toast('فشل النشر');
-  }
-}
-
-async function deleteAd(id, img){
-  try{
-    console.log("DELETE_CLICKED", id);
-    if(!_sb) return toast("Supabase مش جاهز");
-    if(!user?.username) return toast("سجّل دخول الأول");
-
-    if(!confirm('حذف الإعلان؟')) return;
-
-    const del = await _sb.from('ads').delete().eq('id', id);
-    if(del?.error){
-      console.log("DELETE_ROW_FAIL", del.error);
-      return toast("فشل حذف الإعلان (DB)");
-    }
-
-    if(img){
-      const rm = await _sb.storage.from('ads-images').remove([img]);
-      if(rm?.error){
-        console.log("DELETE_IMAGE_FAIL", rm.error);
-      }
-    }
-
-    toast('تم الحذف ✅');
-    loadMyAds();
-    loadAds();
-
-  }catch(e){
-    console.log("DELETE_ERR", e);
-    toast('فشل الحذف');
-  }
-}
-
-/* ====== Share ====== */
+/* Share */
 async function shareActive(){
   if(!activeAd) return;
   const text = `شوف الإعلان: ${activeAd.title} — السعر ${activeAd.price} Pi`;
@@ -744,12 +666,12 @@ async function shareActive(){
       await navigator.share({ text });
     }else{
       await navigator.clipboard.writeText(text);
-      toast('تم النسخ ✅');
+      toast("تم النسخ ✅");
     }
   }catch{}
 }
 
-/* ====== Auto refresh messages ====== */
+/* Auto refresh messages */
 setInterval(() => {
   const isDetails = document.getElementById('page-details')?.classList.contains('active');
   if(isDetails) loadMsgs(false);
@@ -757,39 +679,34 @@ setInterval(() => {
 
 /* =========================
    Config loader
-   - Reads config from /api/config (server reads ENV)
    ========================= */
 async function initConfig(){
-  try{
-    if(!window.supabase?.createClient){
-      throw new Error("supabase_js_not_loaded");
-    }
+  if(!window.supabase?.createClient) throw new Error("supabase_js_not_loaded");
 
-    const r = await fetch("/api/config", { cache: "no-store" });
-    if(!r.ok) throw new Error("config_http_" + r.status);
+  const r = await fetch("/api/config", { cache: "no-store" });
+  const j = await r.json().catch(()=> ({}));
 
-    const j = await r.json().catch(()=> ({}));
-    const url = j.SB_URL || j.SUPABASE_URL || j.url;
-    const anon = j.SB_ANON || j.SUPABASE_ANON_KEY || j.anon || j.key;
+  const url  = j.SB_URL  || j.SUPABASE_URL || j.url;
+  const anon = j.SB_ANON || j.SUPABASE_ANON_KEY || j.anon || j.key;
 
-    if(!url || !anon){
-      throw new Error("config_missing_keys");
-    }
-
-    SB_URL = String(url);
-    SB_KEY = String(anon);
-    _sb = window.supabase.createClient(SB_URL, SB_KEY);
-
-  }catch(e){
-    console.log("INIT_CONFIG_ERR", e);
-    toast("مشكلة في إعدادات Supabase. تأكد من Function /api/config و ENV.");
-    throw e;
+  if(!r.ok || !url || !anon){
+    console.log("CONFIG_FAIL", r.status, j);
+    throw new Error("config_missing_keys");
   }
+
+  SB_URL = String(url);
+  SB_KEY = String(anon);
+  _sb = window.supabase.createClient(SB_URL, SB_KEY);
 }
 
 /* ====== init ====== */
 (async ()=>{
-  await initConfig();
-  setWho();
-  loadAds();
+  try{
+    await initConfig();
+    setWho();
+    loadAds();
+  }catch(e){
+    console.log("INIT_ERR", e);
+    toast("مشكلة في إعدادات Supabase (/api/config)");
+  }
 })();
