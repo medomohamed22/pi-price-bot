@@ -10,115 +10,62 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
   <style>
-    /* --- تم لصق التصميم الذي أرسلته هنا مع بعض التعديلات للغة العربية --- */
     :root{
       --bg:#070A16; --bg2:#0b1226;
       --card:rgba(255,255,255,.07); --stroke:rgba(255,255,255,.12);
       --primary:#7c3aed; --primary2:#a855f7; --accent:#00f2fe; --gold: #f59e0b;
       --text:#ffffff; --muted:#a7b0c3;
-      --danger:#ef4444; --success:#22c55e;
-      --r:22px; --shadow: 0 18px 60px rgba(0,0,0,.45);
-      --nav-h: 76px; --safe: env(safe-area-inset-bottom);
+      --r:22px; --nav-h: 76px; --safe: env(safe-area-inset-bottom);
     }
 
     *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; outline:none;}
-    html,body{height:100%;}
     body{
-      margin:0; color:var(--text); font-family: system-ui, -apple-system, "Segoe UI", Tahoma, Arial;
-      background:
-        radial-gradient(900px 500px at 80% -10%, rgba(124,58,237,.35), transparent 60%),
-        radial-gradient(900px 500px at 10% 0%, rgba(0,242,254,.25), transparent 55%),
-        linear-gradient(180deg, var(--bg), var(--bg2));
-      overflow-x:hidden;
+      margin:0; color:var(--text); font-family: system-ui, -apple-system, sans-serif;
+      background: radial-gradient(900px 500px at 80% -10%, rgba(124,58,237,.35), transparent 60%),
+                  linear-gradient(180deg, var(--bg), var(--bg2));
+      min-height: 100vh; overflow-x:hidden;
     }
 
-    /* Glass Effect */
-    .glass{
-      background: var(--card); border: 1px solid var(--stroke);
-      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-      border-radius: var(--r); box-shadow: var(--shadow);
-    }
+    .glass{ background: var(--card); border: 1px solid var(--stroke); backdrop-filter: blur(16px); border-radius: var(--r); }
 
-    /* Pages Animation */
-    .page{ display:none; padding: 16px 14px calc(var(--nav-h) + 22px + var(--safe)); min-height:100vh; animation: fade .3s ease; }
-    .page.active{display:block;}
-    @keyframes fade{from{opacity:0; transform:translateY(10px)}to{opacity:1; transform:translateY(0)}}
+    .page{ display:none; padding: 16px 14px calc(var(--nav-h) + 20px + var(--safe)); min-height:100vh; animation: fade .3s ease; }
+    .page.active{ display:block; }
+    @keyframes fade{ from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:translateY(0)} }
 
-    /* Headers */
-    .topbar, .appbar{
-      position: sticky; top:0; z-index: 50; margin: 0 -14px 14px; padding: 14px 20px;
-      display:flex; align-items:center; justify-content:space-between;
-      background: rgba(7, 10, 22, 0.85); backdrop-filter: blur(15px); border-bottom: 1px solid var(--stroke);
-    }
-    .brand-title{ font-weight: 900; font-size: 18px; letter-spacing: -0.5px; }
-    .brand-title i { color: var(--accent); margin-left: 5px; }
+    .topbar{ position: sticky; top:0; z-index: 50; padding: 14px 20px; background: rgba(7, 10, 22, 0.8); backdrop-filter: blur(15px); display:flex; align-items:center; justify-content:space-between; border-bottom: 1px solid var(--stroke); }
+    .brand-title{ font-weight: 900; font-size: 18px; color: var(--text); }
+    .brand-title i{ color: var(--accent); margin-left: 5px; }
 
-    /* Login Pill */
-    .login-btn{
-      display:inline-flex; align-items:center; gap:8px; padding: 8px 16px;
-      border-radius: 999px; border: 1px solid rgba(255,255,255,.16);
-      background: rgba(255,255,255,.06); color: white; font-weight: 700; font-size: 13px; cursor:pointer;
-    }
+    .login-btn{ display:inline-flex; align-items:center; gap:8px; padding: 8px 16px; border-radius: 999px; border: 1px solid var(--stroke); background: rgba(255,255,255,.06); color: white; font-weight: 700; cursor:pointer; }
 
-    /* Grid & Cards */
-    .ads-grid{ display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-    .ad-card{
-      overflow:hidden; cursor:pointer; position: relative;
-      transition: transform .18s ease; display:flex; flex-direction:column;
-    }
-    .ad-card:active{transform: scale(.97);}
-    
-    /* Promoted Style */
+    .ads-grid{ display:grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .ad-card{ overflow:hidden; position: relative; transition: 0.2s; display:flex; flex-direction:column; }
     .ad-card.promoted { border: 1px solid var(--gold); box-shadow: 0 0 15px rgba(245, 158, 11, 0.2); }
     .badge-gold { position: absolute; top:8px; right:8px; background:var(--gold); color:#000; font-size:10px; padding:4px 8px; border-radius:8px; font-weight:800; z-index:2; }
 
-    .ad-thumb{ width:100%; aspect-ratio: 4 / 3; object-fit: cover; background: rgba(255,255,255,.05); }
-    .ad-body{ padding: 12px; display:flex; flex-direction:column; gap:6px; flex:1; }
-    .ad-title{ font-size: 13px; font-weight: 700; line-height:1.4; height: 36px; overflow:hidden; opacity: 0.9; }
-    .ad-meta{ display:flex; align-items:center; justify-content:space-between; margin-top: auto; }
-    .price{ font-weight: 900; font-size: 15px; color: var(--accent); }
+    .ad-thumb{ width:100%; aspect-ratio: 4/3; object-fit: cover; }
+    .ad-body{ padding: 12px; flex:1; display:flex; flex-direction:column; gap:5px; }
+    .price{ font-weight: 900; font-size: 16px; color: var(--accent); }
+    .ad-title{ font-size: 13px; opacity: 0.9; height: 38px; overflow:hidden; }
 
-    /* Buttons */
-    .btn-main{
-      width:100%; padding: 14px; border:none; border-radius: 16px; color: white;
-      font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--primary2));
-      box-shadow: 0 8px 20px rgba(124,58,237,.3); cursor:pointer; font-size: 14px;
-    }
-    .btn-gold { width:100%; padding: 8px; border-radius: 12px; background: var(--gold); border:none; color:black; font-weight:bold; font-size:12px; margin-top:8px; cursor:pointer; }
-    .btn-outline { width:100%; padding: 8px; border-radius: 12px; background: rgba(255,255,255,0.05); border:1px solid var(--stroke); color:white; font-size:12px; margin-top:8px; cursor:pointer; }
+    .btn-main{ width:100%; padding: 14px; border:none; border-radius: 16px; color: white; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--primary2)); cursor:pointer; }
+    .btn-outline{ width:100%; padding: 8px; border-radius: 12px; background: rgba(255,255,255,0.05); border:1px solid var(--stroke); color:white; font-size:12px; cursor:pointer; margin-top:5px; }
+    .btn-gold { width:100%; padding: 8px; border-radius: 12px; background: var(--gold); border:none; color:black; font-weight:bold; font-size:12px; cursor:pointer; margin-top:5px; }
 
-    /* Forms */
-    input, textarea{
-      width: 100%; color: var(--text); background: rgba(255,255,255,.04);
-      border: 1px solid var(--stroke); border-radius: 16px; padding: 14px;
-      font-size: 14px; margin-bottom: 12px; transition: 0.2s;
-    }
-    input:focus, textarea:focus{ border-color: var(--accent); background: rgba(0,242,254,.05); }
+    .chat-container{ height: calc(100vh - 200px); overflow-y:auto; padding: 15px; display:flex; flex-direction:column; gap: 10px; }
+    .bubble{ max-width: 80%; padding: 10px 14px; border-radius: 18px; font-size: 14px; line-height: 1.4; }
+    .bubble.me{ align-self: flex-end; background: var(--primary); color: white; border-bottom-left-radius: 4px; }
+    .bubble.them{ align-self: flex-start; background: rgba(255,255,255,.1); color: white; border-bottom-right-radius: 4px; }
 
-    /* Chat Bubbles */
-    .chat-container{ height: calc(100vh - 180px); overflow-y:auto; padding: 10px; display:flex; flex-direction:column; gap: 8px; }
-    .bubble{ max-width: 80%; padding: 10px 14px; border-radius: 18px; font-size: 13px; line-height: 1.5; position: relative; }
-    .bubble.me{ align-self: flex-end; background: linear-gradient(135deg, var(--primary), var(--primary2)); color: white; border-bottom-left-radius: 4px; }
-    .bubble.them{ align-self: flex-start; background: rgba(255,255,255,.1); border-bottom-right-radius: 4px; }
-    .chat-input-area { position: fixed; bottom: var(--nav-h); left:0; right:0; padding:10px; background: rgba(7,10,22,0.95); border-top: 1px solid var(--stroke); display:flex; gap:10px; }
+    .chat-input-area{ position: fixed; bottom: var(--nav-h); left:0; right:0; padding:12px; background: var(--bg); border-top: 1px solid var(--stroke); display:flex; gap:10px; }
+    .chat-input-area input{ flex:1; background: rgba(255,255,255,0.05); border: 1px solid var(--stroke); padding: 12px; border-radius: 99px; color: white; }
 
-    /* Bottom Nav */
-    .tab-bar{
-      position: fixed; bottom:0; left:0; right:0; height: var(--nav-h); padding-bottom: var(--safe);
-      background: rgba(7,10,22,.9); border-top: 1px solid var(--stroke);
-      display:flex; align-items:center; justify-content:space-around; z-index: 2000;
-      backdrop-filter: blur(20px);
-    }
-    .tab-item{ border:none; background:none; color: var(--muted); display:flex; flex-direction:column; align-items:center; gap: 5px; font-size: 10px; padding: 10px 0; cursor:pointer; flex:1; transition: 0.3s; }
-    .tab-item i{ font-size: 20px; margin-bottom: 2px; }
-    .tab-item.active{ color: var(--accent); text-shadow: 0 0 15px rgba(0,242,254,.4); transform: translateY(-3px); }
+    .tab-bar{ position: fixed; bottom:0; left:0; right:0; height: var(--nav-h); background: rgba(7,10,22,.95); border-top: 1px solid var(--stroke); display:flex; align-items:center; z-index: 1000; padding-bottom: var(--safe); }
+    .tab-item{ flex:1; border:none; background:none; color: var(--muted); display:flex; flex-direction:column; align-items:center; gap:4px; font-size: 11px; cursor:pointer; }
+    .tab-item.active{ color: var(--accent); }
+    .tab-item i{ font-size: 20px; }
 
-    /* Toast */
-    #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); border: 1px solid var(--success); color: white; padding: 8px 20px; border-radius: 30px; font-size: 12px; z-index: 9999; display: none; backdrop-filter: blur(5px); }
-    
-    /* Skeleton Loading */
-    .sk-card { height: 200px; background: rgba(255,255,255,0.05); border-radius: var(--r); animation: pulse 1.5s infinite; }
-    @keyframes pulse { 0%{opacity:0.6} 50%{opacity:1} 100%{opacity:0.6} }
+    #toast{ position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.9); color: white; padding: 10px 20px; border-radius: 50px; font-size: 13px; z-index: 9999; display: none; border: 1px solid var(--primary); }
   </style>
 </head>
 <body>
@@ -127,166 +74,89 @@
 
   <div id="page-home" class="page active">
     <div class="topbar">
-      <div class="brand-title"><i class="fas fa-bolt"></i> Elite Hub</div>
-      <div id="auth-btn-area">
-        <button class="login-btn" onclick="initPi()">
-          <i class="fas fa-wallet"></i> <span>ربط المحفظة</span>
-        </button>
-      </div>
+      <div class="brand-title"><i class="fas fa-gem"></i> Elite Hub</div>
+      <div id="auth-area"><button class="login-btn" onclick="initPi()"><i class="fas fa-wallet"></i> دخول</button></div>
     </div>
-
-    <div class="glass" style="padding:10px 14px; margin-bottom:15px; display:flex; gap:10px; align-items:center; color:var(--muted);">
-      <i class="fas fa-search"></i>
-      <span style="font-size:13px;">ابحث عن منتجات...</span>
-    </div>
-
-    <div class="ads-grid" id="main-ads-list">
-      <div class="sk-card"></div><div class="sk-card"></div>
-      <div class="sk-card"></div><div class="sk-card"></div>
-    </div>
+    <div class="ads-grid" id="main-ads-list"></div>
   </div>
 
   <div id="page-add" class="page">
-    <div class="appbar">
-      <div class="brand-title">إضافة إعلان</div>
-    </div>
+    <div class="topbar"><div class="brand-title">بيع منتج</div></div>
     <div class="glass" style="padding: 20px;">
-      <input type="file" id="file-input" accept="image/*" style="border:1px dashed var(--accent);">
-      <input type="text" id="title-input" placeholder="اسم المنتج">
-      <input type="number" id="price-input" placeholder="السعر (Pi)">
-      <textarea id="desc-input" rows="4" placeholder="وصف كامل للمنتج وحالته..."></textarea>
-      <button class="btn-main" id="pub-btn" onclick="handleUpload()">
-        <i class="fas fa-rocket"></i> نشر الإعلان
-      </button>
+      <input type="file" id="file-input" style="margin-bottom:15px; color:var(--muted);">
+      <input type="text" id="title-input" placeholder="عنوان الإعلان" style="width:100%; padding:12px; margin-bottom:10px; border-radius:12px; background:rgba(0,0,0,0.2); border:1px solid var(--stroke); color:white;">
+      <input type="number" id="price-input" placeholder="السعر بـ Pi" style="width:100%; padding:12px; margin-bottom:10px; border-radius:12px; background:rgba(0,0,0,0.2); border:1px solid var(--stroke); color:white;">
+      <textarea id="desc-input" placeholder="وصف المنتج..." style="width:100%; padding:12px; margin-bottom:15px; border-radius:12px; background:rgba(0,0,0,0.2); border:1px solid var(--stroke); color:white; height:100px;"></textarea>
+      <button class="btn-main" id="pub-btn" onclick="handleUpload()">نشر الإعلان</button>
     </div>
   </div>
 
   <div id="page-inbox" class="page">
-    <div class="appbar">
-      <div class="brand-title">الرسائل</div>
-    </div>
-    <div id="inbox-list" style="display:flex; flex-direction:column; gap:10px;">
-      <div style="text-align:center; color:var(--muted); margin-top:50px;">جاري التحميل...</div>
-    </div>
+    <div class="topbar"><div class="brand-title">المحادثات</div></div>
+    <div id="inbox-list"></div>
   </div>
 
-  <div id="page-chat" class="page" style="padding:0; padding-bottom:0;">
-    <div class="appbar" style="margin:0; background:rgba(7,10,22,0.95);">
+  <div id="page-chat" class="page" style="padding:0;">
+    <div class="topbar">
       <div style="display:flex; align-items:center; gap:10px;">
-        <i class="fas fa-arrow-right" onclick="switchNav('inbox')" style="cursor:pointer; font-size:18px;"></i>
-        <span class="brand-title" id="chat-header-name">User</span>
+        <i class="fas fa-chevron-right" onclick="switchNav('inbox')"></i>
+        <span id="chat-user-name">...</span>
       </div>
     </div>
     <div id="chat-messages" class="chat-container"></div>
     <div class="chat-input-area">
-      <input type="text" id="msg-input" placeholder="اكتب رسالتك..." style="margin:0; border-radius:99px;">
-      <button onclick="sendMessage()" style="width:50px; height:50px; border-radius:50%; border:none; background:var(--accent); color:#000; font-size:18px; cursor:pointer;">
-        <i class="fas fa-paper-plane"></i>
-      </button>
+      <input type="text" id="msg-input" placeholder="اكتب هنا...">
+      <button onclick="sendMessage()" style="background:var(--accent); border:none; width:45px; height:45px; border-radius:50%;"><i class="fas fa-paper-plane"></i></button>
     </div>
   </div>
 
   <div id="page-profile" class="page">
-    <div class="appbar">
-      <div class="brand-title">الملف الشخصي</div>
-      <i class="fas fa-cog" style="color:var(--muted)"></i>
-    </div>
-    
-    <div class="glass" style="padding:20px; text-align:center; margin-bottom:20px; display:flex; flex-direction:column; align-items:center;">
-      <div style="width:80px; height:80px; border-radius:50%; background:linear-gradient(135deg, var(--primary), var(--accent)); display:grid; place-items:center; font-size:30px; color:white; margin-bottom:10px; box-shadow:0 10px 30px rgba(0,242,254,0.3);">
-        <i class="fas fa-user"></i>
-      </div>
-      <h2 id="profile-name" style="margin:0; font-size:18px;">زائر</h2>
-      <p style="color:var(--muted); font-size:12px; margin-top:5px;">عضو في Pi Network</p>
-    </div>
-
-    <h3 style="margin:0 0 15px 5px; font-size:16px; color:var(--accent);">إعلاناتي النشطة</h3>
-    <div class="ads-grid" id="my-ads-list"></div>
+    <div class="topbar"><div class="brand-title">حسابي</div></div>
+    <div id="my-ads-list" class="ads-grid"></div>
   </div>
 
   <div class="tab-bar">
-    <button class="tab-item active" onclick="switchNav('home', this)">
-      <i class="fas fa-home"></i> <span>الرئيسية</span>
-    </button>
-    <button class="tab-item" onclick="switchNav('inbox', this)">
-      <i class="fas fa-comment-alt"></i> <span>الرسائل</span>
-    </button>
-    <button class="tab-item" onclick="switchNav('add', this)">
-      <i class="fas fa-plus-square"></i> <span>بيع</span>
-    </button>
-    <button class="tab-item" onclick="switchNav('profile', this)">
-      <i class="fas fa-user"></i> <span>حسابي</span>
-    </button>
+    <button class="tab-item active" onclick="switchNav('home', this)"><i class="fas fa-th-large"></i><span>السوق</span></button>
+    <button class="tab-item" onclick="switchNav('inbox', this)"><i class="fas fa-comment"></i><span>الرسائل</span></button>
+    <button class="tab-item" onclick="switchNav('add', this)"><i class="fas fa-plus-circle"></i><span>بيع</span></button>
+    <button class="tab-item" onclick="switchNav('profile', this)"><i class="fas fa-user"></i><span>حسابي</span></button>
   </div>
 
   <script>
-    /* --- Javascript Logic (Supabase + Pi) --- */
-    let _sb = null;
-    let _user = null;
-    let _activeChatUser = null;
-    let _chatSubscription = null;
+    let _sb = null, _user = null, _activeChat = null, _sub = null;
 
-    // 1. تشغيل التطبيق
     window.onload = async () => {
-      try {
-        // جلب الإعدادات من Netlify Function
-        const res = await fetch('/api/config');
-        const config = await res.json();
-        _sb = supabase.createClient(config.SB_URL, config.SB_ANON);
-        loadAllAds();
-      } catch (e) { notify("تأكد من إعدادات السيرفر", "#ef4444"); }
+      const res = await fetch('/api/config');
+      const config = await res.json();
+      _sb = supabase.createClient(config.SB_URL, config.SB_ANON);
+      loadAllAds();
     };
 
-    // 2. Pi Auth
     async function initPi() {
       try {
         const Pi = window.Pi;
         Pi.init({ version: "2.0", sandbox: false });
         const auth = await Pi.authenticate(['username'], (p) => {});
         _user = auth.user;
-        
-        // تحديث الواجهة بعد الدخول
-        document.getElementById('auth-btn-area').innerHTML = `
-          <div class="login-btn" style="border-color:var(--success); color:var(--success);">
-            <i class="fas fa-check-circle"></i> @${_user.username}
-          </div>`;
-        document.getElementById('profile-name').innerText = `@${_user.username}`;
-        notify("تم تسجيل الدخول بنجاح");
-        
-        // تحديث البيانات
+        document.getElementById('auth-area').innerHTML = `<div class="login-btn">@${_user.username}</div>`;
+        notify("أهلاً بك!");
         loadInbox();
-        if(document.getElementById('page-profile').classList.contains('active')) loadMyAds();
-
-      } catch (e) { alert("خطأ: يرجى الفتح من Pi Browser"); }
+      } catch (e) { alert("افتح من Pi Browser"); }
     }
 
-    // 3. التنقل
-    function switchNav(pageId, btn) {
+    function switchNav(id, btn) {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-      document.getElementById('page-' + pageId).classList.add('active');
-      
+      document.getElementById('page-'+id).classList.add('active');
       if(btn) {
-        document.querySelectorAll('.tab-item').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
         btn.classList.add('active');
       }
-
-      if(pageId === 'home') loadAllAds();
-      if(pageId === 'profile' && _user) loadMyAds();
-      if(pageId === 'inbox') {
-        if(_user) loadInbox();
-        else { notify("سجل دخول أولاً"); switchNav('home', document.querySelector('.tab-item')); }
-      }
-      
-      // إغلاق اشتراك الشات عند الخروج
-      if(pageId !== 'chat' && _chatSubscription) {
-        _chatSubscription.unsubscribe();
-        _chatSubscription = null;
-      }
+      if(id === 'home') loadAllAds();
+      if(id === 'profile' && _user) loadMyAds();
+      if(id === 'inbox' && _user) loadInbox();
     }
 
-    // 4. عرض الإعلانات (بتصميم الـ Cards الجديد)
     async function loadAllAds() {
-      if(!_sb) return;
       const { data } = await _sb.from('ads').select('*').order('created_at', {ascending: false});
       renderAds(data || [], 'main-ads-list', false);
     }
@@ -296,191 +166,113 @@
       renderAds(data || [], 'my-ads-list', true);
     }
 
-    function renderAds(list, containerId, isOwner) {
-      const container = document.getElementById(containerId);
+    function renderAds(list, divId, isOwner) {
+      const container = document.getElementById(divId);
       const now = new Date();
-      
-      // ترتيب: المميز أولاً
       list.sort((a,b) => (b.promoted_until && new Date(b.promoted_until)>now) - (a.promoted_until && new Date(a.promoted_until)>now));
 
       container.innerHTML = list.map(ad => {
-        const isPromoted = ad.promoted_until && new Date(ad.promoted_until) > now;
+        const isP = ad.promoted_until && new Date(ad.promoted_until) > now;
         return `
-          <div class="glass ad-card ${isPromoted ? 'promoted' : ''}">
-            ${isPromoted ? '<div class="badge-gold"><i class="fas fa-star"></i> مميز</div>' : ''}
-            
-            <img class="ad-thumb" src="${_sb.storageUrl}/object/public/ads-images/${ad.image_url}" 
-                 onerror="this.src='https://via.placeholder.com/400x300/111/555?text=No+Image'">
-            
+          <div class="glass ad-card ${isP ? 'promoted' : ''}">
+            ${isP ? '<div class="badge-gold">مميز</div>' : ''}
+            <img class="ad-thumb" src="${_sb.storageUrl}/object/public/ads-images/${ad.image_url}">
             <div class="ad-body">
-              <div class="ad-meta">
-                <div class="price">${ad.price} π</div>
-              </div>
+              <div class="price">${ad.price} Pi</div>
               <div class="ad-title">${ad.title}</div>
-              
               ${isOwner 
-                ? `<button class="btn-gold" onclick="promoteAd('${ad.id}')"><i class="fas fa-rocket"></i> تمييز</button>`
-                : `<button class="btn-outline" onclick="openChatWith('${ad.seller_username}')"><i class="fas fa-comment"></i> مراسلة</button>`
+                ? `<button class="btn-gold" onclick="promoteAd('${ad.id}')">تمييز الإعلان</button>`
+                : `<button class="btn-outline" onclick="openChat('${ad.seller_username}')">تواصل</button>`
               }
             </div>
           </div>`;
       }).join('');
     }
 
-    // 5. رفع إعلان
     async function handleUpload() {
-      if(!_user) return notify("يرجى تسجيل الدخول");
+      if(!_user) return notify("سجل دخول أولاً");
       const file = document.getElementById('file-input').files[0];
       const title = document.getElementById('title-input').value;
       const price = document.getElementById('price-input').value;
-      const desc = document.getElementById('desc-input').value;
-      
-      if(!file || !title || !price) return notify("يرجى ملء جميع الحقول");
-      
-      const btn = document.getElementById('pub-btn');
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الرفع...';
-      
-      try {
-        const fileName = `${Date.now()}_${_user.username}.${file.name.split('.').pop()}`;
-        await _sb.storage.from('ads-images').upload(fileName, file);
-        await _sb.from('ads').insert([{
-          title, price: parseFloat(price), description: desc,
-          image_url: fileName, seller_username: _user.username
-        }]);
-        notify("تم النشر بنجاح!");
-        switchNav('home', document.querySelector('.tab-item'));
-      } catch (e) { notify("حدث خطأ أثناء الرفع", "#ef4444"); }
-      btn.innerHTML = '<i class="fas fa-rocket"></i> نشر الإعلان';
+      if(!file || !title || !price) return notify("أكمل البيانات");
+
+      document.getElementById('pub-btn').innerText = "...";
+      const name = Date.now() + '_' + _user.username;
+      await _sb.storage.from('ads-images').upload(name, file);
+      await _sb.from('ads').insert([{ title, price, image_url: name, seller_username: _user.username }]);
+      notify("تم النشر"); switchNav('home');
     }
 
-    // 6. نظام الشات (بتصميم الفقاعات)
+    // --- نظام الشات المحدث ---
     async function loadInbox() {
-      const listDiv = document.getElementById('inbox-list');
-      // جلب الرسائل
-      const { data } = await _sb.from('messages')
-        .select('*')
-        .or(`sender_username.eq.${_user.username},receiver_username.eq.${_user.username}`)
-        .order('created_at', {ascending: false});
-
-      if(!data || data.length === 0) {
-        listDiv.innerHTML = '<div style="text-align:center; padding:30px; color:var(--muted)">لا توجد محادثات</div>';
-        return;
-      }
-
-      // تصفية المحادثات
-      const contacts = new Set();
-      const chats = [];
-      data.forEach(msg => {
-        const other = msg.sender_username === _user.username ? msg.receiver_username : msg.sender_username;
-        if(!contacts.has(other)) {
-          contacts.add(other);
-          chats.push({ user: other, msg: msg });
-        }
-      });
-
-      listDiv.innerHTML = chats.map(c => `
-        <div class="glass" onclick="openChatWith('${c.user}')" style="padding:12px; display:flex; align-items:center; gap:12px; cursor:pointer;">
-          <div style="width:45px; height:45px; background:var(--card); border-radius:50%; display:grid; place-items:center; border:1px solid var(--stroke); color:var(--accent); font-weight:bold;">
-            ${c.user[0].toUpperCase()}
-          </div>
-          <div style="flex:1;">
-            <div style="font-weight:bold; font-size:14px; margin-bottom:4px;">@${c.user}</div>
-            <div style="font-size:12px; color:var(--muted); opacity:0.8;">${c.msg.content.substring(0,30)}...</div>
-          </div>
-          <div style="font-size:10px; color:var(--muted);">${new Date(c.msg.created_at).toLocaleDateString()}</div>
+      const { data } = await _sb.from('messages').select('*').or(`sender_username.eq.${_user.username},receiver_username.eq.${_user.username}`).order('created_at', {ascending:false});
+      const contacts = [...new Set(data.map(m => m.sender_username === _user.username ? m.receiver_username : m.sender_username))];
+      
+      document.getElementById('inbox-list').innerHTML = contacts.map(c => `
+        <div class="glass" onclick="openChat('${c}')" style="padding:15px; margin-bottom:10px; display:flex; align-items:center; gap:12px;">
+          <div style="width:40px; height:40px; border-radius:50%; background:var(--primary); display:grid; place-items:center;">${c[0].toUpperCase()}</div>
+          <div><b>@${c}</b><br><small style="color:var(--muted)">اضغط لفتح المحادثة</small></div>
         </div>
       `).join('');
     }
 
-    async function openChatWith(target) {
-      if(!_user) return notify("سجل دخول أولاً");
-      if(target === _user.username) return notify("لا يمكنك مراسلة نفسك");
-
-      _activeChatUser = target;
-      document.getElementById('chat-header-name').innerText = `@${target}`;
+    async function openChat(target) {
+      if(!_user) return notify("سجل دخول");
+      if(target === _user.username) return;
+      _activeChat = target;
+      document.getElementById('chat-user-name').innerText = "@" + target;
+      switchNav('chat');
       
-      // تبديل الصفحة
-      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-      document.getElementById('page-chat').classList.add('active');
-      document.getElementById('chat-messages').innerHTML = '<div style="text-align:center; padding:20px; color:gray;">جاري جلب المحادثة...</div>';
-
-      await fetchMessages();
-      subscribeChat();
+      const { data } = await _sb.from('messages').select('*').or(`and(sender_username.eq.${_user.username},receiver_username.eq.${target}),and(sender_username.eq.${target},receiver_username.eq.${_user.username})`).order('created_at', {ascending:true});
+      renderMessages(data || []);
+      setupRealtime();
     }
 
-    async function fetchMessages() {
-      const { data } = await _sb.from('messages')
-        .select('*')
-        .or(`and(sender_username.eq.${_user.username},receiver_username.eq.${_activeChatUser}),and(sender_username.eq.${_activeChatUser},receiver_username.eq.${_user.username})`)
-        .order('created_at', {ascending: true});
-      renderChat(data || []);
-    }
-
-    function renderChat(msgs) {
+    function renderMessages(msgs) {
       const area = document.getElementById('chat-messages');
-      area.innerHTML = msgs.map(m => {
-        const isMine = m.sender_username === _user.username;
-        return `<div class="bubble ${isMine ? 'me' : 'them'}">${m.content}</div>`;
-      }).join('');
+      area.innerHTML = msgs.map(m => `<div class="bubble ${m.sender_username === _user.username ? 'me' : 'them'}">${m.content}</div>`).join('');
       area.scrollTop = area.scrollHeight;
     }
 
     async function sendMessage() {
-      const input = document.getElementById('msg-input');
-      const text = input.value.trim();
-      if(!text || !_activeChatUser) return;
-      input.value = '';
-
-      await _sb.from('messages').insert([{
-        sender_username: _user.username, receiver_username: _activeChatUser, content: text
-      }]);
+      const inp = document.getElementById('msg-input');
+      const val = inp.value.trim();
+      if(!val) return;
+      inp.value = '';
+      await _sb.from('messages').insert([{ sender_username: _user.username, receiver_username: _activeChat, content: val }]);
     }
 
-    function subscribeChat() {
-      if(_chatSubscription) _chatSubscription.unsubscribe();
-      _chatSubscription = _sb.channel('public:messages')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
-           const m = payload.new;
-           if( (m.sender_username===_user.username && m.receiver_username===_activeChatUser) || 
-               (m.receiver_username===_user.username && m.sender_username===_activeChatUser) ) {
-             const area = document.getElementById('chat-messages');
-             const isMine = m.sender_username === _user.username;
-             area.innerHTML += `<div class="bubble ${isMine ? 'me' : 'them'}">${m.content}</div>`;
-             area.scrollTop = area.scrollHeight;
-           }
-        }).subscribe();
+    function setupRealtime() {
+      if(_sub) _sb.removeChannel(_sub);
+      _sub = _sb.channel('chat').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+        const m = payload.new;
+        if((m.sender_username === _user.username && m.receiver_username === _activeChat) || (m.sender_username === _activeChat && m.receiver_username === _user.username)) {
+          const area = document.getElementById('chat-messages');
+          area.innerHTML += `<div class="bubble ${m.sender_username === _user.username ? 'me' : 'them'}">${m.content}</div>`;
+          area.scrollTop = area.scrollHeight;
+        }
+      }).subscribe();
     }
 
-    // دوال المساعدة
-    function notify(msg, color) {
-      const t = document.getElementById('toast');
-      t.innerText = msg; 
-      t.style.borderColor = color || 'var(--success)';
-      t.style.display = 'block';
-      setTimeout(() => t.style.display='none', 3000);
-    }
-
-    // دالة الدفع (Promote) - نفس المنطق السابق
+    // --- نظام الدفع المحدث ---
     async function promoteAd(adId) {
-       if(!_user) return;
-       notify("جاري الاتصال بـ Pi Network...");
-       try {
+      if(!_user) return;
+      notify("فتح المحفظة...");
+      try {
         await Pi.createPayment({
-          amount: 5.0, memo: `PROMOTE_AD|${adId}`, metadata: { adId, username: _user.username }
+          amount: 5.0, memo: `PROMOTE|${adId}`, metadata: { adId }
         }, {
-          onReadyForServerApproval: async (pid) => {
-             const r = await fetch('/api/pi/approve', {method:'POST', body:JSON.stringify({paymentId:pid})});
-             if(!r.ok) throw new Error("Approval Failed");
-          },
-          onReadyForServerCompletion: async (pid, txid) => {
-             const r = await fetch('/api/pi/complete', {method:'POST', body:JSON.stringify({paymentId:pid, txid})});
-             if(!r.ok) throw new Error("Completion Failed");
-             notify("تم تمييز الإعلان!"); loadMyAds();
-          },
-          onCancel: () => notify("تم الإلغاء", "orange"),
+          onReadyForServerApproval: (pid) => fetch('/api/approve', {method:'POST', body:JSON.stringify({paymentId:pid})}),
+          onReadyForServerCompletion: (pid, txid) => fetch('/api/complete', {method:'POST', body:JSON.stringify({paymentId:pid, txid})}).then(() => { notify("تم التمييز!"); loadAllAds(); }),
+          onCancel: () => {},
           onError: (e) => alert(e.message)
         });
-       } catch(e) { console.log(e); }
+      } catch(e) {}
+    }
+
+    function notify(m) {
+      const t = document.getElementById('toast'); t.innerText = m; t.style.display = 'block';
+      setTimeout(() => t.style.display='none', 3000);
     }
   </script>
 </body>
