@@ -68,39 +68,54 @@ async function promoteAd(adId){
         }
       },
 
-      onReadyForServerCompletion: async (paymentId, txid) => {
-        try{
-          toast("جاري تفعيل الإعلان المميز...");
-          const r = await fetch("/api/pi/complete", {
-            method:"POST",
-            headers:{ "Content-Type":"application/json" },
-            body: JSON.stringify({ paymentId, txid })
-          });
+    async function onIncompletePaymentFound(payment) {
+  // payment: { identifier, amount, memo, status, ... }
+  console.log("INCOMPLETE_PAYMENT_FOUND", payment);
 
-          const j = await r.json().catch(()=> ({}));
+  // لو الدفع مش بتاع "إعلان مميز" تجاهله
+  const memo = String(payment?.memo || "");
+  if (!memo.startsWith("PROMOTE_AD|")) return;
 
-          if(!r.ok || !j.ok){
-            console.log("COMPLETE_FAIL", r.status, j);
-            toast(`فشل الترقية: ${j.message || j.error_message || j.message_code || r.status}`);
-            // مهم: ما تعملش throw هنا
-            return;
-          }
+  toast("في عملية دفع معلّقة… بنحاول نكمّلها");
 
-          toast("تم تمييز إعلانك 3 أيام ⭐");
-          loadAds();
-          loadMyAds();
-        }catch(err){
-          console.log("COMPLETE_EXCEPTION", err);
-          toast("فشل الترقية: exception");
-        }
-      },
-
-      onCancel: () => toast("تم إلغاء الدفع"),
-      onError: (err) => {
-        console.log("PI_SDK_ERROR", err);
-        toast(`مشكلة في الدفع: ${err?.message || "pi_sdk_error"}`);
-      }
+  try {
+    // 1) approve (idempotent: لو approved قبل كده يرجع ok)
+    const r1 = await fetch("/api/pi/approve", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ paymentId: payment.identifier || payment.paymentId || payment.id })
     });
+
+    const j1 = await r1.json().catch(()=> ({}));
+    if(!r1.ok || !j1.ok){
+      console.log("APPROVE_FAIL", r1.status, j1);
+      toast(`تعذر الموافقة: ${j1.message || r1.status}`);
+      return;
+    }
+
+    // 2) complete
+    const r2 = await fetch("/api/pi/complete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ paymentId: payment.identifier || payment.paymentId || payment.id })
+    });
+
+    const j2 = await r2.json().catch(()=> ({}));
+    if(!r2.ok || !j2.ok){
+      console.log("COMPLETE_FAIL", r2.status, j2);
+      toast(`تعذر الإكمال: ${j2.message || r2.status}`);
+      return;
+    }
+
+    toast("تم إكمال الدفع المعلّق ✅");
+    loadAds();
+    loadMyAds();
+
+  } catch (e) {
+    console.log("INCOMPLETE_HANDLER_ERR", e);
+    toast("حصل خطأ أثناء إكمال الدفع المعلّق");
+  }
+}
 
   }catch(e){
     console.log("PROMOTE_OUTER_CATCH", e);
@@ -176,7 +191,8 @@ async function initPi(){
     Pi.init({ version: "2.0", sandbox: false });
 
     // لازم تضيف payments هنا
-    const auth = await Pi.authenticate(['username', 'payments'], () => {});
+    const auth = await Pi.authenticate(['username', 'payments'], onIncompletePaymentFound);
+
     user = auth.user;
 
     setWho();
