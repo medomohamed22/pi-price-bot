@@ -14,5 +14,4 @@ issuer="GBQ3H472BMOMTFRSK5P26FBRVOE3ZFCB5F3FTGXEGOV5CN7RAB6TRPJR"
 display_decimals=2
 name="Donate Way"
 desc="Donate Way token on Pi Testnet for donations."
-# Optional (add later if you have it):
-# image="https://pi-links.netlify.app/token.png"
+image="https://pi-links.netlify.app/token.png"
