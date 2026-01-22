@@ -29,54 +29,18 @@ function assetLabel(a) {
   return `${code}:${issuer}`;
 }
 
-function normalizeFee(StellarSdk) {
-  // safest: always 30bp for constant product pools
-  const cand = StellarSdk?.LiquidityPoolFeeV18;
-  if (typeof cand === "number" && Number.isFinite(cand)) return cand;
-  return 30;
-}
-
-// ✅ get poolId in a version-safe way (fixes liquidityPoolType invalid)
-function getPoolIdSafe(StellarSdk, assetA, assetB, fee) {
-  // 1) Newer style helper (js-stellar-base style):
-  // getLiquidityPoolId("constant_product", {assetA, assetB, fee})
+function computePoolId(StellarSdk, assetA, assetB, fee) {
+  // preferred signature: getLiquidityPoolId("constant_product", {assetA, assetB, fee})
   if (typeof StellarSdk.getLiquidityPoolId === "function") {
-    try {
-      return StellarSdk.getLiquidityPoolId("constant_product", { assetA, assetB, fee });
-    } catch (e1) {
-      // 2) Some older wrappers may accept different order; try fallback
-      try {
-        return StellarSdk.getLiquidityPoolId(assetA, assetB, fee);
-      } catch (e2) {
-        throw new Error(
-          `getLiquidityPoolId failed. e1=${e1?.message || e1} | e2=${e2?.message || e2}`
-        );
-      }
-    }
+    return StellarSdk.getLiquidityPoolId("constant_product", { assetA, assetB, fee });
   }
-
-  // 3) If LiquidityPoolAsset exists with getLiquidityPoolId()
+  // fallback: some builds provide method on LiquidityPoolAsset (rare)
   if (typeof StellarSdk.LiquidityPoolAsset === "function") {
-    try {
-      const lp = new StellarSdk.LiquidityPoolAsset(assetA, assetB, fee);
-      if (typeof lp.getLiquidityPoolId === "function") return lp.getLiquidityPoolId();
-      if (lp.liquidityPoolId) return lp.liquidityPoolId;
-    } catch (e3) {
-      throw new Error(`LiquidityPoolAsset failed: ${e3?.message || e3}`);
-    }
+    const lp = new StellarSdk.LiquidityPoolAsset(assetA, assetB, fee);
+    if (typeof lp.getLiquidityPoolId === "function") return lp.getLiquidityPoolId();
+    if (lp.liquidityPoolId) return lp.liquidityPoolId;
   }
-
-  throw new Error("No supported method to compute liquidityPoolId. Update stellar-sdk.");
-}
-
-function getPoolShareAssetCompat(StellarSdk, poolId) {
-  if (typeof StellarSdk.LiquidityPoolShareAsset === "function") {
-    return new StellarSdk.LiquidityPoolShareAsset(poolId);
-  }
-  if (StellarSdk.Asset && typeof StellarSdk.Asset.liquidityPoolShare === "function") {
-    return StellarSdk.Asset.liquidityPoolShare(poolId);
-  }
-  return null;
+  throw new Error("Cannot compute poolId (missing getLiquidityPoolId). Update stellar-sdk.");
 }
 
 exports.handler = async (event) => {
@@ -96,13 +60,22 @@ exports.handler = async (event) => {
       return { statusCode: 500, body: JSON.stringify({ error: "Missing ISSUER_SECRET/DISTRIBUTOR_SECRET env" }) };
     }
 
-    // required ops
+    if (typeof StellarSdk.LiquidityPoolAsset !== "function") {
+      return {
+        statusCode: 500,
+        body: JSON.stringify({
+          error: "LiquidityPoolAsset not supported by this stellar-sdk build",
+          hint: "Update stellar-sdk",
+        }),
+      };
+    }
+
     if (!StellarSdk.Operation || typeof StellarSdk.Operation.liquidityPoolDeposit !== "function") {
       return {
         statusCode: 500,
         body: JSON.stringify({
-          error: "stellar-sdk build doesn't support liquidityPoolDeposit",
-          hint: "Update stellar-sdk then Clear cache and deploy",
+          error: "liquidityPoolDeposit not supported by this stellar-sdk build",
+          hint: "Update stellar-sdk",
         }),
       };
     }
@@ -115,7 +88,7 @@ exports.handler = async (event) => {
     const token = new StellarSdk.Asset(assetCode, issuerKP.publicKey());
     const pi = StellarSdk.Asset.native();
 
-    // ✅ Sort assets + match amounts to A/B order
+    // ✅ Sort assets + bind amounts to A/B order
     const pairs = [
       { asset: token, amount: String(tokenAmount) },
       { asset: pi, amount: String(piAmount) },
@@ -126,25 +99,19 @@ exports.handler = async (event) => {
     const maxAmountA = pairs[0].amount;
     const maxAmountB = pairs[1].amount;
 
-    const fee = normalizeFee(StellarSdk); // should be 30
-    const poolId = getPoolIdSafe(StellarSdk, assetA, assetB, fee);
+    // ✅ constant product fee is always 30 (bp) 1
+    const fee = 30;
 
-    const poolShare = getPoolShareAssetCompat(StellarSdk, poolId);
-    if (!poolShare) {
-      return {
-        statusCode: 500,
-        body: JSON.stringify({
-          error: "LiquidityPoolShareAsset not supported by this stellar-sdk build",
-          hint: "Update stellar-sdk then Clear cache and deploy",
-          poolId,
-        }),
-      };
-    }
+    // ✅ This asset represents "liquidity_pool_shares" trustline 2
+    const poolAsset = new StellarSdk.LiquidityPoolAsset(assetA, assetB, fee);
+
+    // ✅ poolId (constant_product)
+    const poolId = computePoolId(StellarSdk, assetA, assetB, fee);
 
     const account = await server.loadAccount(distKP.publicKey());
     const baseFee = await server.fetchBaseFee();
 
-    const hasPoolShare = account.balances?.some(
+    const hasPoolTrust = account.balances?.some(
       (b) => b.asset_type === "liquidity_pool_shares" && b.liquidity_pool_id === poolId
     );
 
@@ -153,9 +120,13 @@ exports.handler = async (event) => {
       networkPassphrase: NETWORK_PASSPHRASE,
     });
 
-    // Trustline for pool shares (if needed)
-    if (!hasPoolShare) {
-      txb.addOperation(StellarSdk.Operation.changeTrust({ asset: poolShare }));
+    // ✅ Trustline to pool shares (using LiquidityPoolAsset)
+    if (!hasPoolTrust) {
+      txb.addOperation(
+        StellarSdk.Operation.changeTrust({
+          asset: poolAsset,
+        })
+      );
     }
 
     const minP = (minPrice && String(minPrice)) || "0.000001";
