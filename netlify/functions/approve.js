@@ -1,3 +1,4 @@
+
 // netlify/functions/approve.js
 const PI_API_BASE = "https://api.minepi.com/v2";
 
