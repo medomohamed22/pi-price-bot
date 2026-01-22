@@ -10,7 +10,7 @@ function requireAdmin(event) {
   if (got !== need) throw new Error("Unauthorized (bad admin token)");
 }
 
-// Stellar canonical ordering: native before credit, then code, then issuer
+// canonical ordering: native first, then code, then issuer
 function assetKey(a) {
   try {
     if (a?.isNative && a.isNative()) return "0|NATIVE||";
@@ -29,66 +29,47 @@ function assetLabel(a) {
   return `${code}:${issuer}`;
 }
 
-// Normalize fee for liquidity pools (should be 30 for constant product)
-function normalizePoolFee(StellarSdk) {
-  // safest: always 30
-  // بعض النسخ بتوفر LiquidityPoolFeeV18 بأشكال مختلفة
+function normalizeFee(StellarSdk) {
+  // safest: always 30bp for constant product pools
   const cand = StellarSdk?.LiquidityPoolFeeV18;
-
   if (typeof cand === "number" && Number.isFinite(cand)) return cand;
-  if (typeof cand === "string" && cand.trim()) {
-    const n = Number(cand.trim());
-    if (Number.isFinite(n)) return n;
-  }
-  if (cand && typeof cand === "object" && typeof cand.fee === "number") return cand.fee;
-
   return 30;
 }
 
-// Create LiquidityPoolAsset in a version-compatible way
-function createPoolAssetCompat(StellarSdk, assetA, assetB, fee) {
-  // 1) Most common: new LiquidityPoolAsset(assetA, assetB, feeNumber)
-  try {
-    return new StellarSdk.LiquidityPoolAsset(assetA, assetB, fee);
-  } catch (e1) {
-    // 2) Some versions might expect fee constant
+// ✅ get poolId in a version-safe way (fixes liquidityPoolType invalid)
+function getPoolIdSafe(StellarSdk, assetA, assetB, fee) {
+  // 1) Newer style helper (js-stellar-base style):
+  // getLiquidityPoolId("constant_product", {assetA, assetB, fee})
+  if (typeof StellarSdk.getLiquidityPoolId === "function") {
     try {
-      return new StellarSdk.LiquidityPoolAsset(assetA, assetB, StellarSdk.LiquidityPoolFeeV18);
-    } catch (e2) {
-      // 3) Some versions may use object form (rare)
+      return StellarSdk.getLiquidityPoolId("constant_product", { assetA, assetB, fee });
+    } catch (e1) {
+      // 2) Some older wrappers may accept different order; try fallback
       try {
-        return new StellarSdk.LiquidityPoolAsset(assetA, assetB, { fee });
-      } catch (e3) {
-        const msg =
-          `Failed to create LiquidityPoolAsset (SDK mismatch). ` +
-          `e1=${e1?.message || e1}, e2=${e2?.message || e2}, e3=${e3?.message || e3}`;
-        throw new Error(msg);
+        return StellarSdk.getLiquidityPoolId(assetA, assetB, fee);
+      } catch (e2) {
+        throw new Error(
+          `getLiquidityPoolId failed. e1=${e1?.message || e1} | e2=${e2?.message || e2}`
+        );
       }
     }
   }
+
+  // 3) If LiquidityPoolAsset exists with getLiquidityPoolId()
+  if (typeof StellarSdk.LiquidityPoolAsset === "function") {
+    try {
+      const lp = new StellarSdk.LiquidityPoolAsset(assetA, assetB, fee);
+      if (typeof lp.getLiquidityPoolId === "function") return lp.getLiquidityPoolId();
+      if (lp.liquidityPoolId) return lp.liquidityPoolId;
+    } catch (e3) {
+      throw new Error(`LiquidityPoolAsset failed: ${e3?.message || e3}`);
+    }
+  }
+
+  throw new Error("No supported method to compute liquidityPoolId. Update stellar-sdk.");
 }
 
-// Extract poolId in a version-compatible way
-function getPoolIdCompat({ StellarSdk, poolAsset, assetA, assetB, fee }) {
-  let poolId = null;
-
-  if (poolAsset && typeof poolAsset.getLiquidityPoolId === "function") {
-    poolId = poolAsset.getLiquidityPoolId();
-  }
-
-  if (!poolId && poolAsset && poolAsset.liquidityPoolId) {
-    poolId = poolAsset.liquidityPoolId;
-  }
-
-  if (!poolId && typeof StellarSdk.getLiquidityPoolId === "function") {
-    poolId = StellarSdk.getLiquidityPoolId(assetA, assetB, fee);
-  }
-
-  return poolId;
-}
-
-// Pool share asset trustline (version-compatible)
-function getPoolShareAssetCompat({ StellarSdk, poolId }) {
+function getPoolShareAssetCompat(StellarSdk, poolId) {
   if (typeof StellarSdk.LiquidityPoolShareAsset === "function") {
     return new StellarSdk.LiquidityPoolShareAsset(poolId);
   }
@@ -115,18 +96,14 @@ exports.handler = async (event) => {
       return { statusCode: 500, body: JSON.stringify({ error: "Missing ISSUER_SECRET/DISTRIBUTOR_SECRET env" }) };
     }
 
-    // Debug info in Netlify logs
-    console.log("stellar-sdk keys:", Object.keys(StellarSdk));
-    console.log("LiquidityPoolAsset exists:", typeof StellarSdk.LiquidityPoolAsset === "function");
-    console.log("liquidityPoolDeposit exists:", typeof StellarSdk.Operation?.liquidityPoolDeposit === "function");
-
-    if (typeof StellarSdk.LiquidityPoolAsset !== "function" || typeof StellarSdk.Operation?.liquidityPoolDeposit !== "function") {
+    // required ops
+    if (!StellarSdk.Operation || typeof StellarSdk.Operation.liquidityPoolDeposit !== "function") {
       return {
         statusCode: 500,
         body: JSON.stringify({
-          error: "AMM is not supported by this stellar-sdk build",
-          hint: "Update stellar-sdk in package.json then Clear cache and deploy"
-        })
+          error: "stellar-sdk build doesn't support liquidityPoolDeposit",
+          hint: "Update stellar-sdk then Clear cache and deploy",
+        }),
       };
     }
 
@@ -138,7 +115,7 @@ exports.handler = async (event) => {
     const token = new StellarSdk.Asset(assetCode, issuerKP.publicKey());
     const pi = StellarSdk.Asset.native();
 
-    // ✅ Lexicographic ordering + bind amounts to the same order
+    // ✅ Sort assets + match amounts to A/B order
     const pairs = [
       { asset: token, amount: String(tokenAmount) },
       { asset: pi, amount: String(piAmount) },
@@ -149,37 +126,18 @@ exports.handler = async (event) => {
     const maxAmountA = pairs[0].amount;
     const maxAmountB = pairs[1].amount;
 
-    // ✅ Force/normalize pool fee (constant product)
-    const fee = normalizePoolFee(StellarSdk); // غالبًا 30
-    console.log("Pool fee used:", fee, "typeof:", typeof fee);
+    const fee = normalizeFee(StellarSdk); // should be 30
+    const poolId = getPoolIdSafe(StellarSdk, assetA, assetB, fee);
 
-    // ✅ Create pool asset compat (this is where 'liquidityPoolType invalid' often originates)
-    const poolAsset = createPoolAssetCompat(StellarSdk, assetA, assetB, fee);
-
-    // ✅ Get poolId compat
-    const poolId = getPoolIdCompat({ StellarSdk, poolAsset, assetA, assetB, fee });
-    if (!poolId) {
-      return {
-        statusCode: 500,
-        body: JSON.stringify({
-          error: "Could not determine liquidityPoolId with this stellar-sdk version",
-          hint: "Update stellar-sdk then Clear cache and deploy",
-          assetA: assetLabel(assetA),
-          assetB: assetLabel(assetB),
-          fee
-        })
-      };
-    }
-
-    const poolShare = getPoolShareAssetCompat({ StellarSdk, poolId });
+    const poolShare = getPoolShareAssetCompat(StellarSdk, poolId);
     if (!poolShare) {
       return {
         statusCode: 500,
         body: JSON.stringify({
-          error: "LiquidityPoolShareAsset not supported by this stellar-sdk version",
+          error: "LiquidityPoolShareAsset not supported by this stellar-sdk build",
           hint: "Update stellar-sdk then Clear cache and deploy",
-          poolId
-        })
+          poolId,
+        }),
       };
     }
 
@@ -195,16 +153,14 @@ exports.handler = async (event) => {
       networkPassphrase: NETWORK_PASSPHRASE,
     });
 
-    // Trustline to pool shares (if needed)
+    // Trustline for pool shares (if needed)
     if (!hasPoolShare) {
       txb.addOperation(StellarSdk.Operation.changeTrust({ asset: poolShare }));
     }
 
-    // Wide guards by default
     const minP = (minPrice && String(minPrice)) || "0.000001";
     const maxP = (maxPrice && String(maxPrice)) || "1000000";
 
-    // Deposit liquidity
     txb.addOperation(
       StellarSdk.Operation.liquidityPoolDeposit({
         liquidityPoolId: poolId,
@@ -231,7 +187,7 @@ exports.handler = async (event) => {
         maxAmountB,
         fee,
         hash: res.hash,
-      })
+      }),
     };
   } catch (e) {
     return { statusCode: 500, body: JSON.stringify({ error: e.message || String(e) }) };
