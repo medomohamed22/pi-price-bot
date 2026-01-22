@@ -1,16 +1,14 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>Pi Elite Hub 2026</title>
+  <title>Elite Used Market</title>
 
   <script src="https://sdk.minepi.com/pi-sdk.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
-  <!-- ✅ CSS file -->
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
@@ -18,28 +16,23 @@
   <!-- Toast -->
   <div id="toast" class="toast"></div>
 
-  <!-- LOGIN -->
-  <div id="page-login" class="page active" style="padding:0">
-    <div class="login-wrap">
-      <div class="hero">💠</div>
-      <h1 class="login-title">Pi Elite Hub</h1>
-      <p class="login-sub">سوق بسيط + رسائل خاصة بينك وبين البائع. افتح من Pi Browser علشان تسجيل الدخول يشتغل.</p>
-      <button class="btn-main" style="max-width:280px" onclick="initPi()">دخول عبر Pi</button>
-      <button class="btn-ghost" style="max-width:280px" onclick="nav('home'); document.getElementById('navbar').style.display='flex'; toast('تقدر تتصفح كزائر، لكن الرسائل والنشر يحتاجوا دخول.');">تصفح كزائر</button>
-      <div class="pill"><i class="fa-solid fa-shield-halved"></i> محادثات منفصلة لكل مشتري مع نفس البائع</div>
-    </div>
-  </div>
+  <!-- ✅ زر تسجيل الدخول ثابت فوق في الشمال -->
+  <button id="login-btn" class="login-fab" onclick="handleLoginButton()">
+    <i class="fa-solid fa-right-to-bracket"></i>
+    <span id="login-btn-text">تسجيل دخول</span>
+  </button>
 
   <!-- HOME -->
-  <div id="page-home" class="page">
+  <div id="page-home" class="page active">
     <div class="appbar glass">
       <div class="brand">
         <div class="logo">💠</div>
         <div>
-          Pi Elite Hub
+          Elite Used Market
           <small>السوق الرئيسي</small>
         </div>
       </div>
+
       <div class="pill" id="whoami"><i class="fa-solid fa-user"></i> زائر</div>
     </div>
 
@@ -111,9 +104,7 @@
           <small>إعلاناتي</small>
         </div>
       </div>
-      <button class="pill" onclick="logout()" style="cursor:pointer">
-        <i class="fa-solid fa-right-from-bracket"></i> خروج
-      </button>
+      <div class="pill" id="user-pill"><i class="fa-solid fa-id-badge"></i> —</div>
     </div>
 
     <div class="glass" style="padding:16px; margin-bottom:14px;">
@@ -144,7 +135,7 @@
           <b>الدردشة الخاصة</b>
           <div class="hint" id="chat-hint">—</div>
         </div>
-        <div class="pill" id="conv-pill"><i class="fa-solid fa-circle"></i> —</div>
+        <div class="pill" id="conv-pill"><i class="fa-solid fa-lock"></i> خاص</div>
       </div>
 
       <div id="chat-box" class="chat-container"></div>
@@ -156,15 +147,14 @@
     </div>
   </div>
 
-  <!-- NAV -->
-  <nav class="tab-bar" id="navbar" style="display:none">
+  <!-- NAV (✅ ظاهر دايمًا) -->
+  <nav class="tab-bar" id="navbar">
     <button class="tab-item active" onclick="nav('home', this)"><i class="fas fa-store"></i><span>السوق</span></button>
     <button class="tab-item" onclick="nav('inbox', this)"><i class="fas fa-comment-dots"></i><span>الرسائل</span></button>
     <button class="tab-item" onclick="nav('add', this)"><i class="fas fa-plus-circle"></i><span>نشر</span></button>
     <button class="tab-item" onclick="nav('profile', this)"><i class="fas fa-user-circle"></i><span>حسابي</span></button>
   </nav>
 
-  <!-- ✅ JS file -->
   <script src="./app.js"></script>
 </body>
 </html>
