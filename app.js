@@ -1,9 +1,10 @@
-
-
 /* =========================
-   Pi Elite Hub - app.js
+   Pi Elite Hub - app.js (FULL)
    - Loads PUBLIC Supabase config from /api/config (Netlify Function reads ENV)
-   - No hardcoded Supabase URL/KEY (avoids Netlify secrets scan)
+   - Pi Auth + Payments scope + Pending payments handler
+   - Ads: list/search/details/upload/delete
+   - Chat: private per ad + inbox
+   - Promote Ad: approve + complete + extend promoted_until
    ========================= */
 
 /* ====== Global Supabase (filled after initConfig) ====== */
@@ -27,138 +28,6 @@ function promoteLabel(ad){
   const ms = new Date(ad.promoted_until).getTime() - Date.now();
   const days = Math.ceil(ms / (24*60*60*1000));
   return `⭐ مميز • باقي ${days} يوم`;
-}
-
-/* =========================
-   Pending payments handler (IMPORTANT)
-   - Called by Pi SDK when it finds incomplete/pending payments
-   ========================= */
-async function onIncompletePaymentFound(payment){
-  try{
-    console.log("INCOMPLETE_PAYMENT_FOUND", payment);
-
-    const memo = String(payment?.memo || "");
-    if(!memo.startsWith("PROMOTE_AD|")) return;
-
-    const paymentId = payment?.identifier || payment?.paymentId || payment?.id;
-    if(!paymentId) return;
-
-    toast("في عملية دفع معلّقة… بنحاول نكمّلها");
-
-    // 1) approve
-    const r1 = await fetch("/api/pi/approve", {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ paymentId })
-    });
-    const j1 = await r1.json().catch(()=> ({}));
-    if(!r1.ok || !j1.ok){
-      console.log("APPROVE_FAIL_PENDING", r1.status, j1);
-      toast(`تعذر الموافقة: ${j1.message || j1.error_message || r1.status}`);
-      return;
-    }
-
-    // 2) complete
-    const r2 = await fetch("/api/pi/complete", {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ paymentId })
-    });
-    const j2 = await r2.json().catch(()=> ({}));
-    if(!r2.ok || !j2.ok){
-      console.log("COMPLETE_FAIL_PENDING", r2.status, j2);
-      toast(`تعذر الإكمال: ${j2.message || j2.error_message || r2.status}`);
-      return;
-    }
-
-    toast("تم إكمال الدفع المعلّق ✅");
-    loadAds();
-    loadMyAds();
-
-  }catch(e){
-    console.log("INCOMPLETE_HANDLER_ERR", e);
-    toast("حصل خطأ أثناء إكمال الدفع المعلّق");
-  }
-}
-
-/* =========================
-   Promote flow (5 Pi / 3 days)
-   ========================= */
-async function promoteAd(adId){
-  try{
-    if(!user?.username) return toast("سجّل دخول الأول");
-    if(!window.Pi) return toast("افتح من Pi Browser");
-
-    const Pi = window.Pi;
-    toast("فتح الدفع...");
-
-    await Pi.createPayment({
-      amount: 5,
-      memo: `PROMOTE_AD|${adId}|${Date.now()}`,
-      metadata: { purpose: "PROMOTE_AD", adId, username: user.username }
-    },{
-      onReadyForServerApproval: async (paymentId) => {
-        try{
-          toast("جاري الموافقة...");
-          const r = await fetch("/api/pi/approve", {
-            method:"POST",
-            headers:{ "Content-Type":"application/json" },
-            body: JSON.stringify({ paymentId })
-          });
-
-          const j = await r.json().catch(()=> ({}));
-
-          if(!r.ok || !j.ok){
-            console.log("APPROVE_FAIL", r.status, j);
-            toast(`فشل الموافقة: ${j.message || j.error_message || j.message_code || r.status}`);
-            return;
-          }
-
-          toast("تمت الموافقة ✅");
-        }catch(err){
-          console.log("APPROVE_EXCEPTION", err);
-          toast("فشل الموافقة: exception");
-        }
-      },
-
-      onReadyForServerCompletion: async (paymentId, txid) => {
-        try{
-          toast("جاري تفعيل الإعلان المميز...");
-
-          const r = await fetch("/api/pi/complete", {
-            method:"POST",
-            headers:{ "Content-Type":"application/json" },
-            body: JSON.stringify({ paymentId, txid })
-          });
-
-          const j = await r.json().catch(()=> ({}));
-
-          if(!r.ok || !j.ok){
-            console.log("COMPLETE_FAIL", r.status, j);
-            toast(`فشل الترقية: ${j.message || j.error_message || j.message_code || r.status}`);
-            return;
-          }
-
-          toast("تم تمييز إعلانك 3 أيام ⭐");
-          loadAds();
-          loadMyAds();
-        }catch(err){
-          console.log("COMPLETE_EXCEPTION", err);
-          toast("فشل الترقية: exception");
-        }
-      },
-
-      onCancel: () => toast("تم إلغاء الدفع"),
-      onError: (err) => {
-        console.log("PI_PAYMENT_ERROR", err);
-        toast(err?.message ? `مشكلة في الدفع: ${err.message}` : "مشكلة في الدفع");
-      }
-    });
-
-  }catch(e){
-    console.log("PROMOTE_OUTER_CATCH", e);
-    toast(`فشل الترقية: ${e?.message || "unknown"}`);
-  }
 }
 
 /* ====== UI helpers ====== */
@@ -205,6 +74,10 @@ function escapeHtml(str=''){
     .replaceAll("'","&#039;");
 }
 
+function focusChat(){
+  document.getElementById('chat-input')?.focus();
+}
+
 /* ====== Navigation ====== */
 function nav(id, btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -221,13 +94,68 @@ function nav(id, btn){
   if(id === 'inbox') loadInbox();
 }
 
+/* =========================
+   Pending payments handler (IMPORTANT)
+   - Called by Pi SDK when it finds incomplete/pending payments
+   ========================= */
+async function onIncompletePaymentFound(payment){
+  try{
+    console.log("INCOMPLETE_PAYMENT_FOUND", payment);
+
+    const memo = String(payment?.memo || "");
+    // بنكمّل بس مدفوعات الـ Promote
+    if(!memo.startsWith("PROMOTE_AD|")) return;
+
+    const paymentId = payment?.identifier || payment?.paymentId || payment?.id;
+    if(!paymentId) return;
+
+    toast("في عملية دفع معلّقة… بنحاول نكمّلها");
+
+    // 1) approve
+    const r1 = await fetch("/api/pi/approve", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ paymentId })
+    });
+    const j1 = await r1.json().catch(()=> ({}));
+    if(!r1.ok || !j1.ok){
+      console.log("APPROVE_FAIL_PENDING", r1.status, j1);
+      toast(`تعذر الموافقة: ${j1.message || j1.error_message || r1.status}`);
+      return;
+    }
+
+    // 2) complete
+    const r2 = await fetch("/api/pi/complete", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ paymentId })
+    });
+    const j2 = await r2.json().catch(()=> ({}));
+    if(!r2.ok || !j2.ok){
+      console.log("COMPLETE_FAIL_PENDING", r2.status, j2);
+      toast(`تعذر الإكمال: ${j2.message || j2.error_message || r2.status}`);
+      return;
+    }
+
+    toast("تم إكمال الدفع المعلّق ✅");
+    loadAds();
+    loadMyAds();
+
+  }catch(e){
+    console.log("INCOMPLETE_HANDLER_ERR", e);
+    toast("حصل خطأ أثناء إكمال الدفع المعلّق");
+  }
+}
+
 /* ====== Pi Auth ====== */
 async function initPi(){
   try{
+    if(!window.Pi) return toast("افتح من Pi Browser");
+
     const Pi = window.Pi;
     Pi.init({ version: "2.0", sandbox: false });
 
-    // IMPORTANT: لازم payments scope
+    // IMPORTANT: لازم payments scope وإلا createPayment هتفشل
     const auth = await Pi.authenticate(['username', 'payments'], onIncompletePaymentFound);
     user = auth.user;
 
@@ -256,6 +184,86 @@ function logout(){
   document.getElementById('page-login')?.classList.add('active');
 }
 
+/* =========================
+   Promote flow (5 Pi / 3 days)
+   ========================= */
+async function promoteAd(adId){
+  try{
+    if(!user?.username) return toast("سجّل دخول الأول");
+    if(!window.Pi) return toast("افتح من Pi Browser");
+
+    const Pi = window.Pi;
+    toast("فتح الدفع...");
+
+    await Pi.createPayment({
+      amount: 5,
+      memo: `PROMOTE_AD|${adId}|${Date.now()}`,
+      metadata: { purpose: "PROMOTE_AD", adId, username: user.username }
+    },{
+      onReadyForServerApproval: async (paymentId) => {
+        try{
+          toast("جاري الموافقة...");
+          const r = await fetch("/api/pi/approve", {
+            method:"POST",
+            headers:{ "Content-Type":"application/json" },
+            body: JSON.stringify({ paymentId })
+          });
+
+          const j = await r.json().catch(()=> ({}));
+
+          if(!r.ok || !j.ok){
+            console.log("APPROVE_FAIL", r.status, j);
+            toast(`فشل الموافقة: ${j.message || j.error_message || j.message_code || r.status}`);
+            return;
+          }
+
+          toast("تمت الموافقة ✅");
+        }catch(err){
+          console.log("APPROVE_EXCEPTION", err);
+          toast("فشل الموافقة");
+        }
+      },
+
+      onReadyForServerCompletion: async (paymentId, txid) => {
+        try{
+          toast("جاري تفعيل الإعلان المميز...");
+
+          const r = await fetch("/api/pi/complete", {
+            method:"POST",
+            headers:{ "Content-Type":"application/json" },
+            body: JSON.stringify({ paymentId, txid })
+          });
+
+          const j = await r.json().catch(()=> ({}));
+
+          if(!r.ok || !j.ok){
+            console.log("COMPLETE_FAIL", r.status, j);
+            toast(`فشل الترقية: ${j.message || j.error_message || j.message_code || r.status}`);
+            return;
+          }
+
+          toast("تم تمييز إعلانك 3 أيام ⭐");
+          loadAds();
+          loadMyAds();
+        }catch(err){
+          console.log("COMPLETE_EXCEPTION", err);
+          toast("فشل الترقية");
+        }
+      },
+
+      onCancel: () => toast("تم إلغاء الدفع"),
+      onError: (err) => {
+        console.log("PI_PAYMENT_ERROR", err);
+        toast(err?.message ? `مشكلة في الدفع: ${err.message}` : "مشكلة في الدفع");
+      }
+    });
+
+  }catch(e){
+    console.log("PROMOTE_OUTER_CATCH", e);
+    toast(`فشل الترقية: ${e?.message || "unknown"}`);
+  }
+}
+
 /* ====== Ads ====== */
 async function loadAds(){
   if(!_sb) return;
@@ -273,7 +281,7 @@ async function loadAds(){
     allAdsCache = data || [];
     applyFilter();
   }catch(e){
-    console.log(e);
+    console.log("LOAD_ADS_ERR", e);
     toast('خطأ في تحميل الإعلانات');
   }finally{
     showSkeleton(false);
@@ -304,7 +312,11 @@ async function loadMyAds(){
     .eq('seller_username', user.username)
     .order('created_at', {ascending:false});
 
-  if(error){ toast('خطأ في تحميل إعلاناتك'); return; }
+  if(error){
+    console.log("LOAD_MY_ADS_ERR", error);
+    toast('خطأ في تحميل إعلاناتك');
+    return;
+  }
 
   const empty = document.getElementById('my-empty');
   if(empty) empty.style.display = (data?.length ? 'none' : 'block');
@@ -328,7 +340,7 @@ function renderGrid(data, containerId, isOwner){
 
     return `
       <div class="glass ad-card" onclick="openAd('${ad.id}')">
-        <img class="ad-thumb" src="${SB_URL}/storage/v1/object/public/ads-images/${encodeURIComponent(ad.image_url)}" alt="ad">
+        <img class="ad-thumb" src="${SB_URL}/storage/v1/object/public/ads-images/${encodeURIComponent(ad.image_url || '')}" alt="ad" onerror="this.style.display='none'">
         <div class="ad-body">
           <div class="ad-title">${escapeHtml(ad.title)}</div>
           <div class="ad-meta">
@@ -339,11 +351,11 @@ function renderGrid(data, containerId, isOwner){
           ${labelHtml}
 
           ${isOwner ? `
-            <button class="btn-delete" onclick="event.stopPropagation(); deleteAd('${ad.id}', '${ad.image_url}')">
+            <button type="button" class="btn-delete" onclick="event.stopPropagation(); deleteAd('${ad.id}', '${ad.image_url || ''}')">
               <i class="fa-solid fa-trash"></i> حذف الإعلان
             </button>
 
-            <button class="btn-main" style="margin-top:10px;" onclick="event.stopPropagation(); promoteAd('${ad.id}')">
+            <button type="button" class="btn-main" style="margin-top:10px;" onclick="event.stopPropagation(); promoteAd('${ad.id}')">
               ⭐ اجعل إعلانك مميز (5 Pi / 3 أيام)
             </button>
           ` : ''}
@@ -372,7 +384,7 @@ async function openAd(id){
 
     document.getElementById('details-view').innerHTML = `
       <div class="glass details-card">
-        <img class="details-img" src="${SB_URL}/storage/v1/object/public/ads-images/${encodeURIComponent(ad.image_url)}" alt="ad">
+        <img class="details-img" src="${SB_URL}/storage/v1/object/public/ads-images/${encodeURIComponent(ad.image_url || '')}" alt="ad" onerror="this.style.display='none'">
         <div class="details-body">
           <div class="details-row">
             <div>
@@ -387,14 +399,14 @@ async function openAd(id){
           <p>${escapeHtml(ad.description || '')}</p>
 
           <div class="cta-row">
-            <button class="btn-main" onclick="focusChat()"><i class="fa-solid fa-message"></i> راسل البائع</button>
-            <button class="btn-accent" ${waLink ? `onclick="window.open('${waLink}','_blank')"` : 'disabled style="opacity:.5; cursor:not-allowed"'} >
+            <button type="button" class="btn-main" onclick="focusChat()"><i class="fa-solid fa-message"></i> راسل البائع</button>
+            <button type="button" class="btn-accent" ${waLink ? `onclick="window.open('${waLink}','_blank')"` : 'disabled style="opacity:.5; cursor:not-allowed"'} >
               <i class="fa-brands fa-whatsapp"></i> واتساب
             </button>
           </div>
 
           ${(user?.username && user.username === ad.seller_username) ? `
-            <button class="btn-main" style="margin-top:10px;" onclick="promoteAd('${ad.id}')">
+            <button type="button" class="btn-main" style="margin-top:10px;" onclick="promoteAd('${ad.id}')">
               ⭐ اجعل إعلانك مميز (5 Pi / 3 أيام)
             </button>
           ` : ''}
@@ -413,13 +425,9 @@ async function openAd(id){
     nav('details');
     await loadMsgs(true);
   }catch(e){
-    console.log(e);
+    console.log("OPEN_AD_ERR", e);
     toast('تعذر فتح الإعلان');
   }
-}
-
-function focusChat(){
-  document.getElementById('chat-input')?.focus();
 }
 
 /* ====== Conversation logic ====== */
@@ -430,9 +438,16 @@ function buildConversationId(ad){
   const buyer = (user.username === seller) ? '__seller_view__' : user.username;
   return `${ad.id}|${seller}|${buyer}`;
 }
-
 function isSellerViewingOwnAd(){
   return !!(user?.username && activeAd?.seller_username && user.username === activeAd.seller_username);
+}
+function extractBuyerFromConversation(convId){
+  try{
+    const parts = String(convId).split('|');
+    return parts[2] || null;
+  }catch{
+    return null;
+  }
 }
 
 /* ====== Messages ====== */
@@ -477,7 +492,7 @@ async function loadMsgs(scrollToBottom=false){
       if(nearBottom) box.scrollTop = box.scrollHeight;
     }
   }catch(e){
-    console.log(e);
+    console.log("LOAD_MSGS_ERR", e);
     toast('خطأ في تحميل الرسائل');
   }
 }
@@ -488,10 +503,7 @@ async function sendMsg(){
     const text = (inp?.value || '').trim();
     if(!text) return;
 
-    if(!user?.username){
-      toast('سجّل دخول الأول');
-      return;
-    }
+    if(!user?.username) return toast('سجّل دخول الأول');
     if(!activeAd) return;
 
     if(isSellerViewingOwnAd() && activeConversationId?.includes('__seller_view__')){
@@ -519,17 +531,8 @@ async function sendMsg(){
     inp.value = '';
     await loadMsgs(true);
   }catch(e){
-    console.log(e);
+    console.log("SEND_MSG_ERR", e);
     toast('خطأ في الإرسال');
-  }
-}
-
-function extractBuyerFromConversation(convId){
-  try{
-    const parts = String(convId).split('|');
-    return parts[2] || null;
-  }catch{
-    return null;
   }
 }
 
@@ -556,7 +559,6 @@ async function loadInbox(){
     const rows = data || [];
     const seen = new Set();
     const convs = [];
-
     for(const m of rows){
       if(!m.conversation_id) continue;
       if(seen.has(m.conversation_id)) continue;
@@ -601,7 +603,7 @@ async function loadInbox(){
       `;
     }).join('');
   }catch(e){
-    console.log(e);
+    console.log("LOAD_INBOX_ERR", e);
     toast('تعذر تحميل الرسائل');
   }
 }
@@ -616,7 +618,7 @@ async function openConversationFromInbox(conversationId, adId){
 
   document.getElementById('details-view').innerHTML = `
     <div class="glass details-card">
-      <img class="details-img" src="${SB_URL}/storage/v1/object/public/ads-images/${encodeURIComponent(ad.image_url)}" alt="ad">
+      <img class="details-img" src="${SB_URL}/storage/v1/object/public/ads-images/${encodeURIComponent(ad.image_url || '')}" alt="ad" onerror="this.style.display='none'">
       <div class="details-body">
         <div class="details-row">
           <div>
@@ -637,6 +639,114 @@ async function openConversationFromInbox(conversationId, adId){
 
   nav('details');
   await loadMsgs(true);
+}
+
+/* ====== Upload / Delete ====== */
+async function uploadAd(){
+  try{
+    console.log("UPLOAD_CLICKED");
+    if(!_sb) return toast("Supabase مش جاهز");
+    if(!user?.username) return toast("سجّل دخول الأول");
+
+    const f = document.getElementById('p-img')?.files?.[0];
+    if(!f) return toast('اختر صورة');
+
+    const title = document.getElementById('p-title')?.value?.trim() || "";
+    const description = document.getElementById('p-desc')?.value?.trim() || "";
+    const price = document.getElementById('p-price')?.value?.trim() || "";
+    const phone = document.getElementById('p-phone')?.value?.trim() || "";
+
+    if(!title || !price) return toast('اكتب الاسم والسعر');
+
+    const ext = (f.name.split('.').pop() || 'jpg').toLowerCase();
+    const path = `img_${Date.now()}_${Math.random().toString(16).slice(2)}.${ext}`;
+
+    toast('جاري رفع الصورة...');
+    const up = await _sb.storage.from('ads-images').upload(path, f, {
+      cacheControl: '3600',
+      upsert: false
+    });
+
+    if(up?.error){
+      console.log("UPLOAD_STORAGE_FAIL", up.error);
+      return toast("فشل رفع الصورة");
+    }
+
+    toast('جاري نشر الإعلان...');
+    const ins = await _sb.from('ads').insert([{
+      title,
+      description,
+      price,
+      phone,
+      image_url: path,
+      seller_username: user.username
+    }]);
+
+    if(ins?.error){
+      console.log("INSERT_AD_FAIL", ins.error);
+      try{ await _sb.storage.from('ads-images').remove([path]); }catch(_){}
+      return toast("فشل نشر الإعلان (قاعدة البيانات)");
+    }
+
+    toast('تم النشر ✅');
+
+    document.getElementById('p-img').value = '';
+    document.getElementById('p-title').value = '';
+    document.getElementById('p-desc').value = '';
+    document.getElementById('p-price').value = '';
+    document.getElementById('p-phone').value = '';
+
+    nav('home');
+
+  }catch(e){
+    console.log("UPLOAD_ERR", e);
+    toast('فشل النشر');
+  }
+}
+
+async function deleteAd(id, img){
+  try{
+    console.log("DELETE_CLICKED", id);
+    if(!_sb) return toast("Supabase مش جاهز");
+    if(!user?.username) return toast("سجّل دخول الأول");
+
+    if(!confirm('حذف الإعلان؟')) return;
+
+    const del = await _sb.from('ads').delete().eq('id', id);
+    if(del?.error){
+      console.log("DELETE_ROW_FAIL", del.error);
+      return toast("فشل حذف الإعلان (DB)");
+    }
+
+    if(img){
+      const rm = await _sb.storage.from('ads-images').remove([img]);
+      if(rm?.error){
+        console.log("DELETE_IMAGE_FAIL", rm.error);
+      }
+    }
+
+    toast('تم الحذف ✅');
+    loadMyAds();
+    loadAds();
+
+  }catch(e){
+    console.log("DELETE_ERR", e);
+    toast('فشل الحذف');
+  }
+}
+
+/* ====== Share ====== */
+async function shareActive(){
+  if(!activeAd) return;
+  const text = `شوف الإعلان: ${activeAd.title} — السعر ${activeAd.price} Pi`;
+  try{
+    if(navigator.share){
+      await navigator.share({ text });
+    }else{
+      await navigator.clipboard.writeText(text);
+      toast('تم النسخ ✅');
+    }
+  }catch{}
 }
 
 /* ====== Auto refresh messages ====== */
