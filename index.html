@@ -8,6 +8,7 @@
   <!-- Pi SDK -->
   <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
+  <!-- (اختياري) اربط ملف CSS بتاعك -->
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
@@ -71,6 +72,14 @@
           <button id="btnBootstrap" class="btn">1) Create/Bootstrap Token</button>
           <button id="btnSellOffer" class="btn">2) Create Sell Offer (DEX)</button>
         </div>
+
+        <!-- ✅ NEW: Trustline on Distributor -->
+        <div class="btnRow">
+          <button id="btnTrustDistributor" class="btn ghost">Add Trustline (Distributor)</button>
+        </div>
+
+        <label class="lbl">Trustline Result</label>
+        <pre id="trustOut" class="log"></pre>
 
         <div class="note">
           <b>Bootstrap</b> = Distributor Trustline + Issuer يبعث الكمية للـ Distributor.
@@ -136,12 +145,12 @@
         </small>
       </div>
 
-      <!-- ✅ NEW CARD: home_domain linking -->
+      <!-- ✅ Home domain card -->
       <div class="card">
         <h2>ربط التوكن بالدومين على السلسلة (Issuer home_domain)</h2>
 
         <div class="note">
-          <b>مهم جدًا:</b> علشان Pi DEX يربط توكنك بـ <span class="mono">stellar.toml</span> لازم تحط
+          <b>مهم جدًا:</b> علشان Pi DEX يربط توكنك بـ <span class="mono">TOML</span> لازم تحط
           <span class="mono">home_domain</span> على حساب الـ Issuer (Hostname فقط).
           <div class="muted" style="margin-top:6px">
             مثال: <span class="mono">pi-links.netlify.app</span> (من غير https://)
@@ -160,8 +169,7 @@
         <pre id="homeDomainOut" class="log"></pre>
 
         <small class="muted">
-          لازم يكون عندك Function: <span class="mono">set_home_domain.js</span> (على Netlify Functions).
-          وكمان هنحتاج Function صغيرة اسمها <span class="mono">get_issuer_info.js</span> علشان زر Check.
+          لازم يكون عندك Functions: <span class="mono">set_home_domain.js</span> و <span class="mono">get_issuer_info.js</span>
         </small>
       </div>
 
@@ -196,24 +204,24 @@
 
         <ol class="checklist">
           <li>جهّز دومين + HTTPS شغال.</li>
-          <li>أضف الملف: <span class="mono">/.well-known/stellar.toml</span> على الدومين.</li>
-          <li>تأكد إنه بيتفتح على:
-            <span class="mono">https://YOURDOMAIN/.well-known/stellar.toml</span>
+          <li>أضف الملفات:
+            <span class="mono">/.well-known/stellar.toml</span> و
+            <span class="mono">/.well-known/pi.toml</span>
           </li>
-          <li><b>خطوة مهمة جدًا:</b> ارجع للـ Dashboard واضغط
+          <li>تأكد إنهم بيتفتحوا 200.</li>
+          <li><b>خطوة مهمة جدًا:</b> من Dashboard نفّذ
             <span class="mono">Set home_domain</span> للـ Issuer بنفس الدومين.
           </li>
-          <li>بعدها اعمل Offers/سيولة على زوج <span class="mono">Token/PI</span> علشان يظهر على الدكس.</li>
+          <li>اعمل Offers/AMM على زوج <span class="mono">Token/PI</span> علشان يظهر.</li>
         </ol>
 
         <div class="note">
-          وجود <span class="mono">stellar.toml</span> + <span class="mono">home_domain</span> + سوق (Offers/AMM)
-          = أفضل فرصة إن التوكن يظهر في Pi DEX.
+          وجود TOML + home_domain + سيولة = أفضل فرصة إن التوكن يظهر في Pi Wallet/DEX.
         </div>
       </div>
 
       <div class="card">
-        <h2>مولّد stellar.toml (انسخه وحطه على الدومين)</h2>
+        <h2>مولّد TOML (انسخه وحطه على الدومين)</h2>
 
         <label class="lbl">Domain</label>
         <input id="verDomain" class="inp mono" placeholder="pi-links.netlify.app" />
@@ -236,7 +244,7 @@
         <input id="verDesc" class="inp" value="Donate Way token on Pi Testnet for donations." />
 
         <div class="btnRow">
-          <button id="btnGenToml" class="btn">Generate stellar.toml</button>
+          <button id="btnGenToml" class="btn">Generate TOML</button>
           <button id="btnCheckDomain" class="btn primary">Check Domain</button>
         </div>
 
@@ -244,8 +252,9 @@
         <textarea id="tomlOut" class="inp mono" rows="12" readonly></textarea>
 
         <small class="muted">
-          حط المحتوى ده في:
+          انسخ الناتج وحطه في:
           <span class="mono">/.well-known/stellar.toml</span>
+          و <span class="mono">/.well-known/pi.toml</span>
         </small>
       </div>
 
