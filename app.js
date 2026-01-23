@@ -28,10 +28,8 @@ function setStatus(){
   // Domain page prefill
   if ($("verIssuer")) $("verIssuer").value = $("verIssuer").value || state.issuerPub || "";
 
-  // Home domain card prefill (لو موجود)
-  if ($("hdDomain")) {
-    $("hdDomain").value = $("hdDomain").value || localStorage.getItem("dw_home_domain") || "";
-  }
+  // Home domain prefill
+  if ($("hdDomain")) $("hdDomain").value = $("hdDomain").value || localStorage.getItem("dw_home_domain") || "";
 }
 
 function normalizeAssetCode(code){
@@ -200,7 +198,37 @@ $("btnAddAmm").addEventListener("click", async () => {
   }
 });
 
-/** ✅ NEW: Set home_domain on Issuer */
+/** ✅ Add Trustline on Distributor (server wallet) */
+const btnTrust = $("btnTrustDistributor");
+if (btnTrust) {
+  btnTrust.addEventListener("click", async () => {
+    const assetCode = normalizeAssetCode($("assetCode").value);
+    $("assetCode").value = assetCode;
+
+    const adminToken = ($("adminToken")?.value || "").trim();
+    if (!assetCode) return log("log", "❌ Asset Code فاضي.");
+
+    if ($("trustOut")) $("trustOut").textContent = "";
+
+    try {
+      log("log", "⏳ Adding trustline on Distributor...", { assetCode });
+
+      const data = await apiPost(
+        "/.netlify/functions/distributor_trust_token",
+        { assetCode },
+        adminToken
+      );
+
+      if ($("trustOut")) $("trustOut").textContent = JSON.stringify(data, null, 2);
+      log("log", "✅ Trustline done:", data);
+    } catch (e) {
+      if ($("trustOut")) $("trustOut").textContent = JSON.stringify({ error: e.message || String(e) }, null, 2);
+      log("log", "❌ Trustline error:", e.message || e);
+    }
+  });
+}
+
+/** ✅ Set home_domain on Issuer */
 const btnSetHD = $("btnSetHomeDomain");
 if (btnSetHD) {
   btnSetHD.addEventListener("click", async () => {
@@ -209,7 +237,6 @@ if (btnSetHD) {
 
     if (!homeDomainRaw) return log("log", "❌ اكتب Home Domain (مثال: pi-links.netlify.app)");
 
-    // نحفظه محليًا
     const clean = homeDomainRaw
       .replace(/^https?:\/\//i, "")
       .replace(/\/.*$/, "");
@@ -233,7 +260,7 @@ if (btnSetHD) {
   });
 }
 
-/** ✅ NEW: Check issuer home_domain from Horizon */
+/** ✅ Check issuer home_domain from Horizon */
 const btnCheckHD = $("btnCheckHomeDomain");
 if (btnCheckHD) {
   btnCheckHD.addEventListener("click", async () => {
@@ -246,7 +273,6 @@ if (btnCheckHD) {
       if ($("homeDomainOut")) $("homeDomainOut").textContent = JSON.stringify(data, null, 2);
       log("log", "✅ Issuer info:", data);
 
-      // لو رجع home_domain احفظه
       if (data?.home_domain) {
         localStorage.setItem("dw_home_domain", data.home_domain);
         if ($("hdDomain")) $("hdDomain").value = data.home_domain;
@@ -299,6 +325,7 @@ function genToml({domain, code, issuer, name, desc}){
   const safeDomain = (domain || "").trim();
   return `# Donate Way — Stellar TOML
 # Place this file at: https://${safeDomain}/.well-known/stellar.toml
+# Also copy to: https://${safeDomain}/.well-known/pi.toml
 
 NETWORK_PASSPHRASE="Pi Testnet"
 HORIZON_URL="https://api.testnet.minepi.com"
@@ -313,8 +340,7 @@ issuer="${issuer}"
 display_decimals=2
 name="${name}"
 desc="${desc}"
-# Optional (add later if you have it):
-# image="https://${safeDomain}/token.png"
+image="https://${safeDomain}/token.png"
 `;
 }
 
@@ -332,7 +358,7 @@ $("btnGenToml").addEventListener("click", () => {
 
   const out = genToml({domain, code, issuer, name, desc});
   $("tomlOut").value = out;
-  log("log2", "✅ TOML generated. انسخه وحطه في /.well-known/stellar.toml");
+  log("log2", "✅ TOML generated. انسخه وحطه في /.well-known/stellar.toml و /.well-known/pi.toml");
 });
 
 /* Domain page: check domain */
