@@ -18,3 +18,13 @@ force = true
   to = "/.well-known/stellar.toml"
   status = 200
   force = true
+[[headers]]
+  for = "/.well-known/*.toml"
+  [headers.values]
+    Content-Type = "text/plain; charset=utf-8"
+    Cache-Control = "no-store"
+
+[[headers]]
+  for = "/token.png"
+  [headers.values]
+    Cache-Control = "no-store"
