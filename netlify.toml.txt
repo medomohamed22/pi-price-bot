@@ -2,28 +2,27 @@
 publish = "."
 functions = "netlify/functions"
 
+# Pi Payments (اختياري لو انت بتستخدم /api/pi/* في الفرونت)
 [[redirects]]
-from = "/api/pi/approve"
-to = "/.netlify/functions/pi_approve"
-status = 200
-force = true
-
-[[redirects]]
-from = "/api/pi/complete"
-to = "/.netlify/functions/pi_complete"
-status = 200
-force = true
-[[redirects]]
-  from = "/.well-known/stellar.toml"
-  to = "/.well-known/stellar.toml"
+  from = "/api/pi/approve"
+  to = "/.netlify/functions/pi_approve"
   status = 200
   force = true
+
+[[redirects]]
+  from = "/api/pi/complete"
+  to = "/.netlify/functions/pi_complete"
+  status = 200
+  force = true
+
+# Headers for TOML (important for wallet indexing)
 [[headers]]
   for = "/.well-known/*.toml"
   [headers.values]
     Content-Type = "text/plain; charset=utf-8"
     Cache-Control = "no-store"
 
+# Token image (avoid caching while testing)
 [[headers]]
   for = "/token.png"
   [headers.values]
