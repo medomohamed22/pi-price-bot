@@ -17,18 +17,15 @@ function log(elId, ...args){
 
 function setStatus(){
   const Pi = window.Pi;
-  $("sdkConnected").textContent = Pi ? "Loaded" : "Not loaded";
-  $("sdkUser").textContent = state.auth?.user?.username || "—";
-  $("sdkUid").textContent = state.auth?.user?.uid || "—";
-  $("sdkToken").textContent = state.auth?.accessToken ? state.auth.accessToken.slice(0, 24) + "..." : "—";
+  if ($("sdkConnected")) $("sdkConnected").textContent = Pi ? "Loaded" : "Not loaded";
+  if ($("sdkUser")) $("sdkUser").textContent = state.auth?.user?.username || "—";
+  if ($("sdkUid")) $("sdkUid").textContent = state.auth?.user?.uid || "—";
+  if ($("sdkToken")) $("sdkToken").textContent = state.auth?.accessToken ? state.auth.accessToken.slice(0, 24) + "..." : "—";
 
-  $("issuerPub").textContent = state.issuerPub || "—";
-  $("distPub").textContent = state.distPub || "—";
+  if ($("issuerPub")) $("issuerPub").textContent = state.issuerPub || "—";
+  if ($("distPub")) $("distPub").textContent = state.distPub || "—";
 
-  // Domain page prefill
   if ($("verIssuer")) $("verIssuer").value = $("verIssuer").value || state.issuerPub || "";
-
-  // Home domain prefill
   if ($("hdDomain")) $("hdDomain").value = $("hdDomain").value || localStorage.getItem("dw_home_domain") || "";
 }
 
@@ -54,13 +51,11 @@ async function apiPost(path, body, adminToken){
   let data;
   try { data = JSON.parse(text); } catch { data = { raw: text }; }
 
-  if (!res.ok) {
-    throw new Error(data?.error || data?.message || `HTTP ${res.status}: ${text}`);
-  }
+  if (!res.ok) throw new Error(data?.error || data?.message || `HTTP ${res.status}: ${text}`);
   return data;
 }
 
-/* Tabs routing */
+/* Tabs */
 document.querySelectorAll(".tab").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
@@ -138,160 +133,180 @@ $("btnBootstrap").addEventListener("click", async () => {
   }
 });
 
-/** Create Sell Offer */
-$("btnSellOffer").addEventListener("click", async () => {
+/** Trustline on Distributor */
+$("btnTrustDistributor").addEventListener("click", async () => {
+  const assetCode = normalizeAssetCode($("assetCode").value);
+  $("assetCode").value = assetCode;
+  const adminToken = ($("adminToken")?.value || "").trim();
+  if (!assetCode) return log("log", "❌ Asset Code فاضي.");
+
+  if ($("trustOut")) $("trustOut").textContent = "";
+
+  try{
+    log("log", "⏳ Adding trustline on Distributor...", { assetCode });
+    const data = await apiPost("/.netlify/functions/distributor_trust_token", { assetCode }, adminToken);
+    if ($("trustOut")) $("trustOut").textContent = JSON.stringify(data, null, 2);
+    log("log", "✅ Trustline done:", data);
+  }catch(e){
+    if ($("trustOut")) $("trustOut").textContent = JSON.stringify({ error: e.message || String(e) }, null, 2);
+    log("log", "❌ Trustline error:", e.message || e);
+  }
+});
+
+/** Send Token */
+$("btnSendToken").addEventListener("click", async () => {
+  const adminToken = ($("adminToken")?.value || "").trim();
+  const to = ($("sendTo")?.value || "").trim();
+  const amount = ($("sendAmount")?.value || "").trim();
+  const memo = ($("sendMemo")?.value || "").trim();
+
   const assetCode = normalizeAssetCode($("assetCode").value);
   $("assetCode").value = assetCode;
 
-  const amount = $("offerAmount").value.trim();
-  const price = $("offerPrice").value.trim();
-  const adminToken = $("adminToken").value.trim();
+  if (!to || !to.startsWith("G")) return log("log", "❌ اكتب عنوان محفظتك (G...)");
+  if (!/^\d+(\.\d+)?$/.test(amount)) return log("log", "❌ Amount لازم رقم");
 
-  if (!assetCode) return log("log", "❌ Asset Code فاضي.");
-  if (!/^\d+(\.\d+)?$/.test(amount)) return log("log", "❌ Amount لازم رقم.");
-  if (!/^\d+(\.\d+)?$/.test(price)) return log("log", "❌ Price لازم رقم.");
+  if ($("sendOut")) $("sendOut").textContent = "";
 
   try{
-    log("log", "⏳ Creating DEX sell offer...", { assetCode, amount, price });
-    const data = await apiPost("/.netlify/functions/dex_sell_offer", {
-      assetCode,
-      amount,
-      price,
-    }, adminToken);
-
-    log("log", "✅ Sell offer created:", data);
+    log("log", "⏳ Sending token...", { to, assetCode, amount });
+    const data = await apiPost("/.netlify/functions/send_token", { to, assetCode, amount, memo }, adminToken);
+    if ($("sendOut")) $("sendOut").textContent = JSON.stringify(data, null, 2);
+    log("log", "✅ Send done:", data);
   }catch(e){
+    if ($("sendOut")) $("sendOut").textContent = JSON.stringify({ error: e.message || String(e) }, null, 2);
+    log("log", "❌ Send error:", e.message || e);
+  }
+});
+
+/** DEX Sell */
+$("btnDexSell").addEventListener("click", async () => {
+  const adminToken = ($("adminToken")?.value || "").trim();
+  const assetCode = normalizeAssetCode($("assetCode").value);
+  $("assetCode").value = assetCode;
+
+  const amount = ($("dexAmount")?.value || "").trim();
+  const price  = ($("dexPrice")?.value || "").trim();
+  const offerId = ($("dexOfferId")?.value || "0").trim();
+
+  if (!/^\d+(\.\d+)?$/.test(amount)) return log("log", "❌ Amount لازم رقم");
+  if (!/^\d+(\.\d+)?$/.test(price)) return log("log", "❌ Price لازم رقم");
+
+  if ($("dexOut")) $("dexOut").textContent = "";
+
+  try{
+    log("log", "⏳ Creating sell offer...", { assetCode, amount, price, offerId });
+    const data = await apiPost("/.netlify/functions/dex_sell_offer", { assetCode, amount, price, offerId }, adminToken);
+    if ($("dexOut")) $("dexOut").textContent = JSON.stringify(data, null, 2);
+    log("log", "✅ Sell offer done:", data);
+  }catch(e){
+    if ($("dexOut")) $("dexOut").textContent = JSON.stringify({ error: e.message || String(e) }, null, 2);
     log("log", "❌ Sell offer error:", e.message || e);
   }
 });
 
-/** Add AMM Liquidity */
-$("btnAddAmm").addEventListener("click", async () => {
+/** DEX Buy */
+$("btnDexBuy").addEventListener("click", async () => {
+  const adminToken = ($("adminToken")?.value || "").trim();
   const assetCode = normalizeAssetCode($("assetCode").value);
   $("assetCode").value = assetCode;
 
-  const tokenAmount = $("ammTokenAmount").value.trim();
-  const piAmount = $("ammPiAmount").value.trim();
+  const amount = ($("dexAmount")?.value || "").trim();
+  const price  = ($("dexPrice")?.value || "").trim();
+  const offerId = ($("dexOfferId")?.value || "0").trim();
 
-  const minPrice = $("ammMinPrice").value.trim();
-  const maxPrice = $("ammMaxPrice").value.trim();
+  if (!/^\d+(\.\d+)?$/.test(amount)) return log("log", "❌ Amount لازم رقم");
+  if (!/^\d+(\.\d+)?$/.test(price)) return log("log", "❌ Price لازم رقم");
 
-  const adminToken = $("adminToken").value.trim();
-
-  if (!assetCode) return log("log", "❌ Asset Code فاضي.");
-  if (!/^\d+(\.\d+)?$/.test(tokenAmount)) return log("log", "❌ Token Amount لازم رقم.");
-  if (!/^\d+(\.\d+)?$/.test(piAmount)) return log("log", "❌ Pi Amount لازم رقم.");
+  if ($("dexOut")) $("dexOut").textContent = "";
 
   try{
-    log("log", "⏳ Adding AMM liquidity...", { assetCode, tokenAmount, piAmount, minPrice, maxPrice });
-    const data = await apiPost("/.netlify/functions/amm_add_liquidity", {
-      assetCode,
-      tokenAmount,
-      piAmount,
-      minPrice,
-      maxPrice,
-    }, adminToken);
+    log("log", "⏳ Creating buy offer...", { assetCode, amount, price, offerId });
+    const data = await apiPost("/.netlify/functions/dex_buy_offer", { assetCode, amount, price, offerId }, adminToken);
+    if ($("dexOut")) $("dexOut").textContent = JSON.stringify(data, null, 2);
+    log("log", "✅ Buy offer done:", data);
+  }catch(e){
+    if ($("dexOut")) $("dexOut").textContent = JSON.stringify({ error: e.message || String(e) }, null, 2);
+    log("log", "❌ Buy offer error:", e.message || e);
+  }
+});
 
+/** AMM Add Liquidity */
+$("btnAddAmm").addEventListener("click", async () => {
+  const adminToken = ($("adminToken")?.value || "").trim();
+  const assetCode = normalizeAssetCode($("assetCode").value);
+  $("assetCode").value = assetCode;
+
+  const tokenAmount = ($("ammTokenAmount")?.value || "").trim();
+  const piAmount    = ($("ammPiAmount")?.value || "").trim();
+  const minPrice    = ($("ammMinPrice")?.value || "").trim();
+  const maxPrice    = ($("ammMaxPrice")?.value || "").trim();
+
+  if (!/^\d+(\.\d+)?$/.test(tokenAmount)) return log("log", "❌ Token Amount لازم رقم");
+  if (!/^\d+(\.\d+)?$/.test(piAmount)) return log("log", "❌ Pi Amount لازم رقم");
+
+  try{
+    log("log", "⏳ Adding AMM liquidity...", { assetCode, tokenAmount, piAmount });
+    const data = await apiPost("/.netlify/functions/amm_add_liquidity", {
+      assetCode, tokenAmount, piAmount, minPrice, maxPrice
+    }, adminToken);
     log("log", "✅ AMM liquidity added:", data);
   }catch(e){
     log("log", "❌ AMM error:", e.message || e);
   }
 });
 
-/** ✅ Add Trustline on Distributor (server wallet) */
-const btnTrust = $("btnTrustDistributor");
-if (btnTrust) {
-  btnTrust.addEventListener("click", async () => {
-    const assetCode = normalizeAssetCode($("assetCode").value);
-    $("assetCode").value = assetCode;
+/** Set home_domain */
+$("btnSetHomeDomain").addEventListener("click", async () => {
+  const adminToken = ($("adminToken")?.value || "").trim();
+  const homeDomainRaw = ($("hdDomain")?.value || "").trim();
+  if (!homeDomainRaw) return log("log", "❌ اكتب home_domain");
 
-    const adminToken = ($("adminToken")?.value || "").trim();
-    if (!assetCode) return log("log", "❌ Asset Code فاضي.");
+  const clean = homeDomainRaw.replace(/^https?:\/\//i, "").replace(/\/.*$/, "");
+  localStorage.setItem("dw_home_domain", clean);
 
-    if ($("trustOut")) $("trustOut").textContent = "";
+  if ($("homeDomainOut")) $("homeDomainOut").textContent = "";
 
-    try {
-      log("log", "⏳ Adding trustline on Distributor...", { assetCode });
+  try{
+    log("log", "⏳ Setting issuer home_domain...", { homeDomain: clean });
+    const data = await apiPost("/.netlify/functions/set_home_domain", { homeDomain: clean }, adminToken);
+    if ($("homeDomainOut")) $("homeDomainOut").textContent = JSON.stringify(data, null, 2);
+    log("log", "✅ home_domain set:", data);
+  }catch(e){
+    if ($("homeDomainOut")) $("homeDomainOut").textContent = JSON.stringify({ error: e.message || String(e) }, null, 2);
+    log("log", "❌ Set home_domain error:", e.message || e);
+  }
+});
 
-      const data = await apiPost(
-        "/.netlify/functions/distributor_trust_token",
-        { assetCode },
-        adminToken
-      );
+/** Check home_domain */
+$("btnCheckHomeDomain").addEventListener("click", async () => {
+  const adminToken = ($("adminToken")?.value || "").trim();
+  if ($("homeDomainOut")) $("homeDomainOut").textContent = "";
 
-      if ($("trustOut")) $("trustOut").textContent = JSON.stringify(data, null, 2);
-      log("log", "✅ Trustline done:", data);
-    } catch (e) {
-      if ($("trustOut")) $("trustOut").textContent = JSON.stringify({ error: e.message || String(e) }, null, 2);
-      log("log", "❌ Trustline error:", e.message || e);
+  try{
+    log("log", "⏳ Checking issuer info...");
+    const data = await apiPost("/.netlify/functions/get_issuer_info", {}, adminToken);
+    if ($("homeDomainOut")) $("homeDomainOut").textContent = JSON.stringify(data, null, 2);
+    log("log", "✅ Issuer info:", data);
+
+    if (data?.home_domain) {
+      localStorage.setItem("dw_home_domain", data.home_domain);
+      if ($("hdDomain")) $("hdDomain").value = data.home_domain;
     }
-  });
-}
+  }catch(e){
+    if ($("homeDomainOut")) $("homeDomainOut").textContent = JSON.stringify({ error: e.message || String(e) }, null, 2);
+    log("log", "❌ Check home_domain error:", e.message || e);
+  }
+});
 
-/** ✅ Set home_domain on Issuer */
-const btnSetHD = $("btnSetHomeDomain");
-if (btnSetHD) {
-  btnSetHD.addEventListener("click", async () => {
-    const adminToken = ($("adminToken")?.value || "").trim();
-    const homeDomainRaw = ($("hdDomain")?.value || "").trim();
-
-    if (!homeDomainRaw) return log("log", "❌ اكتب Home Domain (مثال: pi-links.netlify.app)");
-
-    const clean = homeDomainRaw
-      .replace(/^https?:\/\//i, "")
-      .replace(/\/.*$/, "");
-
-    localStorage.setItem("dw_home_domain", clean);
-    if ($("homeDomainOut")) $("homeDomainOut").textContent = "";
-
-    try{
-      log("log", "⏳ Setting issuer home_domain...", { homeDomain: clean });
-
-      const data = await apiPost("/.netlify/functions/set_home_domain", {
-        homeDomain: clean
-      }, adminToken);
-
-      if ($("homeDomainOut")) $("homeDomainOut").textContent = JSON.stringify(data, null, 2);
-      log("log", "✅ home_domain set:", data);
-    }catch(e){
-      if ($("homeDomainOut")) $("homeDomainOut").textContent = JSON.stringify({ error: e.message || String(e) }, null, 2);
-      log("log", "❌ Set home_domain error:", e.message || e);
-    }
-  });
-}
-
-/** ✅ Check issuer home_domain from Horizon */
-const btnCheckHD = $("btnCheckHomeDomain");
-if (btnCheckHD) {
-  btnCheckHD.addEventListener("click", async () => {
-    const adminToken = ($("adminToken")?.value || "").trim();
-    if ($("homeDomainOut")) $("homeDomainOut").textContent = "";
-
-    try{
-      log("log", "⏳ Checking issuer info from Horizon...");
-      const data = await apiPost("/.netlify/functions/get_issuer_info", {}, adminToken);
-      if ($("homeDomainOut")) $("homeDomainOut").textContent = JSON.stringify(data, null, 2);
-      log("log", "✅ Issuer info:", data);
-
-      if (data?.home_domain) {
-        localStorage.setItem("dw_home_domain", data.home_domain);
-        if ($("hdDomain")) $("hdDomain").value = data.home_domain;
-      }
-    }catch(e){
-      if ($("homeDomainOut")) $("homeDomainOut").textContent = JSON.stringify({ error: e.message || String(e) }, null, 2);
-      log("log", "❌ Check home_domain error:", e.message || e);
-    }
-  });
-}
-
-/** Pi Payment: Donation */
+/** Pi Payments Donate */
 $("btnDonate").addEventListener("click", async () => {
   const Pi = window.Pi;
   if (!Pi) return log("log", "❌ Pi SDK مش محمّل.");
   if (!state.auth) return log("log", "❌ اعمل تسجيل دخول الأول.");
 
   const amount = Number($("donAmount").value || 0);
-  const memo = $("donMemo").value.trim() || "Donate Way — Donation";
+  const memo = ($("donMemo").value || "").trim() || "Donate Way — Donation";
 
   try{
     log("log", "⏳ Creating payment...", { amount, memo });
@@ -322,10 +337,11 @@ $("btnDonate").addEventListener("click", async () => {
 
 /* Domain page: generate TOML */
 function genToml({domain, code, issuer, name, desc}){
-  const safeDomain = (domain || "").trim();
-  return `# Donate Way — Stellar TOML
-# Place this file at: https://${safeDomain}/.well-known/stellar.toml
-# Also copy to: https://${safeDomain}/.well-known/pi.toml
+  const d = (domain || "").trim();
+  return `# Donate Way — Pi TOML / Stellar TOML
+# Put this content in BOTH:
+# https://${d}/.well-known/pi.toml
+# https://${d}/.well-known/stellar.toml
 
 NETWORK_PASSPHRASE="Pi Testnet"
 HORIZON_URL="https://api.testnet.minepi.com"
@@ -340,7 +356,7 @@ issuer="${issuer}"
 display_decimals=2
 name="${name}"
 desc="${desc}"
-image="https://${safeDomain}/token.png"
+image="https://${d}/token.png"
 `;
 }
 
@@ -356,12 +372,11 @@ $("btnGenToml").addEventListener("click", () => {
   if (!code) return log("log2", "❌ Asset Code فاضي.");
   if (!issuer || !issuer.startsWith("G")) return log("log2", "❌ Issuer Public Key لازم يبدأ بـ G");
 
-  const out = genToml({domain, code, issuer, name, desc});
-  $("tomlOut").value = out;
-  log("log2", "✅ TOML generated. انسخه وحطه في /.well-known/stellar.toml و /.well-known/pi.toml");
+  $("tomlOut").value = genToml({domain, code, issuer, name, desc});
+  log("log2", "✅ TOML generated.");
 });
 
-/* Domain page: check domain */
+/* Domain check */
 $("btnCheckDomain").addEventListener("click", async () => {
   const domain = ($("verDomain").value || "").trim();
   const code = normalizeAssetCode($("verAssetCode").value);
@@ -372,7 +387,7 @@ $("btnCheckDomain").addEventListener("click", async () => {
   if (!code) return log("log2", "❌ Asset Code فاضي.");
   if (!issuer || !issuer.startsWith("G")) return log("log2", "❌ Issuer Public Key لازم يبدأ بـ G");
 
-  const url = `https://${domain}/.well-known/stellar.toml`;
+  const url = `https://${domain}/.well-known/pi.toml`;
   $("domainCheckOut").textContent = "";
 
   try{
