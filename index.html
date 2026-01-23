@@ -5,11 +5,123 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
   <title>Donate Way — Token & DEX Dashboard (Testnet)</title>
 
-  <!-- Pi SDK -->
   <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
-  <!-- (اختياري) اربط ملف CSS بتاعك -->
-  <link rel="stylesheet" href="./style.css" />
+  <style>
+    :root{
+      --bg:#0b0b14;
+      --card:#141428;
+      --card2:#101024;
+      --text:#fff;
+      --muted:#a0a0c0;
+      --primary:#7f5cff;
+      --line:rgba(255,255,255,.09);
+      --ok:#2ecc71;
+      --bad:#ff5c7f;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, "Segoe UI", Tahoma, Arial;
+      background: radial-gradient(1200px 600px at 70% -10%, rgba(127,92,255,.25), transparent 60%),
+                  radial-gradient(900px 500px at 10% 10%, rgba(255,92,127,.12), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+    }
+    .app{max-width:1100px;margin:0 auto;padding:16px}
+    .top{
+      display:flex;gap:14px;align-items:center;justify-content:space-between;
+      padding:14px;border:1px solid var(--line);border-radius:18px;background:rgba(20,20,40,.75);
+      backdrop-filter: blur(10px);
+    }
+    .brand{display:flex;gap:12px;align-items:center}
+    .logo{
+      width:48px;height:48px;border-radius:14px;
+      background: linear-gradient(135deg, rgba(127,92,255,.95), rgba(255,92,127,.75));
+      display:flex;align-items:center;justify-content:center;font-weight:800;
+      box-shadow: 0 12px 30px rgba(127,92,255,.25);
+    }
+    .meta h1{margin:0;font-size:18px}
+    .meta p{margin:3px 0 0;color:var(--muted);font-size:12px}
+    .actions{display:flex;gap:10px;flex-wrap:wrap}
+    .tabs{display:flex;gap:10px;margin:14px 0 8px}
+    .tab{
+      border:1px solid var(--line);background:rgba(20,20,40,.55);color:var(--text);
+      padding:10px 12px;border-radius:14px;cursor:pointer;font-weight:700;
+    }
+    .tab.active{background:rgba(127,92,255,.18);border-color:rgba(127,92,255,.35)}
+    .grid{
+      display:grid;grid-template-columns:repeat(12,1fr);gap:12px;margin-top:10px;
+    }
+    .page{display:none}
+    .page.active{display:grid}
+    .card{
+      grid-column: span 6;
+      border:1px solid var(--line);
+      background:rgba(20,20,40,.65);
+      border-radius:18px;
+      padding:14px;
+      backdrop-filter: blur(10px);
+    }
+    .card.full{grid-column: span 12}
+    h2{margin:0 0 10px;font-size:15px}
+    .lbl{display:block;margin:10px 0 6px;color:var(--muted);font-size:12px}
+    .inp, textarea{
+      width:100%;padding:11px 12px;border-radius:14px;border:1px solid var(--line);
+      background:rgba(10,10,20,.55);color:var(--text);outline:none;
+    }
+    textarea{resize:vertical}
+    .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .btnRow{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    .btn{
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      padding:10px 12px;border-radius:14px;cursor:pointer;font-weight:800;
+    }
+    .btn.primary{
+      background: linear-gradient(135deg, rgba(127,92,255,.95), rgba(127,92,255,.55));
+      border-color: rgba(127,92,255,.35);
+    }
+    .btn.ghost{
+      background: rgba(10,10,20,.4);
+    }
+    .kv{
+      display:grid;grid-template-columns:160px 1fr;gap:8px 10px;
+      padding:10px;border-radius:14px;border:1px solid var(--line);background:rgba(10,10,20,.35)
+    }
+    .k{color:var(--muted);font-size:12px}
+    .v{font-weight:700}
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace}
+    .muted{color:var(--muted)}
+    .note{
+      margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:14px;
+      background:rgba(10,10,20,.35);color:var(--muted);font-size:12px
+    }
+    .log{
+      margin-top:8px;
+      white-space:pre-wrap;
+      background:rgba(10,10,20,.55);
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:10px;
+      min-height:90px;
+      max-height:320px;
+      overflow:auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size:12px;
+    }
+    .checklist{margin:0;padding:0 18px;color:var(--muted);font-size:13px}
+    .checklist li{margin:7px 0}
+    .foot{margin:14px 0 4px;text-align:center;color:var(--muted);font-size:12px}
+    @media (max-width: 880px){
+      .card{grid-column: span 12}
+      .kv{grid-template-columns:130px 1fr}
+      .row2{grid-template-columns:1fr}
+      .top{flex-direction:column;align-items:flex-start}
+      .actions{width:100%}
+    }
+  </style>
 </head>
 <body>
   <div class="app">
@@ -18,7 +130,7 @@
         <div class="logo">DW</div>
         <div class="meta">
           <h1>Donate Way</h1>
-          <p>Token + DEX + AMM + Domain Verify + Home Domain (Testnet)</p>
+          <p>Token + DEX + AMM + Domain Verify + Home Domain (Pi Testnet)</p>
         </div>
       </div>
 
@@ -28,15 +140,13 @@
       </div>
     </header>
 
-    <!-- Tabs -->
     <nav class="tabs">
       <button class="tab active" data-page="dashboard">Dashboard</button>
       <button class="tab" data-page="domain">Domain Verification</button>
     </nav>
 
-    <!-- PAGE: Dashboard -->
+    <!-- Dashboard -->
     <section id="page-dashboard" class="grid page active">
-
       <div class="card">
         <h2>حالة Pi SDK</h2>
         <div class="kv">
@@ -45,16 +155,16 @@
           <div class="k">UID</div><div class="v mono" id="sdkUid">—</div>
           <div class="k">Access Token</div><div class="v mono" id="sdkToken">—</div>
         </div>
-        <small class="muted">متخزّنش accessToken بشكل دائم على الفرونت.</small>
+        <div class="note">متخزّنش accessToken في DB. استخدمه للجلسة بس.</div>
       </div>
 
       <div class="card">
-        <h2>إعدادات التوكن (Pi Testnet)</h2>
+        <h2>Token Setup</h2>
 
         <label class="lbl">Display Name</label>
         <input id="displayName" class="inp" value="Donate Way" />
 
-        <label class="lbl">Asset Code (1–12 Uppercase)</label>
+        <label class="lbl">Asset Code</label>
         <input id="assetCode" class="inp mono" value="DONATEWAY" />
 
         <div class="row2">
@@ -69,50 +179,85 @@
         </div>
 
         <div class="btnRow">
-          <button id="btnBootstrap" class="btn">1) Create/Bootstrap Token</button>
-          <button id="btnSellOffer" class="btn">2) Create Sell Offer (DEX)</button>
-        </div>
-
-        <!-- ✅ NEW: Trustline on Distributor -->
-        <div class="btnRow">
+          <button id="btnBootstrap" class="btn">1) Bootstrap Token</button>
           <button id="btnTrustDistributor" class="btn ghost">Add Trustline (Distributor)</button>
         </div>
 
+        <label class="lbl">Issuer Public Key</label>
+        <div class="log" id="issuerPub">—</div>
+
+        <label class="lbl">Distributor Public Key</label>
+        <div class="log" id="distPub">—</div>
+
         <label class="lbl">Trustline Result</label>
         <pre id="trustOut" class="log"></pre>
+      </div>
+
+      <div class="card">
+        <h2>Send Token (from Distributor)</h2>
+
+        <label class="lbl">To (Your Wallet Public Key - G...)</label>
+        <input id="sendTo" class="inp mono" placeholder="G..." />
+
+        <div class="row2">
+          <div>
+            <label class="lbl">Amount</label>
+            <input id="sendAmount" class="inp mono" value="10" />
+          </div>
+          <div>
+            <label class="lbl">Memo (اختياري)</label>
+            <input id="sendMemo" class="inp" value="Test send DONATEWAY" />
+          </div>
+        </div>
+
+        <div class="btnRow">
+          <button id="btnSendToken" class="btn primary">Send DONATEWAY</button>
+        </div>
+
+        <label class="lbl">Result</label>
+        <pre id="sendOut" class="log"></pre>
 
         <div class="note">
-          <b>Bootstrap</b> = Distributor Trustline + Issuer يبعث الكمية للـ Distributor.
-          <div class="muted" style="margin-top:6px">
-            Issuer PubKey: <span class="mono" id="issuerPub">—</span>
-          </div>
-          <div class="muted" style="margin-top:4px">
-            Distributor PubKey: <span class="mono" id="distPub">—</span>
-          </div>
+          لازم محفظتك تعمل Trustline للتوكن الأول، وإلا الإرسال هيفشل.
         </div>
       </div>
 
       <div class="card">
-        <h2>DEX Sell Offer (Token/Pi)</h2>
+        <h2>DEX — Sell / Buy Offers</h2>
 
         <div class="row2">
           <div>
             <label class="lbl">Amount (Token)</label>
-            <input id="offerAmount" class="inp mono" value="10000" />
+            <input id="dexAmount" class="inp mono" value="1000" />
           </div>
           <div>
             <label class="lbl">Price (Pi per 1 Token)</label>
-            <input id="offerPrice" class="inp mono" value="0.01" />
+            <input id="dexPrice" class="inp mono" value="0.01" />
           </div>
         </div>
 
-        <small class="muted">
-          وجود Offer/سيولة بيساعد التوكن يظهر ويتصنّف على الدكس.
-        </small>
+        <div class="row2">
+          <div>
+            <label class="lbl">Offer ID (اختياري للتعديل)</label>
+            <input id="dexOfferId" class="inp mono" value="0" />
+          </div>
+          <div>
+            <label class="lbl">ملاحظة</label>
+            <input class="inp" value="Orders تتم من حساب Distributor" readonly />
+          </div>
+        </div>
+
+        <div class="btnRow">
+          <button id="btnDexSell" class="btn">Create Sell Offer</button>
+          <button id="btnDexBuy" class="btn primary">Create Buy Offer</button>
+        </div>
+
+        <label class="lbl">Result</label>
+        <pre id="dexOut" class="log"></pre>
       </div>
 
       <div class="card">
-        <h2>AMM — Add Liquidity (Token/Pi)</h2>
+        <h2>AMM — Add Liquidity</h2>
 
         <div class="row2">
           <div>
@@ -127,58 +272,45 @@
 
         <div class="row2">
           <div>
-            <label class="lbl">Min Price Guard (اختياري)</label>
+            <label class="lbl">Min Price</label>
             <input id="ammMinPrice" class="inp mono" value="0.000001" />
           </div>
           <div>
-            <label class="lbl">Max Price Guard (اختياري)</label>
+            <label class="lbl">Max Price</label>
             <input id="ammMaxPrice" class="inp mono" value="1000000" />
           </div>
         </div>
 
         <div class="btnRow">
-          <button id="btnAddAmm" class="btn">3) Add AMM Liquidity</button>
+          <button id="btnAddAmm" class="btn">Add AMM Liquidity</button>
         </div>
-
-        <small class="muted">
-          لازم الـ Distributor يكون معاه Pi (native) + Token عشان يضيف سيولة.
-        </small>
       </div>
 
-      <!-- ✅ Home domain card -->
       <div class="card">
-        <h2>ربط التوكن بالدومين على السلسلة (Issuer home_domain)</h2>
+        <h2>Issuer home_domain</h2>
 
-        <div class="note">
-          <b>مهم جدًا:</b> علشان Pi DEX يربط توكنك بـ <span class="mono">TOML</span> لازم تحط
-          <span class="mono">home_domain</span> على حساب الـ Issuer (Hostname فقط).
-          <div class="muted" style="margin-top:6px">
-            مثال: <span class="mono">pi-links.netlify.app</span> (من غير https://)
-          </div>
-        </div>
-
-        <label class="lbl">Home Domain (Hostname فقط)</label>
+        <label class="lbl">Home Domain (hostname فقط)</label>
         <input id="hdDomain" class="inp mono" placeholder="pi-links.netlify.app" />
 
         <div class="btnRow">
-          <button id="btnSetHomeDomain" class="btn">Set home_domain (Issuer)</button>
-          <button id="btnCheckHomeDomain" class="btn primary">Check Issuer home_domain</button>
+          <button id="btnSetHomeDomain" class="btn">Set home_domain</button>
+          <button id="btnCheckHomeDomain" class="btn primary">Check home_domain</button>
         </div>
 
         <label class="lbl">Result</label>
         <pre id="homeDomainOut" class="log"></pre>
 
-        <small class="muted">
-          لازم يكون عندك Functions: <span class="mono">set_home_domain.js</span> و <span class="mono">get_issuer_info.js</span>
-        </small>
+        <div class="note">
+          اكتب hostname فقط بدون https:// ولا / آخر.
+        </div>
       </div>
 
       <div class="card">
-        <h2>Pi Payments (تبرعات داخل التطبيق)</h2>
+        <h2>Pi Payments (تبرع)</h2>
 
         <div class="row2">
           <div>
-            <label class="lbl">Donation Amount (π)</label>
+            <label class="lbl">Amount (π)</label>
             <input id="donAmount" class="inp mono" value="1" />
           </div>
           <div>
@@ -187,41 +319,32 @@
           </div>
         </div>
 
-        <button id="btnDonate" class="btn primary">ادفع تبرع بـ Pi</button>
-        <small class="muted">الـ approve/complete لازم يتموا سيرفر سايد.</small>
+        <div class="btnRow">
+          <button id="btnDonate" class="btn primary">ادفع بـ Pi</button>
+        </div>
       </div>
 
-      <div class="card">
+      <div class="card full">
         <h2>Logs</h2>
         <pre id="log" class="log"></pre>
       </div>
     </section>
 
-    <!-- PAGE: Domain -->
+    <!-- Domain page -->
     <section id="page-domain" class="grid page">
-      <div class="card">
+      <div class="card full">
         <h2>Domain Verification — Checklist</h2>
-
         <ol class="checklist">
-          <li>جهّز دومين + HTTPS شغال.</li>
-          <li>أضف الملفات:
-            <span class="mono">/.well-known/stellar.toml</span> و
-            <span class="mono">/.well-known/pi.toml</span>
-          </li>
-          <li>تأكد إنهم بيتفتحوا 200.</li>
-          <li><b>خطوة مهمة جدًا:</b> من Dashboard نفّذ
-            <span class="mono">Set home_domain</span> للـ Issuer بنفس الدومين.
-          </li>
-          <li>اعمل Offers/AMM على زوج <span class="mono">Token/PI</span> علشان يظهر.</li>
+          <li>حط <span class="mono">/.well-known/pi.toml</span> + <span class="mono">/.well-known/stellar.toml</span></li>
+          <li>حط <span class="mono">/token.png</span></li>
+          <li>Set <span class="mono">home_domain</span> على الـ Issuer</li>
+          <li>اعمل AMM + Offers علشان يظهر في الدكس</li>
+          <li>لو مش ظاهر فورًا: ده غالبًا Indexing/Cache</li>
         </ol>
-
-        <div class="note">
-          وجود TOML + home_domain + سيولة = أفضل فرصة إن التوكن يظهر في Pi Wallet/DEX.
-        </div>
       </div>
 
       <div class="card">
-        <h2>مولّد TOML (انسخه وحطه على الدومين)</h2>
+        <h2>مولّد TOML</h2>
 
         <label class="lbl">Domain</label>
         <input id="verDomain" class="inp mono" placeholder="pi-links.netlify.app" />
@@ -233,11 +356,11 @@
           </div>
           <div>
             <label class="lbl">Issuer Public Key</label>
-            <input id="verIssuer" class="inp mono" placeholder="G...." />
+            <input id="verIssuer" class="inp mono" placeholder="G..." />
           </div>
         </div>
 
-        <label class="lbl">Project Name</label>
+        <label class="lbl">Name</label>
         <input id="verName" class="inp" value="Donate Way" />
 
         <label class="lbl">Description</label>
@@ -250,28 +373,20 @@
 
         <label class="lbl">Generated TOML</label>
         <textarea id="tomlOut" class="inp mono" rows="12" readonly></textarea>
-
-        <small class="muted">
-          انسخ الناتج وحطه في:
-          <span class="mono">/.well-known/stellar.toml</span>
-          و <span class="mono">/.well-known/pi.toml</span>
-        </small>
       </div>
 
       <div class="card">
-        <h2>نتيجة فحص الدومين</h2>
+        <h2>Domain Check Result</h2>
         <pre id="domainCheckOut" class="log"></pre>
       </div>
 
-      <div class="card">
+      <div class="card full">
         <h2>Logs</h2>
         <pre id="log2" class="log"></pre>
       </div>
     </section>
 
-    <footer class="foot">
-      <span class="muted">Testnet فقط — متحطّش Seeds أو API Keys في الفرونت.</span>
-    </footer>
+    <footer class="foot">Testnet فقط — متحطش أسرار في الفرونت.</footer>
   </div>
 
   <script src="./app.js"></script>
