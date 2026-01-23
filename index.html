@@ -3,392 +3,519 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-  <title>Donate Way — Token & DEX Dashboard (Testnet)</title>
+  <title>Donate Way — Token / DEX / AMM Dashboard (Pi Testnet)</title>
 
   <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
   <style>
     :root{
       --bg:#0b0b14;
-      --card:#141428;
-      --card2:#101024;
+      --card:rgba(255,255,255,.08);
+      --card2:rgba(255,255,255,.06);
+      --stroke:rgba(255,255,255,.14);
       --text:#fff;
-      --muted:#a0a0c0;
+      --muted:rgba(255,255,255,.72);
       --primary:#7f5cff;
-      --line:rgba(255,255,255,.09);
-      --ok:#2ecc71;
-      --bad:#ff5c7f;
+      --primary2:#a78bfa;
+      --good:#22c55e;
+      --bad:#ef4444;
+      --warn:#f59e0b;
+      --shadow: 0 16px 40px rgba(0,0,0,.35);
+      --radius:18px;
     }
     *{box-sizing:border-box}
     body{
-      margin:0;
-      font-family: system-ui, -apple-system, "Segoe UI", Tahoma, Arial;
-      background: radial-gradient(1200px 600px at 70% -10%, rgba(127,92,255,.25), transparent 60%),
-                  radial-gradient(900px 500px at 10% 10%, rgba(255,92,127,.12), transparent 55%),
-                  var(--bg);
-      color:var(--text);
-    }
-    .app{max-width:1100px;margin:0 auto;padding:16px}
-    .top{
-      display:flex;gap:14px;align-items:center;justify-content:space-between;
-      padding:14px;border:1px solid var(--line);border-radius:18px;background:rgba(20,20,40,.75);
-      backdrop-filter: blur(10px);
-    }
-    .brand{display:flex;gap:12px;align-items:center}
-    .logo{
-      width:48px;height:48px;border-radius:14px;
-      background: linear-gradient(135deg, rgba(127,92,255,.95), rgba(255,92,127,.75));
-      display:flex;align-items:center;justify-content:center;font-weight:800;
-      box-shadow: 0 12px 30px rgba(127,92,255,.25);
-    }
-    .meta h1{margin:0;font-size:18px}
-    .meta p{margin:3px 0 0;color:var(--muted);font-size:12px}
-    .actions{display:flex;gap:10px;flex-wrap:wrap}
-    .tabs{display:flex;gap:10px;margin:14px 0 8px}
-    .tab{
-      border:1px solid var(--line);background:rgba(20,20,40,.55);color:var(--text);
-      padding:10px 12px;border-radius:14px;cursor:pointer;font-weight:700;
-    }
-    .tab.active{background:rgba(127,92,255,.18);border-color:rgba(127,92,255,.35)}
-    .grid{
-      display:grid;grid-template-columns:repeat(12,1fr);gap:12px;margin-top:10px;
-    }
-    .page{display:none}
-    .page.active{display:grid}
-    .card{
-      grid-column: span 6;
-      border:1px solid var(--line);
-      background:rgba(20,20,40,.65);
-      border-radius:18px;
+      margin:0; min-height:100vh; color:var(--text);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background:
+        radial-gradient(1000px 500px at 20% -10%, rgba(127,92,255,.35), transparent 60%),
+        radial-gradient(800px 500px at 100% 20%, rgba(167,139,250,.25), transparent 55%),
+        linear-gradient(180deg, #070712, #0b0b14 40%, #070712);
       padding:14px;
-      backdrop-filter: blur(10px);
     }
-    .card.full{grid-column: span 12}
-    h2{margin:0 0 10px;font-size:15px}
-    .lbl{display:block;margin:10px 0 6px;color:var(--muted);font-size:12px}
-    .inp, textarea{
-      width:100%;padding:11px 12px;border-radius:14px;border:1px solid var(--line);
-      background:rgba(10,10,20,.55);color:var(--text);outline:none;
+    .wrap{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+
+    .top{
+      padding:14px;
+      border:1px solid var(--stroke);
+      background:linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06));
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
     }
-    textarea{resize:vertical}
-    .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .btnRow{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
-    .btn{
-      border:1px solid var(--line);
+    .brand{display:flex;align-items:center;gap:10px}
+    .logo{
+      width:44px;height:44px;border-radius:14px;border:1px solid var(--stroke);
+      background:rgba(255,255,255,.08); overflow:hidden; display:grid; place-items:center;
+    }
+    .logo img{width:100%;height:100%;object-fit:cover}
+    .title{display:flex;flex-direction:column;gap:2px}
+    .title b{font-size:15px}
+    .title span{font-size:12px;color:var(--muted)}
+
+    .tabs{
+      display:flex;gap:8px;flex-wrap:wrap;
+      padding:10px;border:1px solid var(--stroke);
+      background:rgba(255,255,255,.06);border-radius:var(--radius);
+    }
+    .tab{
+      border:1px solid var(--stroke);
       background:rgba(255,255,255,.06);
       color:var(--text);
-      padding:10px 12px;border-radius:14px;cursor:pointer;font-weight:800;
+      padding:10px 12px;border-radius:14px;font-size:13px;cursor:pointer;
+      transition:.15s; user-select:none;
     }
-    .btn.primary{
-      background: linear-gradient(135deg, rgba(127,92,255,.95), rgba(127,92,255,.55));
-      border-color: rgba(127,92,255,.35);
+    .tab.active{
+      background:linear-gradient(135deg, rgba(127,92,255,.35), rgba(255,255,255,.08));
+      border-color:rgba(127,92,255,.55);
     }
-    .btn.ghost{
-      background: rgba(10,10,20,.4);
+
+    .grid{display:grid;grid-template-columns:1fr;gap:12px}
+    @media(min-width:980px){.grid{grid-template-columns:1.2fr .8fr}}
+    .grid2{display:grid;grid-template-columns:1fr;gap:12px}
+    @media(min-width:980px){.grid2{grid-template-columns:1fr 1fr}}
+
+    .card{
+      border:1px solid var(--stroke);
+      background:linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.05));
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
     }
-    .kv{
-      display:grid;grid-template-columns:160px 1fr;gap:8px 10px;
-      padding:10px;border-radius:14px;border:1px solid var(--line);background:rgba(10,10,20,.35)
+    .hd{
+      padding:12px 12px 10px;border-bottom:1px solid rgba(255,255,255,.10);
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
     }
-    .k{color:var(--muted);font-size:12px}
-    .v{font-weight:700}
-    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace}
-    .muted{color:var(--muted)}
-    .note{
-      margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:14px;
-      background:rgba(10,10,20,.35);color:var(--muted);font-size:12px
+    .hd b{font-size:14px}
+    .hd span{font-size:12px;color:var(--muted)}
+    .bd{padding:12px;display:flex;flex-direction:column;gap:10px}
+
+    .row{display:grid;grid-template-columns:1fr;gap:10px}
+    @media(min-width:720px){.row{grid-template-columns:1fr 1fr}}
+
+    label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
+    input, textarea, select{
+      width:100%; padding:12px;
+      border-radius:14px; border:1px solid rgba(255,255,255,.14);
+      background:rgba(0,0,0,.20); color:var(--text); outline:none;
     }
-    .log{
-      margin-top:8px;
-      white-space:pre-wrap;
-      background:rgba(10,10,20,.55);
-      border:1px solid var(--line);
-      border-radius:14px;
-      padding:10px;
-      min-height:90px;
-      max-height:320px;
-      overflow:auto;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size:12px;
+    textarea{min-height:130px;resize:vertical}
+
+    .btns{display:flex;gap:8px;flex-wrap:wrap}
+    button{
+      border:1px solid rgba(255,255,255,.16);
+      background:rgba(255,255,255,.07);
+      color:var(--text);
+      padding:11px 12px;border-radius:14px;cursor:pointer;transition:.15s;font-size:13px;
     }
-    .checklist{margin:0;padding:0 18px;color:var(--muted);font-size:13px}
-    .checklist li{margin:7px 0}
-    .foot{margin:14px 0 4px;text-align:center;color:var(--muted);font-size:12px}
-    @media (max-width: 880px){
-      .card{grid-column: span 12}
-      .kv{grid-template-columns:130px 1fr}
-      .row2{grid-template-columns:1fr}
-      .top{flex-direction:column;align-items:flex-start}
-      .actions{width:100%}
+    button.primary{
+      background:linear-gradient(135deg, rgba(127,92,255,.9), rgba(167,139,250,.65));
+      border-color:rgba(127,92,255,.75);
     }
+    button:hover{transform:translateY(-1px)}
+    .pill{
+      padding:6px 10px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.06);
+      font-size:12px;color:var(--muted);
+      display:inline-flex;gap:8px;align-items:center;
+    }
+    .dot{width:8px;height:8px;border-radius:999px;background:var(--warn)}
+    .dot.good{background:var(--good)}
+    .dot.bad{background:var(--bad)}
+
+    pre{
+      margin:0; padding:12px;border-radius:14px;border:1px solid rgba(255,255,255,.14);
+      background:rgba(0,0,0,.25); overflow:auto; color:rgba(255,255,255,.92);
+      font-size:12px; line-height:1.45; white-space:pre-wrap; word-break:break-word;
+    }
+
+    .page{display:none}
+    .page.active{display:block}
+    .muted{color:var(--muted);font-size:12px;line-height:1.6}
+    .warn{color:#ffd08a}
+    .goodtxt{color:#7CFFB0}
   </style>
 </head>
 <body>
-  <div class="app">
-    <header class="top">
+  <div class="wrap">
+    <div class="top">
       <div class="brand">
-        <div class="logo">DW</div>
-        <div class="meta">
-          <h1>Donate Way</h1>
-          <p>Token + DEX + AMM + Domain Verify + Home Domain (Pi Testnet)</p>
+        <div class="logo">
+          <img src="/token_256.png" onerror="this.src='/token.png'" alt="DW">
+        </div>
+        <div class="title">
+          <b>Donate Way — Dashboard</b>
+          <span>Pi Testnet — Token / DEX / AMM / Domain</span>
         </div>
       </div>
 
-      <div class="actions">
-        <button id="btnInit" class="btn ghost">Init SDK</button>
-        <button id="btnAuth" class="btn primary">تسجيل دخول Pi</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <div class="pill"><span class="dot" id="dotSdk"></span> SDK: <span id="sdkConnected">—</span></div>
+        <div class="pill">User: <span id="sdkUser">—</span></div>
+        <button class="primary" id="btnInit">Init SDK</button>
+        <button id="btnAuth">Login</button>
       </div>
-    </header>
+    </div>
 
-    <nav class="tabs">
-      <button class="tab active" data-page="dashboard">Dashboard</button>
-      <button class="tab" data-page="domain">Domain Verification</button>
-    </nav>
+    <div class="tabs">
+      <div class="tab active" data-page="dash">Dashboard</div>
+      <div class="tab" data-page="market">Market Explorer</div>
+      <div class="tab" data-page="ops">Token Ops</div>
+      <div class="tab" data-page="domain">Domain Verification</div>
+    </div>
 
-    <!-- Dashboard -->
-    <section id="page-dashboard" class="grid page active">
-      <div class="card">
-        <h2>حالة Pi SDK</h2>
-        <div class="kv">
-          <div class="k">Connected</div><div class="v" id="sdkConnected">—</div>
-          <div class="k">User</div><div class="v" id="sdkUser">—</div>
-          <div class="k">UID</div><div class="v mono" id="sdkUid">—</div>
-          <div class="k">Access Token</div><div class="v mono" id="sdkToken">—</div>
-        </div>
-        <div class="note">متخزّنش accessToken في DB. استخدمه للجلسة بس.</div>
-      </div>
+    <!-- DASH -->
+    <div class="page active" id="page-dash">
+      <div class="grid">
+        <div class="card">
+          <div class="hd"><b>Quick Status</b><span>Issuer / Distributor / Asset</span></div>
+          <div class="bd">
+            <div class="row">
+              <div>
+                <label>Asset Code</label>
+                <input id="assetCode" value="DONATEWAY" />
+              </div>
+              <div>
+                <label>Issuer Public Key</label>
+                <input id="issuerPub" placeholder="GBQ3H..." />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label>Distributor Public Key</label>
+                <input id="distPub" placeholder="GCLLM..." />
+              </div>
+              <div>
+                <label>Admin Token (اختياري)</label>
+                <input id="adminToken" placeholder="ADMIN_TOKEN" />
+              </div>
+            </div>
 
-      <div class="card">
-        <h2>Token Setup</h2>
+            <div class="btns">
+              <button id="btnSaveKeys">Save Keys (local)</button>
+              <button class="primary" id="btnLoadAsset">Load Asset From Horizon</button>
+            </div>
 
-        <label class="lbl">Display Name</label>
-        <input id="displayName" class="inp" value="Donate Way" />
-
-        <label class="lbl">Asset Code</label>
-        <input id="assetCode" class="inp mono" value="DONATEWAY" />
-
-        <div class="row2">
-          <div>
-            <label class="lbl">Initial Supply</label>
-            <input id="initialSupply" class="inp mono" value="1000000" />
-          </div>
-          <div>
-            <label class="lbl">Admin Token (اختياري)</label>
-            <input id="adminToken" class="inp mono" placeholder="X-Admin-Token" />
-          </div>
-        </div>
-
-        <div class="btnRow">
-          <button id="btnBootstrap" class="btn">1) Bootstrap Token</button>
-          <button id="btnTrustDistributor" class="btn ghost">Add Trustline (Distributor)</button>
-        </div>
-
-        <label class="lbl">Issuer Public Key</label>
-        <div class="log" id="issuerPub">—</div>
-
-        <label class="lbl">Distributor Public Key</label>
-        <div class="log" id="distPub">—</div>
-
-        <label class="lbl">Trustline Result</label>
-        <pre id="trustOut" class="log"></pre>
-      </div>
-
-      <div class="card">
-        <h2>Send Token (from Distributor)</h2>
-
-        <label class="lbl">To (Your Wallet Public Key - G...)</label>
-        <input id="sendTo" class="inp mono" placeholder="G..." />
-
-        <div class="row2">
-          <div>
-            <label class="lbl">Amount</label>
-            <input id="sendAmount" class="inp mono" value="10" />
-          </div>
-          <div>
-            <label class="lbl">Memo (اختياري)</label>
-            <input id="sendMemo" class="inp" value="Test send DONATEWAY" />
+            <pre id="assetOut"></pre>
+            <div class="muted">لو التوكن موجود في Horizon يبقى mint تمام ✅</div>
           </div>
         </div>
 
-        <div class="btnRow">
-          <button id="btnSendToken" class="btn primary">Send DONATEWAY</button>
-        </div>
-
-        <label class="lbl">Result</label>
-        <pre id="sendOut" class="log"></pre>
-
-        <div class="note">
-          لازم محفظتك تعمل Trustline للتوكن الأول، وإلا الإرسال هيفشل.
+        <div class="card">
+          <div class="hd"><b>Pi Payments (Donate)</b><span>Pi SDK</span></div>
+          <div class="bd">
+            <div class="row">
+              <div>
+                <label>Amount (π)</label>
+                <input id="donAmount" value="1" />
+              </div>
+              <div>
+                <label>Memo</label>
+                <input id="donMemo" value="Donate Way — Donation" />
+              </div>
+            </div>
+            <div class="btns">
+              <button class="primary" id="btnDonate">Donate</button>
+            </div>
+            <pre id="payLog"></pre>
+          </div>
         </div>
       </div>
 
       <div class="card">
-        <h2>DEX — Sell / Buy Offers</h2>
+        <div class="hd"><b>Logs</b><span>frontend</span></div>
+        <div class="bd">
+          <pre id="log"></pre>
+        </div>
+      </div>
+    </div>
 
-        <div class="row2">
-          <div>
-            <label class="lbl">Amount (Token)</label>
-            <input id="dexAmount" class="inp mono" value="1000" />
-          </div>
-          <div>
-            <label class="lbl">Price (Pi per 1 Token)</label>
-            <input id="dexPrice" class="inp mono" value="0.01" />
+    <!-- MARKET -->
+    <div class="page" id="page-market">
+      <div class="grid2">
+        <div class="card">
+          <div class="hd"><b>Show My Offers</b><span>Horizon: /accounts/{id}/offers</span></div>
+          <div class="bd">
+            <label>Account (افتراضي: Distributor)</label>
+            <input id="offersAccount" placeholder="G..." />
+            <div class="btns">
+              <button class="primary" id="btnShowOffers">Show Offers</button>
+            </div>
+            <pre id="offersOut"></pre>
           </div>
         </div>
 
-        <div class="row2">
-          <div>
-            <label class="lbl">Offer ID (اختياري للتعديل)</label>
-            <input id="dexOfferId" class="inp mono" value="0" />
-          </div>
-          <div>
-            <label class="lbl">ملاحظة</label>
-            <input class="inp" value="Orders تتم من حساب Distributor" readonly />
+        <div class="card">
+          <div class="hd"><b>Orderbook</b><span>PI ↔ DONATEWAY</span></div>
+          <div class="bd">
+            <div class="row">
+              <div>
+                <label>Mode</label>
+                <select id="obMode">
+                  <option value="sell_token">Selling DONATEWAY (asks)</option>
+                  <option value="buy_token">Buying DONATEWAY (bids)</option>
+                </select>
+              </div>
+              <div>
+                <label>Limit</label>
+                <input id="obLimit" value="20" />
+              </div>
+            </div>
+            <div class="btns">
+              <button class="primary" id="btnOrderbook">Load Orderbook</button>
+            </div>
+            <pre id="orderbookOut"></pre>
           </div>
         </div>
 
-        <div class="btnRow">
-          <button id="btnDexSell" class="btn">Create Sell Offer</button>
-          <button id="btnDexBuy" class="btn primary">Create Buy Offer</button>
+        <div class="card">
+          <div class="hd"><b>Recent Trades</b><span>Horizon: /trades</span></div>
+          <div class="bd">
+            <div class="row">
+              <div>
+                <label>Limit</label>
+                <input id="trLimit" value="20" />
+              </div>
+              <div>
+                <label>Order</label>
+                <select id="trOrder">
+                  <option value="desc">Newest</option>
+                  <option value="asc">Oldest</option>
+                </select>
+              </div>
+            </div>
+            <div class="btns">
+              <button class="primary" id="btnTrades">Load Trades</button>
+            </div>
+            <pre id="tradesOut"></pre>
+          </div>
         </div>
 
-        <label class="lbl">Result</label>
-        <pre id="dexOut" class="log"></pre>
+        <div class="card">
+          <div class="hd"><b>AMM Liquidity Pool</b><span>Find pool by reserves</span></div>
+          <div class="bd">
+            <div class="btns">
+              <button class="primary" id="btnPoolInfo">Load Pool Info</button>
+            </div>
+            <pre id="poolOut"></pre>
+          </div>
+        </div>
+
+        <div class="card" style="grid-column:1/-1">
+          <div class="hd"><b>Execute Tiny Trade (Real Activity)</b><span>Server: pathPaymentStrictSend</span></div>
+          <div class="bd">
+            <div class="row">
+              <div>
+                <label>Destination (Your Wallet G... must trust DONATEWAY)</label>
+                <input id="tinyDest" placeholder="G..." />
+              </div>
+              <div>
+                <label>Send PI Amount (tiny)</label>
+                <input id="tinySendPi" value="0.1" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label>Dest Min Token Out (optional)</label>
+                <input id="tinyMinOut" placeholder="0 (default)" />
+              </div>
+              <div>
+                <label>Memo (optional)</label>
+                <input id="tinyMemo" value="DW tiny trade" />
+              </div>
+            </div>
+            <div class="btns">
+              <button class="primary" id="btnTinyTrade">Execute Tiny Trade</button>
+            </div>
+            <pre id="tinyOut"></pre>
+            <div class="muted warn">
+              ده بيعمل صفقة فعلية (Trade) لو فيه Path في AMM/Orderbook.
+              لو فشل غالبًا: مفيش path أو destination مش عامل trustline.
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="card">
-        <h2>AMM — Add Liquidity</h2>
+        <div class="hd"><b>Market Logs</b><span>frontend</span></div>
+        <div class="bd">
+          <pre id="marketLog"></pre>
+        </div>
+      </div>
+    </div>
 
-        <div class="row2">
-          <div>
-            <label class="lbl">Token Amount</label>
-            <input id="ammTokenAmount" class="inp mono" value="5000" />
-          </div>
-          <div>
-            <label class="lbl">Pi Amount</label>
-            <input id="ammPiAmount" class="inp mono" value="50" />
+    <!-- OPS -->
+    <div class="page" id="page-ops">
+      <div class="grid2">
+        <div class="card">
+          <div class="hd"><b>Bootstrap Token</b><span>Netlify Function</span></div>
+          <div class="bd">
+            <div class="row">
+              <div>
+                <label>Display Name</label>
+                <input id="displayName" value="Donate Way" />
+              </div>
+              <div>
+                <label>Initial Supply</label>
+                <input id="initialSupply" value="1000000" />
+              </div>
+            </div>
+            <div class="btns">
+              <button class="primary" id="btnBootstrap">Bootstrap</button>
+            </div>
+            <pre id="bootOut"></pre>
           </div>
         </div>
 
-        <div class="row2">
-          <div>
-            <label class="lbl">Min Price</label>
-            <input id="ammMinPrice" class="inp mono" value="0.000001" />
-          </div>
-          <div>
-            <label class="lbl">Max Price</label>
-            <input id="ammMaxPrice" class="inp mono" value="1000000" />
+        <div class="card">
+          <div class="hd"><b>DEX Offers</b><span>Sell / Buy via Functions</span></div>
+          <div class="bd">
+            <div class="row">
+              <div>
+                <label>Amount (Token)</label>
+                <input id="dexAmount" value="1" />
+              </div>
+              <div>
+                <label>Price (PI per token)</label>
+                <input id="dexPrice" value="0.000001" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label>OfferId (0=new)</label>
+                <input id="dexOfferId" value="0" />
+              </div>
+              <div>
+                <label>—</label>
+                <div class="btns">
+                  <button id="btnSellOffer">Sell Offer</button>
+                  <button class="primary" id="btnBuyOffer">Buy Offer</button>
+                </div>
+              </div>
+            </div>
+            <pre id="dexOut"></pre>
           </div>
         </div>
 
-        <div class="btnRow">
-          <button id="btnAddAmm" class="btn">Add AMM Liquidity</button>
+        <div class="card" style="grid-column:1/-1">
+          <div class="hd"><b>AMM Add Liquidity</b><span>Netlify Function</span></div>
+          <div class="bd">
+            <div class="row">
+              <div>
+                <label>Token Amount</label>
+                <input id="ammTokenAmount" value="5000" />
+              </div>
+              <div>
+                <label>PI Amount</label>
+                <input id="ammPiAmount" value="50" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label>Min Price (optional)</label>
+                <input id="ammMinPrice" placeholder="0.0000005" />
+              </div>
+              <div>
+                <label>Max Price (optional)</label>
+                <input id="ammMaxPrice" placeholder="0.00001" />
+              </div>
+            </div>
+            <div class="btns">
+              <button class="primary" id="btnAddAmm">Add Liquidity</button>
+            </div>
+            <pre id="ammOut"></pre>
+          </div>
         </div>
       </div>
 
       <div class="card">
-        <h2>Issuer home_domain</h2>
+        <div class="hd"><b>Ops Logs</b><span>frontend</span></div>
+        <div class="bd">
+          <pre id="opsLog"></pre>
+        </div>
+      </div>
+    </div>
 
-        <label class="lbl">Home Domain (hostname فقط)</label>
-        <input id="hdDomain" class="inp mono" placeholder="pi-links.netlify.app" />
+    <!-- DOMAIN -->
+    <div class="page" id="page-domain">
+      <div class="grid2">
+        <div class="card">
+          <div class="hd"><b>Generate pi.toml</b><span>with DOCUMENTATION + image</span></div>
+          <div class="bd">
+            <div class="row">
+              <div>
+                <label>Domain</label>
+                <input id="verDomain" value="pi-links.netlify.app" />
+              </div>
+              <div>
+                <label>Issuer Public Key</label>
+                <input id="verIssuer" placeholder="GBQ3..." />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label>Asset Code</label>
+                <input id="verAssetCode" value="DONATEWAY" />
+              </div>
+              <div>
+                <label>Image URL</label>
+                <input id="verImage" value="https://pi-links.netlify.app/token_512.png" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label>Org Name</label>
+                <input id="verOrgName" value="Donate Way" />
+              </div>
+              <div>
+                <label>Org URL</label>
+                <input id="verOrgUrl" value="https://pi-links.netlify.app" />
+              </div>
+            </div>
+            <label>Description</label>
+            <input id="verDesc" value="Donate Way token on Pi Testnet for donations." />
 
-        <div class="btnRow">
-          <button id="btnSetHomeDomain" class="btn">Set home_domain</button>
-          <button id="btnCheckHomeDomain" class="btn primary">Check home_domain</button>
+            <div class="btns">
+              <button class="primary" id="btnGenPiToml">Generate</button>
+              <button id="btnCheckDomainAll">Run Checklist</button>
+            </div>
+
+            <label>Generated pi.toml</label>
+            <textarea id="tomlOut"></textarea>
+
+            <pre id="domainOut"></pre>
+          </div>
         </div>
 
-        <label class="lbl">Result</label>
-        <pre id="homeDomainOut" class="log"></pre>
-
-        <div class="note">
-          اكتب hostname فقط بدون https:// ولا / آخر.
+        <div class="card">
+          <div class="hd"><b>Home Domain</b><span>Issuer home_domain</span></div>
+          <div class="bd">
+            <label>Home Domain (hostname فقط)</label>
+            <input id="hdDomain" value="pi-links.netlify.app" />
+            <div class="btns">
+              <button id="btnSetHomeDomain">Set home_domain</button>
+              <button class="primary" id="btnGetIssuerInfo">Check issuer info</button>
+            </div>
+            <pre id="homeDomainOut"></pre>
+            <div class="muted warn">لو عندك Redirect عام للـ SPA لازم تستثني /.well-known/*</div>
+          </div>
         </div>
       </div>
 
       <div class="card">
-        <h2>Pi Payments (تبرع)</h2>
-
-        <div class="row2">
-          <div>
-            <label class="lbl">Amount (π)</label>
-            <input id="donAmount" class="inp mono" value="1" />
-          </div>
-          <div>
-            <label class="lbl">Memo</label>
-            <input id="donMemo" class="inp" value="Donate Way — Donation" />
-          </div>
-        </div>
-
-        <div class="btnRow">
-          <button id="btnDonate" class="btn primary">ادفع بـ Pi</button>
+        <div class="hd"><b>Domain Logs</b><span>frontend</span></div>
+        <div class="bd">
+          <pre id="domainLog"></pre>
         </div>
       </div>
+    </div>
 
-      <div class="card full">
-        <h2>Logs</h2>
-        <pre id="log" class="log"></pre>
-      </div>
-    </section>
+    <footer class="muted" style="text-align:center;padding:8px">
+      Testnet فقط — الأسرار في Netlify env — لا تضع secrets في الفرونت.
+    </footer>
 
-    <!-- Domain page -->
-    <section id="page-domain" class="grid page">
-      <div class="card full">
-        <h2>Domain Verification — Checklist</h2>
-        <ol class="checklist">
-          <li>حط <span class="mono">/.well-known/pi.toml</span> + <span class="mono">/.well-known/stellar.toml</span></li>
-          <li>حط <span class="mono">/token.png</span></li>
-          <li>Set <span class="mono">home_domain</span> على الـ Issuer</li>
-          <li>اعمل AMM + Offers علشان يظهر في الدكس</li>
-          <li>لو مش ظاهر فورًا: ده غالبًا Indexing/Cache</li>
-        </ol>
-      </div>
-
-      <div class="card">
-        <h2>مولّد TOML</h2>
-
-        <label class="lbl">Domain</label>
-        <input id="verDomain" class="inp mono" placeholder="pi-links.netlify.app" />
-
-        <div class="row2">
-          <div>
-            <label class="lbl">Asset Code</label>
-            <input id="verAssetCode" class="inp mono" value="DONATEWAY" />
-          </div>
-          <div>
-            <label class="lbl">Issuer Public Key</label>
-            <input id="verIssuer" class="inp mono" placeholder="G..." />
-          </div>
-        </div>
-
-        <label class="lbl">Name</label>
-        <input id="verName" class="inp" value="Donate Way" />
-
-        <label class="lbl">Description</label>
-        <input id="verDesc" class="inp" value="Donate Way token on Pi Testnet for donations." />
-
-        <div class="btnRow">
-          <button id="btnGenToml" class="btn">Generate TOML</button>
-          <button id="btnCheckDomain" class="btn primary">Check Domain</button>
-        </div>
-
-        <label class="lbl">Generated TOML</label>
-        <textarea id="tomlOut" class="inp mono" rows="12" readonly></textarea>
-      </div>
-
-      <div class="card">
-        <h2>Domain Check Result</h2>
-        <pre id="domainCheckOut" class="log"></pre>
-      </div>
-
-      <div class="card full">
-        <h2>Logs</h2>
-        <pre id="log2" class="log"></pre>
-      </div>
-    </section>
-
-    <footer class="foot">Testnet فقط — متحطش أسرار في الفرونت.</footer>
+    <script src="./app.js"></script>
   </div>
-
-  <script src="./app.js"></script>
 </body>
 </html>
