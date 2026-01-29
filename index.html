@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover" />
+  <title>Vibe Code • Groq</title>
+  <link rel="stylesheet" href="./style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <header class="top">
+    <div class="brand">
+      <div class="logo">VC</div>
+      <div class="brandText">
+        <div class="name">Vibe Code</div>
+        <div class="sub">مولّد كود باستخدام Groq</div>
+      </div>
+    </div>
+
+    <div class="status" id="statusChip">
+      <span class="dot"></span>
+      <span id="statusText">جاهز</span>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="card">
+      <h1>اكتب وصف التطبيق</h1>
+      <p class="muted">
+        اكتب فكرة التطبيق + الشكل (vibe) + الصفحات المطلوبة. مثال: "موقع توصيل زي طلبات، منت، زجاجي، RTL، تسجيل دخول…"
+      </p>
+
+      <textarea id="prompt" placeholder="اكتب تفاصيل التطبيق هنا..."></textarea>
+
+      <div class="row">
+        <div class="field">
+          <label>Model</label>
+          <select id="model">
+            <option value="llama3-70b-8192">llama3-70b-8192 (أفضل للكود)</option>
+            <option value="llama3-8b-8192">llama3-8b-8192 (أسرع)</option>
+            <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Temperature</label>
+          <input id="temp" type="number" min="0" max="2" step="0.1" value="0.3" />
+        </div>
+
+        <div class="field">
+          <label>Max Tokens</label>
+          <input id="maxTokens" type="number" min="256" max="8192" step="64" value="1800" />
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn" id="genBtn">
+          <span class="spark">✨</span>
+          توليد الكود
+        </button>
+        <button class="btn ghost" id="clearBtn">مسح</button>
+      </div>
+
+      <div class="hint">
+        ⚠️ ملاحظة: الواجهة بتكلم Endpoint آمن في Netlify Function: <code>/.netlify/functions/generate</code>
+      </div>
+    </section>
+
+    <section class="card out">
+      <div class="outHead">
+        <h2>النتيجة</h2>
+        <div class="outActions">
+          <button class="mini" id="copyBtn">نسخ</button>
+          <button class="mini" id="downloadBtn">تحميل TXT</button>
+        </div>
+      </div>
+
+      <pre id="output" class="output">// هنا هيظهر الرد…</pre>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <span>© Vibe Code • Groq</span>
+    <span class="sep">•</span>
+    <span class="muted">Mobile-first • RTL • Mint Glass</span>
+  </footer>
+
+  <script src="./app.js"></script>
+</body>
+</html>
