@@ -1,67 +1,82 @@
-export default async (req) => {
+export default async (request) => {
   try {
-    if (req.httpMethod !== "POST") {
-      return { statusCode: 405, body: JSON.stringify({ error: "Method Not Allowed" }) };
+    if (request.method !== "POST") {
+      return new Response(JSON.stringify({ error: "Method Not Allowed" }), {
+        status: 405,
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+      });
     }
-    
-    const { prompt, model, temperature, max_tokens } = JSON.parse(req.body || "{}");
-    
+
+    const body = await request.json().catch(() => ({}));
+    const { prompt, model, temperature, max_tokens } = body;
+
     if (!prompt || typeof prompt !== "string") {
-      return { statusCode: 400, body: JSON.stringify({ error: "Missing prompt" }) };
+      return new Response(JSON.stringify({ error: "Missing prompt" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+      });
     }
-    
+
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
-      return { statusCode: 500, body: JSON.stringify({ error: "Missing GROQ_API_KEY in env vars" }) };
+      return new Response(JSON.stringify({ error: "Missing GROQ_API_KEY in Netlify env vars" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+      });
     }
-    
-    // Prompt قوي لتوليد كود/مود
+
     const system = `
 You are a senior fullstack engineer.
-Return ONLY the final answer as plain text (no markdown fences).
-If user asks for a website/app, produce:
-- Project spec (short)
-- Pages list
-- Database SQL (Supabase) if requested
-- Suggested file structure
-- Then provide code snippets per file.
-Be concise but complete.
-`;
-    
+Return a helpful answer in plain text.
+When asked for an app/site, include:
+- short spec
+- file structure
+- code per file
+Keep it complete.
+`.trim();
+
     const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         model: model || "llama3-70b-8192",
         temperature: typeof temperature === "number" ? temperature : 0.3,
         max_tokens: typeof max_tokens === "number" ? max_tokens : 1800,
         messages: [
-          { role: "system", content: system.trim() },
-          { role: "user", content: prompt }
-        ]
-      })
+          { role: "system", content: system },
+          { role: "user", content: prompt },
+        ],
+      }),
     });
-    
-    const data = await r.json();
-    
+
+    const data = await r.json().catch(() => ({}));
+
     if (!r.ok) {
-      return {
-        statusCode: r.status,
-        body: JSON.stringify({ error: data?.error?.message || "Groq API error", raw: data })
-      };
+      return new Response(
+        JSON.stringify({
+          error: data?.error?.message || "Groq API error",
+          status: r.status,
+          raw: data,
+        }),
+        {
+          status: 502,
+          headers: { "Content-Type": "application/json; charset=utf-8" },
+        }
+      );
     }
-    
+
     const text = data?.choices?.[0]?.message?.content ?? "";
-    return {
-      statusCode: 200,
+    return new Response(JSON.stringify({ text }), {
+      status: 200,
       headers: { "Content-Type": "application/json; charset=utf-8" },
-      body: JSON.stringify({ text })
-    };
-    
+    });
   } catch (e) {
-    return { statusCode: 500, body: JSON.stringify({ error: e.message }) };
+    return new Response(JSON.stringify({ error: e?.message || String(e) }), {
+      status: 500,
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+    });
   }
 };
