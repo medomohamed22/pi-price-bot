@@ -1,4 +1,3 @@
-
 const promptEl = document.getElementById("prompt");
 const modelEl = document.getElementById("model");
 const tempEl = document.getElementById("temp");
@@ -172,4 +171,3 @@ downloadBtn.addEventListener("click", () => {
   const text = outEl.textContent || "";
   downloadText("groq_output.txt", text);
 });
-```0
