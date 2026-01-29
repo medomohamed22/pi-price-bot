@@ -1,3 +1,4 @@
+
 const promptEl = document.getElementById("prompt");
 const modelEl = document.getElementById("model");
 const tempEl = document.getElementById("temp");
