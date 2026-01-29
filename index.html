@@ -38,21 +38,28 @@
       <div class="row">
         <div class="field">
           <label>Model</label>
-        <select id="model">
-  <option value="llama-3.1-70b-versatile">llama-3.1-70b-versatile (أفضل للكود)</option>
-  <option value="llama-3.1-8b-instant">llama-3.1-8b-instant (أسرع)</option>
-  <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
-</select>
+          <select id="model">
+            <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile (أفضل للكود)</option>
+            <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
+            <option value="llama-3.1-8b-instant">llama-3.1-8b-instant (أسرع — لو Enabled)</option>
+            <option value="llama-3.3-70b-specdec">llama-3.3-70b-specdec</option>
+          </select>
+          <div class="tiny muted" style="margin-top:6px">
+            لو موديل طلع مقفول في الـ Project، الفنكشن هيجرّب موديل تاني تلقائيًا.
+          </div>
         </div>
 
         <div class="field">
           <label>Temperature</label>
-          <input id="temp" type="number" min="0" max="2" step="0.1" value="0.3" />
+          <input id="temp" type="number" min="0" max="2" step="0.1" value="0.2" />
         </div>
 
         <div class="field">
           <label>Max Tokens</label>
-          <input id="maxTokens" type="number" min="256" max="8192" step="64" value="1800" />
+          <input id="maxTokens" type="number" min="64" max="4096" step="64" value="1200" />
+          <div class="tiny muted" style="margin-top:6px">
+            الفنكشن بيقصّه تلقائيًا بين 64 و 4096.
+          </div>
         </div>
       </div>
 
@@ -65,17 +72,35 @@
       </div>
 
       <div class="hint">
-        ⚠️ ملاحظة: الواجهة بتكلم Endpoint آمن في Netlify Function: <code>/.netlify/functions/generate</code>
+        ⚠️ الواجهة بتكلم Endpoint آمن في Netlify Function:
+        <code>/.netlify/functions/generate</code>
       </div>
     </section>
 
     <section class="card out">
       <div class="outHead">
-        <h2>النتيجة</h2>
+        <div>
+          <h2 style="margin:0">النتيجة</h2>
+          <div class="muted tiny" style="margin-top:4px">
+            <span>الموديل المستخدم فعليًا: </span>
+            <b id="usedModel">—</b>
+            <span class="sep" style="opacity:.35"> • </span>
+            <span>Tokens: </span><b id="usageTokens">—</b>
+          </div>
+        </div>
+
         <div class="outActions">
           <button class="mini" id="copyBtn">نسخ</button>
           <button class="mini" id="downloadBtn">تحميل TXT</button>
         </div>
+      </div>
+
+      <!-- صندوق للأخطاء التفصيلية -->
+      <div id="errorBox" class="hint" style="display:none; margin:12px 14px 0;">
+        <div style="font-weight:900;margin-bottom:6px">❌ حصل خطأ</div>
+        <div class="muted" style="white-space:pre-wrap" id="errorMsg"></div>
+        <div class="muted" style="margin-top:8px;white-space:pre-wrap" id="errorFix"></div>
+        <div class="muted tiny" style="margin-top:8px" id="errorMeta"></div>
       </div>
 
       <pre id="output" class="output">// هنا هيظهر الرد…</pre>
