@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
@@ -9,6 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- JSZip (for Download ZIP) -->
+  <script defer src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 </head>
 
 <body>
@@ -17,7 +19,7 @@
       <div class="logo">VC</div>
       <div class="brandText">
         <div class="name">Vibe Code</div>
-        <div class="sub">مولّد كود باستخدام Groq</div>
+        <div class="sub">Templates + Download ZIP (Groq)</div>
       </div>
     </div>
 
@@ -28,11 +30,28 @@
   </header>
 
   <main class="wrap">
+    <!-- TEMPLATES -->
     <section class="card">
-      <h1>اكتب وصف التطبيق</h1>
-      <p class="muted">
-        اكتب فكرة التطبيق + الشكل (vibe) + الصفحات المطلوبة. مثال: "موقع توصيل زي طلبات، منت، زجاجي، RTL، تسجيل دخول…"
-      </p>
+      <div class="headRow">
+        <h1>Templates جاهزة</h1>
+        <div class="pill">① Templates</div>
+      </div>
+
+      <p class="muted">اختار قالب، وعدّل التفاصيل، وبعدها اضغط “توليد الكود”.</p>
+
+      <div class="templates" id="templates"></div>
+
+      <div class="smallNote">
+        💡 تقدر تختار Template وبعدين تعدّل الـ prompt براحتك.
+      </div>
+    </section>
+
+    <!-- BUILDER -->
+    <section class="card">
+      <div class="headRow">
+        <h2>وصف التطبيق</h2>
+        <div class="pill">② Generate + ZIP</div>
+      </div>
 
       <textarea id="prompt" placeholder="اكتب تفاصيل التطبيق هنا..."></textarea>
 
@@ -45,9 +64,6 @@
             <option value="llama-3.1-8b-instant">llama-3.1-8b-instant (أسرع — لو Enabled)</option>
             <option value="llama-3.3-70b-specdec">llama-3.3-70b-specdec</option>
           </select>
-          <div class="tiny muted" style="margin-top:6px">
-            لو موديل طلع مقفول في الـ Project، الفنكشن هيجرّب موديل تاني تلقائيًا.
-          </div>
         </div>
 
         <div class="field">
@@ -57,10 +73,7 @@
 
         <div class="field">
           <label>Max Tokens</label>
-          <input id="maxTokens" type="number" min="64" max="4096" step="64" value="1200" />
-          <div class="tiny muted" style="margin-top:6px">
-            الفنكشن بيقصّه تلقائيًا بين 64 و 4096.
-          </div>
+          <input id="maxTokens" type="number" min="64" max="4096" step="64" value="1400" />
         </div>
       </div>
 
@@ -69,24 +82,30 @@
           <span class="spark">✨</span>
           توليد الكود
         </button>
+
         <button class="btn ghost" id="clearBtn">مسح</button>
+
+        <button class="btn zip" id="zipBtn" disabled>
+          ⬇️ Download ZIP
+        </button>
       </div>
 
       <div class="hint">
-        ⚠️ الواجهة بتكلم Endpoint آمن في Netlify Function:
-        <code>/.netlify/functions/generate</code>
+        endpoint: <code>/.netlify/functions/generate</code> — لا تضع API Key في الواجهة.
       </div>
     </section>
 
+    <!-- OUTPUT -->
     <section class="card out">
       <div class="outHead">
         <div>
           <h2 style="margin:0">النتيجة</h2>
           <div class="muted tiny" style="margin-top:4px">
-            <span>الموديل المستخدم فعليًا: </span>
-            <b id="usedModel">—</b>
-            <span class="sep" style="opacity:.35"> • </span>
+            <span>الموديل المستخدم: </span><b id="usedModel">—</b>
+            <span class="sep"> • </span>
             <span>Tokens: </span><b id="usageTokens">—</b>
+            <span class="sep"> • </span>
+            <span>Files: </span><b id="filesCount">—</b>
           </div>
         </div>
 
@@ -96,12 +115,11 @@
         </div>
       </div>
 
-      <!-- صندوق للأخطاء التفصيلية -->
-      <div id="errorBox" class="hint" style="display:none; margin:12px 14px 0;">
-        <div style="font-weight:900;margin-bottom:6px">❌ حصل خطأ</div>
-        <div class="muted" style="white-space:pre-wrap" id="errorMsg"></div>
-        <div class="muted" style="margin-top:8px;white-space:pre-wrap" id="errorFix"></div>
-        <div class="muted tiny" style="margin-top:8px" id="errorMeta"></div>
+      <div id="errorBox" class="hint error" style="display:none;">
+        <div class="errTitle">❌ حصل خطأ</div>
+        <div class="muted" id="errorMsg"></div>
+        <div class="muted" id="errorFix" style="margin-top:8px;"></div>
+        <div class="muted tiny" id="errorMeta" style="margin-top:8px;"></div>
       </div>
 
       <pre id="output" class="output">// هنا هيظهر الرد…</pre>
@@ -116,4 +134,3 @@
 
   <script src="./app.js"></script>
 </body>
-</html>
