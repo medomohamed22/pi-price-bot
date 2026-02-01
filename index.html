@@ -110,6 +110,7 @@ header .inner{
   transition:.2s;
 }
 .btn:hover{opacity:.95; transform:translateY(-1px)}
+.btn:disabled{opacity:.7; cursor:not-allowed; transform:none}
 .btn.outline{
   background:#fff;
   color:var(--pi);
@@ -195,8 +196,6 @@ textarea{min-height:96px; resize:vertical}
   color:var(--mut);
   line-height:1.7;
   font-size:14px;
-
-  /* clamp to keep nice on mobile */
   display:-webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
@@ -258,7 +257,7 @@ footer{
       <div class="actions">
         <span class="badge" id="statusBadge">🔒 غير مسجّل</span>
         <button class="btn outline" id="logoutBtn" style="display:none" onclick="logout()">تسجيل خروج</button>
-        <button class="btn" onclick="loginPi()">تسجيل دخول Pi</button>
+        <button class="btn" id="loginBtn" onclick="loginPi()">تسجيل دخول Pi</button>
       </div>
     </div>
   </div>
@@ -280,6 +279,9 @@ footer{
         <span class="chip">✅ Supabase DB</span>
       </div>
       <div class="toast" id="toast"></div>
+      <div class="small" style="margin-top:10px">
+        لو زر تسجيل الدخول مش شغال: لازم تفتح الصفحة من <b>Pi Browser</b> + تكون الدومين متسجل في Pi Developer Portal.
+      </div>
     </div>
 
     <!-- Add Project -->
@@ -291,7 +293,7 @@ footer{
         <input class="input" id="pCategory" placeholder="التصنيف (مثال: تعليم)" autocomplete="off">
       </div>
 
-      <textarea id="pDesc" placeholder="وصف المشروع (اختصره)" ></textarea>
+      <textarea id="pDesc" placeholder="وصف المشروع (اختصره)"></textarea>
 
       <div class="formGrid">
         <input class="input" id="pGoal" type="number" min="1" placeholder="هدف التمويل (Pi)">
@@ -331,26 +333,40 @@ const supabase = window.supabase.createClient(
 );
 
 /* =========================
-   Pi SDK init (IMPORTANT)
+   Pi SDK init (sandbox: false as requested)
 ========================= */
-try{
-  // sandbox = true على Testnet (لو أنت على Production خليه false)
-  Pi.init({ version: "2.0", sandbox: false });
-}catch(e){
-  // لو السكربت اتحمّل متأخر أو بيئة مش Pi Browser
-  console.warn("Pi.init warning:", e);
+let piReady = false;
+function initPi(){
+  try{
+    if (window.Pi && !piReady){
+      Pi.init({ version: "2.0", sandbox: false });
+      piReady = true;
+    }
+  }catch(e){
+    console.warn("Pi.init warning:", e);
+  }
 }
+// حاول تهيئة Pi فورًا + بعد تحميل الصفحة
+initPi();
+window.addEventListener("load", initPi);
 
 let currentUser = null;
 
 /* UI helpers */
 const el = (id)=>document.getElementById(id);
 
+function setLoginLoading(isLoading){
+  const btn = el("loginBtn");
+  btn.disabled = isLoading;
+  btn.textContent = isLoading ? "جاري تسجيل الدخول..." : "تسجيل دخول Pi";
+}
+
 function toast(msg){
   el("toast").textContent = msg;
   el("toast").classList.add("show");
   setTimeout(()=>el("toast").classList.remove("show"), 3200);
 }
+
 function escapeHtml(str){
   return String(str ?? "")
     .replaceAll("&","&amp;")
@@ -361,37 +377,83 @@ function escapeHtml(str){
 }
 
 /* =========================
-   Login Pi
+   Pi Login (FIXED)
+   - supports Promise style + Callback style
 ========================= */
-function loginPi(){
+function onIncompletePaymentFound(payment){
+  // مطلوب أحيانًا من Pi SDK (حتى لو مش مستخدم)
+  console.log("Incomplete payment found:", payment);
+}
+
+async function loginPi(){
+  initPi();
+
   if(!window.Pi){
     alert("Pi SDK غير متاح. افتح الموقع من Pi Browser.");
     return;
   }
 
-  // Pi.authenticate signature can vary by environment
-  Pi.authenticate(["username"], async (user) => {
-    currentUser = user;
+  setLoginLoading(true);
 
-    el("statusBadge").textContent = "✅ " + (user.username || "Pi User");
-    el("logoutBtn").style.display = "inline-flex";
-    el("addBox").style.display = "block";
+  try{
+    // 1) جرّب Promise style (الأشهر)
+    const maybePromise = Pi.authenticate(["username"], onIncompletePaymentFound);
 
-    toast("تم تسجيل الدخول بنجاح ✅");
+    if (maybePromise && typeof maybePromise.then === "function"){
+      const auth = await maybePromise; // { user, accessToken } غالبًا
+      const user = auth?.user || auth; // fallback
+      await afterLogin(user, auth?.accessToken);
+      setLoginLoading(false);
+      return;
+    }
 
-    // Upsert user in DB (insert then ignore conflict)
-    // NOTE: this needs unique constraint on pi_uid in pi_users
-    try{
-      await supabase.from("pi_users").insert({
-        pi_uid: user.uid,
-        username: user.username || null
-      });
-    }catch(_){}
+    // 2) لو مش Promise، جرّب Callback style
+    // بعض البيئات: Pi.authenticate(scopes, onSuccess, onError)
+    Pi.authenticate(["username"],
+      async (user) => {
+        try{
+          await afterLogin(user, null);
+        } finally {
+          setLoginLoading(false);
+        }
+      },
+      (err) => {
+        console.error("Pi login error:", err);
+        setLoginLoading(false);
+        alert("فشل تسجيل الدخول. جرّب تاني.");
+      }
+    );
 
-  }, (err) => {
-    console.error(err);
-    alert("فشل تسجيل الدخول. جرّب تاني.");
-  });
+  }catch(err){
+    console.error("Pi login exception:", err);
+    setLoginLoading(false);
+    alert("فشل تسجيل الدخول. تأكد أنك داخل Pi Browser وأن الدومين مسجّل.");
+  }
+}
+
+async function afterLogin(user, accessToken){
+  if(!user || !user.uid){
+    throw new Error("Invalid Pi user object");
+  }
+
+  currentUser = user;
+
+  el("statusBadge").textContent = "✅ " + (user.username || "Pi User");
+  el("logoutBtn").style.display = "inline-flex";
+  el("addBox").style.display = "block";
+
+  toast("تم تسجيل الدخول بنجاح ✅");
+
+  // حفظ المستخدم في DB (ignore errors if already exists)
+  try{
+    await supabase.from("pi_users").insert({
+      pi_uid: user.uid,
+      username: user.username || null
+    });
+  }catch(e){
+    // تجاهل تكرار المستخدم أو أي سياسة تمنع (هتظهر في console بس)
+    console.warn("pi_users insert warning:", e?.message || e);
+  }
 }
 
 function logout(){
@@ -412,7 +474,6 @@ async function addProject(){
   const category = el("pCategory").value.trim();
   const description = el("pDesc").value.trim();
   const goal_pi = Number(el("pGoal").value);
-  const owner = el("pOwner").value.trim();
 
   if(!name || !category || !description || !goal_pi || goal_pi <= 0){
     alert("من فضلك اكتب: اسم + تصنيف + وصف + هدف صحيح.");
@@ -421,7 +482,7 @@ async function addProject(){
 
   const payload = {
     owner_pi_uid: currentUser.uid,
-    owner_username: currentUser.username || null, // optional column (see SQL note below)
+    owner_username: currentUser.username || null, // لو العمود موجود
     name,
     category,
     description,
@@ -464,7 +525,10 @@ async function loadProjects(){
 
   el("projects").innerHTML = "";
   data.forEach(p=>{
-    const pct = Math.max(0, Math.min(100, Math.round((Number(p.raised_pi || 0) / Number(p.goal_pi || 1)) * 100)));
+    const pct = Math.max(0, Math.min(100,
+      Math.round((Number(p.raised_pi || 0) / Number(p.goal_pi || 1)) * 100)
+    ));
+
     const card = document.createElement("div");
     card.className = "card";
     card.innerHTML = `
@@ -482,7 +546,7 @@ async function loadProjects(){
       </div>
 
       <div class="bar" title="${pct}%">
-        <span style="width:${pct}%"></span>
+        <span style="width:${pct}%; display:block; height:10px; background: var(--pi); border-radius:999px"></span>
       </div>
     `;
     el("projects").appendChild(card);
