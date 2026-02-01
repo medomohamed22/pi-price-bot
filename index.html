@@ -2,478 +2,487 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover" />
-  <title>Pi Startups</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Pi Startups | منصة دعم المشروعات</title>
 
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet" />
+  
   <script src="https://sdk.minepi.com/pi-sdk.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
-    :root{
-      --pi:#7d3cff;
-      --pi2:#9c6bff;
-      --bg:#ffffff;
-      --bg2:#f6f2ff;
-      --text:#1c1530;
-      --mut:#5b5470;
-      --stroke:#e6dcff;
-      --card:#ffffff;
-      --shadow: 0 10px 26px rgba(34, 12, 90, .10);
-      --radius:16px;
+    /* --- CSS Variables & Reset --- */
+    :root {
+      --primary: #6f2fa0; /* Pi Purple */
+      --primary-dark: #4b1e6e;
+      --accent: #fbce3a; /* Pi Gold */
+      --bg-body: #f8f9fe;
+      --bg-card: #ffffff;
+      --text-main: #2d2d2d;
+      --text-muted: #6c757d;
+      --border-radius: 16px;
+      --shadow: 0 8px 30px rgba(0,0,0,0.06);
+      --transition: all 0.3s ease;
     }
 
-    *{box-sizing:border-box;font-family:"Tajawal",system-ui}
-    body{
-      margin:0;
-      background:linear-gradient(180deg,var(--bg),var(--bg2));
-      color:var(--text);
-      overflow-x:hidden;
-    }
-    body, .container, .card, button, input, textarea, p, h1, h2, h3, span, small{
-      overflow-wrap:anywhere;
-      word-break:break-word;
+    * { box-sizing: border-box; outline: none; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Tajawal', sans-serif;
+      background-color: var(--bg-body);
+      color: var(--text-main);
+      line-height: 1.6;
     }
 
-    .container{width:92%;max-width:1100px;margin:auto}
+    /* --- Header --- */
+    header {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      border-bottom: 1px solid rgba(0,0,0,0.05);
+      padding: 15px 0;
+    }
+    .container {
+      width: 90%;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .nav-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .logo {
+      font-weight: 900;
+      font-size: 24px;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo span { color: var(--text-main); font-size: 18px; font-weight: 700; }
+    
+    /* --- Buttons --- */
+    .btn {
+      padding: 10px 20px;
+      border-radius: 50px;
+      border: none;
+      font-weight: 700;
+      font-family: 'Tajawal', sans-serif;
+      cursor: pointer;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(111, 47, 160, 0.3);
+    }
+    .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); }
+    .btn-outline {
+      background: transparent;
+      border: 2px solid var(--primary);
+      color: var(--primary);
+    }
+    .btn-outline:hover { background: var(--primary); color: #fff; }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
-    header{
-      background:linear-gradient(135deg,var(--pi),var(--pi2));
-      color:#fff;
-      border-bottom: 1px solid rgba(255,255,255,.25);
+    /* --- Hero Section --- */
+    .hero {
+      text-align: center;
+      padding: 60px 0 40px;
     }
-    header .inner{
-      padding:14px 0;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:10px;
-      flex-wrap:wrap;
+    .hero h1 { font-size: 2.5rem; margin-bottom: 10px; color: var(--primary-dark); }
+    .hero p { font-size: 1.1rem; color: var(--text-muted); max-width: 600px; margin: 0 auto 30px; }
+
+    /* --- User Info --- */
+    #user-section {
+      background: linear-gradient(135deg, #6f2fa0, #8e44ad);
+      color: white;
+      padding: 20px;
+      border-radius: var(--border-radius);
+      margin-bottom: 30px;
+      display: none; /* Hidden by default */
+      animation: fadeIn 0.5s ease;
+    }
+    .user-welcome { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+    .user-name { font-size: 1.2rem; font-weight: bold; display: flex; align-items: center; gap: 10px; }
+
+    /* --- Forms --- */
+    .form-card {
+      background: var(--bg-card);
+      padding: 25px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      margin-top: 20px;
+    }
+    .input-group { margin-bottom: 15px; }
+    input, textarea, select {
+      width: 100%;
+      padding: 12px 15px;
+      border: 2px solid #eee;
+      border-radius: 12px;
+      font-family: 'Tajawal', sans-serif;
+      font-size: 15px;
+      transition: var(--transition);
+      background: #fdfdfd;
+    }
+    input:focus, textarea:focus { border-color: var(--primary); background: #fff; }
+    textarea { resize: vertical; min-height: 100px; }
+    .row-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+    @media (max-width: 600px) { .row-inputs { grid-template-columns: 1fr; } }
+
+    /* --- Projects Grid --- */
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+      padding: 20px 0;
+    }
+    .card {
+      background: var(--bg-card);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      transition: var(--transition);
+      border: 1px solid transparent;
+      display: flex;
+      flex-direction: column;
+    }
+    .card:hover { transform: translateY(-5px); border-color: rgba(111, 47, 160, 0.2); }
+    .card-body { padding: 20px; flex-grow: 1; }
+    .card-tag {
+      background: #f3e5f5;
+      color: var(--primary);
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      display: inline-block;
+      margin-bottom: 10px;
+    }
+    .card h3 { margin: 5px 0; font-size: 1.2rem; }
+    .card p { color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; }
+    
+    .progress-container { margin-top: 15px; }
+    .progress-labels { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; margin-bottom: 5px; }
+    .progress-bar {
+      height: 8px;
+      background: #eee;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      width: 0%;
+      transition: width 1s ease;
     }
 
-    .brand{display:flex; align-items:center; gap:10px; min-width:0}
-    .logo{
-      width:40px;height:40px;border-radius:12px;
-      background:#fff;
-      display:grid; place-items:center;
-      color:var(--pi);
-      font-weight:900;
-      flex:0 0 auto;
-      box-shadow: 0 10px 20px rgba(0,0,0,.18);
+    /* --- Toast Notification --- */
+    #toast {
+      visibility: hidden;
+      min-width: 250px;
+      background-color: #333;
+      color: #fff;
+      text-align: center;
+      border-radius: 50px;
+      padding: 16px;
+      position: fixed;
+      z-index: 1000;
+      left: 50%;
+      bottom: 30px;
+      transform: translateX(-50%);
+      font-size: 14px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
     }
-    .brandTxt{min-width:0}
-    .brandTxt b{
-      display:block;font-weight:900;font-size:14px;
-      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-    }
-    .brandTxt span{
-      display:block;font-size:12px;opacity:.92;font-weight:800;
-      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-    }
+    #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
 
-    .actions{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
-    .badge{
-      display:inline-flex; align-items:center; gap:8px;
-      padding:8px 10px; border-radius:999px;
-      background:rgba(255,255,255,.18);
-      border:1px solid rgba(255,255,255,.28);
-      font-weight:900; font-size:12px;
-    }
-    .btn{
-      border:none;
-      background:var(--pi);
-      color:#fff;
-      padding:10px 14px;
-      border-radius:12px;
-      font-weight:900;
-      cursor:pointer;
-      transition:.2s;
-    }
-    .btn:hover{opacity:.95; transform:translateY(-1px)}
-    .btn:disabled{opacity:.65; cursor:not-allowed; transform:none}
-    .btn.outline{
-      background:#fff;
-      color:var(--pi);
-      border:1px solid var(--stroke);
-    }
-    .btn.outline:hover{background:#faf7ff}
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+    @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
 
-    .card{
-      background:var(--card);
-      border:1px solid var(--stroke);
-      border-radius:var(--radius);
-      padding:14px;
-      box-shadow:var(--shadow);
-    }
-
-    .hero{
-      margin-top:14px;
-      display:grid;
-      grid-template-columns: 1.1fr .9fr;
-      gap:12px;
-    }
-    @media (max-width: 880px){ .hero{grid-template-columns:1fr} }
-
-    .grid{
-      margin-top:12px;
-      display:grid;
-      grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
-      gap:12px;
-    }
-
-    .formGrid{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:10px;
-      margin-top:10px;
-    }
-    @media (max-width: 520px){ .formGrid{grid-template-columns:1fr} }
-
-    input, textarea{
-      width:100%;
-      padding:12px;
-      border-radius:12px;
-      border:1px solid var(--stroke);
-      outline:none;
-      font-weight:800;
-      background:#fff;
-    }
-    textarea{min-height:96px; resize:vertical}
-    input:focus, textarea:focus{
-      border-color: rgba(125,60,255,.55);
-      box-shadow: 0 0 0 3px rgba(125,60,255,.14);
-    }
-
-    .row{display:flex; gap:10px; flex-wrap:wrap; margin-top:10px}
-    .chip{
-      display:inline-flex; align-items:center; gap:8px;
-      padding:8px 10px;
-      border:1px solid var(--stroke);
-      border-radius:12px;
-      color:var(--mut);
-      font-weight:900;
-      font-size:12px;
-      background:#fff;
-    }
-    .hr{height:1px;background:var(--stroke);margin:10px 0}
-    .small{color:var(--mut); font-weight:800; font-size:12px; line-height:1.7; margin-top:8px}
-
-    .toast{
-      margin-top:10px;
-      padding:10px 12px;
-      border-radius:12px;
-      border:1px solid var(--stroke);
-      background:#fbf9ff;
-      color:#2a0f75;
-      font-weight:900;
-      font-size:13px;
-      display:none;
-    }
-    .toast.show{display:block}
-
-    .pTop{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:8px}
-    .tag{
-      display:inline-flex; align-items:center; gap:8px;
-      font-weight:900;
-      color:#2a0f75;
-      background:#f2ecff;
-      border:1px solid #ded1ff;
-      padding:6px 10px;
-      border-radius:999px;
-      font-size:12px;
-      max-width:70%;
-      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-    }
-    .mini{color:var(--mut); font-weight:900; font-size:12px; white-space:nowrap}
-    .h3{margin:0; font-size:18px; font-weight:900; color:#180a3f; line-height:1.2}
-    .desc{
-      margin:8px 0 0;
-      color:var(--mut);
-      line-height:1.7;
-      font-size:14px;
-      display:-webkit-box;
-      -webkit-line-clamp: 3;
-      -webkit-box-orient: vertical;
-      overflow:hidden;
-    }
-    .bar{
-      height:10px;
-      background:#efe7ff;
-      border-radius:999px;
-      overflow:hidden;
-      border:1px solid #e2d7ff;
-      margin-top:10px;
-    }
-    .bar span{display:block;height:100%;background:var(--pi);width:0%}
-
-    footer{margin:18px 0 30px;text-align:center;color:var(--mut);font-weight:800;font-size:12px}
   </style>
 </head>
-
 <body>
 
 <header>
-  <div class="container">
-    <div class="inner">
-      <div class="brand">
-        <div class="logo">π</div>
-        <div class="brandTxt">
-          <b>Pi Startups</b>
-          <span>دعم المشروعات الناشئة بألوان Pi</span>
-        </div>
-      </div>
-
-      <div class="actions">
-        <span class="badge" id="statusBadge">🔒 غير مسجّل</span>
-        <button class="btn outline" id="logoutBtn" style="display:none" onclick="logout()">تسجيل خروج</button>
-        <button class="btn" id="loginBtn" onclick="initPi()">تسجيل دخول Pi</button>
-      </div>
+  <div class="container nav-content">
+    <div class="logo">
+      π <span>Pi Startups</span>
+    </div>
+    <div id="auth-btn-container">
+      <button class="btn btn-primary" id="loginBtn" onclick="authenticateUser()">
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg>
+        تسجيل دخول Pi
+      </button>
     </div>
   </div>
 </header>
 
 <div class="container">
-
+  
   <section class="hero">
-    <div class="card">
-      <h2 style="margin:0;font-weight:900;color:#180a3f">ابدأ دعم مشروع جديد 💜</h2>
-      <p style="margin:8px 0 0;color:var(--mut);font-weight:800;line-height:1.8">
-        تسجيل الدخول هنا معمول بنفس طريقة initPi اللي بتستخدمها: Promise style.
-      </p>
-      <div class="hr"></div>
-      <div class="row">
-        <span class="chip">✅ sandbox: false</span>
-        <span class="chip">✅ Pi.authenticate Promise</span>
-        <span class="chip">✅ Supabase DB</span>
-      </div>
-      <div class="toast" id="toast"></div>
-      <div class="small">
-        لو مش شغال: افتح من <b>Pi Browser</b> + لازم الدومين متسجل في Pi Developer Portal.
-      </div>
-    </div>
-
-    <div class="card" id="addBox" style="display:none">
-      <h3 style="margin:0;font-weight:900;color:#180a3f">➕ إضافة مشروع</h3>
-
-      <div class="formGrid">
-        <input id="pName" placeholder="اسم المشروع" autocomplete="off">
-        <input id="pCategory" placeholder="التصنيف (مثال: تعليم)" autocomplete="off">
-      </div>
-
-      <textarea id="pDesc" placeholder="وصف المشروع (اختصره)"></textarea>
-
-      <div class="formGrid">
-        <input id="pGoal" type="number" min="1" placeholder="هدف التمويل (Pi)">
-        <input id="pOwner" placeholder="صاحب المشروع (اختياري)" autocomplete="off">
-      </div>
-
-      <div class="row">
-        <button class="btn" onclick="addProject()">نشر المشروع</button>
-        <button class="btn outline" onclick="resetForm()">مسح</button>
-      </div>
-
-      <div class="small">* لازم تكون مسجّل دخول.</div>
-    </div>
+    <h1>ادعم مشروعات المستقبل</h1>
+    <p>منصة لتمويل ودعم الأفكار الناشئة باستخدام عملة Pi. شارك فكرتك أو ادعم الآخرين.</p>
   </section>
 
-  <div class="card" style="margin-top:12px">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-      <h3 style="margin:0;font-weight:900;color:#180a3f">المشروعات</h3>
-      <button class="btn outline" onclick="loadProjects()">تحديث</button>
+  <div id="user-section">
+    <div class="user-welcome">
+      <div class="user-name">
+        👋 أهلاً، <span id="display-username">Loading...</span>
+      </div>
+      <button class="btn btn-outline" style="border-color:white; color:white;" onclick="toggleAddProject()">
+        + إضافة مشروع جديد
+      </button>
     </div>
-    <div class="grid" id="projects"></div>
+
+    <div id="add-project-box" class="form-card" style="display:none; color: var(--text-main); margin-top:20px;">
+      <h3 style="margin-top:0">بيانات المشروع</h3>
+      <div class="row-inputs">
+        <div class="input-group">
+          <input type="text" id="pName" placeholder="اسم المشروع">
+        </div>
+        <div class="input-group">
+          <input type="text" id="pCategory" placeholder="التصنيف (مثال: تقنية، تعليم)">
+        </div>
+      </div>
+      <div class="input-group">
+        <textarea id="pDesc" placeholder="وصف المشروع ورؤيتك المستقبلية..."></textarea>
+      </div>
+      <div class="row-inputs">
+        <div class="input-group">
+          <input type="number" id="pGoal" placeholder="المبلغ المطلوب (Pi)">
+        </div>
+        <div class="input-group">
+          <input type="text" id="pOwner" placeholder="اسم المؤسس" readonly>
+        </div>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-primary" onclick="submitProject()">نشر المشروع</button>
+        <button class="btn btn-outline" onclick="toggleAddProject()">إلغاء</button>
+      </div>
+    </div>
   </div>
 
-  <footer>© 2026 — Pi Startups</footer>
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px;">
+    <h2 style="margin:0; color: var(--primary-dark);">المشروعات المميزة</h2>
+    <button class="btn btn-outline" style="padding:5px 15px; font-size:12px;" onclick="fetchProjects()">تحديث</button>
+  </div>
+  
+  <div id="projects-grid" class="grid-container">
+    <div style="text-align:center; width:100%; grid-column: 1/-1; color:#999;">جاري التحميل...</div>
+  </div>
+
+  <footer style="text-align:center; margin-top:50px; padding:20px; color:#999; font-size:13px;">
+    © 2026 Pi Startups - All rights reserved
+  </footer>
+
 </div>
 
+<div id="toast">رسالة تنبيه</div>
+
 <script>
-/* =========================
-   Supabase
-========================= */
-const supabase = window.supabase.createClient(
-  "https://xncapmzlwuisupkjlftb.supabase.co",
-  "sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS"
-);
+  // --- إعدادات Supabase ---
+  // ملاحظة: المفاتيح ظاهرة لأن هذا كود Client-side، تأكد من إعداد RLS في Supabase لحماية البيانات
+  const supabase = window.supabase.createClient(
+    "https://xncapmzlwuisupkjlftb.supabase.co",
+    "sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS"
+  );
 
-let user = null;
+  let currentUser = null;
 
-/* helpers */
-const el = (id)=>document.getElementById(id);
-
-function toast(msg){
-  el("toast").textContent = msg;
-  el("toast").classList.add("show");
-  setTimeout(()=>el("toast").classList.remove("show"), 3200);
-}
-
-function escapeHtml(str){
-  return String(str ?? "")
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
-}
-
-function setLoginLoading(on){
-  const b = el("loginBtn");
-  b.disabled = on;
-  b.textContent = on ? "جاري تسجيل الدخول..." : "تسجيل دخول Pi";
-}
-
-function setWho(){
-  if(user){
-    el("statusBadge").textContent = "✅ " + (user.username || "Pi User");
-    el("logoutBtn").style.display = "inline-flex";
-    el("addBox").style.display = "block";
-  }else{
-    el("statusBadge").textContent = "🔒 غير مسجّل";
-    el("logoutBtn").style.display = "none";
-    el("addBox").style.display = "none";
+  // --- Pi SDK Integration ---
+  async function initPiSDK() {
+    try {
+      // 1. تهيئة SDK
+      // غير sandbox إلى false عند الرفع للإنتاج (Production)
+      Pi.init({ version: "2.0", sandbox: false }); 
+      console.log("Pi SDK Initialized");
+    } catch (err) {
+      console.error("Pi SDK Init Error:", err);
+    }
   }
-}
 
-/* =========================
-   Pi Login (exact style you want)
-   sandbox: false ALWAYS
-========================= */
-async function initPi(){
-  try{
-    setLoginLoading(true);
+  async function authenticateUser() {
+    try {
+      const loginBtn = document.getElementById("loginBtn");
+      loginBtn.innerHTML = "جاري التحميل...";
+      loginBtn.disabled = true;
 
-    const Pi = window.Pi;
-    if(!Pi) throw new Error("Pi SDK not found");
+      // 2. طلب المصادقة والصلاحيات (username)
+      const scopes = ['username']; 
+      
+      // دالة callback مطلوبة للدفوعات غير المكتملة (حتى لو لم نستخدم الدفع الآن)
+      function onIncompletePaymentFound(payment) { 
+        console.log("Incomplete payment found", payment);
+      };
 
-    // sandbox false as requested
-    Pi.init({ version: "2.0", sandbox: false });
+      const authResults = await Pi.authenticate(scopes, onIncompletePaymentFound);
+      
+      // 3. تخزين بيانات المستخدم
+      currentUser = authResults.user;
+      
+      // 4. تحديث الواجهة
+      onLoginSuccess();
+      
+      // 5. حفظ المستخدم في قاعدة البيانات (اختياري)
+      saveUserToDB(currentUser);
 
-    // Promise style authenticate
-    const auth = await Pi.authenticate(["username"], () => {});
-    user = auth.user || auth; // fallback
+    } catch (err) {
+      console.error("Authentication failed:", err);
+      showToast("فشل تسجيل الدخول. تأكد أنك في متصفح Pi.");
+      const loginBtn = document.getElementById("loginBtn");
+      loginBtn.innerHTML = `تسجيل دخول Pi`;
+      loginBtn.disabled = false;
+    }
+  }
 
-    setWho();
-    toast("تم تسجيل الدخول ✅");
+  function onLoginSuccess() {
+    document.getElementById("auth-btn-container").style.display = "none";
+    document.getElementById("user-section").style.display = "block";
+    document.getElementById("display-username").textContent = currentUser.username;
+    document.getElementById("pOwner").value = currentUser.username;
+    showToast(`مرحباً ${currentUser.username} 👋`);
+  }
 
-    // upsert user in Supabase (safe)
-    try{
-      await supabase.from("pi_users").insert({
-        pi_uid: user.uid,
-        username: user.username || null
-      });
-    }catch(e){
-      // ignore duplicate
-      console.warn("pi_users insert:", e?.message || e);
+  async function saveUserToDB(user) {
+    const { error } = await supabase
+      .from("pi_users")
+      .upsert({ pi_uid: user.uid, username: user.username }, { onConflict: 'pi_uid' });
+    if(error) console.warn("DB User Sync Error:", error.message);
+  }
+
+  // --- إدارة المشروعات (Supabase) ---
+
+  async function submitProject() {
+    if (!currentUser) return showToast("يجب تسجيل الدخول أولاً!");
+
+    const name = document.getElementById("pName").value.trim();
+    const category = document.getElementById("pCategory").value.trim();
+    const desc = document.getElementById("pDesc").value.trim();
+    const goal = document.getElementById("pGoal").value;
+
+    if (!name || !desc || !goal) return showToast("يرجى ملء جميع الحقول المطلوبة");
+
+    const payload = {
+      owner_pi_uid: currentUser.uid,
+      owner_username: currentUser.username,
+      name: name,
+      category: category,
+      description: desc,
+      goal_pi: Number(goal),
+      raised_pi: 0
+    };
+
+    const btn = event.target;
+    btn.textContent = "جاري النشر...";
+    btn.disabled = true;
+
+    const { error } = await supabase.from("projects").insert(payload);
+
+    if (error) {
+      console.error(error);
+      showToast("حدث خطأ أثناء النشر: " + error.message);
+    } else {
+      showToast("تم نشر المشروع بنجاح! 🚀");
+      toggleAddProject(); // إخفاء الفورم
+      document.getElementById("pName").value = "";
+      document.getElementById("pDesc").value = "";
+      document.getElementById("pGoal").value = "";
+      fetchProjects(); // تحديث القائمة
+    }
+    
+    btn.textContent = "نشر المشروع";
+    btn.disabled = false;
+  }
+
+  async function fetchProjects() {
+    const grid = document.getElementById("projects-grid");
+    
+    const { data, error } = await supabase
+      .from("projects")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      grid.innerHTML = `<div style="text-align:center; color:red">خطأ في التحميل</div>`;
+      return;
     }
 
-  }catch(e){
-    console.error(e);
-    alert("لازم تفتح من Pi Browser + الدومين متسجل في Pi Developer Portal.");
-  }finally{
-    setLoginLoading(false);
+    if (!data || data.length === 0) {
+      grid.innerHTML = `<div style="text-align:center; color:var(--text-muted); grid-column:1/-1;">لا توجد مشروعات حالياً. كن الأول!</div>`;
+      return;
+    }
+
+    grid.innerHTML = "";
+    data.forEach(p => {
+      const goal = p.goal_pi || 1;
+      const raised = p.raised_pi || 0;
+      const percent = Math.min(100, Math.round((raised / goal) * 100));
+      
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <div class="card-body">
+          <span class="card-tag">${escapeHtml(p.category)}</span>
+          <h3>${escapeHtml(p.name)}</h3>
+          <p>${escapeHtml(p.description)}</p>
+          
+          <div class="progress-container">
+            <div class="progress-labels">
+              <span>تم جمع: ${raised} π</span>
+              <span>الهدف: ${goal} π</span>
+            </div>
+            <div class="progress-bar" title="${percent}%">
+              <div class="progress-fill" style="width: ${percent}%"></div>
+            </div>
+          </div>
+          
+          <div style="margin-top:15px; display:flex; justify-content:space-between; align-items:center; font-size:12px; color:#999;">
+             <span>بواسطة: ${escapeHtml(p.owner_username || 'مجهول')}</span>
+             ${currentUser ? `<button class="btn btn-outline" style="padding:4px 10px; font-size:11px;" onclick="showToast('قريباً: ميزة التبرع')">تبرع</button>` : ''}
+          </div>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
   }
-}
 
-function logout(){
-  user = null;
-  setWho();
-  toast("تم تسجيل الخروج");
-}
-
-/* =========================
-   Projects
-========================= */
-async function addProject(){
-  if(!user) return alert("سجّل دخول الأول");
-
-  const name = el("pName").value.trim();
-  const category = el("pCategory").value.trim();
-  const description = el("pDesc").value.trim();
-  const goal_pi = Number(el("pGoal").value);
-
-  if(!name || !category || !description || !goal_pi || goal_pi <= 0){
-    alert("من فضلك اكتب: اسم + تصنيف + وصف + هدف صحيح.");
-    return;
+  // --- UI Helpers ---
+  function toggleAddProject() {
+    const box = document.getElementById("add-project-box");
+    box.style.display = (box.style.display === "none") ? "block" : "none";
   }
 
-  const payload = {
-    owner_pi_uid: user.uid,
-    owner_username: user.username || null, // لو العمود موجود في DB
-    name,
-    category,
-    description,
-    goal_pi
+  function showToast(msg) {
+    const x = document.getElementById("toast");
+    x.textContent = msg;
+    x.className = "show";
+    setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
+  }
+
+  function escapeHtml(text) {
+    if (!text) return "";
+    return text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  // تشغيل عند التحميل
+  window.onload = function() {
+    initPiSDK();
+    fetchProjects();
   };
 
-  const { error } = await supabase.from("projects").insert(payload);
-  if(error){
-    console.error(error);
-    alert("Supabase Error: " + error.message);
-    return;
-  }
-
-  toast("تم نشر المشروع ✅");
-  resetForm();
-  await loadProjects();
-}
-
-async function loadProjects(){
-  el("projects").innerHTML = `<div class="small">جاري تحميل المشروعات…</div>`;
-
-  const { data, error } = await supabase
-    .from("projects")
-    .select("*")
-    .order("created_at", { ascending:false });
-
-  if(error){
-    console.error(error);
-    el("projects").innerHTML = `<div class="small">خطأ: ${escapeHtml(error.message)}</div>`;
-    return;
-  }
-
-  if(!data || !data.length){
-    el("projects").innerHTML = `<div class="small">لا توجد مشروعات بعد.</div>`;
-    return;
-  }
-
-  el("projects").innerHTML = "";
-  data.forEach(p=>{
-    const pct = Math.max(0, Math.min(100,
-      Math.round((Number(p.raised_pi || 0) / Number(p.goal_pi || 1)) * 100)
-    ));
-
-    const card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = `
-      <div class="pTop">
-        <span class="tag">🏷️ ${escapeHtml(p.category)}</span>
-        <span class="mini">${pct}% ممول</span>
-      </div>
-      <div class="h3">${escapeHtml(p.name)}</div>
-      <p class="desc">${escapeHtml(p.description)}</p>
-
-      <div class="row">
-        <span class="chip">🎯 الهدف: ${escapeHtml(p.goal_pi)} Pi</span>
-        <span class="chip">💰 المُجمع: ${escapeHtml(p.raised_pi ?? 0)} Pi</span>
-      </div>
-
-      <div class="bar" title="${pct}%"><span style="width:${pct}%"></span></div>
-    `;
-    el("projects").appendChild(card);
-  });
-}
-
-function resetForm(){
-  el("pName").value = "";
-  el("pCategory").value = "";
-  el("pDesc").value = "";
-  el("pGoal").value = "";
-  el("pOwner").value = "";
-}
-
-/* init */
-setWho();
-loadProjects();
 </script>
 
 </body>
