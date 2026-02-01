@@ -1,244 +1,213 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>Pi Startups</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover" />
+  <title>Pi Startups</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800;900&display=swap" rel="stylesheet" />
-<script src="https://sdk.minepi.com/pi-sdk.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800;900&display=swap" rel="stylesheet" />
+  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<style>
-:root{
-  --pi:#7d3cff;
-  --pi2:#9c6bff;
-  --bg:#ffffff;
-  --bg2:#f6f2ff;
-  --text:#1c1530;
-  --mut:#5b5470;
-  --stroke:#e6dcff;
-  --card:#ffffff;
-  --shadow: 0 10px 26px rgba(34, 12, 90, .10);
-  --radius:16px;
-}
+  <style>
+    :root{
+      --pi:#7d3cff;
+      --pi2:#9c6bff;
+      --bg:#ffffff;
+      --bg2:#f6f2ff;
+      --text:#1c1530;
+      --mut:#5b5470;
+      --stroke:#e6dcff;
+      --card:#ffffff;
+      --shadow: 0 10px 26px rgba(34, 12, 90, .10);
+      --radius:16px;
+    }
 
-*{box-sizing:border-box;font-family:"Tajawal",system-ui}
-body{
-  margin:0;
-  background:linear-gradient(180deg,var(--bg),var(--bg2));
-  color:var(--text);
-  overflow-x:hidden;
-}
-body, .container, .card, .btn, .input, textarea, p, h1, h2, h3, span, small{
-  overflow-wrap:anywhere;
-  word-break:break-word;
-}
+    *{box-sizing:border-box;font-family:"Tajawal",system-ui}
+    body{
+      margin:0;
+      background:linear-gradient(180deg,var(--bg),var(--bg2));
+      color:var(--text);
+      overflow-x:hidden;
+    }
+    body, .container, .card, button, input, textarea, p, h1, h2, h3, span, small{
+      overflow-wrap:anywhere;
+      word-break:break-word;
+    }
 
-.container{width:92%;max-width:1100px;margin:auto}
+    .container{width:92%;max-width:1100px;margin:auto}
 
-/* Header */
-header{
-  background:linear-gradient(135deg,var(--pi),var(--pi2));
-  color:#fff;
-  border-bottom: 1px solid rgba(255,255,255,.25);
-}
-header .inner{
-  padding:14px 0;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:10px;
-  flex-wrap:wrap;
-}
+    header{
+      background:linear-gradient(135deg,var(--pi),var(--pi2));
+      color:#fff;
+      border-bottom: 1px solid rgba(255,255,255,.25);
+    }
+    header .inner{
+      padding:14px 0;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
 
-.brand{
-  display:flex; align-items:center; gap:10px;
-  min-width:0;
-}
-.logo{
-  width:40px;height:40px;border-radius:12px;
-  background:#fff;
-  display:grid; place-items:center;
-  color:var(--pi);
-  font-weight:900;
-  flex:0 0 auto;
-  box-shadow: 0 10px 20px rgba(0,0,0,.18);
-}
-.brandTxt{min-width:0}
-.brandTxt b{
-  display:block;
-  font-weight:900;
-  font-size:14px;
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-}
-.brandTxt span{
-  display:block;
-  font-size:12px;
-  opacity:.92;
-  font-weight:800;
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-}
+    .brand{display:flex; align-items:center; gap:10px; min-width:0}
+    .logo{
+      width:40px;height:40px;border-radius:12px;
+      background:#fff;
+      display:grid; place-items:center;
+      color:var(--pi);
+      font-weight:900;
+      flex:0 0 auto;
+      box-shadow: 0 10px 20px rgba(0,0,0,.18);
+    }
+    .brandTxt{min-width:0}
+    .brandTxt b{
+      display:block;font-weight:900;font-size:14px;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .brandTxt span{
+      display:block;font-size:12px;opacity:.92;font-weight:800;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
 
-.actions{
-  display:flex;
-  gap:8px;
-  align-items:center;
-  flex-wrap:wrap;
-}
+    .actions{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+    .badge{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:8px 10px; border-radius:999px;
+      background:rgba(255,255,255,.18);
+      border:1px solid rgba(255,255,255,.28);
+      font-weight:900; font-size:12px;
+    }
+    .btn{
+      border:none;
+      background:var(--pi);
+      color:#fff;
+      padding:10px 14px;
+      border-radius:12px;
+      font-weight:900;
+      cursor:pointer;
+      transition:.2s;
+    }
+    .btn:hover{opacity:.95; transform:translateY(-1px)}
+    .btn:disabled{opacity:.65; cursor:not-allowed; transform:none}
+    .btn.outline{
+      background:#fff;
+      color:var(--pi);
+      border:1px solid var(--stroke);
+    }
+    .btn.outline:hover{background:#faf7ff}
 
-.badge{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  padding:8px 10px;
-  border-radius:999px;
-  background:rgba(255,255,255,.18);
-  border:1px solid rgba(255,255,255,.28);
-  font-weight:900;
-  font-size:12px;
-}
+    .card{
+      background:var(--card);
+      border:1px solid var(--stroke);
+      border-radius:var(--radius);
+      padding:14px;
+      box-shadow:var(--shadow);
+    }
 
-.btn{
-  border:none;
-  background:var(--pi);
-  color:#fff;
-  padding:10px 14px;
-  border-radius:12px;
-  font-weight:900;
-  cursor:pointer;
-  transition:.2s;
-}
-.btn:hover{opacity:.95; transform:translateY(-1px)}
-.btn:disabled{opacity:.7; cursor:not-allowed; transform:none}
-.btn.outline{
-  background:#fff;
-  color:var(--pi);
-  border:1px solid var(--stroke);
-}
-.btn.outline:hover{background:#faf7ff}
+    .hero{
+      margin-top:14px;
+      display:grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap:12px;
+    }
+    @media (max-width: 880px){ .hero{grid-template-columns:1fr} }
 
-/* Layout blocks */
-.hero{
-  margin-top:14px;
-  display:grid;
-  grid-template-columns: 1.1fr .9fr;
-  gap:12px;
-}
-@media (max-width: 880px){
-  .hero{grid-template-columns:1fr}
-}
+    .grid{
+      margin-top:12px;
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+      gap:12px;
+    }
 
-.card{
-  background:var(--card);
-  border:1px solid var(--stroke);
-  border-radius:var(--radius);
-  padding:14px;
-  box-shadow:var(--shadow);
-}
+    .formGrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+      margin-top:10px;
+    }
+    @media (max-width: 520px){ .formGrid{grid-template-columns:1fr} }
 
-/* projects grid */
-.grid{
-  margin-top:12px;
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
-  gap:12px;
-}
+    input, textarea{
+      width:100%;
+      padding:12px;
+      border-radius:12px;
+      border:1px solid var(--stroke);
+      outline:none;
+      font-weight:800;
+      background:#fff;
+    }
+    textarea{min-height:96px; resize:vertical}
+    input:focus, textarea:focus{
+      border-color: rgba(125,60,255,.55);
+      box-shadow: 0 0 0 3px rgba(125,60,255,.14);
+    }
 
-/* Add form */
-.formGrid{
-  display:grid;
-  grid-template-columns: 1fr 1fr;
-  gap:10px;
-  margin-top:10px;
-}
-@media (max-width: 520px){
-  .formGrid{grid-template-columns:1fr}
-}
-.input, textarea{
-  width:100%;
-  padding:12px;
-  border-radius:12px;
-  border:1px solid var(--stroke);
-  margin-top:0;
-  outline:none;
-  font-weight:800;
-  background:#fff;
-}
-textarea{min-height:96px; resize:vertical}
-.input:focus, textarea:focus{
-  border-color: rgba(125,60,255,.55);
-  box-shadow: 0 0 0 3px rgba(125,60,255,.14);
-}
-.small{color:var(--mut); font-weight:800; font-size:12px; line-height:1.7; margin-top:8px}
+    .row{display:flex; gap:10px; flex-wrap:wrap; margin-top:10px}
+    .chip{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:8px 10px;
+      border:1px solid var(--stroke);
+      border-radius:12px;
+      color:var(--mut);
+      font-weight:900;
+      font-size:12px;
+      background:#fff;
+    }
+    .hr{height:1px;background:var(--stroke);margin:10px 0}
+    .small{color:var(--mut); font-weight:800; font-size:12px; line-height:1.7; margin-top:8px}
 
-/* Project card details */
-.pTop{
-  display:flex; justify-content:space-between; align-items:center; gap:10px;
-  margin-bottom:8px;
-}
-.tag{
-  display:inline-flex; align-items:center; gap:8px;
-  font-weight:900;
-  color:#2a0f75;
-  background:#f2ecff;
-  border:1px solid #ded1ff;
-  padding:6px 10px;
-  border-radius:999px;
-  font-size:12px;
-  max-width:70%;
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-}
-.mini{color:var(--mut); font-weight:900; font-size:12px; white-space:nowrap}
-.h3{margin:0; font-size:18px; font-weight:900; color:#180a3f; line-height:1.2}
-.desc{
-  margin:8px 0 0;
-  color:var(--mut);
-  line-height:1.7;
-  font-size:14px;
-  display:-webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow:hidden;
-}
+    .toast{
+      margin-top:10px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--stroke);
+      background:#fbf9ff;
+      color:#2a0f75;
+      font-weight:900;
+      font-size:13px;
+      display:none;
+    }
+    .toast.show{display:block}
 
-.row{
-  display:flex; gap:10px; flex-wrap:wrap;
-  margin-top:10px;
-}
-.chip{
-  display:inline-flex; align-items:center; gap:8px;
-  padding:8px 10px;
-  border:1px solid var(--stroke);
-  border-radius:12px;
-  color:var(--mut);
-  font-weight:900;
-  font-size:12px;
-  background:#fff;
-}
-.hr{height:1px;background:var(--stroke);margin:10px 0}
+    .pTop{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:8px}
+    .tag{
+      display:inline-flex; align-items:center; gap:8px;
+      font-weight:900;
+      color:#2a0f75;
+      background:#f2ecff;
+      border:1px solid #ded1ff;
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:12px;
+      max-width:70%;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .mini{color:var(--mut); font-weight:900; font-size:12px; white-space:nowrap}
+    .h3{margin:0; font-size:18px; font-weight:900; color:#180a3f; line-height:1.2}
+    .desc{
+      margin:8px 0 0;
+      color:var(--mut);
+      line-height:1.7;
+      font-size:14px;
+      display:-webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow:hidden;
+    }
+    .bar{
+      height:10px;
+      background:#efe7ff;
+      border-radius:999px;
+      overflow:hidden;
+      border:1px solid #e2d7ff;
+      margin-top:10px;
+    }
+    .bar span{display:block;height:100%;background:var(--pi);width:0%}
 
-.toast{
-  margin-top:10px;
-  padding:10px 12px;
-  border-radius:12px;
-  border:1px solid var(--stroke);
-  background:#fbf9ff;
-  color:#2a0f75;
-  font-weight:900;
-  font-size:13px;
-  display:none;
-}
-.toast.show{display:block}
-
-footer{
-  margin:18px 0 30px;
-  text-align:center;
-  color:var(--mut);
-  font-weight:800;
-  font-size:12px;
-}
-</style>
+    footer{margin:18px 0 30px;text-align:center;color:var(--mut);font-weight:800;font-size:12px}
+  </style>
 </head>
 
 <body>
@@ -257,7 +226,7 @@ footer{
       <div class="actions">
         <span class="badge" id="statusBadge">🔒 غير مسجّل</span>
         <button class="btn outline" id="logoutBtn" style="display:none" onclick="logout()">تسجيل خروج</button>
-        <button class="btn" id="loginBtn" onclick="loginPi()">تسجيل دخول Pi</button>
+        <button class="btn" id="loginBtn" onclick="initPi()">تسجيل دخول Pi</button>
       </div>
     </div>
   </div>
@@ -266,38 +235,36 @@ footer{
 <div class="container">
 
   <section class="hero">
-    <!-- About -->
     <div class="card">
       <h2 style="margin:0;font-weight:900;color:#180a3f">ابدأ دعم مشروع جديد 💜</h2>
       <p style="margin:8px 0 0;color:var(--mut);font-weight:800;line-height:1.8">
-        سجّل دخول بـ Pi، أضف مشروعك، والمشروعات هتظهر مباشرة من قاعدة بيانات Supabase.
+        تسجيل الدخول هنا معمول بنفس طريقة initPi اللي بتستخدمها: Promise style.
       </p>
       <div class="hr"></div>
       <div class="row">
-        <span class="chip">✅ Mobile-friendly</span>
-        <span class="chip">✅ Pi Login</span>
+        <span class="chip">✅ sandbox: false</span>
+        <span class="chip">✅ Pi.authenticate Promise</span>
         <span class="chip">✅ Supabase DB</span>
       </div>
       <div class="toast" id="toast"></div>
-      <div class="small" style="margin-top:10px">
-        لو زر تسجيل الدخول مش شغال: لازم تفتح الصفحة من <b>Pi Browser</b> + تكون الدومين متسجل في Pi Developer Portal.
+      <div class="small">
+        لو مش شغال: افتح من <b>Pi Browser</b> + لازم الدومين متسجل في Pi Developer Portal.
       </div>
     </div>
 
-    <!-- Add Project -->
     <div class="card" id="addBox" style="display:none">
       <h3 style="margin:0;font-weight:900;color:#180a3f">➕ إضافة مشروع</h3>
 
       <div class="formGrid">
-        <input class="input" id="pName" placeholder="اسم المشروع" autocomplete="off">
-        <input class="input" id="pCategory" placeholder="التصنيف (مثال: تعليم)" autocomplete="off">
+        <input id="pName" placeholder="اسم المشروع" autocomplete="off">
+        <input id="pCategory" placeholder="التصنيف (مثال: تعليم)" autocomplete="off">
       </div>
 
       <textarea id="pDesc" placeholder="وصف المشروع (اختصره)"></textarea>
 
       <div class="formGrid">
-        <input class="input" id="pGoal" type="number" min="1" placeholder="هدف التمويل (Pi)">
-        <input class="input" id="pOwner" placeholder="صاحب المشروع (اختياري)" autocomplete="off">
+        <input id="pGoal" type="number" min="1" placeholder="هدف التمويل (Pi)">
+        <input id="pOwner" placeholder="صاحب المشروع (اختياري)" autocomplete="off">
       </div>
 
       <div class="row">
@@ -305,13 +272,10 @@ footer{
         <button class="btn outline" onclick="resetForm()">مسح</button>
       </div>
 
-      <div class="small">
-        * لازم تكون مسجّل دخول. لو البيانات ناقصة هتظهر رسالة.
-      </div>
+      <div class="small">* لازم تكون مسجّل دخول.</div>
     </div>
   </section>
 
-  <!-- Projects -->
   <div class="card" style="margin-top:12px">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
       <h3 style="margin:0;font-weight:900;color:#180a3f">المشروعات</h3>
@@ -332,34 +296,10 @@ const supabase = window.supabase.createClient(
   "sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS"
 );
 
-/* =========================
-   Pi SDK init (sandbox: false as requested)
-========================= */
-let piReady = false;
-function initPi(){
-  try{
-    if (window.Pi && !piReady){
-      Pi.init({ version: "2.0", sandbox: false });
-      piReady = true;
-    }
-  }catch(e){
-    console.warn("Pi.init warning:", e);
-  }
-}
-// حاول تهيئة Pi فورًا + بعد تحميل الصفحة
-initPi();
-window.addEventListener("load", initPi);
+let user = null;
 
-let currentUser = null;
-
-/* UI helpers */
+/* helpers */
 const el = (id)=>document.getElementById(id);
-
-function setLoginLoading(isLoading){
-  const btn = el("loginBtn");
-  btn.disabled = isLoading;
-  btn.textContent = isLoading ? "جاري تسجيل الدخول..." : "تسجيل دخول Pi";
-}
 
 function toast(msg){
   el("toast").textContent = msg;
@@ -376,99 +316,75 @@ function escapeHtml(str){
     .replaceAll("'","&#039;");
 }
 
-/* =========================
-   Pi Login (FIXED)
-   - supports Promise style + Callback style
-========================= */
-function onIncompletePaymentFound(payment){
-  // مطلوب أحيانًا من Pi SDK (حتى لو مش مستخدم)
-  console.log("Incomplete payment found:", payment);
+function setLoginLoading(on){
+  const b = el("loginBtn");
+  b.disabled = on;
+  b.textContent = on ? "جاري تسجيل الدخول..." : "تسجيل دخول Pi";
 }
 
-async function loginPi(){
-  initPi();
-
-  if(!window.Pi){
-    alert("Pi SDK غير متاح. افتح الموقع من Pi Browser.");
-    return;
+function setWho(){
+  if(user){
+    el("statusBadge").textContent = "✅ " + (user.username || "Pi User");
+    el("logoutBtn").style.display = "inline-flex";
+    el("addBox").style.display = "block";
+  }else{
+    el("statusBadge").textContent = "🔒 غير مسجّل";
+    el("logoutBtn").style.display = "none";
+    el("addBox").style.display = "none";
   }
+}
 
-  setLoginLoading(true);
-
+/* =========================
+   Pi Login (exact style you want)
+   sandbox: false ALWAYS
+========================= */
+async function initPi(){
   try{
-    // 1) جرّب Promise style (الأشهر)
-    const maybePromise = Pi.authenticate(["username"], onIncompletePaymentFound);
+    setLoginLoading(true);
 
-    if (maybePromise && typeof maybePromise.then === "function"){
-      const auth = await maybePromise; // { user, accessToken } غالبًا
-      const user = auth?.user || auth; // fallback
-      await afterLogin(user, auth?.accessToken);
-      setLoginLoading(false);
-      return;
+    const Pi = window.Pi;
+    if(!Pi) throw new Error("Pi SDK not found");
+
+    // sandbox false as requested
+    Pi.init({ version: "2.0", sandbox: false });
+
+    // Promise style authenticate
+    const auth = await Pi.authenticate(["username"], () => {});
+    user = auth.user || auth; // fallback
+
+    setWho();
+    toast("تم تسجيل الدخول ✅");
+
+    // upsert user in Supabase (safe)
+    try{
+      await supabase.from("pi_users").insert({
+        pi_uid: user.uid,
+        username: user.username || null
+      });
+    }catch(e){
+      // ignore duplicate
+      console.warn("pi_users insert:", e?.message || e);
     }
 
-    // 2) لو مش Promise، جرّب Callback style
-    // بعض البيئات: Pi.authenticate(scopes, onSuccess, onError)
-    Pi.authenticate(["username"],
-      async (user) => {
-        try{
-          await afterLogin(user, null);
-        } finally {
-          setLoginLoading(false);
-        }
-      },
-      (err) => {
-        console.error("Pi login error:", err);
-        setLoginLoading(false);
-        alert("فشل تسجيل الدخول. جرّب تاني.");
-      }
-    );
-
-  }catch(err){
-    console.error("Pi login exception:", err);
-    setLoginLoading(false);
-    alert("فشل تسجيل الدخول. تأكد أنك داخل Pi Browser وأن الدومين مسجّل.");
-  }
-}
-
-async function afterLogin(user, accessToken){
-  if(!user || !user.uid){
-    throw new Error("Invalid Pi user object");
-  }
-
-  currentUser = user;
-
-  el("statusBadge").textContent = "✅ " + (user.username || "Pi User");
-  el("logoutBtn").style.display = "inline-flex";
-  el("addBox").style.display = "block";
-
-  toast("تم تسجيل الدخول بنجاح ✅");
-
-  // حفظ المستخدم في DB (ignore errors if already exists)
-  try{
-    await supabase.from("pi_users").insert({
-      pi_uid: user.uid,
-      username: user.username || null
-    });
   }catch(e){
-    // تجاهل تكرار المستخدم أو أي سياسة تمنع (هتظهر في console بس)
-    console.warn("pi_users insert warning:", e?.message || e);
+    console.error(e);
+    alert("لازم تفتح من Pi Browser + الدومين متسجل في Pi Developer Portal.");
+  }finally{
+    setLoginLoading(false);
   }
 }
 
 function logout(){
-  currentUser = null;
-  el("statusBadge").textContent = "🔒 غير مسجّل";
-  el("logoutBtn").style.display = "none";
-  el("addBox").style.display = "none";
+  user = null;
+  setWho();
   toast("تم تسجيل الخروج");
 }
 
 /* =========================
-   Add Project
+   Projects
 ========================= */
 async function addProject(){
-  if(!currentUser) return alert("سجّل دخول الأول");
+  if(!user) return alert("سجّل دخول الأول");
 
   const name = el("pName").value.trim();
   const category = el("pCategory").value.trim();
@@ -481,8 +397,8 @@ async function addProject(){
   }
 
   const payload = {
-    owner_pi_uid: currentUser.uid,
-    owner_username: currentUser.username || null, // لو العمود موجود
+    owner_pi_uid: user.uid,
+    owner_username: user.username || null, // لو العمود موجود في DB
     name,
     category,
     description,
@@ -501,9 +417,6 @@ async function addProject(){
   await loadProjects();
 }
 
-/* =========================
-   Load Projects
-========================= */
 async function loadProjects(){
   el("projects").innerHTML = `<div class="small">جاري تحميل المشروعات…</div>`;
 
@@ -514,7 +427,7 @@ async function loadProjects(){
 
   if(error){
     console.error(error);
-    el("projects").innerHTML = `<div class="small">خطأ في تحميل البيانات: ${escapeHtml(error.message)}</div>`;
+    el("projects").innerHTML = `<div class="small">خطأ: ${escapeHtml(error.message)}</div>`;
     return;
   }
 
@@ -536,7 +449,6 @@ async function loadProjects(){
         <span class="tag">🏷️ ${escapeHtml(p.category)}</span>
         <span class="mini">${pct}% ممول</span>
       </div>
-
       <div class="h3">${escapeHtml(p.name)}</div>
       <p class="desc">${escapeHtml(p.description)}</p>
 
@@ -545,17 +457,12 @@ async function loadProjects(){
         <span class="chip">💰 المُجمع: ${escapeHtml(p.raised_pi ?? 0)} Pi</span>
       </div>
 
-      <div class="bar" title="${pct}%">
-        <span style="width:${pct}%; display:block; height:10px; background: var(--pi); border-radius:999px"></span>
-      </div>
+      <div class="bar" title="${pct}%"><span style="width:${pct}%"></span></div>
     `;
     el("projects").appendChild(card);
   });
 }
 
-/* =========================
-   Reset form
-========================= */
 function resetForm(){
   el("pName").value = "";
   el("pCategory").value = "";
@@ -565,6 +472,7 @@ function resetForm(){
 }
 
 /* init */
+setWho();
 loadProjects();
 </script>
 
