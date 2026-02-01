@@ -1,136 +1,508 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover" />
-  <title>Vibe Code • Groq</title>
-  <link rel="stylesheet" href="./style.css" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Pi Startups</title>
 
-  <!-- JSZip (for Download ZIP) -->
-  <script defer src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800;900&display=swap" rel="stylesheet" />
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+:root{
+  --pi:#7d3cff;
+  --pi2:#9c6bff;
+  --bg:#ffffff;
+  --bg2:#f6f2ff;
+  --text:#1c1530;
+  --mut:#5b5470;
+  --stroke:#e6dcff;
+  --card:#ffffff;
+  --shadow: 0 10px 26px rgba(34, 12, 90, .10);
+  --radius:16px;
+}
+
+*{box-sizing:border-box;font-family:"Tajawal",system-ui}
+body{
+  margin:0;
+  background:linear-gradient(180deg,var(--bg),var(--bg2));
+  color:var(--text);
+  overflow-x:hidden;
+}
+body, .container, .card, .btn, .input, textarea, p, h1, h2, h3, span, small{
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+
+.container{width:92%;max-width:1100px;margin:auto}
+
+/* Header */
+header{
+  background:linear-gradient(135deg,var(--pi),var(--pi2));
+  color:#fff;
+  border-bottom: 1px solid rgba(255,255,255,.25);
+}
+header .inner{
+  padding:14px 0;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.brand{
+  display:flex; align-items:center; gap:10px;
+  min-width:0;
+}
+.logo{
+  width:40px;height:40px;border-radius:12px;
+  background:#fff;
+  display:grid; place-items:center;
+  color:var(--pi);
+  font-weight:900;
+  flex:0 0 auto;
+  box-shadow: 0 10px 20px rgba(0,0,0,.18);
+}
+.brandTxt{min-width:0}
+.brandTxt b{
+  display:block;
+  font-weight:900;
+  font-size:14px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.brandTxt span{
+  display:block;
+  font-size:12px;
+  opacity:.92;
+  font-weight:800;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+
+.actions{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+
+.badge{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 10px;
+  border-radius:999px;
+  background:rgba(255,255,255,.18);
+  border:1px solid rgba(255,255,255,.28);
+  font-weight:900;
+  font-size:12px;
+}
+
+.btn{
+  border:none;
+  background:var(--pi);
+  color:#fff;
+  padding:10px 14px;
+  border-radius:12px;
+  font-weight:900;
+  cursor:pointer;
+  transition:.2s;
+}
+.btn:hover{opacity:.95; transform:translateY(-1px)}
+.btn.outline{
+  background:#fff;
+  color:var(--pi);
+  border:1px solid var(--stroke);
+}
+.btn.outline:hover{background:#faf7ff}
+
+/* Layout blocks */
+.hero{
+  margin-top:14px;
+  display:grid;
+  grid-template-columns: 1.1fr .9fr;
+  gap:12px;
+}
+@media (max-width: 880px){
+  .hero{grid-template-columns:1fr}
+}
+
+.card{
+  background:var(--card);
+  border:1px solid var(--stroke);
+  border-radius:var(--radius);
+  padding:14px;
+  box-shadow:var(--shadow);
+}
+
+/* projects grid */
+.grid{
+  margin-top:12px;
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+  gap:12px;
+}
+
+/* Add form */
+.formGrid{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:10px;
+  margin-top:10px;
+}
+@media (max-width: 520px){
+  .formGrid{grid-template-columns:1fr}
+}
+.input, textarea{
+  width:100%;
+  padding:12px;
+  border-radius:12px;
+  border:1px solid var(--stroke);
+  margin-top:0;
+  outline:none;
+  font-weight:800;
+  background:#fff;
+}
+textarea{min-height:96px; resize:vertical}
+.input:focus, textarea:focus{
+  border-color: rgba(125,60,255,.55);
+  box-shadow: 0 0 0 3px rgba(125,60,255,.14);
+}
+.small{color:var(--mut); font-weight:800; font-size:12px; line-height:1.7; margin-top:8px}
+
+/* Project card details */
+.pTop{
+  display:flex; justify-content:space-between; align-items:center; gap:10px;
+  margin-bottom:8px;
+}
+.tag{
+  display:inline-flex; align-items:center; gap:8px;
+  font-weight:900;
+  color:#2a0f75;
+  background:#f2ecff;
+  border:1px solid #ded1ff;
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:12px;
+  max-width:70%;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.mini{color:var(--mut); font-weight:900; font-size:12px; white-space:nowrap}
+.h3{margin:0; font-size:18px; font-weight:900; color:#180a3f; line-height:1.2}
+.desc{
+  margin:8px 0 0;
+  color:var(--mut);
+  line-height:1.7;
+  font-size:14px;
+
+  /* clamp to keep nice on mobile */
+  display:-webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow:hidden;
+}
+
+.row{
+  display:flex; gap:10px; flex-wrap:wrap;
+  margin-top:10px;
+}
+.chip{
+  display:inline-flex; align-items:center; gap:8px;
+  padding:8px 10px;
+  border:1px solid var(--stroke);
+  border-radius:12px;
+  color:var(--mut);
+  font-weight:900;
+  font-size:12px;
+  background:#fff;
+}
+.hr{height:1px;background:var(--stroke);margin:10px 0}
+
+.toast{
+  margin-top:10px;
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px solid var(--stroke);
+  background:#fbf9ff;
+  color:#2a0f75;
+  font-weight:900;
+  font-size:13px;
+  display:none;
+}
+.toast.show{display:block}
+
+footer{
+  margin:18px 0 30px;
+  text-align:center;
+  color:var(--mut);
+  font-weight:800;
+  font-size:12px;
+}
+</style>
 </head>
 
 <body>
-  <header class="top">
-    <div class="brand">
-      <div class="logo">VC</div>
-      <div class="brandText">
-        <div class="name">Vibe Code</div>
-        <div class="sub">Templates + Download ZIP (Groq)</div>
-      </div>
-    </div>
 
-    <div class="status" id="statusChip">
-      <span class="dot"></span>
-      <span id="statusText">جاهز</span>
-    </div>
-  </header>
-
-  <main class="wrap">
-    <!-- TEMPLATES -->
-    <section class="card">
-      <div class="headRow">
-        <h1>Templates جاهزة</h1>
-        <div class="pill">① Templates</div>
-      </div>
-
-      <p class="muted">اختار قالب، وعدّل التفاصيل، وبعدها اضغط “توليد الكود”.</p>
-
-      <div class="templates" id="templates"></div>
-
-      <div class="smallNote">
-        💡 تقدر تختار Template وبعدين تعدّل الـ prompt براحتك.
-      </div>
-    </section>
-
-    <!-- BUILDER -->
-    <section class="card">
-      <div class="headRow">
-        <h2>وصف التطبيق</h2>
-        <div class="pill">② Generate + ZIP</div>
-      </div>
-
-      <textarea id="prompt" placeholder="اكتب تفاصيل التطبيق هنا..."></textarea>
-
-      <div class="row">
-        <div class="field">
-          <label>Model</label>
-          <select id="model">
-            <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile (أفضل للكود)</option>
-            <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
-            <option value="llama-3.1-8b-instant">llama-3.1-8b-instant (أسرع — لو Enabled)</option>
-            <option value="llama-3.3-70b-specdec">llama-3.3-70b-specdec</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label>Temperature</label>
-          <input id="temp" type="number" min="0" max="2" step="0.1" value="0.2" />
-        </div>
-
-        <div class="field">
-          <label>Max Tokens</label>
-          <input id="maxTokens" type="number" min="64" max="4096" step="64" value="1400" />
+<header>
+  <div class="container">
+    <div class="inner">
+      <div class="brand">
+        <div class="logo">π</div>
+        <div class="brandTxt">
+          <b>Pi Startups</b>
+          <span>دعم المشروعات الناشئة بألوان Pi</span>
         </div>
       </div>
 
       <div class="actions">
-        <button class="btn" id="genBtn">
-          <span class="spark">✨</span>
-          توليد الكود
-        </button>
+        <span class="badge" id="statusBadge">🔒 غير مسجّل</span>
+        <button class="btn outline" id="logoutBtn" style="display:none" onclick="logout()">تسجيل خروج</button>
+        <button class="btn" onclick="loginPi()">تسجيل دخول Pi</button>
+      </div>
+    </div>
+  </div>
+</header>
 
-        <button class="btn ghost" id="clearBtn">مسح</button>
+<div class="container">
 
-        <button class="btn zip" id="zipBtn" disabled>
-          ⬇️ Download ZIP
-        </button>
+  <section class="hero">
+    <!-- About -->
+    <div class="card">
+      <h2 style="margin:0;font-weight:900;color:#180a3f">ابدأ دعم مشروع جديد 💜</h2>
+      <p style="margin:8px 0 0;color:var(--mut);font-weight:800;line-height:1.8">
+        سجّل دخول بـ Pi، أضف مشروعك، والمشروعات هتظهر مباشرة من قاعدة بيانات Supabase.
+      </p>
+      <div class="hr"></div>
+      <div class="row">
+        <span class="chip">✅ Mobile-friendly</span>
+        <span class="chip">✅ Pi Login</span>
+        <span class="chip">✅ Supabase DB</span>
+      </div>
+      <div class="toast" id="toast"></div>
+    </div>
+
+    <!-- Add Project -->
+    <div class="card" id="addBox" style="display:none">
+      <h3 style="margin:0;font-weight:900;color:#180a3f">➕ إضافة مشروع</h3>
+
+      <div class="formGrid">
+        <input class="input" id="pName" placeholder="اسم المشروع" autocomplete="off">
+        <input class="input" id="pCategory" placeholder="التصنيف (مثال: تعليم)" autocomplete="off">
       </div>
 
-      <div class="hint">
-        endpoint: <code>/.netlify/functions/generate</code> — لا تضع API Key في الواجهة.
-      </div>
-    </section>
+      <textarea id="pDesc" placeholder="وصف المشروع (اختصره)" ></textarea>
 
-    <!-- OUTPUT -->
-    <section class="card out">
-      <div class="outHead">
-        <div>
-          <h2 style="margin:0">النتيجة</h2>
-          <div class="muted tiny" style="margin-top:4px">
-            <span>الموديل المستخدم: </span><b id="usedModel">—</b>
-            <span class="sep"> • </span>
-            <span>Tokens: </span><b id="usageTokens">—</b>
-            <span class="sep"> • </span>
-            <span>Files: </span><b id="filesCount">—</b>
-          </div>
-        </div>
-
-        <div class="outActions">
-          <button class="mini" id="copyBtn">نسخ</button>
-          <button class="mini" id="downloadBtn">تحميل TXT</button>
-        </div>
+      <div class="formGrid">
+        <input class="input" id="pGoal" type="number" min="1" placeholder="هدف التمويل (Pi)">
+        <input class="input" id="pOwner" placeholder="صاحب المشروع (اختياري)" autocomplete="off">
       </div>
 
-      <div id="errorBox" class="hint error" style="display:none;">
-        <div class="errTitle">❌ حصل خطأ</div>
-        <div class="muted" id="errorMsg"></div>
-        <div class="muted" id="errorFix" style="margin-top:8px;"></div>
-        <div class="muted tiny" id="errorMeta" style="margin-top:8px;"></div>
+      <div class="row">
+        <button class="btn" onclick="addProject()">نشر المشروع</button>
+        <button class="btn outline" onclick="resetForm()">مسح</button>
       </div>
 
-      <pre id="output" class="output">// هنا هيظهر الرد…</pre>
-    </section>
-  </main>
+      <div class="small">
+        * لازم تكون مسجّل دخول. لو البيانات ناقصة هتظهر رسالة.
+      </div>
+    </div>
+  </section>
 
-  <footer class="foot">
-    <span>© Vibe Code • Groq</span>
-    <span class="sep">•</span>
-    <span class="muted">Mobile-first • RTL • Mint Glass</span>
-  </footer>
+  <!-- Projects -->
+  <div class="card" style="margin-top:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+      <h3 style="margin:0;font-weight:900;color:#180a3f">المشروعات</h3>
+      <button class="btn outline" onclick="loadProjects()">تحديث</button>
+    </div>
+    <div class="grid" id="projects"></div>
+  </div>
 
-  <script src="./app.js"></script>
+  <footer>© 2026 — Pi Startups</footer>
+</div>
+
+<script>
+/* =========================
+   Supabase
+========================= */
+const supabase = window.supabase.createClient(
+  "https://xncapmzlwuisupkjlftb.supabase.co",
+  "sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS"
+);
+
+/* =========================
+   Pi SDK init (IMPORTANT)
+========================= */
+try{
+  // sandbox = true على Testnet (لو أنت على Production خليه false)
+  Pi.init({ version: "2.0", sandbox: false });
+}catch(e){
+  // لو السكربت اتحمّل متأخر أو بيئة مش Pi Browser
+  console.warn("Pi.init warning:", e);
+}
+
+let currentUser = null;
+
+/* UI helpers */
+const el = (id)=>document.getElementById(id);
+
+function toast(msg){
+  el("toast").textContent = msg;
+  el("toast").classList.add("show");
+  setTimeout(()=>el("toast").classList.remove("show"), 3200);
+}
+function escapeHtml(str){
+  return String(str ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+/* =========================
+   Login Pi
+========================= */
+function loginPi(){
+  if(!window.Pi){
+    alert("Pi SDK غير متاح. افتح الموقع من Pi Browser.");
+    return;
+  }
+
+  // Pi.authenticate signature can vary by environment
+  Pi.authenticate(["username"], async (user) => {
+    currentUser = user;
+
+    el("statusBadge").textContent = "✅ " + (user.username || "Pi User");
+    el("logoutBtn").style.display = "inline-flex";
+    el("addBox").style.display = "block";
+
+    toast("تم تسجيل الدخول بنجاح ✅");
+
+    // Upsert user in DB (insert then ignore conflict)
+    // NOTE: this needs unique constraint on pi_uid in pi_users
+    try{
+      await supabase.from("pi_users").insert({
+        pi_uid: user.uid,
+        username: user.username || null
+      });
+    }catch(_){}
+
+  }, (err) => {
+    console.error(err);
+    alert("فشل تسجيل الدخول. جرّب تاني.");
+  });
+}
+
+function logout(){
+  currentUser = null;
+  el("statusBadge").textContent = "🔒 غير مسجّل";
+  el("logoutBtn").style.display = "none";
+  el("addBox").style.display = "none";
+  toast("تم تسجيل الخروج");
+}
+
+/* =========================
+   Add Project
+========================= */
+async function addProject(){
+  if(!currentUser) return alert("سجّل دخول الأول");
+
+  const name = el("pName").value.trim();
+  const category = el("pCategory").value.trim();
+  const description = el("pDesc").value.trim();
+  const goal_pi = Number(el("pGoal").value);
+  const owner = el("pOwner").value.trim();
+
+  if(!name || !category || !description || !goal_pi || goal_pi <= 0){
+    alert("من فضلك اكتب: اسم + تصنيف + وصف + هدف صحيح.");
+    return;
+  }
+
+  const payload = {
+    owner_pi_uid: currentUser.uid,
+    owner_username: currentUser.username || null, // optional column (see SQL note below)
+    name,
+    category,
+    description,
+    goal_pi
+  };
+
+  const { error } = await supabase.from("projects").insert(payload);
+  if(error){
+    console.error(error);
+    alert("Supabase Error: " + error.message);
+    return;
+  }
+
+  toast("تم نشر المشروع ✅");
+  resetForm();
+  await loadProjects();
+}
+
+/* =========================
+   Load Projects
+========================= */
+async function loadProjects(){
+  el("projects").innerHTML = `<div class="small">جاري تحميل المشروعات…</div>`;
+
+  const { data, error } = await supabase
+    .from("projects")
+    .select("*")
+    .order("created_at", { ascending:false });
+
+  if(error){
+    console.error(error);
+    el("projects").innerHTML = `<div class="small">خطأ في تحميل البيانات: ${escapeHtml(error.message)}</div>`;
+    return;
+  }
+
+  if(!data || !data.length){
+    el("projects").innerHTML = `<div class="small">لا توجد مشروعات بعد.</div>`;
+    return;
+  }
+
+  el("projects").innerHTML = "";
+  data.forEach(p=>{
+    const pct = Math.max(0, Math.min(100, Math.round((Number(p.raised_pi || 0) / Number(p.goal_pi || 1)) * 100)));
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <div class="pTop">
+        <span class="tag">🏷️ ${escapeHtml(p.category)}</span>
+        <span class="mini">${pct}% ممول</span>
+      </div>
+
+      <div class="h3">${escapeHtml(p.name)}</div>
+      <p class="desc">${escapeHtml(p.description)}</p>
+
+      <div class="row">
+        <span class="chip">🎯 الهدف: ${escapeHtml(p.goal_pi)} Pi</span>
+        <span class="chip">💰 المُجمع: ${escapeHtml(p.raised_pi ?? 0)} Pi</span>
+      </div>
+
+      <div class="bar" title="${pct}%">
+        <span style="width:${pct}%"></span>
+      </div>
+    `;
+    el("projects").appendChild(card);
+  });
+}
+
+/* =========================
+   Reset form
+========================= */
+function resetForm(){
+  el("pName").value = "";
+  el("pCategory").value = "";
+  el("pDesc").value = "";
+  el("pGoal").value = "";
+  el("pOwner").value = "";
+}
+
+/* init */
+loadProjects();
+</script>
+
 </body>
+</html>
