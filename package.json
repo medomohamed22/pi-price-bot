@@ -1,17 +1,1 @@
-
-{
-  "name": "vibe-code-groq",
-  "version": "1.0.0",
-  "description": "Vibe Code Generator using Groq API (Netlify Functions V2)",
-  "type": "module",
-  "scripts": {
-    "dev": "netlify dev",
-    "start": "node index.js"
-  },
-  "dependencies": {
-    "groq-sdk": "^0.8.0"
-  },
-  "engines": {
-    "node": ">=18"
-  }
-}
+{ "dependencies": { "axios": "^1.0.0", "@supabase/supabase-js": "^2.0.0" } }
