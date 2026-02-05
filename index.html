@@ -327,7 +327,7 @@
     async function initPi() {
         try {
             // Note: sandbox: true is for testing. Change to false for Mainnet.
-            Pi.init({ version: "2.0", sandbox: true });
+            Pi.init({ version: "2.0", sandbox: false });
             
             // Check if user is already authenticated (optional, usually explicit login is better)
             document.getElementById('login-btn').addEventListener('click', authenticate);
