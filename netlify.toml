@@ -2,28 +2,16 @@
 publish = "."
 functions = "netlify/functions"
 
-# Pi Payments (اختياري لو انت بتستخدم /api/pi/* في الفرونت)
-[[redirects]]
-  from = "/api/pi/approve"
-  to = "/.netlify/functions/pi_approve"
-  status = 200
-  force = true
+[build.environment]
+# هذا السطر يخبر Netlify بأن هذه المتغيرات مسموح بظهورها في الواجهة الأمامية
+SECRETS_SCAN_OMIT_KEYS = "SUPABASE_URL,SUPABASE_ANON_KEY"
 
 [[redirects]]
-  from = "/api/pi/complete"
-  to = "/.netlify/functions/pi_complete"
-  status = 200
-  force = true
+from = "/api/approve"
+to = "/.netlify/functions/approve"
+status = 200
 
-# Headers for TOML (important for wallet indexing)
-[[headers]]
-  for = "/.well-known/*.toml"
-  [headers.values]
-    Content-Type = "text/plain; charset=utf-8"
-    Cache-Control = "no-store"
-
-# Token image (avoid caching while testing)
-[[headers]]
-  for = "/token.png"
-  [headers.values]
-    Cache-Control = "no-store"
+[[redirects]]
+from = "/api/complete"
+to = "/.netlify/functions/complete"
+status = 200
