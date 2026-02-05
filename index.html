@@ -324,18 +324,31 @@
     const projectsList = document.getElementById('projects-list');
 
     // ================= PI NETWORK AUTH =================
-    async function initPi() {
-        try {
-            // Note: sandbox: true is for testing. Change to false for Mainnet.
-            Pi.init({ version: "2.0", sandbox: false });
-            
-            // Check if user is already authenticated (optional, usually explicit login is better)
-            document.getElementById('login-btn').addEventListener('click', authenticate);
-        } catch (err) {
-            console.error('Pi Init Error:', err);
-            showToast('فشل في تهيئة Pi SDK');
-        }
+// ================= PI NETWORK AUTH =================
+async function initPi() {
+    // التحقق مما إذا كان المتصفح هو Pi Browser
+    const ua = navigator.userAgent;
+    const isPiBrowser = ua.includes('PiBrowser');
+    
+    if (!isPiBrowser) {
+        alert("⚠️ تنبيه: هذا الموقع يعمل فقط داخل تطبيق Pi Browser. يرجى نسخ الرابط وفتحه هناك.");
+        document.getElementById('login-btn').innerText = "يرجى الفتح من Pi Browser";
+        document.getElementById('login-btn').disabled = true;
+        document.getElementById('login-btn').style.backgroundColor = "#ccc";
+        return;
     }
+    
+    try {
+        // Note: sandbox: true is for testing. Change to false for Mainnet.
+        Pi.init({ version: "2.0", sandbox: false });
+        
+        // Check if user is already authenticated
+        document.getElementById('login-btn').addEventListener('click', authenticate);
+    } catch (err) {
+        console.error('Pi Init Error:', err);
+        showToast('فشل في تهيئة Pi SDK');
+    }
+}
 
     async function authenticate() {
         document.getElementById('loader').classList.remove('hidden');
