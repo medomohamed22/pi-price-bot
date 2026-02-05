@@ -1,17 +1,13 @@
 [build]
-publish = "."
-functions = "netlify/functions"
+  publish = "."
+  functions = "netlify/functions"
 
 [build.environment]
-# هذا السطر يخبر Netlify بأن هذه المتغيرات مسموح بظهورها في الواجهة الأمامية
-SECRETS_SCAN_OMIT_KEYS = "SUPABASE_URL,SUPABASE_ANON_KEY"
+  # هذا السطر يمنع Netlify من إيقاف البناء بسبب وجود مفاتيح Supabase في الكود
+  SECRETS_SCAN_OMIT_KEYS = "SUPABASE_URL,SUPABASE_ANON_KEY"
 
+# إعداد التوجيه: أي طلب لـ /api يذهب للمجلد netlify/functions
 [[redirects]]
-from = "/api/approve"
-to = "/.netlify/functions/approve"
-status = 200
-
-[[redirects]]
-from = "/api/complete"
-to = "/.netlify/functions/complete"
-status = 200
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
