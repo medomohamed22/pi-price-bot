@@ -1,59 +1,71 @@
 const axios = require('axios');
 const { createClient } = require('@supabase/supabase-js');
 
-// Config
 const PI_API_KEY = process.env.PI_API_KEY;
 const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY; // MUST use Service Role for writing securely
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 const PI_PLATFORM_API_URL = 'https://api.minepi.com';
 
-module.exports = async (req, res) => {
-  // Handle CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST');
+exports.handler = async (event, context) => {
+  // تفعيل CORS
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Content-Type': 'application/json'
+  };
   
-  if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
+  // التعامل مع طلبات Preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers, body: '' };
+  }
   
-  const { paymentId, payment } = req.body;
-  
-  if (!paymentId || !payment) {
-    return res.status(400).json({ error: 'Missing payment data' });
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, headers, body: 'Method Not Allowed' };
   }
   
   try {
-    // 1. Approve with Pi Network
+    const { paymentId, payment } = JSON.parse(event.body);
+    
+    if (!paymentId || !payment) {
+      return { statusCode: 400, headers, body: JSON.stringify({ error: 'Missing data' }) };
+    }
+    
+    // 1. Approve with Pi
     const approveUrl = `${PI_PLATFORM_API_URL}/v2/payments/${paymentId}/approve`;
     const piResponse = await axios.post(approveUrl, {}, {
       headers: { 'Authorization': `Key ${PI_API_KEY}` }
     });
     
-    // 2. Save Pending Transaction to Database
-    // Metadata contains the project_id we passed from frontend
+    // 2. Save to DB
     const projectId = payment.metadata.project_id;
     const userId = payment.user_uid;
     
-    // Determine username (Pi doesn't always send it in payment obj, might need separate lookup, 
-    // strictly we trust the frontend passed verification or look up in our users table)
-    // For this implementation, we assume the user exists in our DB.
+    // جلب اسم المستخدم (اختياري، يمكن الاعتماد على ما يأتي من الفرونت مؤقتاً)
     const { data: user } = await supabase.from('users').select('username').eq('pi_uid', userId).single();
     
-    const { error: dbError } = await supabase.from('supports').insert({
+    await supabase.from('supports').insert({
       project_id: projectId,
       pi_uid: userId,
-      username: user ? user.username : 'Unknown',
+      username: user ? user.username : 'Pi User',
       amount: payment.amount,
       payment_id: paymentId,
       status: 'pending'
     });
     
-    if (dbError) throw dbError;
-    
-    return res.status(200).json({ message: 'Approved', data: piResponse.data });
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({ message: 'Approved', data: piResponse.data })
+    };
     
   } catch (error) {
-    console.error('Approve Error:', error);
-    return res.status(500).json({ error: 'Approval Failed' });
+    console.error(error);
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ error: error.message })
+    };
   }
 };
