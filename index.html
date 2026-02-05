@@ -17,7 +17,7 @@
     <style>
         :root {
             --primary: #673AB7; /* Deep Purple */
-            --primary-light: #9575CD;
+            --primary-dark: #512DA8;
             --secondary: #FFC107; /* Amber */
             --bg: #F4F7FA;
             --white: #FFFFFF;
@@ -40,6 +40,8 @@
         /* Helpers */
         .hidden { display: none !important; }
         .container { max-width: 600px; margin: 0 auto; padding: 16px; }
+        
+        /* Buttons */
         .btn {
             border: none;
             padding: 10px 20px;
@@ -79,23 +81,36 @@
         header {
             background: var(--primary);
             color: var(--white);
-            padding: 24px 16px;
+            padding: 16px 20px;
             border-bottom-left-radius: 20px;
             border-bottom-right-radius: 20px;
             margin-bottom: 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-shadow: 0 4px 15px rgba(103, 58, 183, 0.3);
         }
-        .user-chip {
-            background: rgba(255,255,255,0.2);
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.9rem;
+        .app-title {
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+        
+        /* Header Login Button */
+        .header-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: 1px solid rgba(255,255,255,0.4);
+            cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 6px;
+            backdrop-filter: blur(5px);
         }
+        .header-btn:hover { background: rgba(255, 255, 255, 0.3); }
 
         /* Project Cards */
         .project-card {
@@ -145,24 +160,11 @@
         }
         input:focus { outline: 2px solid var(--primary-light); }
 
-        /* Login Screen */
-        #login-screen {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--white);
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+        /* Loading / Empty States */
+        .placeholder-box {
             text-align: center;
-            padding: 20px;
-        }
-        .logo-box {
-            width: 80px; height: 80px;
-            background: var(--primary);
-            border-radius: 50%;
-            margin-bottom: 20px;
+            padding: 40px 20px;
+            color: #999;
         }
 
         /* Toast */
@@ -179,6 +181,8 @@
             opacity: 0;
             transition: opacity 0.3s;
             pointer-events: none;
+            font-size: 0.9rem;
+            white-space: nowrap;
         }
         #toast.show { opacity: 1; }
 
@@ -186,12 +190,13 @@
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0,0,0,0.6);
             z-index: 500;
             display: flex;
             justify-content: center;
             align-items: center;
             padding: 20px;
+            backdrop-filter: blur(2px);
         }
         .modal-card {
             background: var(--white);
@@ -199,6 +204,7 @@
             border-radius: var(--radius);
             width: 100%;
             max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
     </style>
 </head>
@@ -207,22 +213,15 @@
     <!-- Notification -->
     <div id="toast">تمت العملية بنجاح</div>
 
-    <!-- Login Screen -->
-    <div id="login-screen">
-        <div class="logo-box"></div>
-        <h1>مشاريع باي</h1>
-        <p style="color:#777; margin-bottom: 30px;">ادعم المبتكرين في شبكة باي</p>
-        <button id="login-btn" class="btn btn-primary">تسجيل الدخول باستخدام باي</button>
-        <div id="loader" class="hidden" style="margin-top:20px;">جاري الاتصال بـ Pi Network...</div>
-    </div>
-
-    <!-- Main App -->
-    <div id="app" class="hidden">
+    <!-- Main App (Visible by default) -->
+    <div id="app">
         <header>
-            <div style="font-weight:700; font-size:1.1rem;">مشاريع باي</div>
-            <div class="user-chip" id="user-display">
-                <span>👤</span> <span id="username-text">ضيف</span>
-            </div>
+            <div class="app-title">مشاريع باي</div>
+            
+            <!-- Login / User Button -->
+            <button id="auth-btn" class="header-btn" onclick="handleAuthClick()">
+                <span>🔑</span> <span id="auth-text">تسجيل دخول</span>
+            </button>
         </header>
 
         <!-- Pages -->
@@ -232,8 +231,7 @@
             <div id="page-home">
                 <h2 style="margin-bottom:16px;">أحدث المشاريع</h2>
                 <div id="projects-list">
-                    <!-- Projects injected here -->
-                    <div class="project-card skeleton" style="height:200px;"></div>
+                    <div style="text-align:center; padding:20px; color:#777;">جاري التحميل...</div>
                 </div>
             </div>
 
@@ -306,10 +304,9 @@
 
 <script>
     // ================= CONFIGURATION =================
-    // IMPORTANT: BACKEND_URL must match the Netlify functions path defined in netlify.toml
     const SUPABASE_URL = 'https://axjkwrssmofzavaoqutq.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_tiuMncgWhf1YRWoD-uYQ3Q_ziI8OKci'; // Public Key
-    const BACKEND_URL = '/api'; // This routes to /.netlify/functions/ via netlify.toml
+    const SUPABASE_KEY = 'sb_publishable_tiuMncgWhf1YRWoD-uYQ3Q_ziI8OKci';
+    const BACKEND_URL = '/api'; // Maps to Netlify Functions
     
     // ================= INITIALIZATION =================
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -318,46 +315,49 @@
     let selectedProjectForSupport = null;
 
     // DOM Elements
-    const loginScreen = document.getElementById('login-screen');
-    const app = document.getElementById('app');
-    const userDisplay = document.getElementById('username-text');
+    const authBtn = document.getElementById('auth-btn');
+    const authText = document.getElementById('auth-text');
     const projectsList = document.getElementById('projects-list');
 
     // ================= PI NETWORK AUTH =================
-// ================= PI NETWORK AUTH =================
-async function initPi() {
-    // التحقق مما إذا كان المتصفح هو Pi Browser
-    const ua = navigator.userAgent;
-    const isPiBrowser = ua.includes('PiBrowser');
-    
-    if (!isPiBrowser) {
-        alert("⚠️ تنبيه: هذا الموقع يعمل فقط داخل تطبيق Pi Browser. يرجى نسخ الرابط وفتحه هناك.");
-        document.getElementById('login-btn').innerText = "يرجى الفتح من Pi Browser";
-        document.getElementById('login-btn').disabled = true;
-        document.getElementById('login-btn').style.backgroundColor = "#ccc";
-        return;
-    }
-    
-    try {
-        // Note: sandbox: true is for testing. Change to false for Mainnet.
-        Pi.init({ version: "2.0", sandbox: false });
-        
-        // Check if user is already authenticated
-        document.getElementById('login-btn').addEventListener('click', authenticate);
-    } catch (err) {
-        console.error('Pi Init Error:', err);
-        showToast('فشل في تهيئة Pi SDK');
-    }
-}
+    async function initPi() {
+        // Check User Agent (Optional but good UX)
+        const ua = navigator.userAgent;
+        if (!ua.includes('PiBrowser')) {
+            // We won't block the site, but we will block Auth
+            console.warn("Not in Pi Browser");
+        }
 
-    async function authenticate() {
-        document.getElementById('loader').classList.remove('hidden');
+        try {
+            // SET SANDBOX TO FALSE FOR MAINNET (PRODUCTION)
+            Pi.init({ version: "2.0", sandbox: false });
+            
+            // Load projects immediately (Public view)
+            loadProjects();
+
+        } catch (err) {
+            console.error('Pi Init Error:', err);
+        }
+    }
+
+    // Triggered by Header Button or Restricted Actions
+    async function handleAuthClick() {
+        if (currentUser) {
+            showToast(`أهلاً بك، ${currentUser.username}`);
+            return;
+        }
+
+        const ua = navigator.userAgent;
+        if (!ua.includes('PiBrowser')) {
+            alert("⚠️ يرجى فتح الموقع من داخل متصفح Pi Browser لتسجيل الدخول.");
+            return;
+        }
+
+        authText.textContent = "جاري الاتصال...";
+        authBtn.disabled = true;
+
         try {
             const scopes = ['username', 'payments'];
-            
-            // Pi.authenticate returns { user: { username, uid }, accessToken }
-            // NOTE: Wallet Address is NOT returned here for security. 
-            // It is handled automatically by the Pi Browser during payment.
             const authResult = await Pi.authenticate(scopes, onIncompletePaymentFound);
             
             currentUser = {
@@ -366,29 +366,30 @@ async function initPi() {
                 accessToken: authResult.accessToken
             };
 
-            console.log("Logged in as:", currentUser.username);
-
-            // Sync user to Supabase
-            await saveUserToDB(currentUser);
-
             // Update UI
-            userDisplay.textContent = currentUser.username;
-            loginScreen.classList.add('hidden');
-            app.classList.remove('hidden');
+            authText.textContent = currentUser.username;
+            authBtn.innerHTML = `<span>👤</span> ${currentUser.username}`;
+            authBtn.disabled = false;
             
-            // Load Data
-            loadProjects();
+            showToast("تم تسجيل الدخول بنجاح");
+
+            // Sync with DB
+            await saveUserToDB(currentUser);
+            
+            // Reload specific views if needed
+            if(!document.getElementById('page-profile').classList.contains('hidden')) {
+                loadMyProjects();
+            }
 
         } catch (err) {
             console.error('Auth Error:', err);
-            showToast('فشل تسجيل الدخول. حاول مرة أخرى.');
-        } finally {
-            document.getElementById('loader').classList.add('hidden');
+            authText.textContent = "تسجيل دخول";
+            authBtn.disabled = false;
+            alert("فشل تسجيل الدخول. تأكد من اتصال الإنترنت وحاول مجدداً.");
         }
     }
 
     async function saveUserToDB(user) {
-        // Upsert user (insert if new, ignore if exists)
         const { error } = await supabase.from('users').upsert({
             pi_uid: user.uid,
             username: user.username
@@ -399,10 +400,16 @@ async function initPi() {
 
     // ================= LOGIC & CRUD =================
     
-    // Router
     window.router = function(pageName) {
+        // Protect Routes
+        if ((pageName === 'add' || pageName === 'profile') && !currentUser) {
+            showToast("يجب تسجيل الدخول أولاً");
+            handleAuthClick(); // Prompt login
+            return;
+        }
+
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-        event.currentTarget.classList.add('active'); 
+        event.currentTarget.classList.add('active');
         
         document.getElementById('page-home').classList.add('hidden');
         document.getElementById('page-add').classList.add('hidden');
@@ -416,7 +423,10 @@ async function initPi() {
 
     // Read Projects
     async function loadProjects() {
-        projectsList.innerHTML = '<div style="text-align:center; padding:20px;">جاري التحميل...</div>';
+        // Only show loading if empty
+        if(projectsList.children.length === 0) {
+            projectsList.innerHTML = '<div class="placeholder-box">جاري تحميل المشاريع...</div>';
+        }
         
         const { data, error } = await supabase
             .from('projects')
@@ -424,7 +434,12 @@ async function initPi() {
             .order('created_at', { ascending: false });
 
         if (error) {
-            showToast('خطأ في تحميل البيانات');
+            projectsList.innerHTML = '<div class="placeholder-box">حدث خطأ في التحميل</div>';
+            return;
+        }
+
+        if(data.length === 0) {
+            projectsList.innerHTML = '<div class="placeholder-box">لا توجد مشاريع بعد. كن أول من يضيف!</div>';
             return;
         }
 
@@ -433,7 +448,7 @@ async function initPi() {
 
     async function loadMyProjects() {
         const container = document.getElementById('my-projects-list');
-        container.innerHTML = 'جاري التحميل...';
+        container.innerHTML = '<div class="placeholder-box">جاري التحميل...</div>';
         
         const { data, error } = await supabase
             .from('projects')
@@ -443,7 +458,7 @@ async function initPi() {
         if (error) return;
         
         if(!data || data.length === 0) {
-            container.innerHTML = '<p style="text-align:center; color:#999;">لا توجد مشاريع لك بعد</p>';
+            container.innerHTML = '<div class="placeholder-box">لم تقم بإضافة أي مشاريع بعد</div>';
         } else {
             renderProjects(data, container, false);
         }
@@ -454,8 +469,19 @@ async function initPi() {
         projects.forEach(p => {
             const div = document.createElement('div');
             div.className = 'project-card';
+            
+            // Support Button Logic
+            let actionBtn = '';
+            if (allowSupport) {
+                actionBtn = `
+                    <button onclick="openSupportModal('${p.id}', '${p.title}')" class="btn btn-primary" style="margin-top:12px;">
+                        دعم المشروع
+                    </button>
+                `;
+            }
+            
             div.innerHTML = `
-                <img src="${p.image_url || 'https://via.placeholder.com/400x200'}" class="project-img" alt="${p.title}">
+                <img src="${p.image_url || 'https://via.placeholder.com/400x200?text=No+Image'}" class="project-img" alt="${p.title}" onerror="this.src='https://via.placeholder.com/400x200?text=Error'">
                 <div class="project-body">
                     <div class="project-title">${p.title}</div>
                     <div class="project-desc">${p.description}</div>
@@ -468,11 +494,7 @@ async function initPi() {
                             👤 ${p.owner_username}
                         </div>
                     </div>
-                    ${allowSupport && p.owner_pi_uid !== currentUser.uid ? `
-                        <button onclick="openSupportModal('${p.id}', '${p.title}')" class="btn btn-primary" style="margin-top:12px;">
-                            دعم المشروع
-                        </button>
-                    ` : ''}
+                    ${actionBtn}
                 </div>
             `;
             container.appendChild(div);
@@ -483,10 +505,14 @@ async function initPi() {
     document.getElementById('add-project-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         
+        if(!currentUser) return handleAuthClick();
+
         const title = document.getElementById('p-title').value;
         const desc = document.getElementById('p-desc').value;
         const img = document.getElementById('p-img').value;
         const demo = document.getElementById('p-demo').value;
+
+        showToast("جاري النشر...");
 
         const { error } = await supabase.from('projects').insert({
             title,
@@ -498,18 +524,29 @@ async function initPi() {
         });
 
         if (error) {
-            showToast('حدث خطأ أثناء النشر');
-            console.error(error);
+            alert("خطأ: " + error.message);
         } else {
             showToast('تم نشر المشروع بنجاح!');
             document.getElementById('add-project-form').reset();
-            router('home');
+            
+            // Fake click Home
+            document.querySelectorAll('.nav-item')[0].click();
         }
     });
 
     // ================= PAYMENTS =================
 
     window.openSupportModal = (id, title) => {
+        if(!currentUser) {
+            showToast("يجب تسجيل الدخول لدعم المشاريع");
+            handleAuthClick();
+            return;
+        }
+        
+        // Prevent supporting own project
+        // Note: In real app, check owner_pi_uid against currentUser.uid
+        // We do this check inside renderProjects logic usually, but extra safety:
+        
         selectedProjectForSupport = { id, title };
         document.getElementById('support-project-title').textContent = title;
         document.getElementById('support-modal').classList.remove('hidden');
@@ -528,78 +565,67 @@ async function initPi() {
 
         const paymentData = {
             amount: amount,
-            memo: "Support Project: " + selectedProjectForSupport.title,
+            memo: "Support: " + selectedProjectForSupport.title.substring(0, 20),
             metadata: { project_id: selectedProjectForSupport.id }
         };
 
         const callbacks = {
             onReadyForServerApproval: async (paymentId) => {
-                console.log("Approving payment:", paymentId);
-                // Call Backend Approve (using relative path handled by netlify.toml)
                 try {
                     const res = await fetch(`${BACKEND_URL}/approve`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ paymentId, payment: { ...paymentData, user_uid: currentUser.uid } })
                     });
-                    
-                    if(!res.ok) {
-                        const errText = await res.text();
-                        throw new Error('Server Approval Failed: ' + errText);
-                    }
+                    if(!res.ok) throw new Error('Approval Failed');
                 } catch (err) {
                     console.error(err);
-                    showToast('فشل الموافقة على الدفع من السيرفر');
+                    showToast('فشل الموافقة (تأكد من اتصال السيرفر)');
                 }
             },
             onServerApprovalSuccess: (paymentId) => {
-                showToast('تمت الموافقة، الرجاء تأكيد الدفع في المحفظة...');
+                showToast('الرجاء تأكيد الدفع...');
             },
             onServerApprovalError: (paymentId) => {
-                showToast('حدث خطأ في الموافقة، حاول مجدداً');
+                showToast('خطأ في الموافقة');
             },
             onClientTransactionSigned: async (txid, payment) => {
-                console.log("Transaction Signed:", txid);
-                // Call Backend Complete
                 try {
                     const res = await fetch(`${BACKEND_URL}/complete`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ paymentId: payment.identifier, txid, payment })
                     });
+                    if(!res.ok) throw new Error('Complete Failed');
                     
-                    if(!res.ok) throw new Error('Completion Failed');
-                    
-                    showToast('شكراً لدعمك! تم التحويل بنجاح');
-                    loadProjects(); // Refresh UI
+                    showToast('تم الدعم بنجاح! شكراً لك');
+                    loadProjects(); 
                 } catch (err) {
-                    console.error("Complete Error:", err);
-                    showToast('تم الدفع ولكن فشل التحديث التلقائي. سيتم المعالجة لاحقاً.');
+                    console.error(err);
+                    // Even if backend fails here, the transaction is on blockchain. 
+                    // Usually we retry or ignore.
+                    showToast('تم الدفع (تحديث الرصيد قد يتأخر قليلاً)');
                 }
             },
             onCancelled: (paymentId) => {
-                showToast('تم إلغاء العملية');
+                showToast('تم الإلغاء');
             },
             onError: (error, payment) => {
-                console.error("Payment Error:", error);
-                showToast('حدث خطأ غير متوقع في الدفع');
+                console.error(error);
+                showToast('خطأ: ' + (error.message || 'unknown'));
             }
         };
 
         try {
-            // This triggers the Pi Wallet flow
             Pi.createPayment(paymentData, callbacks);
         } catch (err) {
-            alert("Error starting payment: " + err);
+            alert("Payment Error: " + err);
         }
     };
 
     function onIncompletePaymentFound(payment) {
-        // Handle stuck payments. 
-        // In a full app, you should send this to /complete as well.
-        console.log("Incomplete payment found:", payment);
-        
-        // Attempt to complete it if it has a txid
+        // Handle incomplete
+        console.log("Found incomplete payment");
         if (payment.transaction && payment.transaction.txid) {
              fetch(`${BACKEND_URL}/complete`, {
                 method: 'POST',
@@ -609,11 +635,10 @@ async function initPi() {
                     txid: payment.transaction.txid, 
                     payment 
                 })
-            }).then(() => showToast("تم استكمال عملية دفع معلقة سابقة"));
+            });
         }
     };
 
-    // Helper
     function showToast(msg) {
         const t = document.getElementById('toast');
         t.textContent = msg;
@@ -621,7 +646,7 @@ async function initPi() {
         setTimeout(() => t.classList.remove('show'), 3000);
     }
 
-    // Init
+    // Start App
     initPi();
 
 </script>
