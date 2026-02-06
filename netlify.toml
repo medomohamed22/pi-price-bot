@@ -6,8 +6,3 @@
   # هذا السطر يمنع Netlify من إيقاف البناء بسبب وجود مفاتيح Supabase في الكود
   SECRETS_SCAN_OMIT_KEYS = "SUPABASE_URL,SUPABASE_ANON_KEY"
 
-# إعداد التوجيه: أي طلب لـ /api يذهب للمجلد netlify/functions
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/:splat"
-  status = 200
