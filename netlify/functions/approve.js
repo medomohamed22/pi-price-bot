@@ -6,7 +6,7 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const PI_BASE = "https://api.minepi.com/v2";
 
-function json(statusCode, bodyObj) {
+function res(statusCode, bodyObj) {
   return {
     statusCode,
     headers: {
@@ -18,53 +18,84 @@ function json(statusCode, bodyObj) {
   };
 }
 
+async function piFetch(path, opts = {}) {
+  const r = await fetch(`${PI_BASE}${path}`, {
+    ...opts,
+    headers: {
+      Authorization: `Key ${PI_API_KEY}`,
+      ...(opts.headers || {}),
+    },
+  });
+  const text = await r.text();
+  let json;
+  try { json = text ? JSON.parse(text) : null; } catch { json = null; }
+  return { ok: r.ok, status: r.status, text, json };
+}
+
 exports.handler = async (event) => {
-  if (event.httpMethod === "OPTIONS") return json(200, {});
-  if (event.httpMethod !== "POST") return json(405, { error: "Method Not Allowed" });
+  if (event.httpMethod === "OPTIONS") return res(200, {});
+  if (event.httpMethod !== "POST") return res(405, { error: "Method Not Allowed" });
   
   try {
     if (!PI_API_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-      return json(500, { error: "Missing env vars (PI_API_KEY / SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)" });
+      return res(500, {
+        error: "Missing env vars",
+        details: "PI_API_KEY / SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY",
+      });
     }
+    
+    const { paymentId } = JSON.parse(event.body || "{}");
+    if (!paymentId) return res(400, { error: "Missing paymentId" });
     
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: { persistSession: false },
     });
     
-    const { paymentId } = JSON.parse(event.body || "{}");
-    if (!paymentId) return json(400, { error: "Missing paymentId" });
-    
-    // 1) Get payment from Pi (عشان نعرف metadata والمبلغ والـ user)
-    const getRes = await fetch(`${PI_BASE}/payments/${paymentId}`, {
-      headers: { Authorization: `Key ${PI_API_KEY}` },
-    });
-    const getText = await getRes.text();
-    if (!getRes.ok) {
-      return json(getRes.status, { error: "Pi get payment failed", details: getText });
+    // 1) Get current payment details (to know user_uid + metadata)
+    const getP = await piFetch(`/payments/${paymentId}`);
+    if (!getP.ok) {
+      return res(getP.status, { error: "Pi get payment failed", details: getP.text });
     }
-    const payment = JSON.parse(getText);
+    const payment = getP.json || {};
+    const pi_uid = payment.user_uid || null;
     
-    // 2) Approve payment
-    const approveRes = await fetch(`${PI_BASE}/payments/${paymentId}/approve`, {
-      method: "POST",
-      headers: { Authorization: `Key ${PI_API_KEY}` },
-    });
-    const approveText = await approveRes.text();
-    if (!approveRes.ok) {
-      return json(approveRes.status, { error: "Pi approve failed", details: approveText });
+    // 2) Cancel old pending payments for same user (to fix: You already have a pending payment...)
+    //    This endpoint returns payments that need server-side action
+    const pending = await piFetch(`/payments/incomplete_server_payments`);
+    if (pending.ok && pending.json) {
+      // response could be array OR { incomplete_server_payments: [...] } depending on API
+      const list =
+        Array.isArray(pending.json) ? pending.json :
+        (pending.json.incomplete_server_payments || pending.json.data || []);
+      
+      const sameUserOld = (list || []).filter(p => {
+        const pid = p.identifier || p.payment_id || p.id;
+        const uid = p.user_uid || p.user_identifier || p.user;
+        return uid && pid && uid === pi_uid && pid !== paymentId;
+      });
+      
+      // Cancel up to a few to be safe (avoid huge loops)
+      for (const p of sameUserOld.slice(0, 10)) {
+        const oldId = p.identifier || p.payment_id || p.id;
+        const cancelR = await piFetch(`/payments/${oldId}/cancel`, { method: "POST" });
+        // even if cancel fails, continue (we'll try approve current anyway)
+      }
     }
     
-    // 3) Save to DB (جدول payments)
-    // توقع metadata من الفرونت: { cycleId, month }
-    const cycleId = payment?.metadata?.cycleId ?? payment?.metadata?.cycle_id ?? null;
+    // 3) Approve current payment
+    const approveR = await piFetch(`/payments/${paymentId}/approve`, { method: "POST" });
+    if (!approveR.ok) {
+      return res(approveR.status, { error: "Pi approve failed", details: approveR.text });
+    }
+    
+    // 4) Save/update in Supabase payments table (idempotent upsert)
+    const cycle_id = payment?.metadata?.cycleId ?? payment?.metadata?.cycle_id ?? null;
     const month = payment?.metadata?.month ?? null;
-    const pi_uid = payment?.user_uid ?? null;
     
-    // لو جدول payments عندك أعمدته مختلفة، عدّل أسماء الأعمدة هنا
-    const insertPayload = {
+    const row = {
       payment_id: paymentId,
       pi_uid,
-      cycle_id: cycleId,
+      cycle_id,
       month,
       amount_pi: payment?.amount ?? null,
       memo: payment?.memo ?? null,
@@ -72,15 +103,18 @@ exports.handler = async (event) => {
       raw_json: payment,
     };
     
-    const { error: insErr } = await supabase.from("payments").insert(insertPayload);
-    // لو عندك unique على payment_id، ممكن يبقى already inserted — تجاهلها
-    if (insErr && !String(insErr.message || "").toLowerCase().includes("duplicate")) {
-      return json(500, { error: "Supabase insert failed", details: insErr.message });
+    // upsert by payment_id (requires unique constraint on payment_id)
+    const { error: upErr } = await supabase
+      .from("payments")
+      .upsert(row, { onConflict: "payment_id" });
+    
+    if (upErr) {
+      return res(500, { error: "Supabase upsert failed", details: upErr.message });
     }
     
-    return json(200, { ok: true, message: "Approved", paymentId });
+    return res(200, { ok: true, message: "Approved", paymentId });
   } catch (e) {
     console.error("approve error:", e);
-    return json(500, { error: e.message || "Server error" });
+    return res(500, { error: e.message || "Server error" });
   }
 };
