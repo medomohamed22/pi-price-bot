@@ -39,46 +39,45 @@ exports.handler = async (event) => {
 
   try {
     if (!PI_API_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-      return res(500, {
-        error: "Missing env vars",
-        details: "PI_API_KEY / SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY",
-      });
+      return res(500, { error: "Missing configuration" });
     }
 
     const { paymentId, txid } = JSON.parse(event.body || "{}");
-    if (!paymentId || !txid) return res(400, { error: "Missing paymentId/txid" });
+    if (!paymentId || !txid) return res(400, { error: "Missing paymentId or txid" });
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: { persistSession: false },
     });
 
-    // 1) Complete payment on Pi
+    // 1. إخبار Pi باكتمال العملية (Server-Side Completion)
     const comp = await piFetch(`/payments/${paymentId}/complete`, {
       method: "POST",
       body: JSON.stringify({ txid }),
     });
 
-    // لو already completed/handled ممكن يدي error — نكمل تحديث DB برضه
+    // ملاحظة: حتى لو ردت Pi بخطأ (مثلاً العملية اكتملت بالفعل)، 
+    // يجب أن نحاول تحديث قاعدة البيانات الخاصة بنا لضمان تطابق البيانات.
     if (!comp.ok) {
-      // رجّع السبب لكن برضه حاول تسجل DB (أحيانًا Pi يكون completed بالفعل)
-      console.warn("Pi complete not ok:", comp.status, comp.text);
+      console.warn("Pi complete warning:", comp.status, comp.text);
     }
 
-    // 2) Update DB
-    const { error: upErr } = await supabase
+    // 2. تحديث حالة الدفع في قاعدة البيانات إلى 'confirmed'
+    // الجدول في SQL لا يحتوي على عمود txid، لذا سنحدث الحالة فقط.
+    // إذا أضفت عمود txid في قاعدة البيانات لاحقاً، يمكنك إضافته هنا: { status: 'confirmed', txid: txid }
+    const { error: dbError } = await supabase
       .from("payments")
-      .upsert(
-        { payment_id: paymentId, txid, status: "completed" },
-        { onConflict: "payment_id" }
-      );
+      .update({ status: "confirmed" })
+      .eq("payment_id", paymentId);
 
-    if (upErr) {
-      return res(500, { error: "Supabase upsert failed", details: upErr.message });
+    if (dbError) {
+      console.error("DB Update Error:", dbError);
+      return res(500, { error: "Failed to update database", details: dbError.message });
     }
 
-    return res(200, { ok: true, message: "Completed", paymentId, txid });
+    return res(200, { ok: true, message: "Payment completed and recorded", paymentId });
+
   } catch (e) {
-    console.error("complete error:", e);
-    return res(500, { error: e.message || "Server error" });
+    console.error("Complete Function Error:", e);
+    return res(500, { error: e.message || "Server Error" });
   }
 };
