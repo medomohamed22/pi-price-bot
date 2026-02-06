@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Admin | إدارة الجمعيات</title>
+
+  <link rel="stylesheet" href="admin.css">
+
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;600;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">A</div>
+      <div>
+        <h1>لوحة الإدارة</h1>
+        <p>إنشاء جمعيات + إنشاء دورات + متابعة الدورات</p>
+      </div>
+    </div>
+    <div id="adminStatus" class="status">جاهز ✅</div>
+  </header>
+
+  <main class="wrap">
+
+    <!-- إنشاء جمعية -->
+    <section class="card">
+      <h2>إنشاء جمعية</h2>
+
+      <div class="form-grid">
+        <label class="field">
+          <span>اسم الجمعية</span>
+          <input id="groupName" placeholder="مثال: جمعية شهرية - 10 أفراد">
+        </label>
+
+        <label class="field">
+          <span>عدد الأعضاء</span>
+          <input id="membersCount" type="number" min="2" value="10">
+        </label>
+      </div>
+
+      <button class="btn primary" id="btnCreateGroup">إنشاء الجمعية</button>
+      <div class="hint">* بعد الإنشاء هتظهر في قائمة الجمعيات تحت.</div>
+    </section>
+
+    <!-- إنشاء دورة -->
+    <section class="card">
+      <h2>إنشاء دورة داخل جمعية</h2>
+
+      <label class="field">
+        <span>اختيار الجمعية</span>
+        <select id="groupSelect">
+          <option value="">جارٍ التحميل...</option>
+        </select>
+      </label>
+
+      <div class="form-grid">
+        <label class="field">
+          <span>اسم الدورة</span>
+          <input id="cycleTitle" placeholder="مثال: دورة مارس 2026">
+        </label>
+
+        <label class="field">
+          <span>القسط الشهري (Pi)</span>
+          <input id="monthlyAmount" type="number" step="0.01" min="0" placeholder="مثال: 10">
+        </label>
+
+        <label class="field">
+          <span>عدد الشهور (عادة = عدد الأعضاء)</span>
+          <input id="months" type="number" min="2" value="10">
+        </label>
+      </div>
+
+      <button class="btn primary" id="btnCreateCycle">إنشاء الدورة</button>
+      <div class="hint">* المستخدمين هيختاروا دورهم داخل الدورة، والدور المحجوز بيتقفل تلقائيًا.</div>
+    </section>
+
+    <!-- عرض الدورات -->
+    <section class="card">
+      <h2>الدورات الحالية للجمعية</h2>
+      <div id="cyclesList" class="list">
+        <div class="empty">اختار جمعية عشان تظهر الدورات هنا</div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="admin.js"></script>
+</body>
+</html>
