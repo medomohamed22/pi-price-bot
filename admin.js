@@ -17,7 +17,7 @@ async function loadAdminGroups() {
     selects.forEach(id => { if($(id)) $(id).innerHTML = html; });
 }
 
-// ===================== 2. عرض الدورات =====================
+// ===================== 2. عرض وحذف الدورات =====================
 async function loadCyclesForGroup() {
     const groupId = $("groupSelect").value;
     const list = $("cyclesList");
@@ -40,15 +40,22 @@ async function loadCyclesForGroup() {
         <div class="cycle-card member-card" style="border-left:4px solid var(--p)">
             <div class="cycle-info">
                 <b>${c.title}</b>
-                <div class="badge">${c.status}</div>
+                <div class="badge">${c.status === 'open' ? 'نشطة 🟢' : 'مغلقة 🔴'}</div>
                 <small>${c.monthly_amount} Pi / شهر - (${c.months} شهور)</small>
             </div>
             <div style="margin-top:10px; display:flex; gap:10px;">
-                <button class="btn soft sm" onclick="loadMembersForCycle(${c.id}, '${c.title}', ${c.months}, ${c.monthly_amount})">👥 إدارة الأعضاء والمدفوعات</button>
-                <button class="btn danger sm" onclick="deleteCycle(${c.id})">حذف</button>
+                <button class="btn soft sm" onclick="loadMembersForCycle(${c.id}, '${c.title}', ${c.months}, ${c.monthly_amount})">👥 الأعضاء والمدفوعات</button>
+                <button class="btn danger sm" onclick="deleteCycle(${c.id})">حذف الدورة</button>
             </div>
         </div>
     `).join("");
+}
+
+async function deleteCycle(id) {
+    if(!confirm("هل أنت متأكد من حذف هذه الدورة؟ سيتم حذف جميع المسجلين والبيانات المرتبطة بها!")) return;
+    const { error } = await sb.from("cycles").delete().eq("id", id);
+    if(error) alert("خطأ في الحذف: " + error.message);
+    else { alert("تم حذف الدورة بنجاح"); loadCyclesForGroup(); }
 }
 
 // ===================== 3. إدارة الأعضاء (Logic Core) =====================
@@ -67,55 +74,37 @@ async function loadMembersForCycle(cycleId, title, totalMonths, amount) {
     section.scrollIntoView({ behavior: 'smooth' });
 
     // 1. جلب الأعضاء
-    const { data: members, error } = await sb
+    const { data: members } = await sb
         .from("members")
         .select("id, pi_uid, username, position, created_at")
         .eq("cycle_id", cycleId)
         .order("position", { ascending: true });
 
     if(!members || members.length === 0) {
-        list.innerHTML = `<div style="padding:20px; text-align:center; color:gray">لا يوجد أعضاء مسجلين في هذه الدورة بعد.</div>`;
+        list.innerHTML = `<div style="padding:20px; text-align:center; color:gray">لا يوجد أعضاء مسجلين بعد.</div>`;
         return;
     }
 
-    // 2. تحضير قائمة pi_uids لجلب البيانات الإضافية
     const userIds = members.map(m => m.pi_uid);
+    const memberIds = members.map(m => m.id);
 
-    // 3. جلب المحافظ (Wallets)
-    const { data: wallets } = await sb
-        .from("user_wallets")
-        .select("pi_uid, wallet_address")
-        .in("pi_uid", userIds);
+    // 2. جلب المحافظ والحظر في وقت واحد
+    const [walletsRes, profilesRes, paymentsRes] = await Promise.all([
+        sb.from("user_wallets").select("pi_uid, wallet_address").in("pi_uid", userIds),
+        sb.from("profiles").select("pi_uid, is_banned").in("pi_uid", userIds),
+        // [تعديل هام] جلب الحالات confirmed لتطابق الدفع الجديد
+        sb.from("payments").select("member_id").in("member_id", memberIds).eq("status", "confirmed")
+    ]);
+
+    const walletMap = Object.fromEntries(walletsRes.data?.map(w => [w.pi_uid, w.wallet_address]) || []);
+    const banMap = Object.fromEntries(profilesRes.data?.map(p => [p.pi_uid, p.is_banned]) || []);
     
-    // تحويل المحافظ إلى Map للسرعة
-    const walletMap = {};
-    wallets?.forEach(w => walletMap[w.pi_uid] = w.wallet_address);
-
-    // 4. جلب حالة الحظر (Profiles)
-    const { data: profiles } = await sb
-        .from("profiles")
-        .select("pi_uid, is_banned")
-        .in("pi_uid", userIds);
-        
-    const banMap = {};
-    profiles?.forEach(p => banMap[p.pi_uid] = p.is_banned);
-
-    // 5. جلب المدفوعات وحساب التقدم لكل عضو
-    // نستخدم Loop ذكية أو استعلام تجميعي. هنا سنقوم باستعلام لكل عضو لضمان الدقة في النسخة البسيطة
-    // الأفضل: جلب كل مدفوعات الدورة ثم التوزيع JS
-    const { data: payments } = await sb
-        .from("payments")
-        .select("member_id, status")
-        .eq("status", "completed")
-        .in("member_id", members.map(m => m.id)); // استخدام member_id حسب التعديل الأخير
-
     // حساب المدفوعات لكل عضو
     const paymentCounts = {};
-    payments?.forEach(p => {
+    paymentsRes.data?.forEach(p => {
         paymentCounts[p.member_id] = (paymentCounts[p.member_id] || 0) + 1;
     });
 
-    // 6. رسم الواجهة
     list.innerHTML = members.map(m => {
         const wallet = walletMap[m.pi_uid] || "لم يربط المحفظة بعد";
         const isBanned = banMap[m.pi_uid] || false;
@@ -124,40 +113,29 @@ async function loadMembersForCycle(cycleId, title, totalMonths, amount) {
         const remaining = (totalMonths - paidCount) * amount;
 
         return `
-        <div class="member-card ${isBanned ? 'banned' : ''}" id="member-${m.id}">
+        <div class="member-card ${isBanned ? 'banned' : ''}">
             <div class="member-header">
-                <div class="user-info">
-                    <b>${m.position}. @${m.username} ${isBanned ? '🔴 (محظور)' : ''}</b>
-                    <span>ID: ${m.pi_uid.substring(0, 10)}...</span>
+                <div>
+                    <b>${m.position}. @${m.username}</b>
+                    <div style="font-size:10px; color:gray">${m.pi_uid.substring(0,12)}...</div>
                 </div>
                 <div class="badge ${paidCount >= totalMonths ? 'paid' : ''}">
-                    ${paidCount >= totalMonths ? 'مكتمل' : 'سارٍ'}
+                    ${paidCount >= totalMonths ? 'مكتمل ✅' : 'سارٍ ⏳'}
                 </div>
             </div>
-
-            <!-- المحفظة -->
-            <div class="wallet-box">
-                <span id="wallet-text-${m.id}" title="${wallet}">${wallet.substring(0, 25)}${wallet.length > 25 ? '...' : ''}</span>
-                <button class="copy-btn" onclick="copyText('${wallet}')" title="نسخ">📋</button>
+            <div class="wallet-box" onclick="copyText('${wallet}')" style="cursor:pointer; background:#eee; padding:5px; border-radius:4px; font-size:11px; margin:10px 0;">
+                📋 ${wallet.substring(0,30)}...
             </div>
-
-            <!-- التقدم -->
-            <div class="progress-wrap">
-                <div class="progress-meta">
-                    <span>دفع: ${paidCount} / ${totalMonths} شهر</span>
-                    <span>متبقي: ${remaining.toFixed(1)} Pi</span>
-                </div>
-                <div class="progress-track">
-                    <div class="progress-fill" style="width:${progress}%"></div>
-                </div>
+            <div class="progress-meta" style="display:flex; justify-content:space-between; font-size:12px;">
+                <span>تم سداد: ${paidCount}/${totalMonths}</span>
+                <span>باقي: ${remaining} Pi</span>
             </div>
-
-            <!-- التحكم -->
-            <div class="actions-row">
-                <button class="btn soft sm" style="flex:1" onclick="alert('سجل المدفوعات التفصيلي قادم قريباً')">📜 السجل</button>
-                <button class="btn ${isBanned ? 'primary' : 'danger'} sm" style="flex:1" 
-                        onclick="toggleBan('${m.pi_uid}', ${!isBanned}, '${m.username}')">
-                        ${isBanned ? 'فك الحظر 🟢' : 'حظر المستخدم 🚫'}
+            <div style="background:#ddd; height:8px; border-radius:4px; margin:5px 0;">
+                <div style="background:var(--p, #6200ee); width:${progress}%; height:100%; border-radius:4px;"></div>
+            </div>
+            <div style="display:flex; gap:5px; margin-top:10px;">
+                <button class="btn ${isBanned ? 'primary' : 'danger'} sm full-width" onclick="toggleBan('${m.pi_uid}', ${!isBanned}, '${m.username}')">
+                    ${isBanned ? 'فك الحظر' : 'حظر 🚫'}
                 </button>
             </div>
         </div>
@@ -165,46 +143,48 @@ async function loadMembersForCycle(cycleId, title, totalMonths, amount) {
     }).join("");
 }
 
-// ===================== أدوات مساعدة =====================
+// ===================== 4. إنشاء جمعيات ودورات جديدة =====================
+async function createNewGroup() {
+    const name = $("newGroupName").value.trim();
+    const desc = $("newGroupDesc").value.trim();
+    if(!name) return alert("ادخل اسم الجمعية");
 
-// 1. نسخ النص
+    const { error } = await sb.from("groups").insert({ name, description: desc });
+    if(error) alert("خطأ: " + error.message);
+    else { alert("تم إنشاء الجمعية بنجاح"); $("newGroupName").value=""; $("newGroupDesc").value=""; loadAdminGroups(); }
+}
+
+async function createNewCycle() {
+    const groupId = $("groupSelectCreate").value;
+    const title = $("cycleTitle").value.trim();
+    const amount = parseFloat($("cycleAmount").value);
+    const months = parseInt($("cycleMonths").value);
+
+    if(!groupId || !title || !amount || !months) return alert("اكمل جميع البيانات");
+
+    const { error } = await sb.from("cycles").insert({
+        group_id: groupId,
+        title: title,
+        monthly_amount: amount,
+        months: months,
+        status: 'open'
+    });
+
+    if(error) alert("خطأ: " + error.message);
+    else { alert("تم إنشاء الدورة بنجاح"); loadAdminGroups(); loadCyclesForGroup(); }
+}
+
+// ===================== 5. أدوات مساعدة =====================
 async function copyText(text) {
-    if(!text || text.includes("لم يربط")) return alert("لا يوجد عنوان صحيح للنسخ");
-    try {
-        await navigator.clipboard.writeText(text);
-        alert("تم نسخ عنوان المحفظة: \n" + text);
-    } catch (err) {
-        prompt("اضغط Ctrl+C للنسخ:", text);
-    }
+    if(!text || text.includes("لم يربط")) return;
+    navigator.clipboard.writeText(text);
+    alert("تم نسخ المحفظة");
 }
 
-// 2. حظر/فك حظر المستخدم
 async function toggleBan(pi_uid, shouldBan, username) {
-    const action = shouldBan ? "حظر" : "فك حظر";
-    if(!confirm(`هل أنت متأكد من ${action} المستخدم @${username}؟\nسيؤثر هذا على دخوله للموقع بالكامل.`)) return;
-
-    // نقوم بتحديث الجدول profiles
-    // نستخدم upsert لضمان وجود السجل
-    const { error } = await sb
-        .from("profiles")
-        .upsert({ pi_uid: pi_uid, is_banned: shouldBan, username: username }); // تحديث الاسم أيضاً
-
-    if(error) {
-        alert("فشل العملية: " + error.message);
-    } else {
-        alert(`تم ${action} المستخدم بنجاح.`);
-        // تحديث القائمة الحالية إذا كانت مفتوحة
-        if(currentCycleId) {
-             // إعادة تحميل بسيطة للمنطقة المرئية
-             // لاسترجاع القيم الصحيحة للدالة، نحتاج تخزينها، لكن هنا سنعيد تحميل الصفحة أو الدورة
-             const btn = document.querySelector(`button[onclick*="${currentCycleId}"]`);
-             if(btn) btn.click(); 
-        }
-    }
+    const { error } = await sb.from("profiles").upsert({ pi_uid, is_banned: shouldBan, username });
+    if(error) alert("فشل: " + error.message);
+    else { alert("تم تحديث حالة الحظر"); if(currentCycleId) loadMembersForCycle(currentCycleId); }
 }
-
-// ===================== الإنشاء (نسخة مختصرة مربوطة بالواجهة) =====================
-// الدوال createGroup و createCycle موجودة في الكود السابق، تأكد من وجودها هنا
-// ... (أضف دوال createGroup, createCycle من الملف السابق هنا) ...
 
 window.addEventListener("load", loadAdminGroups);
