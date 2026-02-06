@@ -2,12 +2,12 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Admin | إدارة الجمعيات</title>
 
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="admin.css">
-
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;600;800&display=swap" rel="stylesheet">
+  
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
@@ -18,71 +18,76 @@
       <div class="logo">A</div>
       <div>
         <h1>لوحة الإدارة</h1>
-        <p>إنشاء جمعيات + إنشاء دورات + متابعة الدورات</p>
+        <p>التحكم في الجمعيات والدورات</p>
       </div>
     </div>
-    <div id="adminStatus" class="status">جاهز ✅</div>
+    <div id="adminStatus" class="status">متصل 🟢</div>
   </header>
 
   <main class="wrap">
 
-    <!-- إنشاء جمعية -->
+    <!-- 1. إنشاء جمعية -->
     <section class="card">
-      <h2>إنشاء جمعية</h2>
-
+      <h2>1. إنشاء جمعية جديدة (المجموعة الأم)</h2>
       <div class="form-grid">
         <label class="field">
           <span>اسم الجمعية</span>
-          <input id="groupName" placeholder="مثال: جمعية شهرية - 10 أفراد">
+          <input id="groupName" placeholder="مثال: جمعية الأصدقاء">
         </label>
 
         <label class="field">
-          <span>عدد الأعضاء</span>
+          <span>عدد الأعضاء الأقصى</span>
           <input id="membersCount" type="number" min="2" value="10">
         </label>
+        
+        <label class="field full-width">
+          <span>وصف الجمعية (يظهر للمستخدمين)</span>
+          <textarea id="groupDesc" rows="2" placeholder="اكتب وصف مختصر يطمئن المشتركين..."></textarea>
+        </label>
       </div>
-
       <button class="btn primary" id="btnCreateGroup">إنشاء الجمعية</button>
-      <div class="hint">* بعد الإنشاء هتظهر في قائمة الجمعيات تحت.</div>
     </section>
 
-    <!-- إنشاء دورة -->
+    <!-- 2. إنشاء دورة -->
     <section class="card">
-      <h2>إنشاء دورة داخل جمعية</h2>
-
+      <h2>2. طرح دورة جديدة (Cycle)</h2>
+      
       <label class="field">
-        <span>اختيار الجمعية</span>
+        <span>اختر الجمعية لطرح الدورة فيها:</span>
         <select id="groupSelect">
-          <option value="">جارٍ التحميل...</option>
+          <option value="">جارٍ تحميل القائمة...</option>
         </select>
       </label>
 
       <div class="form-grid">
         <label class="field">
           <span>اسم الدورة</span>
-          <input id="cycleTitle" placeholder="مثال: دورة مارس 2026">
+          <input id="cycleTitle" placeholder="مثال: دورة شهر نوفمبر 2026">
         </label>
 
         <label class="field">
           <span>القسط الشهري (Pi)</span>
-          <input id="monthlyAmount" type="number" step="0.01" min="0" placeholder="مثال: 10">
+          <input id="monthlyAmount" type="number" step="0.1" placeholder="0.0">
         </label>
 
         <label class="field">
-          <span>عدد الشهور (عادة = عدد الأعضاء)</span>
-          <input id="months" type="number" min="2" value="10">
+          <span>عدد الشهور</span>
+          <input id="months" type="number" value="10">
         </label>
       </div>
 
-      <button class="btn primary" id="btnCreateCycle">إنشاء الدورة</button>
-      <div class="hint">* المستخدمين هيختاروا دورهم داخل الدورة، والدور المحجوز بيتقفل تلقائيًا.</div>
+      <button class="btn primary" id="btnCreateCycle">طرح الدورة للتسجيل</button>
     </section>
 
-    <!-- عرض الدورات -->
+    <!-- 3. إدارة الدورات -->
     <section class="card">
-      <h2>الدورات الحالية للجمعية</h2>
+      <div style="display:flex; justify-content:space-between; align-items:center">
+        <h2>3. متابعة الدورات الحالية</h2>
+        <button class="btn soft sm" onclick="loadCyclesForGroup()">تحديث</button>
+      </div>
+      
       <div id="cyclesList" class="list">
-        <div class="empty">اختار جمعية عشان تظهر الدورات هنا</div>
+        <div class="empty">اختر جمعية من القائمة أعلاه لعرض دوراتها</div>
       </div>
     </section>
 
