@@ -22,7 +22,7 @@ function toast(title, msg = "", type = "info", duration = 4000) {
   `;
   container.appendChild(el);
   setTimeout(() => {
-    el.style.animation = "fadeOut 0.3s forwards";
+    el.style.opacity = "0";
     setTimeout(() => el.remove(), 300);
   }, duration);
 }
@@ -153,7 +153,7 @@ async function saveWallet() {
   else toast("تم الحفظ", "تم تحديث المحفظة ✅", "success");
 }
 
-// === المنطق الأساسي لعرض المدفوعات ===
+// === تحميل بيانات الاشتراك والمدفوعات ===
 async function loadMyCycles() {
   const list = document.getElementById("myCyclesList");
   list.innerHTML = `<div class="muted" style="text-align:center; margin:20px 0;">جاري جلب بيانات الدفع... ⏳</div>`;
@@ -182,46 +182,41 @@ async function loadMyCycles() {
         const c = m.cycles;
         if(!c) continue;
 
-        // 2. جلب المدفوعات المسجلة لهذا العضو
-        // نستخدم installment_number لترتيبها ومعرفة ما تم دفعه
+        // 2. جلب المدفوعات (فقط المؤكدة confirmed)
+        // بما أن الجدول لا يحتوي على رقم القسط، سنعتمد على الترتيب الزمني
         const { data: payments } = await sb
             .from('payments')
-            .select('amount, created_at, installment_number, status')
+            .select('amount, created_at, status')
             .eq('member_id', m.id)
-            .eq('status', 'completed')
-            .order('installment_number', { ascending: true });
+            .eq('status', 'confirmed') // التأكد من جلب العمليات الناجحة فقط
+            .order('created_at', { ascending: true });
         
         const paidRows = payments || [];
+        const paidCount = paidRows.length; // عدد الأقساط المدفوعة هو عدد الصفوف
         
-        // حساب آخر قسط تم دفعه (أكبر رقم installment_number)
-        const lastPaidInstallment = paidRows.length > 0 
-            ? Math.max(...paidRows.map(p => p.installment_number || 0)) 
-            : 0;
-
-        // القسط القادم هو (آخر قسط + 1)
-        const nextInstallmentNum = lastPaidInstallment + 1;
+        // القسط القادم
+        const nextInstallmentNum = paidCount + 1;
         
         // الحسابات
         const totalAmount = c.monthly_amount * c.months;
         const paidAmountTotal = paidRows.reduce((sum, p) => sum + (p.amount || 0), 0);
         const remainingAmount = totalAmount - paidAmountTotal;
-        const progressPercent = Math.min((paidRows.length / c.months) * 100, 100);
+        const progressPercent = Math.min((paidCount / c.months) * 100, 100);
         
-        // تواريخ
         const cycleStartDate = new Date(c.created_at);
         const payoutDate = new Date(cycleStartDate);
         payoutDate.setMonth(payoutDate.getMonth() + (m.position - 1));
 
-        const isCompleted = paidRows.length >= c.months;
+        const isCompleted = paidCount >= c.months;
 
         // بناء سجل الدفعات HTML
         let historyHTML = "";
-        if(paidRows.length > 0) {
+        if(paidCount > 0) {
             historyHTML = `<div style="margin-top:10px; background:#f8f9fa; padding:10px; border-radius:8px; border:1px solid #eee;">
                 <div style="font-weight:bold; font-size:12px; margin-bottom:5px; color:#555">📜 سجل الدفعات السابقة:</div>
-                ${paidRows.map(p => `
+                ${paidRows.map((p, index) => `
                     <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px; padding-bottom:4px; border-bottom:1px dashed #ddd;">
-                        <span>✅ شهر ${p.installment_number || '?'}</span>
+                        <span>✅ قسط رقم ${index + 1}</span>
                         <span class="muted">${formatDate(p.created_at)}</span>
                     </div>
                 `).join('')}
@@ -242,7 +237,7 @@ async function loadMyCycles() {
             <!-- التقدم -->
             <div class="payment-progress">
               <div class="progress-label">
-                <span>تم سداد: ${paidRows.length} من ${c.months} أقساط</span>
+                <span>تم سداد: ${paidCount} من ${c.months} أقساط</span>
                 <span>${Math.round(progressPercent)}%</span>
               </div>
               <div class="track">
@@ -277,7 +272,7 @@ async function loadMyCycles() {
             <div style="margin-top:15px;">
               ${!isCompleted ? 
                 `<button class="btn primary sm full-width" onclick="payInstallment(${c.id}, ${c.monthly_amount}, ${m.id}, ${nextInstallmentNum})">
-                   💳 دفع قسط شهر (${nextInstallmentNum})
+                   💳 دفع قسط رقم (${nextInstallmentNum})
                  </button>` 
                 : 
                 `<div class="badge success full-width" style="text-align:center; padding:10px;">🎉 مبروك! تم سداد كامل المبلغ</div>`
@@ -293,13 +288,13 @@ async function loadMyCycles() {
   }
 }
 
-// ===================== عملية الدفع (تسجيل البيانات كاملة) =====================
+// ===================== عملية الدفع (التصحيح: الحفظ في الجدول الموجود فقط) =====================
 async function payInstallment(cycleId, amount, memberId, installmentNum) {
   if (!requireLogin()) return;
   
   closeModal('dashboardModal');
   
-  const confirmed = confirm(`تأكيد دفع مبلغ ${amount} Pi \nعن القسط رقم: ${installmentNum}؟`);
+  const confirmed = confirm(`تأكيد دفع مبلغ ${amount} Pi \nكقسط رقم: ${installmentNum}؟`);
   if(!confirmed) { openDashboard(); return; }
 
   toast("جاري التحضير", "يتم الاتصال بمحفظة Pi...", "info");
@@ -307,19 +302,19 @@ async function payInstallment(cycleId, amount, memberId, installmentNum) {
   try {
     const paymentData = {
       amount: amount,
-      memo: `قسط ${installmentNum} - عضوية ${memberId}`,
+      memo: `Installment ${installmentNum} - Member ${memberId}`,
       metadata: { 
           cycleId: cycleId, 
-          type: "installment", 
           memberId: memberId,
-          installmentNumber: installmentNum 
+          // note: installment number is only in metadata for server, DB doesn't have the column
+          installment: installmentNum 
       }
     };
 
     const callbacks = {
       onReadyForServerApproval: (paymentId) => {
         toast("الموافقة", "جاري التحقق من المعاملة...", "info");
-        // عملية وهمية للموافقة السريعة (يجب أن تكون عبر السيرفر الفعلي في الإنتاج)
+        // إرسال للسيرفر للموافقة (إذا كان السيرفر يعمل)
         fetch("/.netlify/functions/approve", {
              method: "POST", headers: { "Content-Type": "application/json" },
              body: JSON.stringify({ paymentId })
@@ -329,23 +324,24 @@ async function payInstallment(cycleId, amount, memberId, installmentNum) {
       onReadyForServerCompletion: (paymentId, txid) => {
         toast("جاري الحفظ", "يتم تسجيل الدفعة في النظام...", "info");
 
-        // === التسجيل في قاعدة البيانات (الأهم) ===
+        // === التصحيح الهام ===
+        // نرسل فقط البيانات للأعمدة الموجودة في صورتك:
+        // member_id, amount, payment_id, status
+        // الحالة نرسلها 'confirmed' كما في صورتك
+        
         sb.from('payments').insert({
             member_id: memberId,
             amount: amount,
             payment_id: paymentId,
-            status: 'completed',
-            installment_number: installmentNum, // نسجل رقم القسط
-            txid: txid // نسجل رقم المعاملة من البلوكتشين
+            status: 'confirmed'  // تم التعديل من 'completed' إلى 'confirmed' لتطابق الصورة
         }).then(({ error }) => {
             if (error) {
-                console.error("DB Error:", error);
-                // محاولة ثانية في حال فشل الاتصال
-                toast("تحذير", "حدث خطأ في التسجيل، لكن تم الدفع. التقط صورة للشاشة.", "warning");
+                console.error("DB Insert Error:", error);
+                toast("تنبيه", "تم الدفع ولكن فشل التسجيل التلقائي. انسخ رقم العملية: " + txid, "warning");
             } else {
-                toast("تم بنجاح", `تم دفع القسط رقم ${installmentNum} بنجاح! 🥳`, "success");
+                toast("تم بنجاح", `تم دفع القسط بنجاح! 🥳`, "success");
                 
-                // إرسال الإشعار للسيرفر لإغلاق المعاملة في Pi
+                // إرسال الإشعار للسيرفر لإغلاق المعاملة في Pi (Blockchain)
                 fetch("/.netlify/functions/complete", {
                     method: "POST", headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ paymentId, txid })
