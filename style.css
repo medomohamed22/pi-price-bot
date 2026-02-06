@@ -92,6 +92,30 @@ body{
 .statNum{font-size:18px;font-weight:800}
 .statText{margin-top:4px;color:var(--mut);font-size:13px}
 
+/* Search Input */
+.searchWrap{
+  max-width: 600px;
+  margin: 0 auto;
+  position: relative;
+  width: 100%;
+}
+.searchWrap input{
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  font-family: inherit;
+  font-size: 16px;
+  outline: none;
+  transition: all 0.2s;
+}
+.searchWrap input:focus{
+  border-color: var(--p);
+  box-shadow: 0 4px 16px rgba(123,47,247,0.15);
+}
+
 /* Section */
 .sectionHead h3{margin:0;font-size:16px}
 .sectionHead p{margin:4px 0 0;font-size:13px}
@@ -134,17 +158,34 @@ body{
   align-items:center;
 }
 
+/* Progress Bar */
+.progressWrap{
+  background: #f0eff5;
+  height: 6px; 
+  border-radius: 99px;
+  margin-top: 12px; 
+  overflow: hidden;
+  width: 100%;
+}
+.progressBar{
+  height: 100%; 
+  background: linear-gradient(90deg, var(--p), var(--p2));
+  border-radius: 99px;
+  transition: width 0.5s ease;
+}
+
 /* Badges */
 .badge{
   display:inline-flex;
   align-items:center;
   gap:6px;
-  padding:6px 10px;
-  border-radius:999px;
+  padding:4px 8px;
+  border-radius:6px;
   font-size:12px;
   border:1px solid var(--border);
   background:#fff;
   color:var(--mut);
+  font-weight: 600;
 }
 .badge.ok{color:#0b7a2a;border-color:rgba(11,122,42,.22);background:rgba(11,122,42,.06)}
 .badge.pi{color:#9a5b00;border-color:rgba(154,91,0,.22);background:rgba(154,91,0,.06)}
@@ -152,16 +193,18 @@ body{
 /* Buttons */
 .btn{
   border:0;
-  border-radius:14px;
-  padding:11px 14px;
-  font-weight:800;
+  border-radius:12px;
+  padding:10px 14px;
+  font-weight:700;
   cursor:pointer;
   transition: transform .08s ease, filter .2s ease;
+  font-family: inherit;
 }
-.btn:active{transform:scale(.99)}
+.btn:active{transform:scale(.98)}
 .primary{
   background:linear-gradient(135deg, var(--p) 0%, var(--p2) 100%);
   color:#fff;
+  box-shadow: 0 4px 12px rgba(123,47,247,0.25);
 }
 .ghost{
   background:#fff;
@@ -173,13 +216,17 @@ body{
   border:1px solid rgba(123,47,247,.18);
   color:var(--p);
 }
+.btn.sm{
+  padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 8px;
+}
 .btn[disabled]{opacity:.55;cursor:not-allowed}
 
 /* Fancy button for "عرض الدورات" */
 .btnExpand{
   position:relative;
   overflow:hidden;
-  padding:11px 14px;
 }
 .btnExpand::after{
   content:"";
@@ -202,7 +249,7 @@ body{
 
 .cycleCard{
   border:1px solid var(--border);
-  border-radius:16px;
+  border-radius:12px;
   padding:12px;
   background:#fff;
 }
@@ -218,14 +265,44 @@ body{
 .slotGrid{
   display:flex;
   flex-wrap:wrap;
-  gap:10px;
+  gap:8px;
   margin-top:10px;
 }
 
 .slotBtn{
-  min-width:135px;
+  flex: 1 0 30%;
+  min-width:100px;
   text-align:center;
 }
+
+/* Modals */
+.modal{
+  position: fixed; inset:0; z-index: 100;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  display:none;
+  align-items:center; justify-content:center;
+  padding:14px;
+}
+.modal.active{display:flex; animation: fadeIn .2s ease both}
+.modalContent{
+  background: #fff;
+  width: 100%; max-width: 500px;
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+  max-height: 85vh;
+  display:flex; flex-direction:column;
+}
+.modalHead{
+  display:flex; justify-content:space-between; align-items:center;
+  margin-bottom:15px; border-bottom:1px solid var(--border); padding-bottom:10px;
+}
+.modalHead h3{margin:0; font-size:18px}
+.modalBody{overflow-y:auto; padding-right:4px}
+.text-content p{line-height:1.6; color:var(--text); margin-bottom:8px; font-size:14px}
+
+@keyframes fadeIn{from{opacity:0} to{opacity:1}}
 
 /* Toasts */
 .toasts{
@@ -233,14 +310,14 @@ body{
   inset:auto 12px 12px 12px;
   display:grid;
   gap:10px;
-  z-index:50;
+  z-index:150;
   pointer-events:none;
 }
 .toast{
   pointer-events:auto;
   background:#111827;
   color:#fff;
-  border-radius:16px;
+  border-radius:12px;
   padding:12px 14px;
   box-shadow:0 16px 40px rgba(0,0,0,.22);
   display:flex;
