@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>جمعيتي | Pi</title>
+  <title>جمعيتي | لوحة التحكم</title>
 
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
@@ -27,9 +27,11 @@
     </div>
 
     <div class="actions">
-      <button class="btn icon-only" onclick="openDashboard()" aria-label="حسابي">
-        👤
+      <!-- زر لوحة التحكم الجديد -->
+      <button class="btn icon-only" onclick="openDashboard()" aria-label="لوحة التحكم" title="لوحة التحكم">
+        📊
       </button>
+      
       <button class="btn primary sm" id="btnLogin" onclick="login()">دخول</button>
       <span class="chip" id="userChip" style="display:none"></span>
     </div>
@@ -41,7 +43,7 @@
     <section class="hero">
       <div class="heroCard">
         <h2>نظام الجمعيات الآمن</h2>
-        <p class="muted">ادخر أموالك بذكاء عبر شبكة Pi Network.</p>
+        <p class="muted">لوحة تحكم ذكية لإدارة مدخراتك وأقساطك بسهولة عبر Pi Network.</p>
         
         <div class="searchWrap">
           <input type="text" id="searchInput" placeholder="ابحث عن جمعية..." onkeyup="filterGroups(this.value)">
@@ -63,20 +65,28 @@
 
   </main>
 
-  <!-- Dashboard / Account Modal (Full Screen on Mobile) -->
+  <!-- Dashboard Modal (لوحة التحكم) -->
   <div id="dashboardModal" class="modal">
-    <div class="modalContent full-mobile">
+    <div class="modalContent full-mobile dashboard-layout">
       <div class="modalHead">
-        <h3>حسابي ومحفظتي 💼</h3>
+        <h3>لوحة التحكم 📊</h3>
         <button class="btn ghost sm" onclick="closeModal('dashboardModal')">✕</button>
       </div>
       
       <div class="modalBody">
         
+        <!-- User Info Summary -->
+        <div class="user-summary" id="userSummary">
+            <!-- يتم تعبئة البيانات هنا -->
+        </div>
+
         <!-- Wallet Section -->
         <div class="wallet-card">
-          <h4>عنوان محفظة Pi (للاستلام)</h4>
-          <p class="muted sm-text">يرجى نسخ عنوان محفظتك هنا ليقوم الأدمن بتحويل القبض لك عند دورك.</p>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+             <h4>💼 المحفظة والاستلام</h4>
+             <span class="badge warning" style="font-size:10px">هام جداً</span>
+          </div>
+          <p class="muted sm-text">أدخل عنوان محفظتك لاستلام الجمعية عند حلول دورك.</p>
           <div class="input-group">
             <input type="text" id="walletInput" placeholder="GDT..." dir="ltr">
             <button class="btn primary sm" onclick="saveWallet()">حفظ</button>
@@ -86,9 +96,12 @@
         <hr class="divider">
 
         <!-- Active Cycles -->
-        <h4>اشتراكاتي الحالية</h4>
+        <h4 style="margin-bottom:15px">اشتراكاتي والمدفوعات</h4>
         <div id="myCyclesList" class="cycles-list">
-          <div class="muted">جاري التحميل...</div>
+          <div class="muted" style="text-align:center; padding:20px;">
+            <div class="loader"></div>
+            جاري تحميل بياناتك المالية...
+          </div>
         </div>
 
       </div>
