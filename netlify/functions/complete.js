@@ -1,74 +1,65 @@
-
-const axios = require('axios');
-const { createClient } = require('@supabase/supabase-js');
+const { createClient } = require("@supabase/supabase-js");
 
 const PI_API_KEY = process.env.PI_API_KEY;
 const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-const PI_PLATFORM_API_URL = 'https://api.minepi.com';
+const PI_BASE = "https://api.minepi.com/v2";
 
-exports.handler = async (event, context) => {
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Content-Type': 'application/json'
+function json(statusCode, bodyObj) {
+  return {
+    statusCode,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "Content-Type",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(bodyObj),
   };
-  
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
-  }
-  
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, headers, body: 'Method Not Allowed' };
-  }
+}
+
+exports.handler = async (event) => {
+  if (event.httpMethod === "OPTIONS") return json(200, {});
+  if (event.httpMethod !== "POST") return json(405, { error: "Method Not Allowed" });
   
   try {
-    const { paymentId, txid, payment } = JSON.parse(event.body);
-    
-    if (!paymentId || !txid) {
-      return { statusCode: 400, headers, body: JSON.stringify({ error: 'Missing txid/paymentId' }) };
+    if (!PI_API_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      return json(500, { error: "Missing env vars (PI_API_KEY / SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)" });
     }
     
-    // 1. Complete with Pi
-    const completeUrl = `${PI_PLATFORM_API_URL}/v2/payments/${paymentId}/complete`;
-    await axios.post(completeUrl, { txid }, {
-      headers: { 'Authorization': `Key ${PI_API_KEY}` }
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: { persistSession: false },
     });
     
-    // 2. Update DB
-    const { data: supportRecord, error: findError } = await supabase
-      .from('supports')
-      .update({ status: 'completed', txid: txid })
-      .eq('payment_id', paymentId)
-      .select()
-      .single();
+    const { paymentId, txid } = JSON.parse(event.body || "{}");
+    if (!paymentId || !txid) return json(400, { error: "Missing paymentId/txid" });
     
-    if (findError) throw findError;
+    // 1) Complete with Pi
+    const completeRes = await fetch(`${PI_BASE}/payments/${paymentId}/complete`, {
+      method: "POST",
+      headers: {
+        Authorization: `Key ${PI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ txid }),
+    });
     
-    // 3. Update Project Counter
-    const projectId = supportRecord.project_id;
-    const amount = supportRecord.amount;
+    const completeText = await completeRes.text();
+    if (!completeRes.ok) {
+      return json(completeRes.status, { error: "Pi complete failed", details: completeText });
+    }
     
-    // الطريقة الآمنة لزيادة العداد
-    const { data: project } = await supabase.from('projects').select('supports_count').eq('id', projectId).single();
-    const newTotal = parseFloat(project.supports_count || 0) + parseFloat(amount);
+    // 2) Update DB
+    const { error: upErr } = await supabase
+      .from("payments")
+      .update({ status: "completed", txid })
+      .eq("payment_id", paymentId);
     
-    await supabase.from('projects').update({ supports_count: newTotal }).eq('id', projectId);
+    if (upErr) return json(500, { error: "Supabase update failed", details: upErr.message });
     
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({ message: 'Completed' })
-    };
-    
-  } catch (error) {
-    console.error(error);
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: error.message })
-    };
+    return json(200, { ok: true, message: "Completed", paymentId, txid });
+  } catch (e) {
+    console.error("complete error:", e);
+    return json(500, { error: e.message || "Server error" });
   }
 };
