@@ -58,52 +58,28 @@ function requireLogin() {
   return true;
 }
 
-// ===================== تسجيل الدخول (مع التحقق من الحظر) =====================
+// ===================== تسجيل الدخول =====================
 async function login() {
   try {
     if (!window.Pi) {
       toast("خطأ متصفح", "يرجى فتح الموقع داخل متصفح Pi Browser", "error");
       return;
     }
-
     Pi.init({ version: "2.0", sandbox: false });
-    const scopes = ['username', 'payments'];
-    const auth = await Pi.authenticate(scopes, onIncompletePaymentFound);
+    const auth = await Pi.authenticate(['username', 'payments'], onIncompletePaymentFound);
     
-    // التحقق من الحظر
-    const { data: profile } = await sb
-        .from('profiles')
-        .select('is_banned')
-        .eq('pi_uid', auth.user.uid)
-        .single();
-
+    const { data: profile } = await sb.from('profiles').select('is_banned').eq('pi_uid', auth.user.uid).single();
     if (profile && profile.is_banned) {
-        document.body.innerHTML = `
-            <div style="height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center; background:#fee2e2; color:#b91c1c; font-family:sans-serif;">
-                <h1 style="font-size:50px">🚫</h1>
-                <h2>حسابك محظور</h2>
-                <p>لا يمكنك الوصول للتطبيق.</p>
-            </div>
-        `;
+        document.body.innerHTML = `<div style="height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center; background:#fee2e2; color:#b91c1c;"><h2>🚫 حسابك محظور</h2></div>`;
         return;
     }
 
-    // تحديث بيانات المستخدم
-    await sb.from('profiles').upsert({ 
-        pi_uid: auth.user.uid, 
-        username: auth.user.username 
-    });
-
+    await sb.from('profiles').upsert({ pi_uid: auth.user.uid, username: auth.user.username });
     user = auth.user;
     updateUI();
-    toast("تم الدخول بنجاح", `أهلاً بك يا @${user.username}`, "success");
-    
-    if(document.getElementById("dashboardModal").classList.contains("active")){
-        openDashboard();
-    }
-
+    toast("تم الدخول", `أهلاً بك @${user.username}`, "success");
+    if(document.getElementById("dashboardModal").classList.contains("active")) openDashboard();
   } catch (e) {
-    console.error("Login Error:", e);
     toast("فشل الدخول", "حاول مرة أخرى", "error");
   }
 }
@@ -121,26 +97,18 @@ function onIncompletePaymentFound(payment) {
 function openDashboard() {
   if (!requireLogin()) return;
   document.getElementById("dashboardModal").classList.add("active");
-  
   document.getElementById("userSummary").innerHTML = `
     <div class="avatar-circle">👤</div>
-    <div>
-        <div style="font-weight:bold; font-size:16px">@${user.username}</div>
-        <div style="font-size:12px; opacity:0.9">ID: ${user.uid.substring(0,8)}...</div>
-    </div>
+    <div><div style="font-weight:bold;">@${user.username}</div><small>ID: ${user.uid.substring(0,8)}...</small></div>
   `;
-
   loadWallet();
   loadMyCycles();
 }
 
-function closeModal(id) {
-  document.getElementById(id).classList.remove("active");
-}
+function closeModal(id) { document.getElementById(id).classList.remove("active"); }
 
 async function loadWallet() {
   const input = document.getElementById("walletInput");
-  input.value = "جاري التحميل...";
   const { data } = await sb.from("user_wallets").select("wallet_address").eq("pi_uid", user.uid).single();
   input.value = data ? data.wallet_address : "";
 }
@@ -153,298 +121,160 @@ async function saveWallet() {
   else toast("تم الحفظ", "تم تحديث المحفظة ✅", "success");
 }
 
-// === تحميل بيانات الاشتراك والمدفوعات ===
 async function loadMyCycles() {
   const list = document.getElementById("myCyclesList");
-  list.innerHTML = `<div class="muted" style="text-align:center; margin:20px 0;">جاري جلب بيانات الدفع... ⏳</div>`;
-
+  list.innerHTML = `<div class="muted" style="text-align:center;">جاري التحميل...</div>`;
   try {
-      // 1. جلب العضويات
-      const { data: members, error } = await sb
-        .from("members")
-        .select(`
-          id, position, created_at,
-          cycles (
-            id, title, monthly_amount, status, months, created_at,
-            groups ( name )
-          )
-        `)
-        .eq("pi_uid", user.uid);
-
-      if (error || !members || members.length === 0) {
-        list.innerHTML = `<div class="muted" style="text-align:center; padding:20px">لست مشتركاً في أي جمعية.</div>`;
-        return;
-      }
-
+      const { data: members } = await sb.from("members").select(`id, position, created_at, cycles ( id, title, monthly_amount, status, months, created_at, groups ( name ) )`).eq("pi_uid", user.uid);
+      if (!members || members.length === 0) { list.innerHTML = `<div class="muted" style="text-align:center;">لست مشتركاً في أي جمعية.</div>`; return; }
       list.innerHTML = "";
-
       for (let m of members) {
         const c = m.cycles;
-        if(!c) continue;
-
-        // 2. جلب المدفوعات (فقط المؤكدة confirmed)
-        const { data: payments } = await sb
-            .from('payments')
-            .select('amount, created_at, status')
-            .eq('member_id', m.id)
-            .eq('status', 'confirmed') 
-            .order('created_at', { ascending: true });
-        
-        const paidRows = payments || [];
-        const paidCount = paidRows.length; 
-        
-        // القسط القادم
-        const nextInstallmentNum = paidCount + 1;
-        
-        // الحسابات
+        const { data: payments } = await sb.from('payments').select('amount, created_at').eq('member_id', m.id).eq('status', 'confirmed');
+        const paidCount = payments?.length || 0;
         const totalAmount = c.monthly_amount * c.months;
-        const paidAmountTotal = paidRows.reduce((sum, p) => sum + (p.amount || 0), 0);
-        const remainingAmount = totalAmount - paidAmountTotal;
-        const progressPercent = Math.min((paidCount / c.months) * 100, 100);
-        
-        const cycleStartDate = new Date(c.created_at);
-        const payoutDate = new Date(cycleStartDate);
-        payoutDate.setMonth(payoutDate.getMonth() + (m.position - 1));
-
-        const isCompleted = paidCount >= c.months;
-
-        // بناء سجل الدفعات HTML
-        let historyHTML = "";
-        if(paidCount > 0) {
-            historyHTML = `<div style="margin-top:10px; background:#f8f9fa; padding:10px; border-radius:8px; border:1px solid #eee;">
-                <div style="font-weight:bold; font-size:12px; margin-bottom:5px; color:#555">📜 سجل الدفعات السابقة:</div>
-                ${paidRows.map((p, index) => `
-                    <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px; padding-bottom:4px; border-bottom:1px dashed #ddd;">
-                        <span>✅ قسط رقم ${index + 1}</span>
-                        <span class="muted">${formatDate(p.created_at)}</span>
-                    </div>
-                `).join('')}
-            </div>`;
-        }
+        const paidAmountTotal = payments?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
+        const progressPercent = (paidCount / c.months) * 100;
+        const payoutDate = new Date(c.created_at); payoutDate.setMonth(payoutDate.getMonth() + (m.position - 1));
 
         list.innerHTML += `
           <div class="dashboard-card">
             <div class="dash-header">
-              <div class="dash-title">
-                <h4>${escapeHtml(c.groups?.name)} - ${escapeHtml(c.title)}</h4>
-                <span>الحالة: ${c.status === 'open' ? 'نشطة 🟢' : 'مغلقة 🔴'}</span>
-              </div>
-              <div class="badge primary">${c.monthly_amount} Pi / شهر</div>
+                <div class="dash-title"><h4>${escapeHtml(c.groups?.name)}</h4><span>${escapeHtml(c.title)}</span></div>
+                <div class="badge primary">${c.monthly_amount} Pi</div>
             </div>
-
             <div class="payment-progress">
-              <div class="progress-label">
-                <span>تم سداد: ${paidCount} من ${c.months} أقساط</span>
-                <span>${Math.round(progressPercent)}%</span>
-              </div>
-              <div class="track">
-                <div class="fill" style="width: ${progressPercent}%"></div>
-              </div>
+                <div class="progress-label"><span>اكتمال أقساطك</span><span>${Math.round(progressPercent)}%</span></div>
+                <div class="track"><div class="fill" style="width:${progressPercent}%"></div></div>
             </div>
-
             <div class="stats-grid">
-               <div class="stat-box">
-                 <small>دورك</small>
-                 <strong>${m.position}</strong>
-               </div>
-               <div class="stat-box highlight">
-                 <small>موعد القبض</small>
-                 <strong>${formatDate(payoutDate)}</strong>
-               </div>
-               <div class="stat-box">
-                 <small>مدفوع</small>
-                 <strong>${paidAmountTotal} Pi</strong>
-               </div>
-               <div class="stat-box">
-                 <small>متبقي</small>
-                 <strong>${remainingAmount} Pi</strong>
-               </div>
+               <div class="stat-box"><small>دورك</small><strong>${m.position}</strong></div>
+               <div class="stat-box highlight"><small>موعد القبض</small><strong>${formatDate(payoutDate)}</strong></div>
             </div>
-
-            ${historyHTML}
-
-            <div style="margin-top:15px;">
-              ${!isCompleted ? 
-                `<button class="btn primary sm full-width" onclick="payInstallment(${c.id}, ${c.monthly_amount}, ${m.id}, ${nextInstallmentNum})">
-                   💳 دفع قسط رقم (${nextInstallmentNum})
-                 </button>` 
-                : 
-                `<div class="badge success full-width" style="text-align:center; padding:10px;">🎉 مبروك! تم سداد كامل المبلغ</div>`
-              }
-            </div>
-          </div>
-        `;
+            <button class="btn primary sm full-width" style="margin-top:10px" onclick="payInstallment(${c.id}, ${c.monthly_amount}, ${m.id}, ${paidCount + 1})">💳 دفع قسط رقم ${paidCount+1}</button>
+          </div>`;
       }
-
-  } catch (err) {
-      console.error(err);
-      list.innerHTML = `<div class="muted">حدث خطأ أثناء تحميل البيانات</div>`;
-  }
+  } catch (err) { list.innerHTML = `<div class="muted">خطأ في التحميل</div>`; }
 }
 
-// ===================== عملية الدفع (محدث: installment_number و payment_id) =====================
+// ===================== عملية الدفع =====================
 async function payInstallment(cycleId, amount, memberId, installmentNum) {
   if (!requireLogin()) return;
-  
-  closeModal('dashboardModal');
-  
-  const confirmed = confirm(`تأكيد دفع مبلغ ${amount} Pi \nكقسط رقم: ${installmentNum}؟`);
-  if(!confirmed) { openDashboard(); return; }
-
-  toast("جاري التحضير", "يتم الاتصال بمحفظة Pi...", "info");
-
+  if(!confirm(`تأكيد دفع ${amount} Pi؟`)) return;
   try {
-    const paymentData = {
-      amount: amount,
-      memo: `Installment ${installmentNum} - Member ${memberId}`,
-      metadata: { 
-          cycleId: cycleId, 
-          memberId: memberId,
-          installment: installmentNum 
-      }
-    };
-
+    const paymentData = { amount, memo: `قسط ${installmentNum}`, metadata: { cycleId, memberId, installment: installmentNum } };
     const callbacks = {
-      onReadyForServerApproval: (paymentId) => {
-        toast("الموافقة", "جاري التحقق من المعاملة...", "info");
-        // إرسال للسيرفر للموافقة
-        fetch("/.netlify/functions/approve", {
-             method: "POST", headers: { "Content-Type": "application/json" },
-             body: JSON.stringify({ paymentId })
-        }).catch(() => {}); 
-      },
-      
+      onReadyForServerApproval: (paymentId) => fetch("/.netlify/functions/approve", { method: "POST", body: JSON.stringify({ paymentId }) }),
       onReadyForServerCompletion: (paymentId, txid) => {
-        toast("جاري الحفظ", "يتم تسجيل الدفعة في النظام...", "info");
-
-        // [تعديل هام] استخدام أسماء الأعمدة الصحيحة كما طلبت
-        sb.from('payments').insert({
-            member_id: memberId,
-            amount: amount,
-            status: 'confirmed',
-            
-            // 1. استخدام اسم العمود الصحيح لرقم القسط
-            installment_number: installmentNum, 
-
-            // 2. استخدام اسم العمود الصحيح لرقم الدفع
-            payment_id: paymentId, 
-            
-            // 3. إضافة رقم المعاملة (TxID) لأنه ضروري جداً
-            txid: txid
-
-        }).then(({ error }) => {
-            if (error) {
-                console.error("DB Insert Error:", error);
-                toast("تنبيه", "تم الدفع ولكن فشل الحفظ في قاعدة البيانات. رقم العملية: " + txid, "warning");
-            } else {
-                toast("تم بنجاح", `تم دفع القسط بنجاح! 🥳`, "success");
-                
-                // إرسال الإشعار للسيرفر لإغلاق المعاملة في Pi (Blockchain)
-                fetch("/.netlify/functions/complete", {
-                    method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ paymentId, txid })
-                });
-
-                // تحديث الواجهة تلقائياً
-                setTimeout(() => openDashboard(), 1500);
-            }
+        sb.from('payments').insert({ member_id: memberId, amount, status: 'confirmed', installment_number: installmentNum, payment_id: paymentId, txid }).then(() => {
+            toast("تم بنجاح", "تم تسجيل الدفعة", "success");
+            fetch("/.netlify/functions/complete", { method: "POST", body: JSON.stringify({ paymentId, txid }) });
+            setTimeout(() => openDashboard(), 1500);
         });
-      },
-      
-      onCancel: () => { 
-          toast("إلغاء", "تم إلغاء العملية", "warning");
-          openDashboard();
-      },
-      onError: (err) => { 
-          console.error(err);
-          toast("خطأ", "حدث خطأ غير متوقع: " + err.message, "error"); 
       }
     };
-
     await Pi.createPayment(paymentData, callbacks);
-
-  } catch (e) {
-    console.error(e);
-    toast("خطأ", "فشل بدء الدفع", "error");
-    openDashboard();
-  }
+  } catch (e) { toast("خطأ", "فشل الدفع", "error"); }
 }
 
-// ===================== تحميل الجمعيات (الصفحة الرئيسية) =====================
+// ===================== تحميل الجمعيات (الصفحة الرئيسية المحدثة) =====================
 async function loadGroups() {
   const grid = document.getElementById("groups");
-  if(!grid) return;
   grid.innerHTML = `<div class="muted">جاري تحميل الجمعيات...</div>`;
 
-  const { data: groups } = await sb.from("groups").select("*, cycles(*)").order('created_at', { ascending: false });
+  // جلب الجمعيات والدورات والأعضاء المشتركين فيها
+  const { data: groups } = await sb.from("groups").select(`
+    id, name, description,
+    cycles (
+        id, title, monthly_amount, status, months,
+        members ( id )
+    )
+  `).order('created_at', { ascending: false });
 
-  if (!groups || groups.length === 0) {
-    grid.innerHTML = `<div class="card">لا توجد جمعيات حالياً</div>`;
-    return;
-  }
+  if (!groups || groups.length === 0) { grid.innerHTML = `<div class="card">لا توجد جمعيات حالياً</div>`; return; }
 
   grid.innerHTML = groups.map(g => {
     const activeCycle = g.cycles?.find(c => c.status === 'open') || g.cycles?.[0];
-    const amount = activeCycle ? activeCycle.monthly_amount : "---";
+    if(!activeCycle) return "";
+
+    const memberCount = activeCycle.members?.length || 0;
+    const totalMonths = activeCycle.months;
+    const fillPercent = (memberCount / totalMonths) * 100;
+
     return `
       <div class="card">
         <div class="cardTop">
           <h3>${escapeHtml(g.name)}</h3>
-          <span class="badge">القسط: ${amount} Pi</span>
+          <span class="badge primary">${activeCycle.monthly_amount} Pi</span>
         </div>
         <p class="muted sm-text">${escapeHtml(g.description || "جمعية مضمونة")}</p>
-        <button class="btn soft full-width" onclick="showCycles(${g.id})">عرض التفاصيل</button>
+        
+        <div class="occupancy-info" style="margin: 15px 0;">
+            <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:4px;">
+                <span>اكتمال المشتركين</span>
+                <span style="font-weight:bold; color:var(--p)">${memberCount} / ${totalMonths}</span>
+            </div>
+            <div class="track" style="height:6px; background:#f0f0f0;">
+                <div class="fill" style="width:${fillPercent}%; background:var(--success);"></div>
+            </div>
+        </div>
+
+        <button class="btn soft full-width" onclick="showCycles(${g.id})">
+            ${fillPercent >= 100 ? 'الجمعية مكتملة 🔒' : 'استعراض الأدوار المتاحة ✨'}
+        </button>
         <div id="group-cycles-${g.id}" style="margin-top:10px; display:none"></div>
       </div>
     `;
   }).join("");
 }
 
+// ===================== عرض الأدوار بتصميم جذاب =====================
 async function showCycles(groupId) {
     const container = document.getElementById(`group-cycles-${groupId}`);
     if (container.style.display === "block") { container.style.display = "none"; return; }
     container.style.display = "block";
-    container.innerHTML = "جاري التحميل...";
+    container.innerHTML = `<div class="loader-sm"></div>`;
   
     const { data: cycles } = await sb.from("cycles").select("*").eq("group_id", groupId).eq("status", "open");
-    if(!cycles || cycles.length === 0) {
-      container.innerHTML = "<div class='muted sm-text'>لا توجد دورات متاحة</div>"; return;
-    }
+    if(!cycles || cycles.length === 0) { container.innerHTML = "لا توجد دورات"; return; }
   
     container.innerHTML = cycles.map(c => `
-      <div style="background:#f8f9fa; padding:10px; border-radius:8px; margin-top:5px; border:1px solid #eee">
-        <div style="display:flex; justify-content:space-between; margin-bottom:5px">
-          <b>${escapeHtml(c.title)}</b>
-          <small>${c.monthly_amount} Pi</small>
-        </div>
-        <button class="btn primary sm full-width" onclick="loadSlots(${c.id}, ${c.months})">اختر دورك</button>
-        <div id="slots-${c.id}" class="slotGrid" style="margin-top:8px; display:flex; flex-wrap:wrap; gap:5px"></div>
+      <div class="cycle-expand-box" style="background:#fdfbff; padding:15px; border-radius:12px; border:1px solid var(--p-light); margin-top:10px;">
+        <div style="font-weight:bold; margin-bottom:10px; font-size:13px; color:var(--p-dark);">📅 ${escapeHtml(c.title)}</div>
+        <div class="slot-instruction" style="font-size:11px; color:var(--muted); margin-bottom:10px;">اختر الشهر الذي تود استلام الجمعية فيه:</div>
+        <div id="slots-${c.id}" class="modern-slot-grid"></div>
       </div>
     `).join("");
+
+    cycles.forEach(c => loadSlots(c.id, c.months));
 }
 
 async function loadSlots(cycleId, totalMonths) {
     const box = document.getElementById(`slots-${cycleId}`);
-    box.innerHTML = "Wait...";
-    const { data: members } = await sb.from("members").select("position").eq("cycle_id", cycleId);
-    const taken = new Set(members?.map(m => m.position) || []);
+    const { data: members } = await sb.from("members").select("position, username").eq("cycle_id", cycleId);
+    const takenMap = {};
+    members?.forEach(m => takenMap[m.position] = m.username);
   
     let html = "";
     for(let i=1; i<=totalMonths; i++) {
-      const isTaken = taken.has(i);
-      html += `<button class="btn ${isTaken ? 'ghost' : 'primary'} sm slotBtn" ${isTaken ? 'disabled style="opacity:0.5"' : ''} onclick="joinCycle(${cycleId}, ${i})">${i}</button>`;
+      const isTaken = takenMap[i];
+      // تصميم الزر بناءً على الحالة
+      html += `
+        <div class="slot-item ${isTaken ? 'taken' : 'available'}" onclick="${isTaken ? '' : `joinCycle(${cycleId}, ${i})`}">
+            <div class="slot-num">${i}</div>
+            <div class="slot-status">${isTaken ? 'محجوز' : 'متاح'}</div>
+            ${isTaken ? `<div class="slot-user">@${isTaken.substring(0,6)}</div>` : ''}
+        </div>`;
     }
     box.innerHTML = html;
 }
 
 async function joinCycle(cycleId, pos) {
     if (!requireLogin()) return;
+    if (!confirm(`هل تريد حجز الدور رقم ${pos} في هذه الجمعية؟`)) return;
     const { error } = await sb.from("members").insert({ cycle_id: cycleId, pi_uid: user.uid, username: user.username, position: pos });
-    if (error) toast("فشل الحجز", "هذا الدور محجوز مسبقاً", "error");
-    else {
-      toast("تم بنجاح", `تم حجز الدور رقم ${pos}`, "success");
-      openDashboard();
-    }
+    if (error) toast("فشل", "عذراً، سبقك أحدهم لهذا الدور", "error");
+    else { toast("تم الحجز", `أنت الآن المشترك رقم ${pos} 🥳`, "success"); loadGroups(); }
 }
 
 window.addEventListener('load', loadGroups);
