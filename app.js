@@ -1,388 +1,363 @@
-const promptEl = document.getElementById("prompt");
-const modelEl = document.getElementById("model");
-const tempEl = document.getElementById("temp");
-const maxTokensEl = document.getElementById("maxTokens");
-const outEl = document.getElementById("output");
+// ===================== Supabase =====================
+const SUPABASE_URL = "https://xncapmzlwuisupkjlftb.supabase.co";
+const SUPABASE_KEY = "sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const genBtn = document.getElementById("genBtn");
-const clearBtn = document.getElementById("clearBtn");
-const copyBtn = document.getElementById("copyBtn");
-const downloadBtn = document.getElementById("downloadBtn");
-const zipBtn = document.getElementById("zipBtn");
+// ===================== User =====================
+let user = null;
 
-const statusChip = document.getElementById("statusChip");
-const statusText = document.getElementById("statusText");
-
-const usedModelEl = document.getElementById("usedModel");
-const usageTokensEl = document.getElementById("usageTokens");
-const filesCountEl = document.getElementById("filesCount");
-
-const templatesWrap = document.getElementById("templates");
-
-const errorBox = document.getElementById("errorBox");
-const errorMsg = document.getElementById("errorMsg");
-const errorFix = document.getElementById("errorFix");
-const errorMeta = document.getElementById("errorMeta");
-
-let lastFiles = []; // [{path, content}]
-
-function setStatus(text, busy = false) {
-  statusText.textContent = text;
-  statusChip.style.opacity = busy ? "0.95" : "1";
-  genBtn.disabled = !!busy;
-  genBtn.style.opacity = busy ? "0.75" : "1";
+// ===================== Helpers =====================
+function escapeHtml(str) {
+  return String(str ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
-function setMeta({ modelUsed, usage, filesCount }) {
-  if (usedModelEl) usedModelEl.textContent = modelUsed || "—";
+function setUserUI() {
+  const chip = document.getElementById("userChip");
+  const btnLogin = document.getElementById("btnLogin");
+  const btnLogout = document.getElementById("btnLogout");
 
-  const total =
-    usage?.total_tokens ??
-    (Number.isFinite(usage?.prompt_tokens) && Number.isFinite(usage?.completion_tokens)
-      ? usage.prompt_tokens + usage.completion_tokens
-      : null);
-
-  if (usageTokensEl) usageTokensEl.textContent = (total ?? "—").toString();
-  if (filesCountEl) filesCountEl.textContent = (Number.isFinite(filesCount) ? filesCount : "—").toString();
-}
-
-function showErrorBox({ message, fix, code, triedModels, lastTriedModel }) {
-  errorBox.style.display = "block";
-  errorMsg.textContent = message || "حصل خطأ غير معروف.";
-  errorFix.textContent = fix ? `✅ حل مقترح: ${fix}` : "";
-  const meta = [];
-  if (code) meta.push(`Code: ${code}`);
-  if (lastTriedModel) meta.push(`Last tried: ${lastTriedModel}`);
-  if (Array.isArray(triedModels) && triedModels.length) meta.push(`Tried: ${triedModels.join(", ")}`);
-  errorMeta.textContent = meta.join(" • ");
-}
-
-function hideErrorBox() {
-  errorBox.style.display = "none";
-  errorMsg.textContent = "";
-  errorFix.textContent = "";
-  errorMeta.textContent = "";
-}
-
-function downloadText(filename, text) {
-  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
-
-/**
- * Parse AI output into files using this format:
- * FILE: path/to/file.ext
- * <content...>
- *
- * (repeated)
- */
-function parseFilesFromText(text) {
-  const files = [];
-  if (!text || typeof text !== "string") return files;
-
-  // Normalize
-  const clean = text.replace(/\r\n/g, "\n");
-
-  // Capture sections
-  const re = /(?:^|\n)FILE:\s*([^\n]+)\n([\s\S]*?)(?=\nFILE:\s*[^\n]+\n|$)/g;
-  let m;
-  while ((m = re.exec(clean)) !== null) {
-    const path = (m[1] || "").trim();
-    let content = (m[2] || "").trim();
-
-    // Remove surrounding ``` fences if present
-    content = content.replace(/^```[\w-]*\n?/i, "").replace(/\n?```$/i, "").trim();
-
-    if (path && content) files.push({ path, content });
+  if (user?.username) {
+    chip.textContent = `👤 ${user.username}`;
+    if (btnLogin) btnLogin.style.display = "none";
+    if (btnLogout) btnLogout.style.display = "inline-block";
+  } else {
+    chip.textContent = "👤 ضيف";
+    if (btnLogin) btnLogin.style.display = "inline-block";
+    if (btnLogout) btnLogout.style.display = "none";
   }
-  return files;
 }
 
-function ensureMinimumFiles(files, originalPrompt) {
-  // If the model didn't return file blocks, make a basic structure:
-  if (files.length) return files;
+function toast(title, msg = "", type = "info", ms = 3200) {
+  const wrap = document.getElementById("toasts");
+  if (!wrap) { alert(title + (msg ? ("\n" + msg) : "")); return; }
 
-  const fallback = [
-    {
-      path: "README.md",
-      content:
-`# Vibe Code Output
+  const el = document.createElement("div");
+  el.className = `toast ${type}`;
+  el.innerHTML = `
+    <div>
+      <div class="tTitle">${escapeHtml(title)}</div>
+      ${msg ? `<div class="tMsg">${escapeHtml(msg)}</div>` : ``}
+    </div>
+    <button class="tClose" aria-label="close">✕</button>
+  `;
 
-Your model response did not include FILE blocks.
+  el.querySelector(".tClose").onclick = () => el.remove();
+  wrap.appendChild(el);
 
-Prompt:
-${originalPrompt}
+  setTimeout(() => {
+    el.style.opacity = "0";
+    el.style.transform = "translateY(8px)";
+  }, ms);
 
-Raw output is saved in: output.txt
-`
-    },
-    { path: "output.txt", content: outEl.textContent || "" }
-  ];
-  return fallback;
+  setTimeout(() => el.remove(), ms + 220);
 }
 
-async function downloadZip(files, zipName = "vibe_code_project.zip") {
-  if (!window.JSZip) {
-    alert("JSZip لم يتم تحميله. تأكد إن script موجود في index.html");
-    return;
+function requireLogin() {
+  if (!user?.uid) {
+    toast("لازم تسجل دخول", "سجّل دخول بـ Pi عشان تحجز دور أو تدفع", "error");
+    return false;
   }
-  const zip = new JSZip();
-
-  for (const f of files) {
-    // support nested paths
-    zip.file(f.path, f.content);
-  }
-
-  const blob = await zip.generateAsync({ type: "blob" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = zipName;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+  return true;
 }
 
-// -------------------- Templates --------------------
-const TEMPLATES = [
-  {
-    title: "متجر إلكتروني بسيط",
-    desc: "منتجات + سلة + صفحة منتج + تصميم Mint Glass + RTL",
-    tags: ["Ecommerce", "RTL", "Mobile-first"],
-    prompt:
-`ابني موقع متجر إلكتروني بسيط (Mobile-first) بالعربي RTL وبستايل Mint Glass شبيه iOS.
-المطلوب:
-- صفحات: Home (قائمة منتجات + بحث + فلاتر) / Product / Cart / Checkout (Form) / Success
-- بيانات منتجات Mock داخل JS
-- سلة مشتريات LocalStorage
-- UI زجاجي + أنيميشن بسيط
-الستاك: HTML + CSS + JS فقط (بدون frameworks)
-
-مهم جدًا: رجّع الناتج بصيغة ملفات فقط بهذا الشكل:
-FILE: index.html
-...كود كامل...
-FILE: style.css
-...كود كامل...
-FILE: app.js
-...كود كامل...
-FILE: README.md
-...شرح تشغيل مختصر...
-بدون أي كلام خارج FILE blocks.`
-  },
-  {
-    title: "طلبات/توصيل مصغّر",
-    desc: "مطاعم + منيو + إضافة للعربة + تتبع حالة (UI فقط)",
-    tags: ["Delivery", "Cards", "iOS"],
-    prompt:
-`ابني واجهة توصيل مصغّرة (Mobile-first) بالعربي RTL وبستايل Mint Glass.
-المطلوب:
-- Home: مطاعم قريبة (Cards) + بحث
-- Restaurant: منيو + إضافة للعربة
-- Cart: ملخص + اختيار عنوان + زر طلب
-- Track: Timeline للحالة (Preparing / On the way / Delivered) (UI فقط)
-- بيانات Mock داخل JS
-الستاك: HTML + CSS + JS فقط
-
-مهم جدًا: رجّع الناتج بصيغة ملفات فقط:
-FILE: index.html
-FILE: style.css
-FILE: app.js
-FILE: README.md
-بدون أي كلام خارج FILE blocks.`
-  },
-  {
-    title: "SaaS Dashboard",
-    desc: "لوحة تحكم: إحصائيات + جدول + إعدادات (UI فقط)",
-    tags: ["Dashboard", "Charts", "Admin"],
-    prompt:
-`ابني Dashboard SaaS (Mobile-first) بالعربي RTL وبستايل Mint Glass.
-المطلوب:
-- Sidebar/BottomNav موبايل
-- Cards للإحصائيات
-- جدول Users/Orders
-- صفحة Settings (toggles + profile)
-- بدون مكتبات (Charts بسيطة Canvas أو div bars)
-الستاك: HTML + CSS + JS فقط
-
-مهم جدًا: رجّع الناتج بصيغة ملفات فقط:
-FILE: index.html
-FILE: style.css
-FILE: app.js
-FILE: README.md
-بدون أي كلام خارج FILE blocks.`
-  },
-  {
-    title: "Landing Page + Pricing",
-    desc: "Hero + Features + Pricing + FAQ + CTA",
-    tags: ["Landing", "Pricing", "Fast"],
-    prompt:
-`ابني Landing Page احترافية (Mobile-first) بالعربي RTL وبستايل Mint Glass.
-المطلوب:
-- Hero + CTA
-- Features grid
-- Pricing cards
-- FAQ accordion
-- Contact section
-- Animations خفيفة
-الستاك: HTML + CSS + JS فقط
-
-مهم جدًا: رجّع الناتج بصيغة ملفات فقط:
-FILE: index.html
-FILE: style.css
-FILE: app.js
-FILE: README.md
-بدون أي كلام خارج FILE blocks.`
-  }
-];
-
-function renderTemplates() {
-  templatesWrap.innerHTML = "";
-  TEMPLATES.forEach((t, idx) => {
-    const el = document.createElement("div");
-    el.className = "tpl";
-    el.innerHTML = `
-      <div class="tTitle">${t.title}</div>
-      <div class="tDesc">${t.desc}</div>
-      <div class="tags">
-        ${t.tags.map(x => `<span class="tag">${x}</span>`).join("")}
-      </div>
-    `;
-    el.addEventListener("click", () => {
-      promptEl.value = t.prompt;
-      promptEl.focus();
-      setStatus("Template اتضاف ✅", false);
-      setTimeout(() => setStatus("جاهز", false), 900);
-    });
-    templatesWrap.appendChild(el);
-  });
-}
-renderTemplates();
-
-// -------------------- Generate --------------------
-genBtn.addEventListener("click", async () => {
-  const userPrompt = (promptEl.value || "").trim();
-  if (!userPrompt) {
-    outEl.textContent = "اكتب وصف للتطبيق الأول 🙂";
-    return;
-  }
-
-  hideErrorBox();
-  lastFiles = [];
-  zipBtn.disabled = true;
-  setMeta({ modelUsed: "—", usage: null, filesCount: NaN });
-
-  setStatus("جاري التوليد…", true);
-  outEl.textContent = "⏳ بنولّد…";
-
-  const payload = {
-    prompt: userPrompt,
-    model: modelEl.value,
-    temperature: Number(tempEl.value || 0.2),
-    max_tokens: Number(maxTokensEl.value || 1400),
-  };
-
+// ===================== Login / Logout =====================
+async function login() {
   try {
-    const res = await fetch("/.netlify/functions/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await res.json().catch(() => ({}));
-
-    // meta
-    setMeta({ modelUsed: data?.model, usage: data?.usage, filesCount: NaN });
-
-    if (!res.ok || data?.ok === false) {
-      const message = data?.error || `HTTP ${res.status}`;
-      const fix = data?.fix || "";
-      const code = data?.code || data?.raw?.error?.code || "";
-      const triedModels = data?.triedModels || [];
-      const lastTriedModel = data?.lastTriedModel || "";
-
-      showErrorBox({ message, fix, code, triedModels, lastTriedModel });
-
-      outEl.textContent =
-        `❌ حصل خطأ:\n${message}\n` +
-        (fix ? `\n${fix}\n` : "\n") +
-        `\nتفاصيل:\n${JSON.stringify(data, null, 2)}`;
-
-      setStatus("خطأ", false);
+    if (!window.Pi) {
+      toast("Pi Browser مطلوب", "افتح الموقع من Pi Browser عشان تسجيل الدخول يشتغل", "error");
       return;
     }
 
-    const text = data?.text ?? "";
-    outEl.textContent = text || "// الرد رجع فاضي.";
+    Pi.init({ version: "2.0", sandbox: false });
 
-    // Parse files for ZIP
-    let files = parseFilesFromText(text);
-    files = ensureMinimumFiles(files, userPrompt);
+    const auth = await Pi.authenticate(["username"], () => {});
+    user = auth.user;
 
-    lastFiles = files;
-    zipBtn.disabled = !(lastFiles && lastFiles.length);
-
-    setMeta({ modelUsed: data?.model, usage: data?.usage, filesCount: lastFiles.length });
-
-    setStatus("تم ✅", false);
-  } catch (err) {
-    const message = err?.message || String(err);
-    showErrorBox({
-      message: "مشكلة اتصال بالسيرفر أو Netlify Function.",
-      fix: "اتأكد إن Netlify Function شغالة وإن الإنترنت تمام. جرّب Refresh للموقع.",
-      code: "network_error",
-      triedModels: [],
-      lastTriedModel: "",
-    });
-    outEl.textContent = `❌ مشكلة اتصال:\n${message}`;
-    setStatus("اتصال فشل", false);
+    setUserUI();
+    toast("تم تسجيل الدخول ✅", "دلوقتي تقدر تحجز دورك", "success");
+  } catch (e) {
+    console.error("Pi login error:", e);
+    toast("فشل تسجيل الدخول", "جرّب تفتح الموقع من Pi Browser", "error");
   }
-});
+}
 
-// -------------------- Buttons --------------------
-clearBtn.addEventListener("click", () => {
-  promptEl.value = "";
-  outEl.textContent = "// هنا هيظهر الرد…";
-  hideErrorBox();
-  lastFiles = [];
-  zipBtn.disabled = true;
-  setMeta({ modelUsed: "—", usage: null, filesCount: NaN });
-  setStatus("جاهز", false);
-});
+function logout() {
+  user = null;
+  setUserUI();
+  toast("تم تسجيل الخروج", "", "info");
+}
 
-copyBtn.addEventListener("click", async () => {
-  try {
-    await navigator.clipboard.writeText(outEl.textContent || "");
-    setStatus("اتنسخ ✅", false);
-    setTimeout(() => setStatus("جاهز", false), 1200);
-  } catch {
-    setStatus("النسخ فشل", false);
-  }
-});
+// ===================== Load Groups (Public) =====================
+async function loadGroups() {
+  const box = document.getElementById("groups");
+  if (!box) return;
 
-downloadBtn.addEventListener("click", () => {
-  downloadText("groq_output.txt", outEl.textContent || "");
-});
+  box.innerHTML = `
+    <div class="card">
+      <b>جاري تحميل الجمعيات...</b>
+      <div class="muted" style="margin-top:6px">ثواني بس</div>
+    </div>
+  `;
 
-zipBtn.addEventListener("click", async () => {
-  if (!lastFiles || !lastFiles.length) {
-    alert("مفيش ملفات جاهزة للـ ZIP. اضغط توليد الكود الأول.");
+  const { data, error } = await sb
+    .from("groups")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("loadGroups error:", error);
+    box.innerHTML = `
+      <div class="card">
+        <h3>مشكلة في عرض الجمعيات</h3>
+        <p class="muted">غالباً RLS مانعة القراءة.</p>
+        <p style="direction:ltr;text-align:left" class="muted">${escapeHtml(error.message || "")}</p>
+      </div>
+    `;
     return;
   }
-  setStatus("جارِ تجهيز ZIP…", true);
-  try {
-    await downloadZip(lastFiles, "vibe_code_project.zip");
-    setStatus("اتحمّل ZIP ✅", false);
-    setTimeout(() => setStatus("جاهز", false), 900);
-  } catch (e) {
-    setStatus("ZIP فشل", false);
-    alert(e?.message || String(e));
+
+  if (!data || data.length === 0) {
+    box.innerHTML = `
+      <div class="card">
+        <h3>مفيش جمعيات لسه</h3>
+        <p class="muted">أول ما الأدمن ينشئ جمعية هتظهر هنا.</p>
+      </div>
+    `;
+    return;
   }
+
+  box.innerHTML = "";
+
+  data.forEach((g) => {
+    const membersCount = Number(g.members_count || 10);
+
+    box.innerHTML += `
+      <div class="card">
+        <div class="cardTop">
+          <div>
+            <h3>${escapeHtml(g.name)}</h3>
+            <p>عدد الأعضاء: <b>${membersCount}</b></p>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <span class="badge ok">متاحة</span>
+            <span class="badge pi">Pi</span>
+          </div>
+        </div>
+
+        <div class="cardActions">
+          <button class="btn primary btnExpand" onclick="toggleGroup(${Number(g.id)})">
+            عرض الدورات
+          </button>
+          <button class="btn soft" onclick="openGroup(${Number(g.id)})">تحميل</button>
+        </div>
+
+        <div class="panel" id="cycles-${Number(g.id)}" style="display:none"></div>
+      </div>
+    `;
+  });
+}
+
+function toggleGroup(groupId){
+  const panel = document.getElementById(`cycles-${groupId}`);
+  if(!panel) return;
+
+  const isHidden = panel.style.display === "none";
+  panel.style.display = isHidden ? "block" : "none";
+
+  if(isHidden){
+    openGroup(groupId);
+  }
+}
+
+// ===================== Open Group -> list cycles =====================
+async function openGroup(groupId) {
+  const panel = document.getElementById(`cycles-${groupId}`);
+  if (!panel) return;
+
+  panel.innerHTML = `
+    <div class="cycleCard">
+      <b>جاري تحميل الدورات...</b>
+      <div class="muted" style="margin-top:6px">ثواني</div>
+    </div>
+  `;
+
+  const { data, error } = await sb
+    .from("cycles")
+    .select("*")
+    .eq("group_id", groupId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("openGroup cycles error:", error);
+    panel.innerHTML = `
+      <div class="cycleCard">
+        <b>مشكلة في عرض الدورات</b>
+        <div class="muted" style="direction:ltr;text-align:left;margin-top:6px">${escapeHtml(error.message || "")}</div>
+      </div>
+    `;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    panel.innerHTML = `<div class="cycleCard"><b>مفيش دورات لسه</b></div>`;
+    return;
+  }
+
+  panel.innerHTML = data.map((c) => {
+    const months = Number(c.months || 10);
+    const amt = Number(c.monthly_amount || 0);
+
+    return `
+      <div class="cycleCard">
+        <div class="cycleHead">
+          <div>
+            <b>${escapeHtml(c.title)}</b>
+            <div class="muted" style="margin-top:6px">
+              القسط: <b>${amt} Pi</b> — المدة: <b>${months}</b> شهور
+            </div>
+            <div class="muted" style="margin-top:6px">
+              الحالة: <b>${escapeHtml(c.status || "open")}</b>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn primary" onclick="openCycle(${Number(c.id)}, ${months}, ${amt})">اختيار الدور</button>
+            <button class="btn ghost" onclick="pay(${Number(c.id)}, ${amt})">دفع</button>
+          </div>
+        </div>
+
+        <div id="cycle-${Number(c.id)}"></div>
+      </div>
+    `;
+  }).join("");
+}
+
+// ===================== Open Cycle -> show slots =====================
+async function openCycle(cycleId, membersCount, monthlyAmount) {
+  const box = document.getElementById(`cycle-${cycleId}`);
+  if (!box) return;
+
+  box.innerHTML = `<div class="muted" style="margin-top:10px">جاري تحميل الأدوار...</div>`;
+
+  const { data: members, error } = await sb
+    .from("members")
+    .select("position, username")
+    .eq("cycle_id", cycleId);
+
+  if (error) {
+    console.error("openCycle error:", error);
+    box.innerHTML = `<div class="muted">مشكلة في تحميل الأدوار</div>`;
+    return;
+  }
+
+  const taken = new Map();
+  (members || []).forEach(m => taken.set(Number(m.position), m.username || "عضو"));
+
+  let html = `<div class="slotGrid">`;
+
+  for (let pos = 1; pos <= membersCount; pos++) {
+    const isTaken = taken.has(pos);
+    const label = isTaken ? `محجوز` : `متاح`;
+
+    html += `
+      <button class="btn ${isTaken ? "ghost" : "primary"} slotBtn"
+        style="opacity:${isTaken ? .55 : 1}"
+        ${isTaken ? "disabled" : ""}
+        onclick="joinCycle(${cycleId}, ${pos}, ${membersCount}, ${monthlyAmount})"
+      >
+        الدور ${pos}<br>
+        <span style="font-size:12px;opacity:.9">${label}</span>
+      </button>
+    `;
+  }
+
+  html += `</div>`;
+
+  html += user?.uid
+    ? `<div class="muted" style="margin-top:10px">✅ اختر دورك المتاح</div>`
+    : `<div class="muted" style="margin-top:10px">👤 ضيف: سجّل دخول عشان تحجز</div>`;
+
+  box.innerHTML = html;
+}
+
+// ===================== Join Cycle (reserve position) =====================
+async function joinCycle(cycleId, position, membersCount, monthlyAmount) {
+  if (!requireLogin()) return;
+
+  const payload = {
+    cycle_id: cycleId,
+    pi_uid: user.uid,
+    username: user.username,
+    position
+  };
+
+  const { error } = await sb.from("members").insert(payload);
+
+  if (error) {
+    console.error("joinCycle error:", error);
+    toast("مش قادر أحجز الدور", "الدور اتحجز أو أنت منضم للدورة بالفعل", "error");
+    openCycle(cycleId, membersCount, monthlyAmount);
+    return;
+  }
+
+  toast("تم حجز الدور ✅", `حجزت الدور رقم ${position}`, "success");
+  openCycle(cycleId, membersCount, monthlyAmount);
+}
+
+// ===================== Pay =====================
+async function pay(cycleId, amount) {
+  if (!requireLogin()) return;
+
+  if (!window.Pi) {
+    toast("Pi Browser مطلوب", "افتح من Pi Browser عشان الدفع يشتغل", "error");
+    return;
+  }
+
+  if (!amount || amount <= 0) {
+    toast("قيمة غير صحيحة", "القسط الشهري غير مضبوط", "error");
+    return;
+  }
+
+  toast("بدء الدفع", "هيتم فتح نافذة الدفع الآن", "info");
+
+  try {
+    await Pi.createPayment(
+      { amount: Number(amount), memo: "قسط الجمعية", metadata: { cycleId } },
+      {
+        onReadyForServerApproval: (paymentId) => {
+          fetch("/.netlify/functions/approve", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ paymentId }),
+          });
+        },
+        onReadyForServerCompletion: (paymentId, txid) => {
+          fetch("/.netlify/functions/complete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ paymentId, txid }),
+          });
+        },
+        onCancel: () => toast("تم الإلغاء", "تم إلغاء عملية الدفع", "info"),
+        onError: (err) => {
+          console.error("Pi payment error:", err);
+          toast("خطأ في الدفع", "حصلت مشكلة أثناء الدفع", "error");
+        },
+      }
+    );
+  } catch (e) {
+    console.error("pay() error:", e);
+    toast("فشل الدفع", "حصلت مشكلة أثناء بدء الدفع", "error");
+  }
+}
+
+// ===================== On Load =====================
+window.addEventListener("load", () => {
+  setUserUI();
+  loadGroups();
 });
