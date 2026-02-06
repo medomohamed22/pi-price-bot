@@ -75,6 +75,7 @@ function addMonths(dateObj, months){
 }
 
 function goHome(){
+  // ✅ أفضل: رجوع مباشر (بدون اعتماد على سكوب)
   window.location.href = "index.html";
 }
 window.goHome = goHome;
@@ -156,9 +157,6 @@ async function getGroup(groupId){
 }
 
 // ===================== Compute current month =====================
-// يعتمد على:
-// - لو cycles فيها current_month نستخدمها
-// - وإلا نحسبها من start_date لو موجودة
 function computeCurrentMonth(cycle){
   if(cycle?.current_month) return Number(cycle.current_month) || 1;
   if(cycle?.start_date){
@@ -172,7 +170,6 @@ function computeCurrentMonth(cycle){
 
 // ===================== Payments (optional) =====================
 async function getMyPayments(cycleId){
-  // لو جدول payments مش موجود، هيرجع error — هنخليه graceful
   const { data, error } = await sb
     .from("payments")
     .select("*")
@@ -188,8 +185,6 @@ async function getMyPayments(cycleId){
 }
 
 function findNextPayMonth(currentMonth, months, myPayments){
-  // لو عندك payments: لو دفعت الشهر الحالي يبقى القادم = currentMonth+1
-  // وإلا القادم = currentMonth
   const paidMonths = new Set((myPayments||[]).map(p => Number(p.month)));
   if(paidMonths.has(currentMonth)) return Math.min(months, currentMonth + 1);
   return currentMonth;
@@ -221,8 +216,7 @@ function renderPayments(payments, months, currentMonth){
   let html = "";
 
   for(let m=1; m<=months; m++){
-    const paid = paidMonths.has(m);
-    const tag = paid ? `<span class="payTag ok">مدفوع</span>` :
+    const tag = paidMonths.has(m) ? `<span class="payTag ok">مدفوع</span>` :
       (m === currentMonth ? `<span class="payTag warn">مطلوب الآن</span>` : `<span class="payTag">غير مدفوع</span>`);
     html += `
       <div class="payItem">
@@ -238,7 +232,6 @@ function renderDash(group, cycle, member, currentMonth, nextPayMonth, payments){
   const months = Number(cycle.months || 10);
   const amt = Number(cycle.monthly_amount || 0);
 
-  // payout date = start_date + (position-1) months (لو start_date موجودة)
   let payoutDateText = "—";
   if(cycle.start_date){
     const payoutDate = addMonths(new Date(cycle.start_date), Number(member.position||1) - 1);
@@ -247,43 +240,36 @@ function renderDash(group, cycle, member, currentMonth, nextPayMonth, payments){
     payoutDateText = `شهر رقم ${Number(member.position||1)} (حدد start_date لعرض تاريخ)`;
   }
 
-  // next pay date ~ start_date + (nextPayMonth-1)
   let nextPayText = `شهر ${nextPayMonth} — ${amt} Pi`;
   if(cycle.start_date){
     const due = addMonths(new Date(cycle.start_date), nextPayMonth - 1);
     nextPayText = `${formatDate(due)} — ${amt} Pi`;
   }
 
-  // progress
   const pct = Math.round((currentMonth / months) * 100);
   document.getElementById("progressFill").style.width = `${pct}%`;
   document.getElementById("progressText").textContent = `الشهر ${currentMonth} من ${months}`;
   document.getElementById("progressPct").textContent = `${pct}%`;
 
-  // titles
   document.getElementById("dashTitle").textContent = `${group.name} — ${cycle.title}`;
   document.getElementById("dashSub").textContent = `القسط الشهري: ${amt} Pi • مدة الدورة: ${months} شهور`;
-  document.getElementById("dashStatus").textContent = (cycle.status || "open") === "open" ? "نشط" : (cycle.status || "—");
+  document.getElementById("dashStatus").textContent =
+    (cycle.status || "open") === "open" ? "نشط" : (cycle.status || "—");
 
-  // kpis
   document.getElementById("kpiPosition").textContent = `${member.position}`;
   document.getElementById("kpiPayoutDate").textContent = payoutDateText;
   document.getElementById("kpiNextPay").textContent = nextPayText;
 
-  // details
   document.getElementById("dMonthly").textContent = `${amt} Pi`;
   document.getElementById("dMonths").textContent = `${months} شهر`;
   document.getElementById("dStart").textContent = cycle.start_date ? formatDate(cycle.start_date) : "غير محدد";
   document.getElementById("dCurrent").textContent = `${currentMonth}`;
 
-  // note
   document.getElementById("dashNote").textContent =
     cycle.start_date ? "✅ التواريخ محسوبة من start_date." : "ℹ️ لتفعيل التواريخ بدقة: أضف start_date للدورة في قاعدة البيانات.";
 
-  // payments list
   renderPayments(payments, months, currentMonth);
 
-  // pay button enabled if logged in
   document.getElementById("btnPay").disabled = !user?.uid;
 }
 
@@ -320,7 +306,7 @@ async function refreshDash(){
 }
 window.refreshDash = refreshDash;
 
-// ===================== Pay Next Installment =====================
+// ===================== Pay Next Installment (FIXED) =====================
 async function payNext(){
   if(!user?.uid){
     toast("لازم تسجل دخول", "سجل دخول بـ Pi الأول", "error");
@@ -331,7 +317,6 @@ async function payNext(){
     return;
   }
 
-  // الدفع يتم عبر Pi.createPayment (زي الصفحة الرئيسية)
   const amt = Number(active.cycle.monthly_amount || 0);
   if(!amt || amt <= 0){
     toast("القسط غير مضبوط", "monthly_amount غير صحيح", "error");
@@ -341,6 +326,13 @@ async function payNext(){
   if(!window.Pi){
     toast("Pi Browser مطلوب", "افتح من Pi Browser عشان الدفع يشتغل", "error");
     return;
+  }
+
+  // ✅ مهم: اعمل init قبل الدفع
+  try{
+    Pi.init({ version:"2.0", sandbox:false });
+  }catch(e){
+    console.warn("Pi.init warning:", e);
   }
 
   toast("بدء الدفع", "سيتم فتح نافذة الدفع الآن", "info");
@@ -353,30 +345,63 @@ async function payNext(){
         metadata: { cycleId: active.cycle.id, month: active.nextPayMonth }
       },
       {
-        onReadyForServerApproval: (paymentId) => {
-          fetch("/.netlify/functions/approve", {
-            method:"POST",
-            headers:{ "Content-Type":"application/json" },
-            body: JSON.stringify({ paymentId })
-          });
+        onReadyForServerApproval: async (paymentId) => {
+          try{
+            const r = await fetch("/.netlify/functions/approve", {
+              method:"POST",
+              headers:{ "Content-Type":"application/json" },
+              body: JSON.stringify({ paymentId })
+            });
+            const txt = await r.text();
+
+            // لو approve فشل غالباً الدفع هيفشل
+            if(!r.ok){
+              console.error("approve failed:", r.status, txt);
+              toast("approve فشل", `status ${r.status}`, "error");
+            }else{
+              console.log("approve ok:", txt);
+            }
+          }catch(e){
+            console.error("approve fetch error:", e);
+            toast("مشكلة سيرفر", "approve endpoint مش شغال", "error");
+          }
         },
-        onReadyForServerCompletion: (paymentId, txid) => {
-          fetch("/.netlify/functions/complete", {
-            method:"POST",
-            headers:{ "Content-Type":"application/json" },
-            body: JSON.stringify({ paymentId, txid })
-          });
+
+        onReadyForServerCompletion: async (paymentId, txid) => {
+          try{
+            const r = await fetch("/.netlify/functions/complete", {
+              method:"POST",
+              headers:{ "Content-Type":"application/json" },
+              body: JSON.stringify({ paymentId, txid })
+            });
+            const txt = await r.text();
+
+            if(!r.ok){
+              console.error("complete failed:", r.status, txt);
+              toast("complete فشل", `status ${r.status}`, "error");
+              return;
+            }
+
+            console.log("complete ok:", txt);
+            toast("تم الدفع ✅", "تم تسجيل الدفع بنجاح", "success");
+            refreshDash();
+          }catch(e){
+            console.error("complete fetch error:", e);
+            toast("مشكلة سيرفر", "complete endpoint مش شغال", "error");
+          }
         },
+
         onCancel: () => toast("تم الإلغاء", "تم إلغاء الدفع", "info"),
+
         onError: (err) => {
-          console.error(err);
-          toast("خطأ في الدفع", "حصلت مشكلة أثناء الدفع", "error");
+          console.error("Pi payment error:", err);
+          toast("خطأ في الدفع", (err?.message || "حصلت مشكلة أثناء الدفع"), "error");
         }
       }
     );
   }catch(e){
-    console.error(e);
-    toast("فشل الدفع", "حصل خطأ أثناء بدء الدفع", "error");
+    console.error("createPayment throw:", e);
+    toast("فشل الدفع", (e?.message || "حصل خطأ أثناء بدء الدفع"), "error");
   }
 }
 window.payNext = payNext;
