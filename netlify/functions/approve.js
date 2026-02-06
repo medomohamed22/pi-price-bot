@@ -1,3 +1,4 @@
+
 const { createClient } = require("@supabase/supabase-js");
 
 // استيراد المتغيرات البيئية
