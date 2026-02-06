@@ -38,54 +38,52 @@ exports.handler = async (event) => {
   if (event.httpMethod !== "POST") return res(405, { error: "Method Not Allowed" });
 
   try {
-    const { paymentId, txid } = JSON.parse(event.body || "{}");
-    
-    // 1. التحقق من البيانات
-    if (!paymentId || !txid) {
-      console.error("Missing inputs:", { paymentId, txid });
-      return res(400, { error: "Missing paymentId or txid" });
+    if (!PI_API_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      return res(500, {
+        error: "Missing env vars",
+        details: "PI_API_KEY / SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY",
+      });
     }
 
-    // 2. إبلاغ سيرفر Pi (هذه الخطوة الأهم لكي لا تعلق الدفعة في المحفظة)
-    console.log(`Completing payment ${paymentId} on Pi Server...`);
+    const { paymentId, txid } = JSON.parse(event.body || "{}");
+    if (!paymentId || !txid) return res(400, { error: "Missing paymentId/txid" });
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: { persistSession: false },
+    });
+
+    // 1) إكمال المعاملة على خوادم Pi Network (Blockchain Settlement)
     const comp = await piFetch(`/payments/${paymentId}/complete`, {
       method: "POST",
       body: JSON.stringify({ txid }),
     });
 
-    // ملاحظة: حتى لو ردت Pi بخطأ (مثلاً تمت العملية سابقاً)، نكمل لتحديث قاعدتنا
     if (!comp.ok) {
-      console.warn("Pi complete warning (might be already completed):", comp.status, comp.json);
+      // إذا كانت المعاملة مكتملة بالفعل على Pi، لا نتوقف، بل نكمل تحديث قاعدة البيانات
+      console.warn("Pi complete not ok (might be already completed):", comp.status, comp.text);
     }
 
-    // 3. تحديث قاعدة البيانات
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-      auth: { persistSession: false },
-    });
-
-    // نحاول التحديث
-    const { data, error: dbError } = await supabase
+    // 2) تحديث قاعدة البيانات (Update DB)
+    // نستخدم 'confirmed' لتطابق الحالة في الفرونت إند وتظهر للمستخدم بنجاح
+    const { error: upErr } = await supabase
       .from("payments")
-      .update({ status: "confirmed" }) // تأكدنا من الصورة أن الحالة confirmed
-      .eq("payment_id", paymentId)
-      .select();
+      .upsert(
+        { 
+          payment_id: paymentId, 
+          txid: txid, 
+          status: "confirmed" // تم التعديل من 'completed' إلى 'confirmed' للتوافق
+        },
+        { onConflict: "payment_id" }
+      );
 
-    if (dbError) {
-      console.error("DB Update Error:", dbError);
-      return res(500, { error: "DB Error", details: dbError.message });
+    if (upErr) {
+      console.error("Supabase upsert failed in complete function:", upErr.message);
+      return res(500, { error: "Supabase upsert failed", details: upErr.message });
     }
 
-    // 4. فحص هل تم التحديث فعلاً؟
-    if (!data || data.length === 0) {
-      console.warn(`Record for payment ${paymentId} not found to update! Client insert might have failed.`);
-      // هنا يمكنك اختيارياً عمل Insert إذا لم يكن موجوداً، لكن ذلك يتطلب إرسال amount و member_id من الفرونت إند
-      return res(404, { error: "Payment record not found in DB, but completed on Pi." });
-    }
-
-    return res(200, { ok: true, message: "Payment confirmed", paymentId });
-
+    return res(200, { ok: true, message: "Transaction Confirmed in DB", paymentId, txid });
   } catch (e) {
-    console.error("Complete Function Critical Error:", e);
-    return res(500, { error: e.message });
+    console.error("complete error:", e);
+    return res(500, { error: e.message || "Server error" });
   }
 };
