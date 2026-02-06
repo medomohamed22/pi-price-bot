@@ -81,24 +81,27 @@ function goHome(){
 window.goHome = goHome;
 
 // ===================== Pi Login =====================
-async function login(){
-  try{
-    if(!window.Pi){
+async function login() {
+  try {
+    if (!window.Pi) {
       toast("Pi Browser مطلوب", "افتح من Pi Browser عشان تسجيل الدخول يشتغل", "error");
       return;
     }
-    Pi.init({ version:"2.0", sandbox:false });
-    const auth = await Pi.authenticate(["username"], ()=>{});
+    
+    Pi.init({ version: "2.0", sandbox: false });
+    
+    // ✅ هنا بناخد username + payments scope
+    const auth = await Pi.authenticate(["username", "payments"], () => {});
     user = auth.user;
+    
     setUserUI();
-    toast("تم تسجيل الدخول ✅", "هنحمّل بيانات جمعيتك", "success");
+    toast("تم تسجيل الدخول ✅", `أهلًا ${user.username}`, "success");
     await refreshDash();
-  }catch(e){
+  } catch (e) {
     console.error(e);
-    toast("فشل تسجيل الدخول", "جرّب من Pi Browser", "error");
+    toast("فشل تسجيل الدخول", (e?.message || "جرّب من Pi Browser"), "error");
   }
 }
-
 function logout(){
   user = null;
   active = { cycle:null, member:null, currentMonth:1, nextPayMonth:1 };
