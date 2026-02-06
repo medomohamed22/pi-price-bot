@@ -121,3 +121,41 @@ body{
 @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @media (max-width: 480px) { .modalContent.full-mobile{ height: 100vh; max-height: 100vh; border-radius: 0; width: 100%; } }
+/* تصميم شبكة الأدوار الحديثة */
+.modern-slot-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    gap: 10px;
+}
+
+.slot-item {
+    padding: 10px 5px;
+    border-radius: 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: 0.2s;
+    border: 1px solid #eee;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.slot-item.available {
+    background: #fff;
+    color: var(--p);
+    border-color: var(--p-light);
+}
+.slot-item.available:hover {
+    background: var(--p-light);
+    transform: translateY(-2px);
+}
+
+.slot-item.taken {
+    background: #f8f9fa;
+    color: #ccc;
+    cursor: not-allowed;
+}
+
+.slot-num { font-weight: 800; font-size: 16px; }
+.slot-status { font-size: 9px; text-transform: uppercase; }
+.slot-user { font-size: 8px; margin-top: 2px; color: #999; }
