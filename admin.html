@@ -23,27 +23,31 @@
 
   <main class="wrap">
     
-    <!-- قسم 1 و 2 (إنشاء الجمعيات والدورات) - كما هو، تم اختصاره للتركيز -->
+    <!-- قسم 1 و 2 (إنشاء الجمعيات والدورات) -->
     <section class="card">
         <h2 style="color:var(--p)">1. التحكم السريع</h2>
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <button class="btn soft" onclick="$('createSection').style.display='block'">➕ إنشاء جديد</button>
+            <button class="btn soft" onclick="toggleCreateSection()">➕ إنشاء جديد</button>
             <button class="btn soft" onclick="loadAdminGroups()">🔄 تحديث البيانات</button>
         </div>
         
         <div id="createSection" style="display:none; margin-top:15px; border-top:1px dashed #ccc; padding-top:15px;">
-            <!-- نفس نموذج الإنشاء السابق -->
+            <h3 style="margin-top:0; color:var(--p)">إنشاء جمعية جديدة</h3>
             <div class="form-grid">
                 <div class="field"><label>اسم الجمعية</label><input id="groupName"></div>
                 <div class="field"><label>عدد الأعضاء</label><input id="membersCount" type="number" value="10"></div>
+                <div class="field full-width"><label>الوصف</label><input id="groupDesc"></div>
             </div>
             <button class="btn primary sm" onclick="createGroup()">حفظ الجمعية</button>
-            <hr>
+            
+            <hr style="margin:20px 0; border:none; border-top:1px solid #eee;">
+            
+            <h3 style="color:var(--p)">إنشاء دورة جديدة</h3>
             <div class="form-grid">
                 <div class="field"><label>اختر الجمعية</label><select id="groupSelectCreate"></select></div>
                 <div class="field"><label>اسم الدورة</label><input id="cycleTitle"></div>
-                <div class="field"><label>القسط</label><input id="monthlyAmount" type="number"></div>
-                <div class="field"><label>الشهور</label><input id="months" type="number" value="10"></div>
+                <div class="field"><label>القسط الشهري (Pi)</label><input id="monthlyAmount" type="number"></div>
+                <div class="field"><label>عدد الشهور</label><input id="months" type="number" value="10"></div>
             </div>
             <button class="btn primary sm" onclick="createCycle()">طرح الدورة</button>
         </div>
@@ -59,15 +63,14 @@
         <div id="cyclesList" class="list"></div>
     </section>
 
-    <!-- قسم 4: إدارة الأعضاء (الجديد) -->
+    <!-- قسم 4: إدارة الأعضاء -->
     <section class="card" id="membersSection" style="display:none; border:2px solid var(--p);">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
             <h2 id="membersSectionTitle">3. أعضاء الدورة وتقدم الدفع</h2>
             <span class="badge" id="cycleInfoBadge"></span>
         </div>
 
         <div class="table-container">
-            <!-- سيتم تعبئة الأعضاء هنا -->
             <div id="membersList" class="list"></div>
         </div>
     </section>
