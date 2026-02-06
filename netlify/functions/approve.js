@@ -1,17 +1,18 @@
-
 const { createClient } = require("@supabase/supabase-js");
 
+// استيراد المتغيرات البيئية
 const PI_API_KEY = process.env.PI_API_KEY;
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const PI_BASE = "https://api.minepi.com/v2";
 
+// دالة مساعدة للردود
 function res(statusCode, bodyObj) {
   return {
     statusCode,
     headers: {
-      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Origin": "*", // السماح للكورس
       "Access-Control-Allow-Headers": "Content-Type",
       "Content-Type": "application/json",
     },
@@ -19,6 +20,7 @@ function res(statusCode, bodyObj) {
   };
 }
 
+// دالة مساعدة للاتصال بـ Pi API
 async function piFetch(path, opts = {}) {
   const r = await fetch(`${PI_BASE}${path}`, {
     ...opts,
@@ -34,88 +36,99 @@ async function piFetch(path, opts = {}) {
 }
 
 exports.handler = async (event) => {
+  // التعامل مع طلبات OPTIONS (CORS)
   if (event.httpMethod === "OPTIONS") return res(200, {});
   if (event.httpMethod !== "POST") return res(405, { error: "Method Not Allowed" });
   
   try {
+    // 1. التحقق من المتغيرات البيئية
     if (!PI_API_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-      return res(500, {
-        error: "Missing env vars",
-        details: "PI_API_KEY / SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY",
-      });
+      return res(500, { error: "Server Configuration Error (Missing Env Vars)" });
     }
     
     const { paymentId } = JSON.parse(event.body || "{}");
     if (!paymentId) return res(400, { error: "Missing paymentId" });
     
+    // تهيئة Supabase بصلاحيات الأدمن (Service Role)
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: { persistSession: false },
     });
     
-    // 1) Get current payment details (to know user_uid + metadata)
+    // 2. جلب تفاصيل الدفع من Pi لمعرفة المستخدم والـ Metadata
     const getP = await piFetch(`/payments/${paymentId}`);
     if (!getP.ok) {
-      return res(getP.status, { error: "Pi get payment failed", details: getP.text });
+      return res(getP.status, { error: "Pi API Error", details: getP.text });
     }
+    
     const payment = getP.json || {};
-    const pi_uid = payment.user_uid || null;
-    
-    // 2) Cancel old pending payments for same user (to fix: You already have a pending payment...)
-    //    This endpoint returns payments that need server-side action
-    const pending = await piFetch(`/payments/incomplete_server_payments`);
-    if (pending.ok && pending.json) {
-      // response could be array OR { incomplete_server_payments: [...] } depending on API
-      const list =
-        Array.isArray(pending.json) ? pending.json :
-        (pending.json.incomplete_server_payments || pending.json.data || []);
-      
-      const sameUserOld = (list || []).filter(p => {
-        const pid = p.identifier || p.payment_id || p.id;
-        const uid = p.user_uid || p.user_identifier || p.user;
-        return uid && pid && uid === pi_uid && pid !== paymentId;
-      });
-      
-      // Cancel up to a few to be safe (avoid huge loops)
-      for (const p of sameUserOld.slice(0, 10)) {
-        const oldId = p.identifier || p.payment_id || p.id;
-        const cancelR = await piFetch(`/payments/${oldId}/cancel`, { method: "POST" });
-        // even if cancel fails, continue (we'll try approve current anyway)
+    const pi_uid = payment.user_uid;
+    const amount = payment.amount;
+    // استخراج cycleId من البيانات الوصفية التي أرسلناها في الفرونت إند
+    const cycleId = payment.metadata?.cycleId; 
+
+    if (!cycleId) {
+      return res(400, { error: "Missing cycleId in payment metadata" });
+    }
+
+    // 3. (خطوة اختيارية لكن هامة) إلغاء أي مدفوعات معلقة سابقة لنفس المستخدم
+    // لتجنب خطأ Pi المعروف: "User has an incomplete payment"
+    try {
+      const pending = await piFetch(`/payments/incomplete_server_payments`);
+      if (pending.ok && pending.json) {
+        const list = Array.isArray(pending.json) ? pending.json : (pending.json.incomplete_server_payments || []);
+        
+        // تصفية المدفوعات الخاصة بنفس المستخدم ولكن ليست العملية الحالية
+        const userOldPayments = list.filter(p => p.user_uid === pi_uid && p.identifier !== paymentId);
+        
+        for (const p of userOldPayments) {
+          await piFetch(`/payments/${p.identifier}/cancel`, { method: "POST" });
+        }
       }
+    } catch (err) {
+      console.warn("Cleanup warning:", err); // لا نوقف العملية إذا فشل التنظيف
     }
     
-    // 3) Approve current payment
+    // 4. البحث عن العضو (Member) في قاعدة البيانات
+    // نحتاج member_id لربط الدفع به حسب هيكل قاعدة البيانات
+    const { data: memberData, error: memberError } = await supabase
+      .from("members")
+      .select("id")
+      .eq("pi_uid", pi_uid)
+      .eq("cycle_id", cycleId)
+      .single();
+
+    if (memberError || !memberData) {
+      // إذا لم يكن العضو مسجلاً في الدورة، نرفض العملية أو نسجلها بدون ربط (حسب السياسة)
+      // هنا سنرفض العملية لأنه يجب أن يكون منضماً للدورة أولاً
+      return res(400, { error: "Member not found in this cycle. Please join first." });
+    }
+
+    // 5. تسجيل الدفع في جدول payments بحالة 'pending'
+    // لاحظ أننا نستخدم payment_id الذي أنشأه Pi لضمان عدم التكرار
+    const { error: dbError } = await supabase
+      .from("payments")
+      .upsert({
+        payment_id: paymentId,
+        member_id: memberData.id,
+        amount: amount,
+        status: "pending" // بانتظار الـ completion
+      }, { onConflict: "payment_id" });
+    
+    if (dbError) {
+      console.error("DB Insert Error:", dbError);
+      return res(500, { error: "Database error", details: dbError.message });
+    }
+    
+    // 6. الموافقة النهائية في Pi Network
     const approveR = await piFetch(`/payments/${paymentId}/approve`, { method: "POST" });
     if (!approveR.ok) {
       return res(approveR.status, { error: "Pi approve failed", details: approveR.text });
     }
     
-    // 4) Save/update in Supabase payments table (idempotent upsert)
-    const cycle_id = payment?.metadata?.cycleId ?? payment?.metadata?.cycle_id ?? null;
-    const month = payment?.metadata?.month ?? null;
-    
-    const row = {
-      payment_id: paymentId,
-      pi_uid,
-      cycle_id,
-      month,
-      amount_pi: payment?.amount ?? null,
-      memo: payment?.memo ?? null,
-      status: "approved",
-      raw_json: payment,
-    };
-    
-    // upsert by payment_id (requires unique constraint on payment_id)
-    const { error: upErr } = await supabase
-      .from("payments")
-      .upsert(row, { onConflict: "payment_id" });
-    
-    if (upErr) {
-      return res(500, { error: "Supabase upsert failed", details: upErr.message });
-    }
-    
-    return res(200, { ok: true, message: "Approved", paymentId });
+    return res(200, { ok: true, message: "Approved successfully", paymentId });
+
   } catch (e) {
-    console.error("approve error:", e);
-    return res(500, { error: e.message || "Server error" });
+    console.error("Server Error:", e);
+    return res(500, { error: e.message || "Internal Server Error" });
   }
 };
