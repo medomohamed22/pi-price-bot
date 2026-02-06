@@ -64,8 +64,6 @@ async function login() {
   try {
     if (!window.Pi) {
       toast("خطأ متصفح", "يرجى فتح الموقع داخل متصفح Pi Browser", "error");
-      // للتجربة خارج المتصفح (Production Remove)
-      // user = { uid: "test_user_123", username: "TestUser" }; updateUI(); return;
       return;
     }
 
@@ -90,6 +88,7 @@ async function login() {
 function onIncompletePaymentFound(payment) {
   console.log("Incomplete:", payment);
   if (payment.transaction_id) {
+     // ملاحظة: قد تحتاج لتعديل هذه الدالة في السيرفر لتقبل member_id إذا لزم الأمر
      fetch("/.netlify/functions/complete", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ paymentId: payment.identifier, txid: payment.transaction_id }),
@@ -143,9 +142,11 @@ async function loadMyCycles() {
 
   try {
       // 1. جلب العضويات والجمعيات
+      // ملاحظة هامة: قمنا بإضافة 'id' في الـ select لأننا نحتاجه لجدول المدفوعات
       const { data: members, error } = await sb
         .from("members")
         .select(`
+          id, 
           position, created_at,
           cycles (
             id, title, monthly_amount, status, months, created_at,
@@ -166,27 +167,22 @@ async function loadMyCycles() {
         const c = m.cycles;
         if(!c) continue;
 
-        // جلب عدد المدفوعات التي قام بها المستخدم لهذه الدورة
-        // نفترض وجود جدول payments (أو نقوم بالعد من جدول آخر)
+        // تعديل: الحساب بناءً على جدول payments الجديد
+        // نربط الدفعة بـ member_id الخاص بالمستخدم في هذه الدورة
         const { count: paidMonths } = await sb
             .from('payments')
             .select('*', { count: 'exact', head: true })
-            .eq('pi_uid', user.uid)
-            .eq('metadata->>cycleId', c.id) // أو حسب هيكلية قاعدة البيانات لديك
-            .eq('status', 'completed'); // فقط المدفوعات المكتملة
+            .eq('member_id', m.id) // الربط الصحيح بالجدول
+            .eq('status', 'completed'); // أو الحالة المعتمدة للدفع الناجح
         
         const safePaidMonths = paidMonths || 0;
         const totalAmount = c.monthly_amount * c.months;
         const paidAmount = c.monthly_amount * safePaidMonths;
-        const remainingMonths = c.months - safePaidMonths;
         const progressPercent = Math.min((safePaidMonths / c.months) * 100, 100);
 
-        // حساب التواريخ (تقريبي إذا لم يكن هناك start_date في قاعدة البيانات)
-        const cycleStartDate = new Date(c.created_at); // أو start_date إذا وجد
-        const nextPaymentDate = new Date();
-        nextPaymentDate.setMonth(nextPaymentDate.getMonth() + 1); // افتراض الشهر القادم
-        
-        // تاريخ القبض (الدور × شهر)
+        // حساب التواريخ
+        const cycleStartDate = new Date(c.created_at);
+        // حساب تاريخ القبض
         const payoutDate = new Date(cycleStartDate);
         payoutDate.setMonth(payoutDate.getMonth() + (m.position - 1));
 
@@ -241,7 +237,8 @@ async function loadMyCycles() {
                    <span class="muted sm-text">القسط القادم:</span>
                    <div style="font-weight:bold; font-size:13px">${formatDate(new Date())}</div> 
                  </div>
-                 <button class="btn primary sm" onclick="payInstallment(${c.id}, ${c.monthly_amount})">
+                 <!-- نمرر m.id هنا لأن الدفع يحتاج معرف العضوية -->
+                 <button class="btn primary sm" onclick="payInstallment(${c.id}, ${c.monthly_amount}, ${m.id})">
                    دفع القسط (${c.monthly_amount} Pi)
                  </button>` 
                 : 
@@ -258,8 +255,8 @@ async function loadMyCycles() {
   }
 }
 
-// ===================== نظام الدفع =====================
-async function payInstallment(cycleId, amount) {
+// ===================== نظام الدفع (تعديل: إضافة memberId) =====================
+async function payInstallment(cycleId, amount, memberId) {
   if (!requireLogin()) return;
   closeModal('dashboardModal');
   toast("جاري التحضير", "يتم إنشاء عملية الدفع...", "info");
@@ -273,25 +270,34 @@ async function payInstallment(cycleId, amount) {
 
     const callbacks = {
       onReadyForServerApproval: (paymentId) => {
-        // محاكاة الموافقة (يجب استبدالها بـ fetch للسيرفر)
+        // الاتصال بالسيرفر للموافقة
         toast("جاري المعالجة", "انتظر قليلاً...", "info");
         fetch("/.netlify/functions/approve", {
              method: "POST", headers: { "Content-Type": "application/json" },
              body: JSON.stringify({ paymentId })
-        }).catch(e => console.log("Approval Mock/Error"));
+        }).catch(e => console.log("Approval check failed (Server side)"));
       },
       onReadyForServerCompletion: (paymentId, txid) => {
-        // تسجيل الدفع في قاعدة البيانات
-        // هنا نقوم بإدخال وهمي إذا لم يكن السيرفر يعمل لتحديث الواجهة
+        // تعديل: التسجيل في قاعدة البيانات وفقاً للجدول الجديد
         sb.from('payments').insert({
-            pi_uid: user.uid,
-            amount: amount,
-            status: 'completed',
-            metadata: { cycleId: cycleId },
-            txid: txid
-        }).then(() => {
-            toast("تم بنجاح", "تم دفع القسط وتسجيله! 🎉", "success");
-            openDashboard();
+            member_id: memberId,   // الربط بجدول الأعضاء
+            amount: amount,        // المبلغ
+            payment_id: paymentId, // معرف عملية الدفع من Pi
+            status: 'completed'    // الحالة
+        }).then(({ error }) => {
+            if (error) {
+                console.error("DB Insert Error:", error);
+                toast("تنبيه", "تم الدفع ولكن فشل التسجيل، تواصل مع الدعم", "warning");
+            } else {
+                toast("تم بنجاح", "تم دفع القسط وتسجيله! 🎉", "success");
+                openDashboard();
+            }
+        });
+        
+        // إرسال للسيرفر لإكمال العملية في Pi Blockchain
+        fetch("/.netlify/functions/complete", {
+             method: "POST", headers: { "Content-Type": "application/json" },
+             body: JSON.stringify({ paymentId: paymentId, txid: txid })
         });
       },
       onCancel: () => { toast("إلغاء", "تم إلغاء الدفع", "warning"); openDashboard(); },
