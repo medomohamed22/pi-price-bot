@@ -3,80 +3,1089 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>جمعيتي | لوحة التحكم</title>
+  <title>جمعيتي | نظام الجمعيات الذكي</title>
 
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css">
 
   <script src="https://sdk.minepi.com/pi-sdk.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --primary-light: #e0e7ff;
+      --secondary: #06b6d4;
+      --accent: #f59e0b;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+      --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+      --radius-sm: 8px;
+      --radius: 16px;
+      --radius-lg: 24px;
+      --radius-xl: 32px;
+    }
+
+    [data-theme="dark"] {
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --border: #334155;
+      --primary-light: #312e81;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Tajawal", -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+      line-height: 1.6;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    /* Glassmorphism Header */
+    .topbar {
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: var(--shadow-sm);
+    }
+
+    [data-theme="dark"] .topbar {
+      background: rgba(30, 41, 59, 0.8);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo {
+      width: 42px;
+      height: 42px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      color: white;
+      border-radius: var(--radius);
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      font-size: 20px;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .logo::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent);
+      transform: rotate(45deg);
+      animation: shimmer 3s infinite;
+    }
+
+    @keyframes shimmer {
+      0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+      100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    /* Modern Buttons */
+    .btn {
+      border: none;
+      padding: 12px 20px;
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      transition: left 0.5s;
+    }
+
+    .btn:hover::before {
+      left: 100%;
+    }
+
+    .btn:active {
+      transform: scale(0.95);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(99, 102, 241, 0.5);
+    }
+
+    .btn-soft {
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .btn-soft:hover {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+
+    .btn-ghost:hover {
+      background: var(--surface);
+      color: var(--text);
+      border-color: var(--primary);
+    }
+
+    .btn-sm {
+      padding: 8px 14px;
+      font-size: 13px;
+    }
+
+    .btn-icon {
+      width: 42px;
+      height: 42px;
+      padding: 0;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      font-size: 18px;
+      color: var(--text-muted);
+    }
+
+    .btn-icon:hover {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+      transform: rotate(15deg) scale(1.1);
+    }
+
+    .wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    /* Hero Section with Animated Gradient */
+    .hero {
+      position: relative;
+      margin-bottom: 32px;
+    }
+
+    .heroCard {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 40px 30px;
+      border-radius: var(--radius-lg);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      box-shadow: var(--shadow-xl);
+    }
+
+    .heroCard::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+      background-size: 20px 20px;
+      opacity: 0.3;
+      animation: float 20s linear infinite;
+    }
+
+    @keyframes float {
+      0% { transform: translate(0, 0); }
+      100% { transform: translate(50px, 50px); }
+    }
+
+    .heroCard h2 {
+      margin: 0 0 12px;
+      font-size: 28px;
+      font-weight: 800;
+      position: relative;
+      z-index: 1;
+    }
+
+    .heroCard p {
+      color: rgba(255,255,255,0.9);
+      margin: 0 0 28px;
+      font-size: 16px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Search Bar with Glass Effect */
+    .searchWrap {
+      position: relative;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .searchWrap input {
+      width: 100%;
+      padding: 16px 24px;
+      border-radius: var(--radius-xl);
+      border: none;
+      outline: none;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(10px);
+      font-size: 16px;
+      font-family: inherit;
+      box-shadow: var(--shadow-lg);
+      transition: all 0.3s;
+      color: var(--text);
+    }
+
+    .searchWrap input:focus {
+      transform: scale(1.02);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+    }
+
+    .searchWrap::after {
+      content: '\f002';
+      font-family: 'Font Awesome 6 Free';
+      font-weight: 900;
+      position: absolute;
+      left: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    /* Section Headers */
+    .sectionHead {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding: 0 4px;
+    }
+
+    .sectionHead h3 {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Modern Grid Cards */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      transform: scaleX(0);
+      transition: transform 0.3s;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-xl);
+      border-color: var(--primary-light);
+    }
+
+    .card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .cardTop {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .cardTop h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 12px;
+      border-radius: var(--radius-xl);
+      font-size: 12px;
+      font-weight: 600;
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .badge-success {
+      background: #d1fae5;
+      color: var(--success);
+    }
+
+    .badge-warning {
+      background: #fef3c7;
+      color: var(--warning);
+    }
+
+    .muted {
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* Modal with Glassmorphism */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .modal.active {
+      display: flex;
+      opacity: 1;
+    }
+
+    .modalContent {
+      background: var(--surface);
+      width: 100%;
+      max-width: 600px;
+      max-height: 90vh;
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 -10px 40px rgba(0,0,0,0.2);
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .modal.active .modalContent {
+      transform: translateY(0);
+    }
+
+    @media (min-width: 640px) {
+      .modal {
+        align-items: center;
+        padding: 20px;
+      }
+      .modalContent {
+        border-radius: var(--radius-lg);
+        max-height: 85vh;
+        transform: translateY(20px) scale(0.95);
+      }
+      .modal.active .modalContent {
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .modalHead {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(135deg, var(--primary-light) 0%, transparent 100%);
+    }
+
+    .modalHead h3 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .modalBody {
+      padding: 24px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    /* User Summary Card */
+    .user-summary {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      color: white;
+      padding: 24px;
+      border-radius: var(--radius-lg);
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: var(--shadow-lg);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .user-summary::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+      background-size: 30px 30px;
+      opacity: 0.3;
+    }
+
+    .avatar-circle {
+      width: 56px;
+      height: 56px;
+      background: rgba(255,255,255,0.2);
+      backdrop-filter: blur(10px);
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 24px;
+      border: 2px solid rgba(255,255,255,0.3);
+      position: relative;
+      z-index: 1;
+    }
+
+    .user-info {
+      position: relative;
+      z-index: 1;
+    }
+
+    .user-info div:first-child {
+      font-weight: 700;
+      font-size: 18px;
+      margin-bottom: 4px;
+    }
+
+    .user-info div:last-child {
+      font-size: 13px;
+      opacity: 0.9;
+    }
+
+    /* Wallet Card */
+    .wallet-card {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border: 1px solid #fcd34d;
+      padding: 20px;
+      border-radius: var(--radius);
+      margin-bottom: 24px;
+      position: relative;
+    }
+
+    [data-theme="dark"] .wallet-card {
+      background: linear-gradient(135deg, #451a03 0%, #78350f 100%);
+      border-color: #92400e;
+    }
+
+    .wallet-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .wallet-header h4 {
+      margin: 0;
+      font-size: 16px;
+      color: #92400e;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    [data-theme="dark"] .wallet-header h4 {
+      color: #fcd34d;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .input-group input {
+      flex: 1;
+      padding: 14px 16px;
+      border: 2px solid rgba(146, 64, 14, 0.2);
+      border-radius: var(--radius);
+      outline: none;
+      font-size: 14px;
+      font-family: inherit;
+      background: white;
+      transition: all 0.3s;
+    }
+
+    .input-group input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    /* Dashboard Cards */
+    .dashboard-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.3s;
+    }
+
+    .dashboard-card:hover {
+      box-shadow: var(--shadow);
+      transform: translateY(-2px);
+    }
+
+    .dash-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px dashed var(--border);
+    }
+
+    .dash-title h4 {
+      margin: 0 0 6px;
+      font-size: 17px;
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .dash-title span {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* Progress Bar */
+    .payment-progress {
+      margin: 20px 0;
+    }
+
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .track {
+      height: 10px;
+      background: var(--bg);
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+      border-radius: var(--radius-xl);
+      transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .fill::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      right: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      animation: progressShine 2s infinite;
+    }
+
+    @keyframes progressShine {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin: 20px 0;
+    }
+
+    .stat-box {
+      background: var(--bg);
+      padding: 16px;
+      border-radius: var(--radius);
+      text-align: center;
+      border: 1px solid var(--border);
+      transition: all 0.3s;
+    }
+
+    .stat-box:hover {
+      background: var(--primary-light);
+      border-color: var(--primary);
+      transform: translateY(-2px);
+    }
+
+    .stat-box small {
+      display: block;
+      color: var(--text-muted);
+      font-size: 12px;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    .stat-box strong {
+      display: block;
+      font-size: 18px;
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .stat-box.highlight strong {
+      color: var(--success);
+    }
+
+    .stat-box.warning strong {
+      color: var(--warning);
+    }
+
+    /* Payment History */
+    .payment-history {
+      margin-top: 16px;
+      background: var(--bg);
+      padding: 16px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+
+    .history-title {
+      font-weight: 700;
+      font-size: 13px;
+      margin-bottom: 12px;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px dashed var(--border);
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+
+    .history-item:hover {
+      padding-right: 8px;
+      color: var(--primary);
+    }
+
+    .history-item:last-child {
+      border-bottom: none;
+    }
+
+    /* Action Buttons */
+    .action-btn {
+      width: 100%;
+      margin-top: 16px;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .success-badge {
+      background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+      color: #065f46;
+      padding: 14px;
+      border-radius: var(--radius);
+      text-align: center;
+      font-weight: 700;
+      margin-top: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    /* Slot Grid */
+    .slotGrid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .slotBtn {
+      min-width: 44px;
+      height: 44px;
+      padding: 0;
+      border-radius: var(--radius);
+      font-weight: 700;
+      transition: all 0.2s;
+    }
+
+    .slotBtn:not(:disabled):hover {
+      transform: scale(1.1);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .slotBtn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      background: var(--bg);
+      color: var(--text-muted);
+      border: 1px dashed var(--border);
+    }
+
+    /* Toasts */
+    .toasts {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 90%;
+      max-width: 400px;
+      pointer-events: none;
+    }
+
+    .toast {
+      pointer-events: auto;
+      background: var(--surface);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 16px 20px;
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+      box-shadow: var(--shadow-xl);
+      animation: slideDown 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .toast::before {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+    }
+
+    .toast.success::before { background: var(--success); }
+    .toast.error::before { background: var(--danger); }
+    .toast.info::before { background: var(--primary); }
+    .toast.warning::before { background: var(--warning); }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .toast-icon {
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .toast-content {
+      flex: 1;
+    }
+
+    .toast-title {
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+
+    .toast-msg {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .toast-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+      font-size: 16px;
+      transition: all 0.2s;
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .toast-close:hover {
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    /* Dark Mode Toggle */
+    .theme-toggle {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      transition: all 0.3s;
+    }
+
+    .theme-toggle:hover {
+      transform: rotate(180deg);
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    /* Loading States */
+    .loader {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 20px auto;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .skeleton {
+      background: linear-gradient(90deg, var(--bg) 25%, var(--surface) 50%, var(--bg) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: var(--radius);
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .heroCard {
+        padding: 30px 20px;
+      }
+      
+      .heroCard h2 {
+        font-size: 24px;
+      }
+      
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+      }
+      
+      .stat-box {
+        padding: 12px;
+      }
+      
+      .modalContent {
+        max-height: 95vh;
+      }
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
+    }
+
+    /* Animations */
+    .fadeIn {
+      animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .pulse {
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+  </style>
 </head>
 
 <body>
-
-  <!-- Animated Background -->
-  <div class="bg-animation">
-    <div class="gradient-orb orb-1"></div>
-    <div class="gradient-orb orb-2"></div>
-    <div class="gradient-orb orb-3"></div>
-  </div>
 
   <!-- Notifications -->
   <div class="toasts" id="toasts"></div>
 
   <!-- Header -->
-  <header class="topbar glass-effect">
+  <header class="topbar">
     <div class="brand">
-      <div class="logo pulse-animation">
-        <span class="pi-symbol">π</span>
-        <div class="logo-ring"></div>
-      </div>
+      <div class="logo">π</div>
       <div class="brandText">
         <h1>جمعيتي</h1>
-        <span class="brand-tagline">نظام الجمعيات الذكي</span>
       </div>
     </div>
 
     <div class="actions">
-      <button class="btn icon-only magnetic-btn" onclick="toggleTheme()" aria-label="تغيير الوضع" title="تغيير الوضع">
-        <i class="fas fa-moon" id="themeIcon"></i>
+      <button class="theme-toggle" onclick="toggleTheme()" aria-label="تبديل الوضع" title="تبديل الوضع">
+        <i class="fas fa-moon"></i>
       </button>
-
-      <button class="btn icon-only magnetic-btn" onclick="openDashboard()" aria-label="لوحة التحكم" title="لوحة التحكم">
+      
+      <button class="btn btn-icon" onclick="openDashboard()" aria-label="لوحة التحكم" title="لوحة التحكم">
         <i class="fas fa-chart-pie"></i>
-        <span class="btn-glow"></span>
       </button>
       
-      <button class="btn primary sm ripple-btn" id="btnLogin" onclick="login()">
-        <span>دخول</span>
-        <i class="fas fa-arrow-left btn-icon"></i>
+      <button class="btn btn-primary btn-sm" id="btnLogin" onclick="login()">
+        <i class="fas fa-user-circle"></i>
+        دخول
       </button>
       
-      <div class="user-chip-wrapper" id="userChipWrapper" style="display:none">
-        <span class="chip magnetic-btn" id="userChip"></span>
-        <div class="online-indicator"></div>
-      </div>
-
-      <div class="notification-wrapper">
-        <button class="btn icon-only magnetic-btn bell-btn" onclick="toggleNotifications()" aria-label="الإشعارات">
-          <i class="fas fa-bell"></i>
-          <span id="notifBadge" class="badge-dot bounce" style="display:none"></span>
-          <span class="btn-glow"></span>
-        </button>
-        <div id="notifPanel" class="notif-panel glass-effect">
-          <div class="notif-head">
-            <i class="fas fa-bell"></i>
-            <span>الإشعارات</span>
-            <button class="mark-all-read" onclick="markAllRead()">تحديد الكل كمقروء</button>
-          </div>
-          <div id="notifList" class="notif-list">
-            <div class="empty-state">
-              <i class="fas fa-inbox"></i>
-              <p>لا توجد إشعارات جديدة</p>
-            </div>
-          </div>
-        </div>
+      <div class="user-chip" id="userChip" style="display:none; align-items:center; gap:8px; background:var(--primary-light); padding:6px 14px; border-radius:var(--radius-xl); font-weight:600; color:var(--primary); font-size:14px;">
+        <i class="fas fa-user"></i>
+        <span></span>
       </div>
     </div>
   </header>
@@ -85,94 +1094,30 @@
     
     <!-- Hero Section -->
     <section class="hero">
-      <div class="heroCard floating-card">
-        <div class="hero-badge">
-          <i class="fas fa-shield-alt"></i>
-          <span>آمن 100%</span>
-        </div>
-        <h2 class="glitch-text" data-text="نظام الجمعيات الآمن">نظام الجمعيات الآمن</h2>
-        <p class="muted hero-subtitle">لوحة تحكم ذكية لإدارة مدخراتك وأقساطك بسهولة عبر Pi Network</p>
+      <div class="heroCard">
+        <h2>نظام الجمعيات الآمن</h2>
+        <p>لوحة تحكم ذكية لإدارة مدخراتك وأقساطك بسهولة عبر Pi Network</p>
         
         <div class="searchWrap">
-          <i class="fas fa-search search-icon"></i>
           <input type="text" id="searchInput" placeholder="ابحث عن جمعية..." onkeyup="filterGroups(this.value)">
-          <div class="search-glow"></div>
-        </div>
-
-        <div class="hero-stats">
-          <div class="stat-item">
-            <span class="stat-number" data-target="1250">0</span>
-            <span class="stat-label">مستخدم نشط</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-number" data-target="85">0</span>
-            <span class="stat-label">جمعية نشطة</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-number" data-target="45000">0</span>
-            <span class="stat-label">Pi متداولة</span>
-          </div>
         </div>
       </div>
-    </section>
-
-    <!-- Quick Actions -->
-    <section class="quick-actions">
-      <button class="action-card magnetic-btn" onclick="openCreateModal()">
-        <div class="action-icon gradient-1">
-          <i class="fas fa-plus"></i>
-        </div>
-        <span>إنشاء جمعية</span>
-      </button>
-      <button class="action-card magnetic-btn" onclick="openJoinModal()">
-        <div class="action-icon gradient-2">
-          <i class="fas fa-handshake"></i>
-        </div>
-        <span>انضم لجمعية</span>
-      </button>
-      <button class="action-card magnetic-btn" onclick="openCalculator()">
-        <div class="action-icon gradient-3">
-          <i class="fas fa-calculator"></i>
-        </div>
-        <span>حاسبة التوفير</span>
-      </button>
     </section>
 
     <!-- Groups Grid -->
     <section class="section">
       <div class="sectionHead">
-        <div class="section-title-wrapper">
-          <h3>الجمعيات المتاحة</h3>
-          <span class="live-indicator">
-            <span class="pulse"></span>
-            مباشر
-          </span>
-        </div>
-        <button class="btn soft sm refresh-btn magnetic-btn" onclick="loadGroups()">
-          <i class="fas fa-sync-alt" id="refreshIcon"></i>
-          <span>تحديث</span>
+        <h3><i class="fas fa-layer-group" style="color: var(--primary);"></i> الجمعيات المتاحة</h3>
+        <button class="btn btn-soft btn-sm" onclick="loadGroups()">
+          <i class="fas fa-sync-alt"></i>
+          تحديث
         </button>
       </div>
 
       <div id="groups" class="grid">
-        <!-- Skeleton Loading -->
-        <div class="skeleton-card">
-          <div class="skeleton-header"></div>
-          <div class="skeleton-line"></div>
-          <div class="skeleton-line short"></div>
-          <div class="skeleton-footer"></div>
-        </div>
-        <div class="skeleton-card">
-          <div class="skeleton-header"></div>
-          <div class="skeleton-line"></div>
-          <div class="skeleton-line short"></div>
-          <div class="skeleton-footer"></div>
-        </div>
-        <div class="skeleton-card">
-          <div class="skeleton-header"></div>
-          <div class="skeleton-line"></div>
-          <div class="skeleton-line short"></div>
-          <div class="skeleton-footer"></div>
+        <div class="card" style="text-align: center; padding: 40px;">
+          <div class="loader"></div>
+          <p class="muted" style="margin-top: 16px;">جاري تحميل الجمعيات...</p>
         </div>
       </div>
     </section>
@@ -180,106 +1125,50 @@
   </main>
 
   <!-- Dashboard Modal -->
-  <div id="dashboardModal" class="modal">
-    <div class="modalContent full-mobile dashboard-layout">
-      <div class="modalHead glass-effect">
-        <div class="modal-title">
-          <i class="fas fa-chart-pie"></i>
-          <h3>لوحة التحكم</h3>
-        </div>
-        <button class="btn ghost sm close-btn magnetic-btn" onclick="closeModal('dashboardModal')">
+  <div id="dashboardModal" class="modal" onclick="closeModalOnBackdrop(event)">
+    <div class="modalContent" onclick="event.stopPropagation()">
+      <div class="modalHead">
+        <h3><i class="fas fa-chart-line"></i> لوحة التحكم</h3>
+        <button class="btn btn-ghost btn-sm" onclick="closeModal('dashboardModal')">
           <i class="fas fa-times"></i>
         </button>
       </div>
       
-      <div class="modalBody custom-scrollbar">
+      <div class="modalBody">
         
         <!-- User Info Summary -->
-        <div class="user-summary gradient-card" id="userSummary">
-          <div class="avatar-circle wave-animation">
-            <i class="fas fa-user"></i>
-          </div>
-          <div class="user-info">
-            <h4 id="dashboardUsername">جاري التحميل...</h4>
-            <div class="trust-score">
-              <div class="stars" id="trustStars"></div>
-              <span id="trustText">نقطة الثقة: --</span>
-            </div>
-          </div>
-          <div class="user-badge" id="userBadge">
-            <i class="fas fa-crown"></i>
-            <span>عضو مميز</span>
-          </div>
+        <div class="user-summary" id="userSummary">
+          <div class="loader" style="width: 30px; height: 30px; border-width: 2px; margin: 0;"></div>
         </div>
 
         <!-- Wallet Section -->
-        <div class="wallet-card glass-effect">
+        <div class="wallet-card">
           <div class="wallet-header">
-            <div class="wallet-title">
-              <div class="wallet-icon">
-                <i class="fas fa-wallet"></i>
-              </div>
-              <div>
-                <h4>المحفظة والاستلام</h4>
-                <span class="security-badge">
-                  <i class="fas fa-lock"></i>
-                  مشفرة
-                </span>
-              </div>
-            </div>
+            <h4><i class="fas fa-wallet"></i> المحفظة والاستلام</h4>
+            <span class="badge badge-warning">هام جداً</span>
           </div>
-          <p class="muted sm-text">أدخل عنوان محفظتك لاستلام الجمعية عند حلول دورك</p>
+          <p class="muted" style="font-size: 13px; margin-bottom: 12px;">أدخل عنوان محفظتك لاستلام الجمعية عند حلول دورك</p>
           <div class="input-group">
-            <div class="input-wrapper">
-              <i class="fas fa-key input-icon"></i>
-              <input type="text" id="walletInput" placeholder="GDT..." dir="ltr">
-            </div>
-            <button class="btn primary sm magnetic-btn save-wallet-btn" onclick="saveWallet()">
+            <input type="text" id="walletInput" placeholder="GDT..." dir="ltr">
+            <button class="btn btn-primary" onclick="saveWallet()">
               <i class="fas fa-save"></i>
-              <span>حفظ</span>
+              حفظ
             </button>
           </div>
-          <div class="wallet-status" id="walletStatus">
-            <i class="fas fa-info-circle"></i>
-            <span>لم يتم ربط محفظة بعد</span>
-          </div>
         </div>
 
-        <!-- Stats Overview -->
-        <div class="stats-overview">
-          <div class="stat-card glass-effect">
-            <div class="stat-icon gradient-1">
-              <i class="fas fa-coins"></i>
-            </div>
-            <div class="stat-details">
-              <span class="stat-value" id="totalSaved">0</span>
-              <span class="stat-label">إجمالي مدخراتي</span>
-            </div>
-          </div>
-          <div class="stat-card glass-effect">
-            <div class="stat-icon gradient-2">
-              <i class="fas fa-calendar-check"></i>
-            </div>
-            <div class="stat-details">
-              <span class="stat-value" id="activeCycles">0</span>
-              <span class="stat-label">جمعيات نشطة</span>
-            </div>
-          </div>
-        </div>
-
-        <hr class="divider gradient-line">
+        <hr style="border: none; border-top: 1px solid var(--border); margin: 24px 0;">
 
         <!-- Active Cycles -->
-        <div class="cycles-section">
-          <h4 class="section-subtitle">
-            <i class="fas fa-sync"></i>
-            اشتراكاتي والمدفوعات
-          </h4>
-          <div id="myCyclesList" class="cycles-list">
-            <div class="loading-state">
-              <div class="spinner"></div>
-              <p>جاري تحميل بياناتك المالية...</p>
-            </div>
+        <h4 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+          <i class="fas fa-list-check" style="color: var(--primary);"></i>
+          اشتراكاتي والمدفوعات
+        </h4>
+        
+        <div id="myCyclesList" class="cycles-list">
+          <div class="muted" style="text-align: center; padding: 40px;">
+            <div class="loader"></div>
+            <p style="margin-top: 16px;">جاري تحميل بياناتك المالية...</p>
           </div>
         </div>
 
@@ -287,52 +1176,615 @@
     </div>
   </div>
 
-  <!-- Create Group Modal -->
-  <div id="createModal" class="modal">
-    <div class="modalContent">
-      <div class="modalHead glass-effect">
-        <div class="modal-title">
-          <i class="fas fa-plus-circle"></i>
-          <h3>إنشاء جمعية جديدة</h3>
+  <script>
+    // ===================== تهيئة Supabase =====================
+    const SUPABASE_URL = "https://xncapmzlwuisupkjlftb.supabase.co"; 
+    const SUPABASE_KEY = "sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS"; 
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // ===================== المتغيرات العامة =====================
+    let user = null;
+    const icons = { 
+      success: '<i class="fas fa-check-circle"></i>', 
+      error: '<i class="fas fa-exclamation-circle"></i>', 
+      info: '<i class="fas fa-info-circle"></i>', 
+      warning: '<i class="fas fa-exclamation-triangle"></i>' 
+    };
+
+    // ===================== نظام التنبيهات (Toast) =====================
+    function toast(title, msg = "", type = "info", duration = 4000) {
+      const container = document.getElementById("toasts");
+      const el = document.createElement("div");
+      el.className = `toast ${type}`;
+      el.innerHTML = `
+        <div class="toast-icon">${icons[type]}</div>
+        <div class="toast-content">
+          <div class="toast-title">${escapeHtml(title)}</div>
+          ${msg ? `<div class="toast-msg">${escapeHtml(msg)}</div>` : ''}
         </div>
-        <button class="btn ghost sm close-btn" onclick="closeModal('createModal')">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      <div class="modalBody">
-        <form id="createForm" class="styled-form">
-          <div class="form-group">
-            <label>اسم الجمعية</label>
-            <input type="text" id="groupName" placeholder="مثال: جمعية العائلة" required>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>المبلغ الشهري (Pi)</label>
-              <input type="number" id="monthlyAmount" placeholder="100" min="1" required>
-            </div>
-            <div class="form-group">
-              <label>عدد الأشهر</label>
-              <input type="number" id="monthsCount" placeholder="12" min="3" max="24" required>
-            </div>
-          </div>
-          <div class="form-group">
-            <label>وصف الجمعية</label>
-            <textarea id="groupDesc" rows="3" placeholder="وصف مختصر للجمعية وأهدافها..."></textarea>
-          </div>
-          <button type="submit" class="btn primary full-width magnetic-btn submit-btn">
-            <i class="fas fa-rocket"></i>
-            <span>إنشاء الجمعية</span>
-          </button>
-        </form>
-      </div>
-    </div>
-  </div>
+        <button class="toast-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+      `;
+      container.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = "0";
+        el.style.transform = "translateY(-20px)";
+        setTimeout(() => el.remove(), 300);
+      }, duration);
+    }
 
-  <!-- Theme Toggle Floating Button -->
-  <button class="theme-floating-btn magnetic-btn" onclick="toggleTheme()">
-    <i class="fas fa-moon" id="floatingThemeIcon"></i>
-  </button>
+    // ===================== أدوات مساعدة =====================
+    function escapeHtml(str) { 
+      return String(str ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); 
+    }
 
-  <script src="app.js"></script>
+    function formatDate(date) {
+      if(!date) return "---";
+      return new Date(date).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+
+    function formatCurrency(amount) {
+      return new Intl.NumberFormat('ar-SA').format(amount) + ' Pi';
+    }
+
+    function updateUI() {
+      const chip = document.getElementById("userChip");
+      const btn = document.getElementById("btnLogin");
+      if (user && user.username) {
+        chip.style.display = "inline-flex";
+        chip.querySelector('span').textContent = user.username;
+        btn.style.display = "none";
+      } else {
+        chip.style.display = "none";
+        btn.style.display = "inline-flex";
+      }
+    }
+
+    function requireLogin() {
+      if (!user?.uid) {
+        toast("تنبيه", "يجب تسجيل الدخول بـ Pi Browser أولاً", "warning");
+        return false;
+      }
+      return true;
+    }
+
+    // ===================== Dark Mode =====================
+    function toggleTheme() {
+      const html = document.documentElement;
+      const current = html.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+      
+      const icon = document.querySelector('.theme-toggle i');
+      icon.className = next === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+    }
+
+    // Load saved theme
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    if(savedTheme === 'dark') {
+      document.querySelector('.theme-toggle i').className = 'fas fa-sun';
+    }
+
+    // ===================== تسجيل الدخول (مع التحقق من الحظر) =====================
+    async function login() {
+      try {
+        if (!window.Pi) {
+          toast("خطأ متصفح", "يرجى فتح الموقع داخل متصفح Pi Browser", "error");
+          return;
+        }
+
+        Pi.init({ version: "2.0", sandbox: false });
+        const scopes = ['username', 'payments'];
+        const auth = await Pi.authenticate(scopes, onIncompletePaymentFound);
+        
+        // التحقق من الحظر
+        const { data: profile } = await sb
+            .from('profiles')
+            .select('is_banned')
+            .eq('pi_uid', auth.user.uid)
+            .single();
+
+        if (profile && profile.is_banned) {
+          document.body.innerHTML = `
+            <div style="height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center; background:linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); color:#991b1b; font-family:Tajawal,sans-serif; text-align:center; padding:20px;">
+              <div style="font-size:80px; margin-bottom:20px;">🚫</div>
+              <h2 style="margin:0 0 10px; font-size:28px;">حسابك محظور</h2>
+              <p style="font-size:16px; opacity:0.9;">لا يمكنك الوصول للتطبيق. تواصل مع الدعم إذا كنت تعتقد أن هذا خطأ.</p>
+            </div>
+          `;
+          return;
+        }
+
+        // تحديث بيانات المستخدم
+        await sb.from('profiles').upsert({ 
+            pi_uid: auth.user.uid, 
+            username: auth.user.username 
+        });
+
+        user = auth.user;
+        updateUI();
+        toast("تم الدخول بنجاح", `أهلاً بك يا @${user.username}`, "success");
+        
+        if(document.getElementById("dashboardModal").classList.contains("active")){
+            openDashboard();
+        }
+
+      } catch (e) {
+        console.error("Login Error:", e);
+        toast("فشل الدخول", "حاول مرة أخرى", "error");
+      }
+    }
+
+    function onIncompletePaymentFound(payment) {
+      if (payment.transaction_id) {
+         fetch("/.netlify/functions/complete", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ paymentId: payment.identifier, txid: payment.transaction_id }),
+         });
+      }
+    }
+
+    // ===================== لوحة التحكم (Dashboard) =====================
+    function openDashboard() {
+      if (!requireLogin()) return;
+      document.getElementById("dashboardModal").classList.add("active");
+      document.body.style.overflow = 'hidden';
+      
+      document.getElementById("userSummary").innerHTML = `
+        <div class="avatar-circle"><i class="fas fa-user"></i></div>
+        <div class="user-info">
+            <div>@${user.username}</div>
+            <div>ID: ${user.uid.substring(0,8)}...</div>
+        </div>
+      `;
+
+      loadWallet();
+      loadMyCycles();
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove("active");
+      document.body.style.overflow = '';
+    }
+
+    function closeModalOnBackdrop(event) {
+      if (event.target === event.currentTarget) {
+        closeModal('dashboardModal');
+      }
+    }
+
+    async function loadWallet() {
+      const input = document.getElementById("walletInput");
+      input.value = "";
+      input.placeholder = "جاري التحميل...";
+      
+      try {
+        const { data } = await sb.from("user_wallets").select("wallet_address").eq("pi_uid", user.uid).single();
+        input.value = data ? data.wallet_address : "";
+        input.placeholder = "GDT...";
+      } catch(e) {
+        input.placeholder = "GDT...";
+      }
+    }
+
+    async function saveWallet() {
+      const address = document.getElementById("walletInput").value.trim();
+      if (!address || address.length < 20) {
+        toast("تنبيه", "تأكد من صحة عنوان المحفظة", "warning");
+        return;
+      }
+      
+      const btn = event.target;
+      const originalContent = btn.innerHTML;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+      btn.disabled = true;
+      
+      const { error } = await sb.from("user_wallets").upsert({ pi_uid: user.uid, wallet_address: address });
+      
+      btn.innerHTML = originalContent;
+      btn.disabled = false;
+      
+      if (error) toast("خطأ", "فشل الحفظ، حاول مرة أخرى", "error");
+      else toast("تم الحفظ", "تم تحديث المحفظة بنجاح", "success");
+    }
+
+    // === تحميل بيانات الاشتراك والمدفوعات ===
+    async function loadMyCycles() {
+      const list = document.getElementById("myCyclesList");
+      list.innerHTML = `<div style="text-align:center; padding:40px;"><div class="loader"></div><p class="muted" style="margin-top:16px;">جاري جلب بيانات الدفع...</p></div>`;
+
+      try {
+          const { data: members, error } = await sb
+            .from("members")
+            .select(`
+              id, position, created_at,
+              cycles (
+                id, title, monthly_amount, status, months, created_at,
+                groups ( name )
+              )
+            `)
+            .eq("pi_uid", user.uid);
+
+          if (error || !members || members.length === 0) {
+            list.innerHTML = `
+              <div style="text-align:center; padding:40px; background:var(--bg); border-radius:var(--radius); border:2px dashed var(--border);">
+                <i class="fas fa-inbox" style="font-size:48px; color:var(--text-muted); margin-bottom:16px; display:block;"></i>
+                <p class="muted">لست مشتركاً في أي جمعية حالياً</p>
+                <button class="btn btn-primary btn-sm" onclick="closeModal('dashboardModal')" style="margin-top:12px;">
+                  استعرض الجمعيات المتاحة
+                </button>
+              </div>
+            `;
+            return;
+          }
+
+          list.innerHTML = "";
+
+          for (let m of members) {
+            const c = m.cycles;
+            if(!c) continue;
+
+            const { data: payments } = await sb
+                .from('payments')
+                .select('amount, created_at, status')
+                .eq('member_id', m.id)
+                .eq('status', 'confirmed') 
+                .order('created_at', { ascending: true });
+            
+            const paidRows = payments || [];
+            const paidCount = paidRows.length; 
+            const nextInstallmentNum = paidCount + 1;
+            
+            const totalAmount = c.monthly_amount * c.months;
+            const paidAmountTotal = paidRows.reduce((sum, p) => sum + (p.amount || 0), 0);
+            const remainingAmount = totalAmount - paidAmountTotal;
+            const progressPercent = Math.min((paidCount / c.months) * 100, 100);
+            
+            const cycleStartDate = new Date(c.created_at);
+            const payoutDate = new Date(cycleStartDate);
+            payoutDate.setMonth(payoutDate.getMonth() + (m.position - 1));
+
+            const isCompleted = paidCount >= c.months;
+            const isPayoutSoon = !isCompleted && paidCount >= (m.position - 1);
+
+            let historyHTML = "";
+            if(paidCount > 0) {
+                historyHTML = `<div class="payment-history">
+                    <div class="history-title"><i class="fas fa-receipt"></i> سجل الدفعات (${paidCount})</div>
+                    ${paidRows.map((p, index) => `
+                        <div class="history-item">
+                            <span><i class="fas fa-check" style="color:var(--success); margin-left:6px;"></i> قسط رقم ${index + 1}</span>
+                            <span class="muted">${formatDate(p.created_at)}</span>
+                        </div>
+                    `).join('')}
+                </div>`;
+            }
+
+            const payoutBadge = isPayoutSoon ? '<span class="badge badge-success" style="animation:pulse 2s infinite;"><i class="fas fa-gift"></i> موعد الاستلام قريب!</span>' : '';
+
+            list.innerHTML += `
+              <div class="dashboard-card fadeIn">
+                <div class="dash-header">
+                  <div class="dash-title">
+                    <h4><i class="fas fa-users" style="color:var(--primary); margin-left:8px;"></i> ${escapeHtml(c.groups?.name)} - ${escapeHtml(c.title)}</h4>
+                    <span><i class="fas fa-circle" style="color:${c.status === 'open' ? '#10b981' : '#ef4444'}; font-size:8px; margin-left:6px;"></i> ${c.status === 'open' ? 'نشطة' : 'مغلقة'}</span>
+                  </div>
+                  <div class="badge" style="font-size:13px; padding:8px 14px;">
+                    <i class="fas fa-coins" style="margin-left:6px;"></i>
+                    ${c.monthly_amount} Pi/شهر
+                  </div>
+                </div>
+
+                ${payoutBadge}
+
+                <div class="payment-progress">
+                  <div class="progress-label">
+                    <span>تم سداد ${paidCount} من ${c.months} أقساط</span>
+                    <span style="color:var(--primary); font-weight:800;">${Math.round(progressPercent)}%</span>
+                  </div>
+                  <div class="track">
+                    <div class="fill" style="width: ${progressPercent}%"></div>
+                  </div>
+                </div>
+
+                <div class="stats-grid">
+                   <div class="stat-box">
+                     <small><i class="fas fa-sort-numeric-up"></i> دورك</small>
+                     <strong>${m.position}</strong>
+                   </div>
+                   <div class="stat-box ${isPayoutSoon ? 'highlight' : ''}">
+                     <small><i class="fas fa-calendar-day"></i> موعد القبض</small>
+                     <strong>${formatDate(payoutDate)}</strong>
+                   </div>
+                   <div class="stat-box">
+                     <small><i class="fas fa-money-bill-wave"></i> مدفوع</small>
+                     <strong>${paidAmountTotal} Pi</strong>
+                   </div>
+                   <div class="stat-box">
+                     <small><i class="fas fa-hourglass-half"></i> متبقي</small>
+                     <strong>${remainingAmount} Pi</strong>
+                   </div>
+                </div>
+
+                ${historyHTML}
+
+                <div style="margin-top:16px;">
+                  ${!isCompleted ? 
+                    `<button class="btn btn-primary action-btn" onclick="payInstallment(${c.id}, ${c.monthly_amount}, ${m.id}, ${nextInstallmentNum})">
+                       <i class="fas fa-credit-card"></i>
+                       دفع القسط القادم (${nextInstallmentNum})
+                     </button>` 
+                    : 
+                    `<div class="success-badge">
+                      <i class="fas fa-trophy"></i>
+                      مبروك! اكتملت جميع الأقساط
+                    </div>`
+                  }
+                </div>
+              </div>
+            `;
+          }
+
+      } catch (err) {
+          console.error(err);
+          list.innerHTML = `<div class="muted" style="text-align:center; padding:20px; color:var(--danger);"><i class="fas fa-exclamation-triangle"></i> حدث خطأ أثناء تحميل البيانات</div>`;
+      }
+    }
+
+    // ===================== عملية الدفع =====================
+    async function payInstallment(cycleId, amount, memberId, installmentNum) {
+      if (!requireLogin()) return;
+      
+      closeModal('dashboardModal');
+      
+      const confirmed = confirm(`تأكيد دفع مبلغ ${amount} Pi\nكقسط رقم ${installmentNum}؟`);
+      if(!confirmed) { openDashboard(); return; }
+
+      toast("جاري التحضير", "يتم الاتصال بمحفظة Pi...", "info");
+
+      try {
+        const paymentData = {
+          amount: amount,
+          memo: `قسط ${installmentNum} - عضو ${memberId}`,
+          metadata: { 
+              cycleId: cycleId, 
+              memberId: memberId,
+              installment: installmentNum 
+          }
+        };
+
+        const callbacks = {
+          onReadyForServerApproval: (paymentId) => {
+            toast("الموافقة", "جاري التحقق من المعاملة...", "info");
+            fetch("/.netlify/functions/approve", {
+                 method: "POST", headers: { "Content-Type": "application/json" },
+                 body: JSON.stringify({ paymentId })
+            }).catch(() => {}); 
+          },
+          
+          onReadyForServerCompletion: (paymentId, txid) => {
+            toast("جاري الحفظ", "يتم تسجيل الدفعة...", "info");
+
+            sb.from('payments').insert({
+                member_id: memberId,
+                amount: amount,
+                status: 'confirmed',
+                installment_number: installmentNum,
+                payment_id: paymentId,
+                txid: txid
+            }).then(({ error }) => {
+                if (error) {
+                    console.error("DB Insert Error:", error);
+                    toast("تنبيه", "تم الدفع ولكن فشل الحفظ. رقم العملية: " + txid, "warning");
+                } else {
+                    toast("تم بنجاح!", `تم دفع القسط ${installmentNum} بنجاح`, "success");
+                    
+                    fetch("/.netlify/functions/complete", {
+                        method: "POST", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ paymentId, txid })
+                    });
+
+                    setTimeout(() => openDashboard(), 1500);
+                }
+            });
+          },
+          
+          onCancel: () => { 
+              toast("إلغاء", "تم إلغاء العملية", "warning");
+              openDashboard();
+          },
+          onError: (err) => { 
+              console.error(err);
+              toast("خطأ", "حدث خطأ: " + err.message, "error"); 
+              openDashboard();
+          }
+        };
+
+        await Pi.createPayment(paymentData, callbacks);
+
+      } catch (e) {
+        console.error(e);
+        toast("خطأ", "فشل بدء الدفع", "error");
+        openDashboard();
+      }
+    }
+
+    // ===================== تحميل الجمعيات =====================
+    async function loadGroups() {
+      const grid = document.getElementById("groups");
+      if(!grid) return;
+      
+      grid.innerHTML = `<div class="card" style="grid-column:1/-1; text-align:center; padding:40px;"><div class="loader"></div><p class="muted" style="margin-top:16px;">جاري تحميل الجمعيات...</p></div>`;
+
+      try {
+        const { data: groups } = await sb.from("groups").select("*, cycles(*)").order('created_at', { ascending: false });
+
+        if (!groups || groups.length === 0) {
+          grid.innerHTML = `
+            <div class="card" style="grid-column:1/-1; text-align:center; padding:40px;">
+              <i class="fas fa-folder-open" style="font-size:48px; color:var(--text-muted); margin-bottom:16px;"></i>
+              <p class="muted">لا توجد جمعيات متاحة حالياً</p>
+            </div>`;
+          return;
+        }
+
+        grid.innerHTML = groups.map(g => {
+          const activeCycle = g.cycles?.find(c => c.status === 'open') || g.cycles?.[0];
+          const amount = activeCycle ? activeCycle.monthly_amount : "---";
+          const status = activeCycle?.status === 'open' ? 
+            '<span class="badge" style="background:#d1fae5; color:#065f46;"><i class="fas fa-circle" style="font-size:6px; margin-left:6px;"></i>متاحة</span>' : 
+            '<span class="badge" style="background:#fee2e2; color:#991b1b;">مغلقة</span>';
+          
+          return `
+            <div class="card fadeIn">
+              <div class="cardTop">
+                <div>
+                  <h3>${escapeHtml(g.name)}</h3>
+                  ${status}
+                </div>
+                <div class="badge" style="font-size:14px; padding:8px 12px;">
+                  <i class="fas fa-coins" style="margin-left:6px;"></i>
+                  ${amount} Pi
+                </div>
+              </div>
+              <p class="muted" style="margin-bottom:16px; min-height:40px;">${escapeHtml(g.description || "جمعية مضمونة وآمنة عبر Pi Network")}</p>
+              <button class="btn btn-soft full-width" onclick="showCycles(${g.id})" style="width:100%;">
+                <i class="fas fa-eye"></i>
+                عرض التفاصيل والاشتراك
+              </button>
+              <div id="group-cycles-${g.id}" style="margin-top:16px; display:none;"></div>
+            </div>
+          `;
+        }).join("");
+      } catch(e) {
+        grid.innerHTML = `<div class="card" style="grid-column:1/-1; color:var(--danger); text-align:center;"><i class="fas fa-exclamation-circle"></i> فشل تحميل الجمعيات</div>`;
+      }
+    }
+
+    async function showCycles(groupId) {
+      const container = document.getElementById(`group-cycles-${groupId}`);
+      if (container.style.display === "block") { 
+        container.style.display = "none"; 
+        return; 
+      }
+      
+      container.style.display = "block";
+      container.innerHTML = '<div style="text-align:center; padding:20px;"><div class="loader" style="width:30px; height:30px;"></div></div>';
+  
+      try {
+        const { data: cycles } = await sb.from("cycles").select("*").eq("group_id", groupId).eq("status", "open");
+        if(!cycles || cycles.length === 0) {
+          container.innerHTML = "<div class='muted' style='text-align:center; padding:16px; background:var(--bg); border-radius:var(--radius); margin-top:8px;'><i class='fas fa-info-circle'></i> لا توجد دورات متاحة حالياً</div>"; 
+          return;
+        }
+  
+        container.innerHTML = cycles.map(c => `
+          <div style="background:linear-gradient(135deg, var(--bg) 0%, var(--surface) 100%); padding:16px; border-radius:var(--radius); margin-top:8px; border:1px solid var(--border);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <div>
+                <b style="font-size:16px; color:var(--text);">${escapeHtml(c.title)}</b>
+                <div style="font-size:13px; color:var(--text-muted); margin-top:4px;">
+                  <i class="fas fa-clock" style="margin-left:4px;"></i>
+                  ${c.months} أشهر
+                </div>
+              </div>
+              <div style="font-weight:700; color:var(--primary); font-size:18px;">
+                ${c.monthly_amount} Pi
+                <div style="font-size:11px; color:var(--text-muted); font-weight:400;">شهرياً</div>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-sm full-width" onclick="loadSlots(${c.id}, ${c.months})" style="width:100%; margin-bottom:8px;">
+              <i class="fas fa-hand-pointer"></i>
+              اختر دورك
+            </button>
+            <div id="slots-${c.id}" class="slotGrid"></div>
+          </div>
+        `).join("");
+      } catch(e) {
+        container.innerHTML = `<div style="color:var(--danger); text-align:center; padding:12px;">فشل التحميل</div>`;
+      }
+    }
+
+    async function loadSlots(cycleId, totalMonths) {
+      const box = document.getElementById(`slots-${cycleId}`);
+      box.innerHTML = '<div class="loader" style="width:24px; height:24px; margin:12px auto;"></div>';
+      
+      try {
+        const { data: members } = await sb.from("members").select("position").eq("cycle_id", cycleId);
+        const taken = new Set(members?.map(m => m.position) || []);
+  
+        let html = '<div style="width:100%; margin-top:8px;"><p style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">الأرقام المتاحة (اختر رقم دورك):</p><div style="display:flex; flex-wrap:wrap; gap:8px;">';
+        for(let i=1; i<=totalMonths; i++) {
+          const isTaken = taken.has(i);
+          html += `
+            <button 
+              class="btn ${isTaken ? 'btn-ghost' : 'btn-primary'} slotBtn" 
+              ${isTaken ? 'disabled' : ''} 
+              onclick="joinCycle(${cycleId}, ${i})"
+              title="${isTaken ? 'محجوز' : 'متاح'}"
+            >
+              ${isTaken ? '<i class="fas fa-lock" style="font-size:12px;"></i>' : i}
+            </button>
+          `;
+        }
+        html += '</div></div>';
+        box.innerHTML = html;
+      } catch(e) {
+        box.innerHTML = '<div style="color:var(--danger); font-size:12px;">فشل التحميل</div>';
+      }
+    }
+
+    async function joinCycle(cycleId, pos) {
+      if (!requireLogin()) return;
+      
+      const btn = event.target;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+      btn.disabled = true;
+      
+      const { error } = await sb.from("members").insert({ 
+        cycle_id: cycleId, 
+        pi_uid: user.uid, 
+        username: user.username, 
+        position: pos 
+      });
+      
+      if (error) {
+        toast("فشل الحجز", "هذا الدور محجوز مسبقاً", "error");
+        btn.innerHTML = pos;
+        btn.disabled = false;
+      } else {
+        toast("تم بنجاح!", `تم حجز الدور رقم ${pos}`, "success");
+        openDashboard();
+      }
+    }
+
+    function filterGroups(query) {
+      const cards = document.querySelectorAll('.grid > .card');
+      const lower = query.toLowerCase();
+      cards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        card.style.display = text.includes(lower) ? '' : 'none';
+      });
+    }
+
+    // Initialize
+    window.addEventListener('load', () => {
+      loadGroups();
+      
+      // Check for saved login (optional enhancement)
+      if(window.Pi) {
+        // Auto-check if user is already authenticated
+        Pi.init({ version: "2.0", sandbox: false });
+      }
+    });
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeModal('dashboardModal');
+      }
+    });
+  </script>
 </body>
 </html>
