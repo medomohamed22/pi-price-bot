@@ -2,93 +2,74 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Admin | إدارة الجمعيات</title>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard | المايسترو</title>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="admin.css">
-  
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-
 <body>
 
   <header class="topbar">
     <div class="brand">
       <div class="logo">A</div>
       <div>
-        <h1>لوحة الإدارة</h1>
-        <p>التحكم في الجمعيات والدورات</p>
+        <h1>لوحة التحكم الشاملة</h1>
+        <p>إدارة الجمعيات، المدفوعات، والمستخدمين</p>
       </div>
     </div>
-    <div id="adminStatus" class="status">متصل 🟢</div>
+    <div class="status">Admin Mode 🛡️</div>
   </header>
 
   <main class="wrap">
-
-    <!-- 1. إنشاء جمعية -->
+    
+    <!-- قسم 1 و 2 (إنشاء الجمعيات والدورات) - كما هو، تم اختصاره للتركيز -->
     <section class="card">
-      <h2>1. إنشاء جمعية جديدة (المجموعة الأم)</h2>
-      <div class="form-grid">
-        <label class="field">
-          <span>اسم الجمعية</span>
-          <input id="groupName" placeholder="مثال: جمعية الأصدقاء">
-        </label>
-
-        <label class="field">
-          <span>عدد الأعضاء الأقصى</span>
-          <input id="membersCount" type="number" min="2" value="10">
-        </label>
+        <h2 style="color:var(--p)">1. التحكم السريع</h2>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn soft" onclick="$('createSection').style.display='block'">➕ إنشاء جديد</button>
+            <button class="btn soft" onclick="loadAdminGroups()">🔄 تحديث البيانات</button>
+        </div>
         
-        <label class="field full-width">
-          <span>وصف الجمعية (يظهر للمستخدمين)</span>
-          <textarea id="groupDesc" rows="2" placeholder="اكتب وصف مختصر يطمئن المشتركين..."></textarea>
-        </label>
-      </div>
-      <button class="btn primary" id="btnCreateGroup">إنشاء الجمعية</button>
+        <div id="createSection" style="display:none; margin-top:15px; border-top:1px dashed #ccc; padding-top:15px;">
+            <!-- نفس نموذج الإنشاء السابق -->
+            <div class="form-grid">
+                <div class="field"><label>اسم الجمعية</label><input id="groupName"></div>
+                <div class="field"><label>عدد الأعضاء</label><input id="membersCount" type="number" value="10"></div>
+            </div>
+            <button class="btn primary sm" onclick="createGroup()">حفظ الجمعية</button>
+            <hr>
+            <div class="form-grid">
+                <div class="field"><label>اختر الجمعية</label><select id="groupSelectCreate"></select></div>
+                <div class="field"><label>اسم الدورة</label><input id="cycleTitle"></div>
+                <div class="field"><label>القسط</label><input id="monthlyAmount" type="number"></div>
+                <div class="field"><label>الشهور</label><input id="months" type="number" value="10"></div>
+            </div>
+            <button class="btn primary sm" onclick="createCycle()">طرح الدورة</button>
+        </div>
     </section>
 
-    <!-- 2. إنشاء دورة -->
+    <!-- قسم 3: عرض الدورات واختيارها -->
     <section class="card">
-      <h2>2. طرح دورة جديدة (Cycle)</h2>
-      
-      <label class="field">
-        <span>اختر الجمعية لطرح الدورة فيها:</span>
-        <select id="groupSelect">
-          <option value="">جارٍ تحميل القائمة...</option>
-        </select>
-      </label>
-
-      <div class="form-grid">
+        <h2>2. تصفح الجمعيات والدورات</h2>
         <label class="field">
-          <span>اسم الدورة</span>
-          <input id="cycleTitle" placeholder="مثال: دورة شهر نوفمبر 2026">
+            <span>اختر الجمعية لعرض التفاصيل:</span>
+            <select id="groupSelect" onchange="loadCyclesForGroup()"></select>
         </label>
-
-        <label class="field">
-          <span>القسط الشهري (Pi)</span>
-          <input id="monthlyAmount" type="number" step="0.1" placeholder="0.0">
-        </label>
-
-        <label class="field">
-          <span>عدد الشهور</span>
-          <input id="months" type="number" value="10">
-        </label>
-      </div>
-
-      <button class="btn primary" id="btnCreateCycle">طرح الدورة للتسجيل</button>
+        <div id="cyclesList" class="list"></div>
     </section>
 
-    <!-- 3. إدارة الدورات -->
-    <section class="card">
-      <div style="display:flex; justify-content:space-between; align-items:center">
-        <h2>3. متابعة الدورات الحالية</h2>
-        <button class="btn soft sm" onclick="loadCyclesForGroup()">تحديث</button>
-      </div>
-      
-      <div id="cyclesList" class="list">
-        <div class="empty">اختر جمعية من القائمة أعلاه لعرض دوراتها</div>
-      </div>
+    <!-- قسم 4: إدارة الأعضاء (الجديد) -->
+    <section class="card" id="membersSection" style="display:none; border:2px solid var(--p);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h2 id="membersSectionTitle">3. أعضاء الدورة وتقدم الدفع</h2>
+            <span class="badge" id="cycleInfoBadge"></span>
+        </div>
+
+        <div class="table-container">
+            <!-- سيتم تعبئة الأعضاء هنا -->
+            <div id="membersList" class="list"></div>
+        </div>
     </section>
 
   </main>
