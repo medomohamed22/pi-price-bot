@@ -92,6 +92,96 @@ function logout() {
   toast("تم تسجيل الخروج", "", "info");
 }
 
+// ===================== Dashboard & Modals =====================
+function openModal(id) {
+  document.getElementById(id).classList.add("active");
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove("active");
+}
+
+// دالة لوحة التحكم (Dashboard)
+async function openDashboard() {
+  if (!requireLogin()) return; // التأكد من تسجيل الدخول
+  
+  openModal("dashboardModal");
+  const list = document.getElementById("myCyclesList");
+  
+  list.innerHTML = `<div class="muted">جاري البحث عن جمعياتك...</div>`;
+
+  // جلب البيانات: العضوية -> الدورة -> الجمعية
+  const { data: mySeats, error } = await sb
+    .from("members")
+    .select(`
+      position, 
+      created_at,
+      cycles (
+        id, title, monthly_amount, status,
+        groups ( name )
+      )
+    `)
+    .eq("pi_uid", user.uid);
+
+  if (error) {
+    console.error(error);
+    list.innerHTML = `<div class="toast error">خطأ في التحميل: ${escapeHtml(error.message)}</div>`;
+    return;
+  }
+
+  if (!mySeats || mySeats.length === 0) {
+    list.innerHTML = `
+      <div style="text-align:center;padding:20px">
+        <div style="font-size:30px;margin-bottom:10px">📂</div>
+        <p>أنت غير مشترك في أي جمعية حالياً</p>
+        <button class="btn primary sm" onclick="closeModal('dashboardModal')">تصفح الجمعيات</button>
+      </div>
+    `;
+    return;
+  }
+
+  list.innerHTML = mySeats.map(item => {
+    const cycle = item.cycles;
+    const groupName = cycle?.groups?.name || "جمعية";
+    
+    return `
+      <div class="cycleCard" style="margin-bottom:10px; border-color:var(--p)">
+        <div class="cycleHead">
+          <div>
+            <b>${escapeHtml(groupName)} - ${escapeHtml(cycle.title)}</b>
+            <div class="muted" style="font-size:13px; margin-top:4px">
+              دورك رقم: <b>${item.position}</b> | القسط: <b>${cycle.monthly_amount} Pi</b>
+            </div>
+          </div>
+          <span class="badge ${cycle.status === 'active' ? 'ok' : 'pi'}">
+            ${cycle.status || 'تحت التجميع'}
+          </span>
+        </div>
+        <div style="margin-top:10px; display:flex; gap:8px">
+           <button class="btn primary sm" onclick="pay(${cycle.id}, ${cycle.monthly_amount})">دفع القسط</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+// ===================== Search =====================
+function filterGroups(query) {
+  const term = query.toLowerCase();
+  const cards = document.querySelectorAll("#groups .card");
+  
+  cards.forEach(card => {
+    const title = card.querySelector("h3").textContent.toLowerCase();
+    const text = card.textContent.toLowerCase();
+    
+    if (title.includes(term) || text.includes(term)) {
+      card.style.display = "block";
+    } else {
+      card.style.display = "none";
+    }
+  });
+}
+
 // ===================== Load Groups (Public) =====================
 async function loadGroups() {
   const box = document.getElementById("groups");
@@ -135,18 +225,30 @@ async function loadGroups() {
 
   data.forEach((g) => {
     const membersCount = Number(g.members_count || 10);
+    // محاكاة لعدد المشتركين (للعرض فقط) - يفضل جلبها من الداتابيس عبر Count
+    // بما أننا لا نملك Count حالياً، سنفترض أنها فارغة (0) أو نضع قيمة عشوائية للمعاينة
+    const currentMembers = 0; 
+    const percent = Math.min((currentMembers / membersCount) * 100, 100);
 
     box.innerHTML += `
       <div class="card">
         <div class="cardTop">
           <div>
             <h3>${escapeHtml(g.name)}</h3>
-            <p>عدد الأعضاء: <b>${membersCount}</b></p>
+            <p>الأعضاء: <b>${membersCount}</b></p>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <span class="badge ok">متاحة</span>
             <span class="badge pi">Pi</span>
           </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="progressWrap" title="نسبة الاكتمال">
+          <div class="progressBar" style="width:${percent}%"></div>
+        </div>
+        <div style="font-size:11px; text-align:left; color:var(--mut); margin-top:4px">
+           ${currentMembers} / ${membersCount} مشترك
         </div>
 
         <div class="cardActions">
