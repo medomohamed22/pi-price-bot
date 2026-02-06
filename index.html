@@ -2,10 +2,10 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>جمعيتي | Pi</title>
 
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;600;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 
   <script src="https://sdk.minepi.com/pi-sdk.js"></script>
@@ -14,110 +14,83 @@
 
 <body>
 
-  <!-- Toasts Notification Area -->
+  <!-- Notifications -->
   <div class="toasts" id="toasts"></div>
 
   <!-- Header -->
   <header class="topbar">
     <div class="brand">
       <div class="logo">π</div>
-      <div>
+      <div class="brandText">
         <h1>جمعيتي</h1>
-        <p>اختار جمعية → دورة → احجز دورك</p>
       </div>
     </div>
 
     <div class="actions">
-      <button class="btn ghost sm" onclick="openModal('termsModal')">الشروط</button>
-      <button class="btn ghost" onclick="openDashboard()">لوحتي</button>
-      <span class="chip" id="userChip">👤 ضيف</span>
-      <button class="btn primary" id="btnLogin" onclick="login()">تسجيل دخول</button>
-      <button class="btn ghost" id="btnLogout" onclick="logout()" style="display:none">خروج</button>
+      <button class="btn icon-only" onclick="openDashboard()" aria-label="حسابي">
+        👤
+      </button>
+      <button class="btn primary sm" id="btnLogin" onclick="login()">دخول</button>
+      <span class="chip" id="userChip" style="display:none"></span>
     </div>
   </header>
 
   <main class="wrap">
-
+    
     <!-- Hero Section -->
     <section class="hero">
       <div class="heroCard">
-        <div class="heroHead">
-          <div>
-            <h2>نظام جمعيات منظم ومضمون</h2>
-            <p class="muted">
-              تصفح الدورات، احجز دورك، وادفع بسهولة عبر Pi Network.
-            </p>
-          </div>
-          <button class="btn soft" onclick="loadGroups()">تحديث القائمة</button>
-        </div>
-
-        <div class="heroStats">
-          <div class="stat">
-            <div class="statNum">10</div>
-            <div class="statText">أدوار بالدورة</div>
-          </div>
-          <div class="stat">
-            <div class="statNum">شهري</div>
-            <div class="statText">قسط ثابت</div>
-          </div>
-          <div class="stat">
-            <div class="statNum">Pi</div>
-            <div class="statText">تسجيل + دفع</div>
-          </div>
+        <h2>نظام الجمعيات الآمن</h2>
+        <p class="muted">ادخر أموالك بذكاء عبر شبكة Pi Network.</p>
+        
+        <div class="searchWrap">
+          <input type="text" id="searchInput" placeholder="ابحث عن جمعية..." onkeyup="filterGroups(this.value)">
         </div>
       </div>
     </section>
 
-    <!-- Search Bar -->
-    <div class="searchWrap">
-      <input type="text" id="searchInput" placeholder="🔍 ابحث عن اسم الجمعية..." onkeyup="filterGroups(this.value)">
-    </div>
-
-    <!-- Groups Section -->
-    <section class="section" id="sec-groups">
+    <!-- Groups Grid -->
+    <section class="section">
       <div class="sectionHead">
-        <div>
-          <h3>الجمعيات المتاحة</h3>
-          <p class="muted">اضغط “عرض الدورات” لاختيار الدورة ثم الدور</p>
-        </div>
+        <h3>الجمعيات المتاحة</h3>
+        <button class="btn soft sm" onclick="loadGroups()">تحديث</button>
       </div>
 
       <div id="groups" class="grid">
-        <!-- Groups will be loaded here -->
+        <!-- يتم التحميل هنا -->
       </div>
     </section>
 
   </main>
 
-  <!-- Dashboard Modal -->
+  <!-- Dashboard / Account Modal (Full Screen on Mobile) -->
   <div id="dashboardModal" class="modal">
-    <div class="modalContent">
+    <div class="modalContent full-mobile">
       <div class="modalHead">
-        <h3>لوحة تحكمي 👤</h3>
+        <h3>حسابي ومحفظتي 💼</h3>
         <button class="btn ghost sm" onclick="closeModal('dashboardModal')">✕</button>
       </div>
-      <div id="myCyclesList" class="modalBody">
-        <p class="muted">جاري التحميل...</p>
-      </div>
-    </div>
-  </div>
+      
+      <div class="modalBody">
+        
+        <!-- Wallet Section -->
+        <div class="wallet-card">
+          <h4>عنوان محفظة Pi (للاستلام)</h4>
+          <p class="muted sm-text">يرجى نسخ عنوان محفظتك هنا ليقوم الأدمن بتحويل القبض لك عند دورك.</p>
+          <div class="input-group">
+            <input type="text" id="walletInput" placeholder="GDT..." dir="ltr">
+            <button class="btn primary sm" onclick="saveWallet()">حفظ</button>
+          </div>
+        </div>
 
-  <!-- Terms Modal -->
-  <div id="termsModal" class="modal">
-    <div class="modalContent">
-      <div class="modalHead">
-        <h3>الشروط والأحكام 📜</h3>
-        <button class="btn ghost sm" onclick="closeModal('termsModal')">✕</button>
-      </div>
-      <div class="modalBody text-content">
-        <p>1. <b>الالتزام بالدفع:</b> يجب دفع القسط الشهري في أول 5 أيام من كل شهر ميلادي.</p>
-        <p>2. <b>وسيلة الدفع:</b> يتم تحويل الأموال واعتمادها عبر شبكة Pi Network حصراً.</p>
-        <p>3. <b>الرسوم:</b> التطبيق يخصم عمولة تشغيل رمزية (على سبيل المثال 1 Pi) عند الاشتراك.</p>
-        <p>4. <b>الحظر:</b> في حالة التأخر عن الدفع لأكثر من شهرين، يتم حظر الحساب من دخول جمعيات مستقبلية.</p>
-        <p>5. <b>المسؤولية:</b> التطبيق وسيط تنظيمي، وتتم المعاملات المالية على مسؤولية الأعضاء.</p>
-      </div>
-      <div style="margin-top:15px; text-align:left">
-        <button class="btn primary" onclick="closeModal('termsModal')">موافق</button>
+        <hr class="divider">
+
+        <!-- Active Cycles -->
+        <h4>اشتراكاتي الحالية</h4>
+        <div id="myCyclesList" class="cycles-list">
+          <div class="muted">جاري التحميل...</div>
+        </div>
+
       </div>
     </div>
   </div>
