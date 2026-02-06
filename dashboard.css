@@ -1,0 +1,124 @@
+/* Dashboard layout */
+.dashGrid{
+  display:grid;
+  grid-template-columns: 1.2fr .8fr;
+  gap:12px;
+}
+
+.dashMain h2{
+  margin:0;
+  font-size:20px;
+}
+
+.dashTop{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.progressWrap{margin-top:14px}
+.progressMeta{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  margin-bottom:8px;
+  font-size:13px;
+}
+.progressBar{
+  height:12px;
+  border-radius:999px;
+  background: rgba(123,47,247,.10);
+  border:1px solid rgba(123,47,247,.18);
+  overflow:hidden;
+}
+.progressFill{
+  height:100%;
+  border-radius:999px;
+  background: linear-gradient(135deg, var(--p) 0%, var(--p2) 100%);
+  transition: width .25s ease;
+}
+
+.kpis{
+  display:grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap:10px;
+  margin-top:14px;
+}
+
+.kpi{
+  border:1px solid var(--border);
+  background:#fff;
+  border-radius:16px;
+  padding:12px;
+}
+.kpiLabel{
+  color:var(--mut);
+  font-size:13px;
+}
+.kpiValue{
+  margin-top:6px;
+  font-weight:800;
+  font-size:16px;
+}
+
+.dashActions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:14px;
+}
+
+.small{font-size:13px;margin-top:10px}
+
+.detailList{
+  display:grid;
+  gap:8px;
+}
+.detailRow{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  padding:10px 12px;
+  border:1px solid var(--border);
+  border-radius:14px;
+  background:#fff;
+}
+.divider{
+  height:1px;
+  background:var(--border);
+  margin:14px 0;
+}
+
+.paymentsBox{
+  display:grid;
+  gap:8px;
+}
+.payItem{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  border:1px solid var(--border);
+  border-radius:14px;
+  background:#fff;
+}
+.payItem b{font-size:14px}
+.payTag{
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:12px;
+  border:1px solid var(--border);
+  background:#fff;
+  color:var(--mut);
+}
+.payTag.ok{color:#0b7a2a;border-color:rgba(11,122,42,.22);background:rgba(11,122,42,.06)}
+.payTag.warn{color:#9a5b00;border-color:rgba(154,91,0,.22);background:rgba(154,91,0,.06)}
+
+@media (max-width: 980px){
+  .dashGrid{grid-template-columns:1fr}
+  .kpis{grid-template-columns:1fr}
+}
