@@ -183,16 +183,15 @@ async function loadMyCycles() {
         if(!c) continue;
 
         // 2. جلب المدفوعات (فقط المؤكدة confirmed)
-        // بما أن الجدول لا يحتوي على رقم القسط، سنعتمد على الترتيب الزمني
         const { data: payments } = await sb
             .from('payments')
             .select('amount, created_at, status')
             .eq('member_id', m.id)
-            .eq('status', 'confirmed') // التأكد من جلب العمليات الناجحة فقط
+            .eq('status', 'confirmed') 
             .order('created_at', { ascending: true });
         
         const paidRows = payments || [];
-        const paidCount = paidRows.length; // عدد الأقساط المدفوعة هو عدد الصفوف
+        const paidCount = paidRows.length; 
         
         // القسط القادم
         const nextInstallmentNum = paidCount + 1;
@@ -225,7 +224,6 @@ async function loadMyCycles() {
 
         list.innerHTML += `
           <div class="dashboard-card">
-            <!-- الهيدر -->
             <div class="dash-header">
               <div class="dash-title">
                 <h4>${escapeHtml(c.groups?.name)} - ${escapeHtml(c.title)}</h4>
@@ -234,7 +232,6 @@ async function loadMyCycles() {
               <div class="badge primary">${c.monthly_amount} Pi / شهر</div>
             </div>
 
-            <!-- التقدم -->
             <div class="payment-progress">
               <div class="progress-label">
                 <span>تم سداد: ${paidCount} من ${c.months} أقساط</span>
@@ -245,7 +242,6 @@ async function loadMyCycles() {
               </div>
             </div>
 
-            <!-- تفاصيل مالية -->
             <div class="stats-grid">
                <div class="stat-box">
                  <small>دورك</small>
@@ -265,10 +261,8 @@ async function loadMyCycles() {
                </div>
             </div>
 
-            <!-- السجل -->
             ${historyHTML}
 
-            <!-- زر الدفع -->
             <div style="margin-top:15px;">
               ${!isCompleted ? 
                 `<button class="btn primary sm full-width" onclick="payInstallment(${c.id}, ${c.monthly_amount}, ${m.id}, ${nextInstallmentNum})">
@@ -288,7 +282,7 @@ async function loadMyCycles() {
   }
 }
 
-// ===================== عملية الدفع (التصحيح: الحفظ في الجدول الموجود فقط) =====================
+// ===================== عملية الدفع (محدث: installment_number و payment_id) =====================
 async function payInstallment(cycleId, amount, memberId, installmentNum) {
   if (!requireLogin()) return;
   
@@ -306,7 +300,6 @@ async function payInstallment(cycleId, amount, memberId, installmentNum) {
       metadata: { 
           cycleId: cycleId, 
           memberId: memberId,
-          // note: installment number is only in metadata for server, DB doesn't have the column
           installment: installmentNum 
       }
     };
@@ -314,7 +307,7 @@ async function payInstallment(cycleId, amount, memberId, installmentNum) {
     const callbacks = {
       onReadyForServerApproval: (paymentId) => {
         toast("الموافقة", "جاري التحقق من المعاملة...", "info");
-        // إرسال للسيرفر للموافقة (إذا كان السيرفر يعمل)
+        // إرسال للسيرفر للموافقة
         fetch("/.netlify/functions/approve", {
              method: "POST", headers: { "Content-Type": "application/json" },
              body: JSON.stringify({ paymentId })
@@ -324,20 +317,25 @@ async function payInstallment(cycleId, amount, memberId, installmentNum) {
       onReadyForServerCompletion: (paymentId, txid) => {
         toast("جاري الحفظ", "يتم تسجيل الدفعة في النظام...", "info");
 
-        // === التصحيح الهام ===
-        // نرسل فقط البيانات للأعمدة الموجودة في صورتك:
-        // member_id, amount, payment_id, status
-        // الحالة نرسلها 'confirmed' كما في صورتك
-        
+        // [تعديل هام] استخدام أسماء الأعمدة الصحيحة كما طلبت
         sb.from('payments').insert({
             member_id: memberId,
             amount: amount,
-            payment_id: paymentId,
-            status: 'confirmed'  // تم التعديل من 'completed' إلى 'confirmed' لتطابق الصورة
+            status: 'confirmed',
+            
+            // 1. استخدام اسم العمود الصحيح لرقم القسط
+            installment_number: installmentNum, 
+
+            // 2. استخدام اسم العمود الصحيح لرقم الدفع
+            payment_id: paymentId, 
+            
+            // 3. إضافة رقم المعاملة (TxID) لأنه ضروري جداً
+            txid: txid
+
         }).then(({ error }) => {
             if (error) {
                 console.error("DB Insert Error:", error);
-                toast("تنبيه", "تم الدفع ولكن فشل التسجيل التلقائي. انسخ رقم العملية: " + txid, "warning");
+                toast("تنبيه", "تم الدفع ولكن فشل الحفظ في قاعدة البيانات. رقم العملية: " + txid, "warning");
             } else {
                 toast("تم بنجاح", `تم دفع القسط بنجاح! 🥳`, "success");
                 
