@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>جمعيتي | لوحة التحكم</title>
 
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="style.css">
 
   <script src="https://sdk.minepi.com/pi-sdk.js"></script>
@@ -14,26 +15,69 @@
 
 <body>
 
+  <!-- Animated Background -->
+  <div class="bg-animation">
+    <div class="gradient-orb orb-1"></div>
+    <div class="gradient-orb orb-2"></div>
+    <div class="gradient-orb orb-3"></div>
+  </div>
+
   <!-- Notifications -->
   <div class="toasts" id="toasts"></div>
 
   <!-- Header -->
-  <header class="topbar">
+  <header class="topbar glass-effect">
     <div class="brand">
-      <div class="logo">π</div>
+      <div class="logo pulse-animation">
+        <span class="pi-symbol">π</span>
+        <div class="logo-ring"></div>
+      </div>
       <div class="brandText">
         <h1>جمعيتي</h1>
+        <span class="brand-tagline">نظام الجمعيات الذكي</span>
       </div>
     </div>
 
     <div class="actions">
-      <!-- زر لوحة التحكم الجديد -->
-      <button class="btn icon-only" onclick="openDashboard()" aria-label="لوحة التحكم" title="لوحة التحكم">
-        📊
+      <button class="btn icon-only magnetic-btn" onclick="toggleTheme()" aria-label="تغيير الوضع" title="تغيير الوضع">
+        <i class="fas fa-moon" id="themeIcon"></i>
+      </button>
+
+      <button class="btn icon-only magnetic-btn" onclick="openDashboard()" aria-label="لوحة التحكم" title="لوحة التحكم">
+        <i class="fas fa-chart-pie"></i>
+        <span class="btn-glow"></span>
       </button>
       
-      <button class="btn primary sm" id="btnLogin" onclick="login()">دخول</button>
-      <span class="chip" id="userChip" style="display:none"></span>
+      <button class="btn primary sm ripple-btn" id="btnLogin" onclick="login()">
+        <span>دخول</span>
+        <i class="fas fa-arrow-left btn-icon"></i>
+      </button>
+      
+      <div class="user-chip-wrapper" id="userChipWrapper" style="display:none">
+        <span class="chip magnetic-btn" id="userChip"></span>
+        <div class="online-indicator"></div>
+      </div>
+
+      <div class="notification-wrapper">
+        <button class="btn icon-only magnetic-btn bell-btn" onclick="toggleNotifications()" aria-label="الإشعارات">
+          <i class="fas fa-bell"></i>
+          <span id="notifBadge" class="badge-dot bounce" style="display:none"></span>
+          <span class="btn-glow"></span>
+        </button>
+        <div id="notifPanel" class="notif-panel glass-effect">
+          <div class="notif-head">
+            <i class="fas fa-bell"></i>
+            <span>الإشعارات</span>
+            <button class="mark-all-read" onclick="markAllRead()">تحديد الكل كمقروء</button>
+          </div>
+          <div id="notifList" class="notif-list">
+            <div class="empty-state">
+              <i class="fas fa-inbox"></i>
+              <p>لا توجد إشعارات جديدة</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -41,72 +85,253 @@
     
     <!-- Hero Section -->
     <section class="hero">
-      <div class="heroCard">
-        <h2>نظام الجمعيات الآمن</h2>
-        <p class="muted">لوحة تحكم ذكية لإدارة مدخراتك وأقساطك بسهولة عبر Pi Network.</p>
+      <div class="heroCard floating-card">
+        <div class="hero-badge">
+          <i class="fas fa-shield-alt"></i>
+          <span>آمن 100%</span>
+        </div>
+        <h2 class="glitch-text" data-text="نظام الجمعيات الآمن">نظام الجمعيات الآمن</h2>
+        <p class="muted hero-subtitle">لوحة تحكم ذكية لإدارة مدخراتك وأقساطك بسهولة عبر Pi Network</p>
         
         <div class="searchWrap">
+          <i class="fas fa-search search-icon"></i>
           <input type="text" id="searchInput" placeholder="ابحث عن جمعية..." onkeyup="filterGroups(this.value)">
+          <div class="search-glow"></div>
+        </div>
+
+        <div class="hero-stats">
+          <div class="stat-item">
+            <span class="stat-number" data-target="1250">0</span>
+            <span class="stat-label">مستخدم نشط</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number" data-target="85">0</span>
+            <span class="stat-label">جمعية نشطة</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number" data-target="45000">0</span>
+            <span class="stat-label">Pi متداولة</span>
+          </div>
         </div>
       </div>
+    </section>
+
+    <!-- Quick Actions -->
+    <section class="quick-actions">
+      <button class="action-card magnetic-btn" onclick="openCreateModal()">
+        <div class="action-icon gradient-1">
+          <i class="fas fa-plus"></i>
+        </div>
+        <span>إنشاء جمعية</span>
+      </button>
+      <button class="action-card magnetic-btn" onclick="openJoinModal()">
+        <div class="action-icon gradient-2">
+          <i class="fas fa-handshake"></i>
+        </div>
+        <span>انضم لجمعية</span>
+      </button>
+      <button class="action-card magnetic-btn" onclick="openCalculator()">
+        <div class="action-icon gradient-3">
+          <i class="fas fa-calculator"></i>
+        </div>
+        <span>حاسبة التوفير</span>
+      </button>
     </section>
 
     <!-- Groups Grid -->
     <section class="section">
       <div class="sectionHead">
-        <h3>الجمعيات المتاحة</h3>
-        <button class="btn soft sm" onclick="loadGroups()">تحديث</button>
+        <div class="section-title-wrapper">
+          <h3>الجمعيات المتاحة</h3>
+          <span class="live-indicator">
+            <span class="pulse"></span>
+            مباشر
+          </span>
+        </div>
+        <button class="btn soft sm refresh-btn magnetic-btn" onclick="loadGroups()">
+          <i class="fas fa-sync-alt" id="refreshIcon"></i>
+          <span>تحديث</span>
+        </button>
       </div>
 
       <div id="groups" class="grid">
-        <!-- يتم التحميل هنا -->
+        <!-- Skeleton Loading -->
+        <div class="skeleton-card">
+          <div class="skeleton-header"></div>
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line short"></div>
+          <div class="skeleton-footer"></div>
+        </div>
+        <div class="skeleton-card">
+          <div class="skeleton-header"></div>
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line short"></div>
+          <div class="skeleton-footer"></div>
+        </div>
+        <div class="skeleton-card">
+          <div class="skeleton-header"></div>
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line short"></div>
+          <div class="skeleton-footer"></div>
+        </div>
       </div>
     </section>
 
   </main>
 
-  <!-- Dashboard Modal (لوحة التحكم) -->
+  <!-- Dashboard Modal -->
   <div id="dashboardModal" class="modal">
     <div class="modalContent full-mobile dashboard-layout">
-      <div class="modalHead">
-        <h3>لوحة التحكم 📊</h3>
-        <button class="btn ghost sm" onclick="closeModal('dashboardModal')">✕</button>
+      <div class="modalHead glass-effect">
+        <div class="modal-title">
+          <i class="fas fa-chart-pie"></i>
+          <h3>لوحة التحكم</h3>
+        </div>
+        <button class="btn ghost sm close-btn magnetic-btn" onclick="closeModal('dashboardModal')">
+          <i class="fas fa-times"></i>
+        </button>
       </div>
       
-      <div class="modalBody">
+      <div class="modalBody custom-scrollbar">
         
         <!-- User Info Summary -->
-        <div class="user-summary" id="userSummary">
-            <!-- يتم تعبئة البيانات هنا -->
+        <div class="user-summary gradient-card" id="userSummary">
+          <div class="avatar-circle wave-animation">
+            <i class="fas fa-user"></i>
+          </div>
+          <div class="user-info">
+            <h4 id="dashboardUsername">جاري التحميل...</h4>
+            <div class="trust-score">
+              <div class="stars" id="trustStars"></div>
+              <span id="trustText">نقطة الثقة: --</span>
+            </div>
+          </div>
+          <div class="user-badge" id="userBadge">
+            <i class="fas fa-crown"></i>
+            <span>عضو مميز</span>
+          </div>
         </div>
 
         <!-- Wallet Section -->
-        <div class="wallet-card">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-             <h4>💼 المحفظة والاستلام</h4>
-             <span class="badge warning" style="font-size:10px">هام جداً</span>
+        <div class="wallet-card glass-effect">
+          <div class="wallet-header">
+            <div class="wallet-title">
+              <div class="wallet-icon">
+                <i class="fas fa-wallet"></i>
+              </div>
+              <div>
+                <h4>المحفظة والاستلام</h4>
+                <span class="security-badge">
+                  <i class="fas fa-lock"></i>
+                  مشفرة
+                </span>
+              </div>
+            </div>
           </div>
-          <p class="muted sm-text">أدخل عنوان محفظتك لاستلام الجمعية عند حلول دورك.</p>
+          <p class="muted sm-text">أدخل عنوان محفظتك لاستلام الجمعية عند حلول دورك</p>
           <div class="input-group">
-            <input type="text" id="walletInput" placeholder="GDT..." dir="ltr">
-            <button class="btn primary sm" onclick="saveWallet()">حفظ</button>
+            <div class="input-wrapper">
+              <i class="fas fa-key input-icon"></i>
+              <input type="text" id="walletInput" placeholder="GDT..." dir="ltr">
+            </div>
+            <button class="btn primary sm magnetic-btn save-wallet-btn" onclick="saveWallet()">
+              <i class="fas fa-save"></i>
+              <span>حفظ</span>
+            </button>
+          </div>
+          <div class="wallet-status" id="walletStatus">
+            <i class="fas fa-info-circle"></i>
+            <span>لم يتم ربط محفظة بعد</span>
           </div>
         </div>
 
-        <hr class="divider">
+        <!-- Stats Overview -->
+        <div class="stats-overview">
+          <div class="stat-card glass-effect">
+            <div class="stat-icon gradient-1">
+              <i class="fas fa-coins"></i>
+            </div>
+            <div class="stat-details">
+              <span class="stat-value" id="totalSaved">0</span>
+              <span class="stat-label">إجمالي مدخراتي</span>
+            </div>
+          </div>
+          <div class="stat-card glass-effect">
+            <div class="stat-icon gradient-2">
+              <i class="fas fa-calendar-check"></i>
+            </div>
+            <div class="stat-details">
+              <span class="stat-value" id="activeCycles">0</span>
+              <span class="stat-label">جمعيات نشطة</span>
+            </div>
+          </div>
+        </div>
+
+        <hr class="divider gradient-line">
 
         <!-- Active Cycles -->
-        <h4 style="margin-bottom:15px">اشتراكاتي والمدفوعات</h4>
-        <div id="myCyclesList" class="cycles-list">
-          <div class="muted" style="text-align:center; padding:20px;">
-            <div class="loader"></div>
-            جاري تحميل بياناتك المالية...
+        <div class="cycles-section">
+          <h4 class="section-subtitle">
+            <i class="fas fa-sync"></i>
+            اشتراكاتي والمدفوعات
+          </h4>
+          <div id="myCyclesList" class="cycles-list">
+            <div class="loading-state">
+              <div class="spinner"></div>
+              <p>جاري تحميل بياناتك المالية...</p>
+            </div>
           </div>
         </div>
 
       </div>
     </div>
   </div>
+
+  <!-- Create Group Modal -->
+  <div id="createModal" class="modal">
+    <div class="modalContent">
+      <div class="modalHead glass-effect">
+        <div class="modal-title">
+          <i class="fas fa-plus-circle"></i>
+          <h3>إنشاء جمعية جديدة</h3>
+        </div>
+        <button class="btn ghost sm close-btn" onclick="closeModal('createModal')">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modalBody">
+        <form id="createForm" class="styled-form">
+          <div class="form-group">
+            <label>اسم الجمعية</label>
+            <input type="text" id="groupName" placeholder="مثال: جمعية العائلة" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>المبلغ الشهري (Pi)</label>
+              <input type="number" id="monthlyAmount" placeholder="100" min="1" required>
+            </div>
+            <div class="form-group">
+              <label>عدد الأشهر</label>
+              <input type="number" id="monthsCount" placeholder="12" min="3" max="24" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>وصف الجمعية</label>
+            <textarea id="groupDesc" rows="3" placeholder="وصف مختصر للجمعية وأهدافها..."></textarea>
+          </div>
+          <button type="submit" class="btn primary full-width magnetic-btn submit-btn">
+            <i class="fas fa-rocket"></i>
+            <span>إنشاء الجمعية</span>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Theme Toggle Floating Button -->
+  <button class="theme-floating-btn magnetic-btn" onclick="toggleTheme()">
+    <i class="fas fa-moon" id="floatingThemeIcon"></i>
+  </button>
 
   <script src="app.js"></script>
 </body>
