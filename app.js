@@ -59,7 +59,7 @@ function formatDate(date) {
     return new Date(date).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-// ===================== تسجيل الدخول Pi =====================
+// ===================== تسجيل الدخول Pi (مع التحقق من الحظر) =====================
 async function login() {
   try {
     if (!window.Pi) {
@@ -69,7 +69,37 @@ async function login() {
 
     Pi.init({ version: "2.0", sandbox: false });
     const scopes = ['username', 'payments'];
+    
+    // بدء المصادقة
     const auth = await Pi.authenticate(scopes, onIncompletePaymentFound);
+    
+    // ---------------------------------------------------------
+    // جديد: التحقق من الحظر وتحديث بيانات البروفايل للأدمن
+    // ---------------------------------------------------------
+    const { data: profile, error } = await sb
+        .from('profiles')
+        .select('is_banned')
+        .eq('pi_uid', auth.user.uid)
+        .single();
+
+    // إذا كان المستخدم محظوراً
+    if (profile && profile.is_banned) {
+        document.body.innerHTML = `
+            <div style="height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; background:#fee2e2; color:#b91c1c; font-family:'Tajawal'">
+                <h1 style="font-size:50px">🚫</h1>
+                <h2>حسابك محظور</h2>
+                <p>تم تقييد وصولك لهذا التطبيق من قبل الإدارة.</p>
+            </div>
+        `;
+        return; // إيقاف التنفيذ
+    }
+
+    // تحديث اسم المستخدم للأدمن (أو إنشاء بروفايل جديد)
+    await sb.from('profiles').upsert({ 
+        pi_uid: auth.user.uid, 
+        username: auth.user.username 
+    });
+    // ---------------------------------------------------------
 
     user = auth.user;
     updateUI();
@@ -86,9 +116,8 @@ async function login() {
 }
 
 function onIncompletePaymentFound(payment) {
-  console.log("Incomplete:", payment);
+  // معالجة الدفعات العالقة
   if (payment.transaction_id) {
-     // ملاحظة: قد تحتاج لتعديل هذه الدالة في السيرفر لتقبل member_id إذا لزم الأمر
      fetch("/.netlify/functions/complete", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ paymentId: payment.identifier, txid: payment.transaction_id }),
@@ -101,7 +130,6 @@ function openDashboard() {
   if (!requireLogin()) return;
   document.getElementById("dashboardModal").classList.add("active");
   
-  // تحديث ملخص المستخدم
   document.getElementById("userSummary").innerHTML = `
     <div class="avatar-circle">👤</div>
     <div>
@@ -135,14 +163,13 @@ async function saveWallet() {
   else toast("تم الحفظ", "تم تحديث المحفظة ✅", "success");
 }
 
-// === المنطق الأساسي للوحة التحكم ===
+// === المنطق الأساسي للوحة التحكم (تم إصلاح عرض المدفوعات) ===
 async function loadMyCycles() {
   const list = document.getElementById("myCyclesList");
   list.innerHTML = `<div class="muted" style="text-align:center; margin:20px 0;">جاري جلب البيانات المالية... ⏳</div>`;
 
   try {
-      // 1. جلب العضويات والجمعيات
-      // ملاحظة هامة: قمنا بإضافة 'id' في الـ select لأننا نحتاجه لجدول المدفوعات
+      // 1. جلب العضويات والجمعيات (مهم: جلب الـ id الخاص بجدول members)
       const { data: members, error } = await sb
         .from("members")
         .select(`
@@ -167,22 +194,25 @@ async function loadMyCycles() {
         const c = m.cycles;
         if(!c) continue;
 
-        // تعديل: الحساب بناءً على جدول payments الجديد
-        // نربط الدفعة بـ member_id الخاص بالمستخدم في هذه الدورة
-        const { count: paidMonths } = await sb
+        // ---------------------------------------------------------
+        // إصلاح: حساب المدفوعات بناءً على member_id
+        // ---------------------------------------------------------
+        const { count: paidMonths, error: payError } = await sb
             .from('payments')
             .select('*', { count: 'exact', head: true })
-            .eq('member_id', m.id) // الربط الصحيح بالجدول
-            .eq('status', 'completed'); // أو الحالة المعتمدة للدفع الناجح
+            .eq('member_id', m.id) // الربط الصحيح: رقم العضوية في جدول members
+            .eq('status', 'completed'); // التأكد من الحالة
+
+        if(payError) console.error("Payment fetch error:", payError);
         
         const safePaidMonths = paidMonths || 0;
         const totalAmount = c.monthly_amount * c.months;
         const paidAmount = c.monthly_amount * safePaidMonths;
+        const remainingMonths = c.months - safePaidMonths;
         const progressPercent = Math.min((safePaidMonths / c.months) * 100, 100);
 
         // حساب التواريخ
         const cycleStartDate = new Date(c.created_at);
-        // حساب تاريخ القبض
         const payoutDate = new Date(cycleStartDate);
         payoutDate.setMonth(payoutDate.getMonth() + (m.position - 1));
 
@@ -190,7 +220,6 @@ async function loadMyCycles() {
 
         list.innerHTML += `
           <div class="dashboard-card">
-            <!-- رأس البطاقة -->
             <div class="dash-header">
               <div class="dash-title">
                 <h4>${escapeHtml(c.groups?.name)} - ${escapeHtml(c.title)}</h4>
@@ -199,7 +228,6 @@ async function loadMyCycles() {
               <div class="badge primary">${c.monthly_amount} Pi / شهر</div>
             </div>
 
-            <!-- شريط التقدم -->
             <div class="payment-progress">
               <div class="progress-label">
                 <span>تم دفع: ${safePaidMonths} من ${c.months} شهر</span>
@@ -210,7 +238,6 @@ async function loadMyCycles() {
               </div>
             </div>
 
-            <!-- شبكة المعلومات -->
             <div class="stats-grid">
                <div class="stat-box">
                  <small>دورك رقم</small>
@@ -230,14 +257,13 @@ async function loadMyCycles() {
                </div>
             </div>
 
-            <!-- الأزرار -->
             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px;">
               ${!isCompleted ? 
                 `<div>
                    <span class="muted sm-text">القسط القادم:</span>
                    <div style="font-weight:bold; font-size:13px">${formatDate(new Date())}</div> 
                  </div>
-                 <!-- نمرر m.id هنا لأن الدفع يحتاج معرف العضوية -->
+                 <!-- الزر يمرر member_id بشكل صحيح للدفع -->
                  <button class="btn primary sm" onclick="payInstallment(${c.id}, ${c.monthly_amount}, ${m.id})">
                    دفع القسط (${c.monthly_amount} Pi)
                  </button>` 
@@ -255,53 +281,67 @@ async function loadMyCycles() {
   }
 }
 
-// ===================== نظام الدفع (تعديل: إضافة memberId) =====================
+// ===================== نظام الدفع (متوافق مع الجدول الجديد) =====================
 async function payInstallment(cycleId, amount, memberId) {
   if (!requireLogin()) return;
+  
+  // إغلاق مؤقت للمودال
   closeModal('dashboardModal');
   toast("جاري التحضير", "يتم إنشاء عملية الدفع...", "info");
 
   try {
     const paymentData = {
       amount: amount,
-      memo: "قسط جمعية",
+      memo: "قسط جمعية (Installment)",
       metadata: { cycleId: cycleId, type: "installment" }
     };
 
     const callbacks = {
       onReadyForServerApproval: (paymentId) => {
-        // الاتصال بالسيرفر للموافقة
         toast("جاري المعالجة", "انتظر قليلاً...", "info");
+        // إرسال للسيرفر للموافقة
         fetch("/.netlify/functions/approve", {
              method: "POST", headers: { "Content-Type": "application/json" },
              body: JSON.stringify({ paymentId })
-        }).catch(e => console.log("Approval check failed (Server side)"));
+        }).catch(e => console.log("Approval flow check"));
       },
       onReadyForServerCompletion: (paymentId, txid) => {
-        // تعديل: التسجيل في قاعدة البيانات وفقاً للجدول الجديد
+        toast("تسجيل الدفع", "جاري حفظ الدفع في قاعدة البيانات...", "info");
+
+        // 1. تسجيل الدفعة في Supabase (باستخدام member_id)
         sb.from('payments').insert({
-            member_id: memberId,   // الربط بجدول الأعضاء
-            amount: amount,        // المبلغ
-            payment_id: paymentId, // معرف عملية الدفع من Pi
-            status: 'completed'    // الحالة
+            member_id: memberId,   // الربط الصحيح
+            amount: amount,
+            payment_id: paymentId,
+            status: 'completed'
         }).then(({ error }) => {
             if (error) {
                 console.error("DB Insert Error:", error);
-                toast("تنبيه", "تم الدفع ولكن فشل التسجيل، تواصل مع الدعم", "warning");
+                toast("تنبيه", "تم الدفع ولكن فشل التحديث التلقائي، تواصل مع الدعم", "warning");
             } else {
                 toast("تم بنجاح", "تم دفع القسط وتسجيله! 🎉", "success");
-                openDashboard();
+                
+                // إعادة فتح لوحة التحكم لتحديث البيانات تلقائياً
+                setTimeout(() => {
+                    openDashboard();
+                }, 1000);
             }
         });
         
-        // إرسال للسيرفر لإكمال العملية في Pi Blockchain
+        // 2. إبلاغ سيرفر Pi باكتمال العملية
         fetch("/.netlify/functions/complete", {
              method: "POST", headers: { "Content-Type": "application/json" },
              body: JSON.stringify({ paymentId: paymentId, txid: txid })
         });
       },
-      onCancel: () => { toast("إلغاء", "تم إلغاء الدفع", "warning"); openDashboard(); },
-      onError: (err) => { toast("خطأ", "حدث خطأ: " + err.message, "error"); }
+      onCancel: () => { 
+          toast("إلغاء", "تم إلغاء الدفع", "warning"); 
+          openDashboard(); // العودة للوحة
+      },
+      onError: (err) => { 
+          console.error(err);
+          toast("خطأ", "حدث خطأ: " + (err.message || ""), "error"); 
+      }
     };
 
     await Pi.createPayment(paymentData, callbacks);
