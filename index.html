@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>moneypi</title>
+  <title>moneypi - نظام الجمعيات الذكي</title>
 
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -21,6 +21,7 @@
       --success: #10b981;
       --warning: #f59e0b;
       --danger: #ef4444;
+      --info: #3b82f6;
       --bg: #f8fafc;
       --surface: #ffffff;
       --text: #0f172a;
@@ -141,6 +142,29 @@
       align-items: center;
     }
 
+    /* Notification Badge */
+    .notification-btn {
+      position: relative;
+    }
+
+    .notification-badge {
+      position: absolute;
+      top: -2px;
+      right: -2px;
+      background: var(--danger);
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--surface);
+      animation: pulse 2s infinite;
+    }
+
     /* Modern Buttons */
     .btn {
       border: none;
@@ -209,6 +233,21 @@
       background: var(--surface);
       color: var(--text);
       border-color: var(--primary);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+      color: white;
+    }
+
+    .btn-warning {
+      background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%);
+      color: white;
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
+      color: white;
     }
 
     .btn-sm {
@@ -421,6 +460,16 @@
     .badge-warning {
       background: #fef3c7;
       color: var(--warning);
+    }
+
+    .badge-danger {
+      background: #fee2e2;
+      color: var(--danger);
+    }
+
+    .badge-info {
+      background: #dbeafe;
+      color: var(--info);
     }
 
     .muted {
@@ -1052,6 +1101,361 @@
       0%, 100% { opacity: 1; }
       50% { opacity: 0.7; }
     }
+
+    /* NEW FEATURES STYLES */
+
+    /* Insurance Card */
+    .insurance-card {
+      background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+      border: 1px solid #fca5a5;
+      padding: 20px;
+      border-radius: var(--radius);
+      margin-bottom: 24px;
+      position: relative;
+    }
+
+    [data-theme="dark"] .insurance-card {
+      background: linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%);
+      border-color: #b91c1c;
+    }
+
+    .insurance-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .insurance-header h4 {
+      margin: 0;
+      font-size: 16px;
+      color: #991b1b;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    [data-theme="dark"] .insurance-header h4 {
+      color: #fca5a5;
+    }
+
+    /* Platform Fee Card */
+    .fee-card {
+      background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+      border: 1px solid #93c5fd;
+      padding: 20px;
+      border-radius: var(--radius);
+      margin-bottom: 24px;
+      position: relative;
+    }
+
+    [data-theme="dark"] .fee-card {
+      background: linear-gradient(135deg, #172554 0%, #1e3a8a 100%);
+      border-color: #3b82f6;
+    }
+
+    .fee-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .fee-header h4 {
+      margin: 0;
+      font-size: 16px;
+      color: #1e40af;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    [data-theme="dark"] .fee-header h4 {
+      color: #93c5fd;
+    }
+
+    /* Notifications Panel */
+    .notifications-panel {
+      position: fixed;
+      top: 0;
+      right: -400px;
+      width: 100%;
+      max-width: 400px;
+      height: 100vh;
+      background: var(--surface);
+      box-shadow: var(--shadow-xl);
+      z-index: 200;
+      transition: right 0.3s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .notifications-panel.active {
+      right: 0;
+    }
+
+    .notifications-header {
+      padding: 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(135deg, var(--primary-light) 0%, transparent 100%);
+    }
+
+    .notifications-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+
+    .notification-item {
+      padding: 16px;
+      border-radius: var(--radius);
+      margin-bottom: 12px;
+      background: var(--bg);
+      border-right: 4px solid var(--primary);
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+
+    .notification-item:hover {
+      background: var(--primary-light);
+      transform: translateX(-4px);
+    }
+
+    .notification-item.unread {
+      background: var(--primary-light);
+      border-right-color: var(--primary);
+    }
+
+    .notification-item.read {
+      opacity: 0.7;
+      border-right-color: var(--text-muted);
+    }
+
+    .notification-item.success { border-right-color: var(--success); }
+    .notification-item.warning { border-right-color: var(--warning); }
+    .notification-item.danger { border-right-color: var(--danger); }
+
+    .notification-time {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Chat Styles */
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      height: 400px;
+      background: var(--bg);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .chat-message {
+      max-width: 80%;
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      position: relative;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .chat-message.own {
+      align-self: flex-end;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+      border-bottom-left-radius: 4px;
+    }
+
+    .chat-message.other {
+      align-self: flex-start;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-bottom-right-radius: 4px;
+    }
+
+    .chat-message .sender {
+      font-size: 11px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      opacity: 0.9;
+    }
+
+    .chat-message .time {
+      font-size: 10px;
+      opacity: 0.7;
+      margin-top: 4px;
+      text-align: left;
+    }
+
+    .chat-input-area {
+      padding: 12px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+    }
+
+    .chat-input-area input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      outline: none;
+      font-family: inherit;
+      background: var(--bg);
+    }
+
+    /* Rating Stars */
+    .rating-stars {
+      display: flex;
+      gap: 4px;
+      font-size: 24px;
+      color: var(--border);
+      cursor: pointer;
+    }
+
+    .rating-stars .star {
+      transition: all 0.2s;
+    }
+
+    .rating-stars .star.active,
+    .rating-stars .star:hover {
+      color: var(--warning);
+      transform: scale(1.2);
+    }
+
+    .rating-display {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+    }
+
+    .rating-score {
+      background: var(--warning);
+      color: white;
+      padding: 4px 8px;
+      border-radius: var(--radius-sm);
+      font-weight: 700;
+    }
+
+    /* Report Card */
+    .report-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.3s;
+    }
+
+    .report-card:hover {
+      border-color: var(--primary);
+      box-shadow: var(--shadow);
+    }
+
+    .report-info h5 {
+      margin: 0 0 4px;
+      font-size: 15px;
+    }
+
+    .report-info span {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    .tab {
+      padding: 10px 20px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all 0.3s;
+      font-weight: 600;
+      color: var(--text-muted);
+      position: relative;
+    }
+
+    .tab:hover {
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .tab.active {
+      color: var(--primary);
+      background: var(--primary-light);
+    }
+
+    .tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--primary);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    /* Overlay */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 150;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .overlay.active {
+      display: block;
+      opacity: 1;
+    }
+
+    /* User Chip */
+    .user-chip {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      background: var(--primary-light);
+      padding: 6px 14px;
+      border-radius: var(--radius-xl);
+      font-weight: 600;
+      color: var(--primary);
+      font-size: 14px;
+    }
   </style>
 </head>
 
@@ -1060,10 +1464,29 @@
   <!-- Notifications -->
   <div class="toasts" id="toasts"></div>
 
+  <!-- Overlay -->
+  <div class="overlay" id="overlay" onclick="closeNotifications()"></div>
+
+  <!-- Notifications Panel -->
+  <div class="notifications-panel" id="notificationsPanel">
+    <div class="notifications-header">
+      <h3><i class="fas fa-bell"></i> الإشعارات</h3>
+      <button class="btn btn-ghost btn-sm" onclick="closeNotifications()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="notifications-list" id="notificationsList">
+      <div class="muted" style="text-align: center; padding: 40px;">
+        <div class="loader"></div>
+        <p style="margin-top: 16px;">جاري تحميل الإشعارات...</p>
+      </div>
+    </div>
+  </div>
+
   <!-- Header -->
   <header class="topbar">
     <div class="brand">
-      
+      <div class="logo">M</div>
       <div class="brandText">
         <h1>moneypi</h1>
       </div>
@@ -1072,6 +1495,11 @@
     <div class="actions">
       <button class="theme-toggle" onclick="toggleTheme()" aria-label="تبديل الوضع" title="تبديل الوضع">
         <i class="fas fa-moon"></i>
+      </button>
+      
+      <button class="btn btn-icon notification-btn" onclick="openNotifications()" aria-label="الإشعارات" title="الإشعارات">
+        <i class="fas fa-bell"></i>
+        <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
       </button>
       
       <button class="btn btn-icon" onclick="openDashboard()" aria-label="لوحة التحكم" title="لوحة التحكم">
@@ -1083,7 +1511,7 @@
         دخول
       </button>
       
-      <div class="user-chip" id="userChip" style="display:none; align-items:center; gap:8px; background:var(--primary-light); padding:6px 14px; border-radius:var(--radius-xl); font-weight:600; color:var(--primary); font-size:14px;">
+      <div class="user-chip" id="userChip">
         <i class="fas fa-user"></i>
         <span></span>
       </div>
@@ -1096,7 +1524,7 @@
     <section class="hero">
       <div class="heroCard">
         <h2>نظام الجمعيات الآمن</h2>
-        <p>لوحة تحكم ذكية لإدارة مدخراتك الجمعيات</p>
+        <p>لوحة تحكم ذكية لإدارة مدخراتك الجمعيات مع حماية التأمين والرسوم الشفافة</p>
         
         <div class="searchWrap">
           <input type="text" id="searchInput" placeholder="ابحث عن جمعية..." onkeyup="filterGroups(this.value)">
@@ -1136,42 +1564,117 @@
       
       <div class="modalBody">
         
-        <!-- User Info Summary -->
-        <div class="user-summary" id="userSummary">
-          <div class="loader" style="width: 30px; height: 30px; border-width: 2px; margin: 0;"></div>
-        </div>
-
-        <!-- Wallet Section -->
-        <div class="wallet-card">
-          <div class="wallet-header">
-            <h4><i class="fas fa-wallet"></i> المحفظة والاستلام</h4>
-            <span class="badge badge-warning">هام جداً</span>
+        <!-- Tabs -->
+        <div class="tabs">
+          <div class="tab active" onclick="switchTab('overview', this)">
+            <i class="fas fa-home"></i> نظرة عامة
           </div>
-          <p class="muted" style="font-size: 13px; margin-bottom: 12px;">أدخل عنوان محفظتك لاستلام الجمعية عند حلول دورك</p>
-          <div class="input-group">
-            <input type="text" id="walletInput" placeholder="GDT..." dir="ltr">
-            <button class="btn btn-primary" onclick="saveWallet()">
-              <i class="fas fa-save"></i>
-              حفظ
-            </button>
+          <div class="tab" onclick="switchTab('subscriptions', this)">
+            <i class="fas fa-list-check"></i> اشتراكاتي
+          </div>
+          <div class="tab" onclick="switchTab('chat', this)">
+            <i class="fas fa-comments"></i> المحادثات
+          </div>
+          <div class="tab" onclick="switchTab('reports', this)">
+            <i class="fas fa-file-alt"></i> التقارير
           </div>
         </div>
 
-        <hr style="border: none; border-top: 1px solid var(--border); margin: 24px 0;">
+        <!-- Overview Tab -->
+        <div id="tab-overview" class="tab-content active">
+          <!-- User Info Summary -->
+          <div class="user-summary" id="userSummary">
+            <div class="loader" style="width: 30px; height: 30px; border-width: 2px; margin: 0;"></div>
+          </div>
 
-        <!-- Active Cycles -->
-        <h4 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
-          <i class="fas fa-list-check" style="color: var(--primary);"></i>
-          اشتراكاتي والمدفوعات
-        </h4>
-        
-        <div id="myCyclesList" class="cycles-list">
-          <div class="muted" style="text-align: center; padding: 40px;">
-            <div class="loader"></div>
-            <p style="margin-top: 16px;">جاري تحميل بياناتك المالية...</p>
+          <!-- Platform Fee Info -->
+          <div class="fee-card">
+            <div class="fee-header">
+              <h4><i class="fas fa-coins"></i> رسوم المنصة</h4>
+              <span class="badge badge-info">1 Pi لكل قسط</span>
+            </div>
+            <p class="muted" style="font-size: 13px; margin-bottom: 12px;">
+              يتم خصم 1 Pi كرسوم منصة على كل قسط يتم دفعه. هذه الرسوم تدعم تطوير المنصة وضمان استمرارية الخدمة.
+            </p>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+              <div class="stat-box" style="flex: 1; min-width: 120px;">
+                <small>إجمالي الرسوم المدفوعة</small>
+                <strong id="totalFeesPaid">0 Pi</strong>
+              </div>
+              <div class="stat-box" style="flex: 1; min-width: 120px;">
+                <small>الرسوم المعلقة</small>
+                <strong id="pendingFees">0 Pi</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Wallet Section -->
+          <div class="wallet-card">
+            <div class="wallet-header">
+              <h4><i class="fas fa-wallet"></i> المحفظة والاستلام</h4>
+              <span class="badge badge-warning">هام جداً</span>
+            </div>
+            <p class="muted" style="font-size: 13px; margin-bottom: 12px;">أدخل عنوان محفظتك لاستلام الجمعية عند حلول دورك</p>
+            <div class="input-group">
+              <input type="text" id="walletInput" placeholder="GDT..." dir="ltr">
+              <button class="btn btn-primary" onclick="saveWallet()">
+                <i class="fas fa-save"></i>
+                حفظ
+              </button>
+            </div>
           </div>
         </div>
 
+        <!-- Subscriptions Tab -->
+        <div id="tab-subscriptions" class="tab-content">
+          <div id="myCyclesList" class="cycles-list">
+            <div class="muted" style="text-align: center; padding: 40px;">
+              <div class="loader"></div>
+              <p style="margin-top: 16px;">جاري تحميل بياناتك المالية...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat Tab -->
+        <div id="tab-chat" class="tab-content">
+          <div id="chatContainer">
+            <div class="muted" style="text-align: center; padding: 40px;">
+              <i class="fas fa-comments" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+              <p>اختر جمعية من اشتراكاتك للدردشة مع الأعضاء</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reports Tab -->
+        <div id="tab-reports" class="tab-content">
+          <div id="reportsContainer">
+            <div class="muted" style="text-align: center; padding: 40px;">
+              <i class="fas fa-file-alt" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+              <p>التقارير المالية ستظهر هنا بعد اكتمال الدورات</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Rating Modal -->
+  <div id="ratingModal" class="modal" onclick="closeModalOnBackdrop(event)">
+    <div class="modalContent" onclick="event.stopPropagation()" style="max-width: 400px;">
+      <div class="modalHead">
+        <h3><i class="fas fa-star"></i> تقييم الأعضاء</h3>
+        <button class="btn btn-ghost btn-sm" onclick="closeModal('ratingModal')">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modalBody">
+        <div id="ratingContent">
+          <p class="muted" style="text-align: center; margin-bottom: 20px;">
+            قيم أعضاء الجمعية بناءً على تجربتك معهم في الدفع والالتزام
+          </p>
+          <div id="ratingList"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -1184,6 +1687,10 @@
 
     // ===================== المتغيرات العامة =====================
     let user = null;
+    let currentCycleId = null;
+    let unreadNotifications = 0;
+    const PLATFORM_FEE = 1; // 1 Pi per installment
+    
     const icons = { 
       success: '<i class="fas fa-check-circle"></i>', 
       error: '<i class="fas fa-exclamation-circle"></i>', 
@@ -1233,6 +1740,7 @@
         chip.style.display = "inline-flex";
         chip.querySelector('span').textContent = user.username;
         btn.style.display = "none";
+        loadUnreadNotifications();
       } else {
         chip.style.display = "none";
         btn.style.display = "inline-flex";
@@ -1264,6 +1772,94 @@
     document.documentElement.setAttribute('data-theme', savedTheme);
     if(savedTheme === 'dark') {
       document.querySelector('.theme-toggle i').className = 'fas fa-sun';
+    }
+
+    // ===================== Notifications System =====================
+    async function loadUnreadNotifications() {
+      if (!user) return;
+      
+      try {
+        const { count } = await sb
+          .from('notifications')
+          .select('*', { count: 'exact', head: true })
+          .eq('pi_uid', user.uid)
+          .eq('read', false);
+        
+        const badge = document.getElementById('notificationBadge');
+        if (count > 0) {
+          badge.textContent = count > 9 ? '9+' : count;
+          badge.style.display = 'flex';
+          unreadNotifications = count;
+        } else {
+          badge.style.display = 'none';
+        }
+      } catch (e) {
+        console.error('Error loading notifications:', e);
+      }
+    }
+
+    function openNotifications() {
+      if (!requireLogin()) return;
+      
+      document.getElementById('notificationsPanel').classList.add('active');
+      document.getElementById('overlay').classList.add('active');
+      document.body.style.overflow = 'hidden';
+      loadNotifications();
+    }
+
+    function closeNotifications() {
+      document.getElementById('notificationsPanel').classList.remove('active');
+      document.getElementById('overlay').classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    async function loadNotifications() {
+      const list = document.getElementById('notificationsList');
+      list.innerHTML = '<div style="text-align: center; padding: 40px;"><div class="loader"></div></div>';
+      
+      try {
+        const { data: notifications } = await sb
+          .from('notifications')
+          .select('*')
+          .eq('pi_uid', user.uid)
+          .order('created_at', { ascending: false })
+          .limit(50);
+        
+        if (!notifications || notifications.length === 0) {
+          list.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+              <i class="fas fa-bell-slash" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+              <p>لا توجد إشعارات</p>
+            </div>
+          `;
+          return;
+        }
+        
+        list.innerHTML = notifications.map(n => `
+          <div class="notification-item ${n.read ? 'read' : 'unread'} ${n.type}" onclick="markNotificationRead('${n.id}')">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+              <strong style="font-size: 14px;">${escapeHtml(n.title)}</strong>
+              ${!n.read ? '<span class="badge badge-primary" style="font-size: 10px;">جديد</span>' : ''}
+            </div>
+            <p style="margin: 8px 0; font-size: 13px; color: var(--text-muted);">${escapeHtml(n.message)}</p>
+            <div class="notification-time">
+              <i class="fas fa-clock"></i> ${formatDate(n.created_at)}
+            </div>
+          </div>
+        `).join('');
+        
+        // Mark all as read
+        await sb.from('notifications').update({ read: true }).eq('pi_uid', user.uid).eq('read', false);
+        document.getElementById('notificationBadge').style.display = 'none';
+        
+      } catch (e) {
+        list.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--danger);">فشل تحميل الإشعارات</div>';
+      }
+    }
+
+    async function markNotificationRead(id) {
+      // Handle notification click - could navigate to specific section
+      toast("تم", "تمت قراءة الإشعار", "success");
     }
 
     // ===================== تسجيل الدخول (مع التحقق من الحظر) =====================
@@ -1325,6 +1921,22 @@
       }
     }
 
+    // ===================== Tabs System =====================
+    function switchTab(tabName, tabElement) {
+      // Update active tab
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      tabElement.classList.add('active');
+      
+      // Update active content
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      document.getElementById(`tab-${tabName}`).classList.add('active');
+      
+      // Load specific data
+      if (tabName === 'subscriptions') loadMyCycles();
+      if (tabName === 'chat') loadChatCycles();
+      if (tabName === 'reports') loadReports();
+    }
+
     // ===================== لوحة التحكم (Dashboard) =====================
     function openDashboard() {
       if (!requireLogin()) return;
@@ -1340,6 +1952,7 @@
       `;
 
       loadWallet();
+      loadPlatformFees();
       loadMyCycles();
     }
 
@@ -1350,7 +1963,7 @@
 
     function closeModalOnBackdrop(event) {
       if (event.target === event.currentTarget) {
-        closeModal('dashboardModal');
+        closeModal(event.target.id);
       }
     }
 
@@ -1389,6 +2002,35 @@
       else toast("تم الحفظ", "تم تحديث المحفظة بنجاح", "success");
     }
 
+    // ===================== Platform Fees =====================
+    async function loadPlatformFees() {
+      try {
+        // Get total fees paid
+        const { data: paidFees } = await sb
+          .from('platform_fees')
+          .select('fee_amount')
+          .eq('member_id', user.uid)
+          .eq('status', 'paid');
+        
+        const totalPaid = paidFees ? paidFees.reduce((sum, f) => sum + (f.fee_amount || 0), 0) : 0;
+        
+        // Get pending fees
+        const { data: pendingFees } = await sb
+          .from('platform_fees')
+          .select('fee_amount')
+          .eq('member_id', user.uid)
+          .eq('status', 'pending');
+        
+        const totalPending = pendingFees ? pendingFees.reduce((sum, f) => sum + (f.fee_amount || 0), 0) : 0;
+        
+        document.getElementById('totalFeesPaid').textContent = formatCurrency(totalPaid);
+        document.getElementById('pendingFees').textContent = formatCurrency(totalPending);
+        
+      } catch (e) {
+        console.error('Error loading fees:', e);
+      }
+    }
+
     // === تحميل بيانات الاشتراك والمدفوعات ===
     async function loadMyCycles() {
       const list = document.getElementById("myCyclesList");
@@ -1400,7 +2042,7 @@
             .select(`
               id, position, created_at,
               cycles (
-                id, title, monthly_amount, status, months, created_at,
+                id, title, monthly_amount, status, months, created_at, insurance_required, insurance_amount, platform_fee_per_installment,
                 groups ( name )
               )
             `)
@@ -1425,6 +2067,13 @@
             const c = m.cycles;
             if(!c) continue;
 
+            // Check insurance status
+            const { data: insurance } = await sb
+              .from('insurance_deposits')
+              .select('*')
+              .eq('member_id', m.id)
+              .single();
+
             const { data: payments } = await sb
                 .from('payments')
                 .select('amount, created_at, status')
@@ -1447,6 +2096,7 @@
 
             const isCompleted = paidCount >= c.months;
             const isPayoutSoon = !isCompleted && paidCount >= (m.position - 1);
+            const needsInsurance = c.insurance_required && !insurance;
 
             let historyHTML = "";
             if(paidCount > 0) {
@@ -1462,6 +2112,27 @@
             }
 
             const payoutBadge = isPayoutSoon ? '<span class="badge badge-success" style="animation:pulse 2s infinite;"><i class="fas fa-gift"></i> موعد الاستلام قريب!</span>' : '';
+            
+            const insuranceHTML = c.insurance_required ? `
+              <div class="insurance-card" style="margin: 16px 0;">
+                <div class="insurance-header">
+                  <h4><i class="fas fa-shield-alt"></i> تأمين الضمان</h4>
+                  ${insurance ? '<span class="badge badge-success">مدفوع</span>' : '<span class="badge badge-warning">مطلوب</span>'}
+                </div>
+                <p class="muted" style="font-size: 13px; margin-bottom: 12px;">
+                  يتطلب دفع تأمين قدره ${c.insurance_amount} Pi كضمان للالتزام بالدفعات
+                </p>
+                ${!insurance ? `
+                  <button class="btn btn-warning btn-sm" onclick="payInsurance(${m.id}, ${c.id}, ${c.insurance_amount})">
+                    <i class="fas fa-shield-alt"></i> دفع التأمين (${c.insurance_amount} Pi)
+                  </button>
+                ` : `
+                  <div class="success-badge" style="margin-top: 0;">
+                    <i class="fas fa-check-circle"></i> تم دفع التأمين - يُسترد بعد اكتمال الدورة
+                  </div>
+                `}
+              </div>
+            ` : '';
 
             list.innerHTML += `
               <div class="dashboard-card fadeIn">
@@ -1477,6 +2148,7 @@
                 </div>
 
                 ${payoutBadge}
+                ${insuranceHTML}
 
                 <div class="payment-progress">
                   <div class="progress-label">
@@ -1511,16 +2183,20 @@
 
                 <div style="margin-top:16px;">
                   ${!isCompleted ? 
-                    `<button class="btn btn-primary action-btn" onclick="payInstallment(${c.id}, ${c.monthly_amount}, ${m.id}, ${nextInstallmentNum})">
+                    `<button class="btn btn-primary action-btn" onclick="payInstallment(${c.id}, ${c.monthly_amount}, ${m.id}, ${nextInstallmentNum}, ${c.platform_fee_per_installment || 1})" ${needsInsurance ? 'disabled' : ''}>
                        <i class="fas fa-credit-card"></i>
-                       دفع القسط القادم (${nextInstallmentNum})
+                       دفع القسط القادم (${nextInstallmentNum}) + ${c.platform_fee_per_installment || 1} Pi رسوم
                      </button>` 
                     : 
                     `<div class="success-badge">
                       <i class="fas fa-trophy"></i>
                       مبروك! اكتملت جميع الأقساط
-                    </div>`
+                    </div>
+                    <button class="btn btn-soft action-btn" onclick="openRatingModal(${c.id})" style="margin-top: 8px;">
+                      <i class="fas fa-star"></i> تقييم الأعضاء
+                    </button>`
                   }
+                  ${needsInsurance ? '<p class="muted" style="text-align: center; margin-top: 8px; font-size: 12px; color: var(--warning);">يجب دفع التأمين أولاً</p>' : ''}
                 </div>
               </div>
             `;
@@ -1532,25 +2208,23 @@
       }
     }
 
-    // ===================== عملية الدفع =====================
-    async function payInstallment(cycleId, amount, memberId, installmentNum) {
+    // ===================== Insurance Payment =====================
+    async function payInsurance(memberId, cycleId, amount) {
       if (!requireLogin()) return;
       
-      closeModal('dashboardModal');
-      
-      const confirmed = confirm(`تأكيد دفع مبلغ ${amount} Pi\nكقسط رقم ${installmentNum}؟`);
-      if(!confirmed) { openDashboard(); return; }
+      const confirmed = confirm(`تأكيد دفع تأمين بمبلغ ${amount} Pi؟\n\nسيتم استرداد هذا المبلغ بعد اكتمال الدورة بنجاح.`);
+      if(!confirmed) return;
 
       toast("جاري التحضير", "يتم الاتصال بمحفظة Pi...", "info");
 
       try {
         const paymentData = {
           amount: amount,
-          memo: `قسط ${installmentNum} - عضو ${memberId}`,
+          memo: `تأمين ضمان - عضو ${memberId}`,
           metadata: { 
-              cycleId: cycleId, 
+              type: 'insurance',
               memberId: memberId,
-              installment: installmentNum 
+              cycleId: cycleId
           }
         };
 
@@ -1563,50 +2237,438 @@
             }).catch(() => {}); 
           },
           
-          onReadyForServerCompletion: (paymentId, txid) => {
+          onReadyForServerCompletion: async (paymentId, txid) => {
+            toast("جاري الحفظ", "يتم تسجيل التأمين...", "info");
+
+            const { error } = await sb.from('insurance_deposits').insert({
+                member_id: memberId,
+                pi_uid: user.uid,
+                cycle_id: cycleId,
+                amount: amount,
+                status: 'held',
+                payment_id: paymentId,
+                txid: txid
+            });
+
+            if (error) {
+                toast("تنبيه", "تم الدفع ولكن فشل الحفظ", "warning");
+            } else {
+                toast("تم بنجاح!", "تم دفع التأمين بنجاح", "success");
+                fetch("/.netlify/functions/complete", {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ paymentId, txid })
+                });
+                loadMyCycles();
+            }
+          },
+          
+          onCancel: () => { toast("إلغاء", "تم إلغاء العملية", "warning"); },
+          onError: (err) => { toast("خطأ", "حدث خطأ: " + err.message, "error"); }
+        };
+
+        await Pi.createPayment(paymentData, callbacks);
+
+      } catch (e) {
+        toast("خطأ", "فشل بدء الدفع", "error");
+      }
+    }
+
+    // ===================== عملية الدفع (مع الرسوم) =====================
+    async function payInstallment(cycleId, amount, memberId, installmentNum, platformFee) {
+      if (!requireLogin()) return;
+      
+      const totalAmount = amount + platformFee;
+      const confirmed = confirm(`تفاصيل الدفع:
+• مبلغ القسط: ${amount} Pi
+• رسوم المنصة: ${platformFee} Pi
+• الإجمالي: ${totalAmount} Pi
+
+تأكيد الدفع؟`);
+      
+      if(!confirmed) return;
+
+      toast("جاري التحضير", "يتم الاتصال بمحفظة Pi...", "info");
+
+      try {
+        // First payment: Installment + Fee
+        const paymentData = {
+          amount: totalAmount,
+          memo: `قسط ${installmentNum} + رسوم - عضو ${memberId}`,
+          metadata: { 
+              cycleId: cycleId, 
+              memberId: memberId,
+              installment: installmentNum,
+              platformFee: platformFee,
+              originalAmount: amount
+          }
+        };
+
+        const callbacks = {
+          onReadyForServerApproval: (paymentId) => {
+            toast("الموافقة", "جاري التحقق من المعاملة...", "info");
+            fetch("/.netlify/functions/approve", {
+                 method: "POST", headers: { "Content-Type": "application/json" },
+                 body: JSON.stringify({ paymentId })
+            }).catch(() => {}); 
+          },
+          
+          onReadyForServerCompletion: async (paymentId, txid) => {
             toast("جاري الحفظ", "يتم تسجيل الدفعة...", "info");
 
-            sb.from('payments').insert({
+            // Save main payment
+            const { data: paymentRecord, error: paymentError } = await sb.from('payments').insert({
                 member_id: memberId,
                 amount: amount,
                 status: 'confirmed',
                 installment_number: installmentNum,
                 payment_id: paymentId,
                 txid: txid
-            }).then(({ error }) => {
-                if (error) {
-                    console.error("DB Insert Error:", error);
-                    toast("تنبيه", "تم الدفع ولكن فشل الحفظ. رقم العملية: " + txid, "warning");
-                } else {
-                    toast("تم بنجاح!", `تم دفع القسط ${installmentNum} بنجاح`, "success");
-                    
-                    fetch("/.netlify/functions/complete", {
-                        method: "POST", headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ paymentId, txid })
-                    });
+            }).select().single();
 
-                    setTimeout(() => openDashboard(), 1500);
-                }
+            if (paymentError) {
+                toast("تنبيه", "تم الدفع ولكن فشل حفظ القسط", "warning");
+                return;
+            }
+
+            // Save platform fee record
+            await sb.from('platform_fees').insert({
+                payment_id: paymentRecord.id,
+                member_id: memberId,
+                cycle_id: cycleId,
+                installment_amount: amount,
+                fee_amount: platformFee,
+                total_amount: totalAmount,
+                pi_payment_id: paymentId,
+                txid: txid,
+                status: 'paid',
+                paid_at: new Date().toISOString()
             });
+
+            // Create notification for successful payment
+            await sb.from('notifications').insert({
+                pi_uid: user.uid,
+                title: 'تم دفع القسط بنجاح',
+                message: `تم دفع القسط رقم ${installmentNum} بمبلغ ${amount} Pi بنجاح`,
+                type: 'payment_received'
+            });
+
+            toast("تم بنجاح!", `تم دفع القسط ${installmentNum} والرسوم بنجاح`, "success");
+            
+            fetch("/.netlify/functions/complete", {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ paymentId, txid })
+            });
+
+            setTimeout(() => loadMyCycles(), 1500);
           },
           
-          onCancel: () => { 
-              toast("إلغاء", "تم إلغاء العملية", "warning");
-              openDashboard();
-          },
-          onError: (err) => { 
-              console.error(err);
-              toast("خطأ", "حدث خطأ: " + err.message, "error"); 
-              openDashboard();
-          }
+          onCancel: () => { toast("إلغاء", "تم إلغاء العملية", "warning"); },
+          onError: (err) => { toast("خطأ", "حدث خطأ: " + err.message, "error"); }
         };
 
         await Pi.createPayment(paymentData, callbacks);
 
       } catch (e) {
-        console.error(e);
         toast("خطأ", "فشل بدء الدفع", "error");
-        openDashboard();
+      }
+    }
+
+    // ===================== Chat System =====================
+    async function loadChatCycles() {
+      const container = document.getElementById('chatContainer');
+      
+      try {
+        const { data: members } = await sb
+          .from('members')
+          .select(`
+            id,
+            cycles (id, title, groups(name))
+          `)
+          .eq('pi_uid', user.uid);
+        
+        if (!members || members.length === 0) {
+          container.innerHTML = `
+            <div class="muted" style="text-align: center; padding: 40px;">
+              <i class="fas fa-comments" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+              <p>لست مشتركاً في أي جمعية للدردشة</p>
+            </div>
+          `;
+          return;
+        }
+        
+        // Show cycle selector and chat
+        const currentMember = members[0]; // Default to first, could add selector
+        currentCycleId = parseInt(cycleId);
+        
+        container.innerHTML = `
+          <div style="margin-bottom: 16px;">
+            <select class="btn btn-ghost" style="width: 100%; justify-content: space-between;" onchange="switchChatCycle(this.value)">
+              ${members.map(m => `<option value="${m.cycles.id}">${m.cycles.groups.name} - ${m.cycles.title}</option>`).join('')}
+            </select>
+          </div>
+          <div class="chat-container">
+            <div class="chat-messages" id="chatMessages"></div>
+            <div class="chat-input-area">
+              <input type="text" id="chatInput" placeholder="اكتب رسالتك..." onkeypress="if(event.key==='Enter') sendMessage()">
+              <button class="btn btn-primary" onclick="sendMessage()">
+                <i class="fas fa-paper-plane"></i>
+              </button>
+            </div>
+          </div>
+        `;
+        
+        loadMessages(currentCycleId);
+        
+        // Subscribe to new messages
+        sb.channel('chat-messages')
+          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `cycle_id=eq.${currentCycleId}` }, payload => {
+            appendMessage(payload.new);
+          })
+          .subscribe();
+          
+      } catch (e) {
+        container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--danger);">فشل تحميل المحادثات</div>';
+      }
+    }
+
+    function switchChatCycle(cycleId) {
+      currentCycleId = cycleId;
+      loadMessages(cycleId);
+    }
+
+    async function loadMessages(cycleId) {
+      const container = document.getElementById('chatMessages');
+      container.innerHTML = '<div style="text-align: center; padding: 20px;"><div class="loader" style="width: 30px; height: 30px;"></div></div>';
+      
+      try {
+        const { data: messages } = await sb
+          .from('messages')
+          .select('*')
+          .eq('cycle_id', cycleId)
+          .order('created_at', { ascending: true })
+          .limit(50);
+        
+        container.innerHTML = '';
+        messages.forEach(m => appendMessage(m));
+        container.scrollTop = container.scrollHeight;
+      } catch (e) {
+        container.innerHTML = '<div style="text-align: center; color: var(--danger);">فشل تحميل الرسائل</div>';
+      }
+    }
+
+    function appendMessage(msg) {
+      const container = document.getElementById('chatMessages');
+      const isOwn = msg.pi_uid === user.uid;
+      
+      const div = document.createElement('div');
+      div.className = `chat-message ${isOwn ? 'own' : 'other'}`;
+      div.innerHTML = `
+        ${!isOwn ? `<div class="sender">${escapeHtml(msg.username)}</div>` : ''}
+        <div>${escapeHtml(msg.message)}</div>
+        <div class="time">${new Date(msg.created_at).toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'})}</div>
+      `;
+      
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById('chatInput');
+      const message = input.value.trim();
+      if (!message || !currentCycleId) return;
+      
+      input.value = '';
+      
+      try {
+        await sb.from('messages').insert({
+          cycle_id: currentCycleId,
+          pi_uid: user.uid,
+          username: user.username,
+          message: message
+        });
+      } catch (e) {
+        toast("خطأ", "فشل إرسال الرسالة", "error");
+      }
+    }
+
+    // ===================== Rating System =====================
+    function openRatingModal(cycleId) {
+      document.getElementById('ratingModal').classList.add('active');
+      loadRatingMembers(cycleId);
+    }
+
+    async function loadRatingMembers(cycleId) {
+      const container = document.getElementById('ratingList');
+      container.innerHTML = '<div style="text-align: center; padding: 20px;"><div class="loader"></div></div>';
+      
+      try {
+        const { data: members } = await sb
+          .from('members')
+          .select('pi_uid, username')
+          .eq('cycle_id', cycleId)
+          .neq('pi_uid', user.uid);
+        
+        const { data: existingRatings } = await sb
+          .from('ratings')
+          .select('rated_uid, rating')
+          .eq('cycle_id', cycleId)
+          .eq('rater_uid', user.uid);
+        
+        const ratedMap = new Map(existingRatings?.map(r => [r.rated_uid, r.rating]));
+        
+        container.innerHTML = members.map(m => `
+          <div style="padding: 16px; border-bottom: 1px solid var(--border);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <strong>${escapeHtml(m.username)}</strong>
+              ${ratedMap.has(m.pi_uid) ? '<span class="badge badge-success">تم التقييم</span>' : ''}
+            </div>
+            <div class="rating-stars" data-user="${m.pi_uid}">
+              ${[1,2,3,4,5].map(star => `
+                <i class="fas fa-star star ${ratedMap.get(m.pi_uid) >= star ? 'active' : ''}" 
+                   onclick="submitRating('${cycleId}', '${m.pi_uid}', ${star})"
+                   style="${ratedMap.has(m.pi_uid) ? 'pointer-events: none; opacity: 0.6;' : ''}"></i>
+              `).join('')}
+            </div>
+          </div>
+        `).join('');
+        
+      } catch (e) {
+        container.innerHTML = '<div style="text-align: center; color: var(--danger);">فشل تحميل الأعضاء</div>';
+      }
+    }
+
+    async function submitRating(cycleId, ratedUid, rating) {
+      try {
+        const { error } = await sb.from('ratings').insert({
+          cycle_id: parseInt(cycleId),
+          rater_uid: user.uid,
+          rated_uid: ratedUid,
+          rating: rating
+        });
+        
+        if (error) throw error;
+        
+        toast("تم", "تم حفظ تقييمك بنجاح", "success");
+        loadRatingMembers(cycleId);
+        
+      } catch (e) {
+        toast("خطأ", "فشل حفظ التقييم", "error");
+      }
+    }
+
+    // ===================== Reports System =====================
+    async function loadReports() {
+      const container = document.getElementById('reportsContainer');
+      
+      try {
+        const { data: members } = await sb
+          .from('members')
+          .select(`
+            cycle_id,
+            cycles(id, title, status, groups(name))
+          `)
+          .eq('pi_uid', user.uid);
+        
+        if (!members || members.length === 0) {
+          container.innerHTML = `
+            <div class="muted" style="text-align: center; padding: 40px;">
+              <i class="fas fa-file-alt" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+              <p>لا توجد دورات مشترك بها للحصول على تقارير</p>
+            </div>
+          `;
+          return;
+        }
+        
+        // Generate reports for completed cycles
+        const completedCycles = members.filter(m => m.cycles.status === 'completed');
+        
+        if (completedCycles.length === 0) {
+          container.innerHTML = `
+            <div class="muted" style="text-align: center; padding: 40px;">
+              <i class="fas fa-clock" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+              <p>ستتوفر التقارير بعد اكتمال الدورات</p>
+            </div>
+          `;
+          return;
+        }
+        
+        container.innerHTML = completedCycles.map(m => `
+          <div class="report-card">
+            <div class="report-info">
+              <h5>${escapeHtml(m.cycles.groups.name)} - ${escapeHtml(m.cycles.title)}</h5>
+              <span><i class="fas fa-check-circle" style="color: var(--success);"></i> دورة مكتملة</span>
+            </div>
+            <button class="btn btn-soft btn-sm" onclick="generateReport(${m.cycle_id})">
+              <i class="fas fa-download"></i> تحميل التقرير
+            </button>
+          </div>
+        `).join('');
+        
+      } catch (e) {
+        container.innerHTML = '<div style="text-align: center; color: var(--danger);">فشل تحميل التقارير</div>';
+      }
+    }
+
+    async function generateReport(cycleId) {
+      toast("جاري التحضير", "يتم إنشاء التقرير المالي...", "info");
+      
+      try {
+        // Fetch all data for report
+        const { data: payments } = await sb
+          .from('payments')
+          .select('*, members(username, position)')
+          .eq('cycle_id', cycleId)
+          .eq('status', 'confirmed');
+        
+        const { data: cycle } = await sb
+          .from('cycles')
+          .select('*, groups(name)')
+          .eq('id', cycleId)
+          .single();
+        
+        // Generate PDF content (simplified - in production use proper PDF library)
+        const reportData = {
+          cycle: cycle,
+          payments: payments,
+          generatedAt: new Date().toISOString(),
+          totalCollected: payments.reduce((sum, p) => sum + p.amount, 0)
+        };
+        
+        // Save report to database
+        await sb.from('financial_reports').insert({
+          cycle_id: cycleId,
+          report_type: 'cycle_complete',
+          report_data: reportData,
+          generated_by: user.uid
+        });
+        
+        // Create downloadable content
+        const reportText = `
+تقرير مالي - ${cycle.groups.name} - ${cycle.title}
+=====================================
+تاريخ التقرير: ${formatDate(new Date())}
+إجمالي المبالغ المحصلة: ${reportData.totalCollected} Pi
+عدد الدفعات: ${payments.length}
+
+تفاصيل الدفعات:
+${payments.map(p => `- ${p.members.username} (دور ${p.members.position}): ${p.amount} Pi - ${formatDate(p.created_at)}`).join('\n')}
+
+=====================================
+تم إنشاء هذا التقرير بواسطة moneypi
+        `;
+        
+        const blob = new Blob([reportText], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `تقرير_${cycle.groups.name}_${cycle.title}_${Date.now()}.txt`;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        toast("تم", "تم إنشاء وتحميل التقرير بنجاح", "success");
+        
+      } catch (e) {
+        toast("خطأ", "فشل إنشاء التقرير", "error");
       }
     }
 
@@ -1636,12 +2698,18 @@
             '<span class="badge" style="background:#d1fae5; color:#065f46;"><i class="fas fa-circle" style="font-size:6px; margin-left:6px;"></i>متاحة</span>' : 
             '<span class="badge" style="background:#fee2e2; color:#991b1b;">مغلقة</span>';
           
+          const insuranceBadge = activeCycle?.insurance_required ? 
+            `<span class="badge badge-warning" style="margin-right: 8px;"><i class="fas fa-shield-alt"></i> تأمين ${activeCycle.insurance_amount} Pi</span>` : '';
+          
           return `
             <div class="card fadeIn">
               <div class="cardTop">
                 <div>
                   <h3>${escapeHtml(g.name)}</h3>
-                  ${status}
+                  <div style="margin-top: 8px;">
+                    ${status}
+                    ${insuranceBadge}
+                  </div>
                 </div>
                 <div class="badge" style="font-size:14px; padding:8px 12px;">
                   <i class="fas fa-coins" style="margin-left:6px;"></i>
@@ -1649,6 +2717,9 @@
                 </div>
               </div>
               <p class="muted" style="margin-bottom:16px; min-height:40px;">${escapeHtml(g.description || "جمعية مضمونة وآمنة عبر Pi Network")}</p>
+              <div style="background: var(--bg); padding: 12px; border-radius: var(--radius); margin-bottom: 12px; font-size: 12px; color: var(--text-muted);">
+                <i class="fas fa-info-circle"></i> رسوم المنصة: ${activeCycle?.platform_fee_per_installment || 1} Pi على كل قسط
+              </div>
               <button class="btn btn-soft full-width" onclick="showCycles(${g.id})" style="width:100%;">
                 <i class="fas fa-eye"></i>
                 عرض التفاصيل والاشتراك
@@ -1687,11 +2758,12 @@
                 <div style="font-size:13px; color:var(--text-muted); margin-top:4px;">
                   <i class="fas fa-clock" style="margin-left:4px;"></i>
                   ${c.months} أشهر
+                  ${c.insurance_required ? `<br><i class="fas fa-shield-alt" style="margin-left:4px; color: var(--warning);"></i> تأمين: ${c.insurance_amount} Pi` : ''}
                 </div>
               </div>
               <div style="font-weight:700; color:var(--primary); font-size:18px;">
                 ${c.monthly_amount} Pi
-                <div style="font-size:11px; color:var(--text-muted); font-weight:400;">شهرياً</div>
+                <div style="font-size:11px; color:var(--text-muted); font-weight:400;">شهرياً + ${c.platform_fee_per_installment || 1} Pi رسوم</div>
               </div>
             </div>
             <button class="btn btn-primary btn-sm full-width" onclick="loadSlots(${c.id}, ${c.months})" style="width:100%; margin-bottom:8px;">
@@ -1772,9 +2844,7 @@
     window.addEventListener('load', () => {
       loadGroups();
       
-      // Check for saved login (optional enhancement)
       if(window.Pi) {
-        // Auto-check if user is already authenticated
         Pi.init({ version: "2.0", sandbox: false });
       }
     });
@@ -1783,6 +2853,8 @@
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         closeModal('dashboardModal');
+        closeModal('ratingModal');
+        closeNotifications();
       }
     });
   </script>
