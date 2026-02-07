@@ -2374,87 +2374,68 @@
     }
 
     // ===================== Chat System =====================
-    async function loadChatCycles() {
-      const container = document.getElementById('chatContainer');
+    aasync function loadChatCycles() {
+  const container = document.getElementById('chatContainer');
+  
+  try {
+    const { data: members } = await sb
+      .from('members')
+      .select(`
+        id,
+        cycles (id, title, groups(name))
+      `)
+      .eq('pi_uid', user.uid);
+    
+    if (!members || members.length === 0) {
+      container.innerHTML = `
+        <div class="muted" style="text-align: center; padding: 40px;">
+          <i class="fas fa-comments" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+          <p>لست مشتركاً في أي جمعية للدردشة</p>
+        </div>
+      `;
+      return;
+    }
+    
+    // ✅ التصحيح هنا:
+    const currentMember = members[0];
+    currentCycleId = parseInt(currentMember.cycles.id);  // استخدام currentMember وليس cycleId
+    
+    container.innerHTML = `
+      <div style="margin-bottom: 16px;">
+        <select class="btn btn-ghost" style="width: 100%; justify-content: space-between;" onchange="switchChatCycle(this.value)">
+          ${members.map(m => `<option value="${m.cycles.id}">${m.cycles.groups.name} - ${m.cycles.title}</option>`).join('')}
+        </select>
+      </div>
+      <div class="chat-container">
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input-area">
+          <input type="text" id="chatInput" placeholder="اكتب رسالتك..." onkeypress="if(event.key==='Enter') sendMessage()">
+          <button class="btn btn-primary" onclick="sendMessage()">
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </div>
+      </div>
+    `;
+    
+    loadMessages(currentCycleId);
+    
+    // ✅ التصحيح هنا أيضاً - استخدام currentCycleId:
+    sb.channel('chat-messages')
+      .on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'messages', 
+        filter: `cycle_id=eq.${currentCycleId}` 
+      }, payload => {
+        appendMessage(payload.new);
+      })
+      .subscribe();
       
-      try {
-        const { data: members } = await sb
-          .from('members')
-          .select(`
-            id,
-            cycles (id, title, groups(name))
-          `)
-          .eq('pi_uid', user.uid);
-        
-        if (!members || members.length === 0) {
-          container.innerHTML = `
-            <div class="muted" style="text-align: center; padding: 40px;">
-              <i class="fas fa-comments" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
-              <p>لست مشتركاً في أي جمعية للدردشة</p>
-            </div>
-          `;
-          return;
-        }
-        
-        // Show cycle selector and chat
-        const currentMember = members[0]; // Default to first, could add selector
-        currentCycleId = parseInt(cycleId);
-        
-        container.innerHTML = `
-          <div style="margin-bottom: 16px;">
-            <select class="btn btn-ghost" style="width: 100%; justify-content: space-between;" onchange="switchChatCycle(this.value)">
-              ${members.map(m => `<option value="${m.cycles.id}">${m.cycles.groups.name} - ${m.cycles.title}</option>`).join('')}
-            </select>
-          </div>
-          <div class="chat-container">
-            <div class="chat-messages" id="chatMessages"></div>
-            <div class="chat-input-area">
-              <input type="text" id="chatInput" placeholder="اكتب رسالتك..." onkeypress="if(event.key==='Enter') sendMessage()">
-              <button class="btn btn-primary" onclick="sendMessage()">
-                <i class="fas fa-paper-plane"></i>
-              </button>
-            </div>
-          </div>
-        `;
-        
-        loadMessages(currentCycleId);
-        
-        // Subscribe to new messages
-        sb.channel('chat-messages')
-          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `cycle_id=eq.${currentCycleId}` }, payload => {
-            appendMessage(payload.new);
-          })
-          .subscribe();
-          
-      } catch (e) {
-        container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--danger);">فشل تحميل المحادثات</div>';
-      }
-    }
-
-    function switchChatCycle(cycleId) {
-      currentCycleId = cycleId;
-      loadMessages(cycleId);
-    }
-
-    async function loadMessages(cycleId) {
-      const container = document.getElementById('chatMessages');
-      container.innerHTML = '<div style="text-align: center; padding: 20px;"><div class="loader" style="width: 30px; height: 30px;"></div></div>';
-      
-      try {
-        const { data: messages } = await sb
-          .from('messages')
-          .select('*')
-          .eq('cycle_id', cycleId)
-          .order('created_at', { ascending: true })
-          .limit(50);
-        
-        container.innerHTML = '';
-        messages.forEach(m => appendMessage(m));
-        container.scrollTop = container.scrollHeight;
-      } catch (e) {
-        container.innerHTML = '<div style="text-align: center; color: var(--danger);">فشل تحميل الرسائل</div>';
-      }
-    }
+  } catch (e) {
+    console.error('Chat load error:', e);
+    container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--danger);">فشل تحميل المحادثات</div>';
+  }
+}
 
     function appendMessage(msg) {
       const container = document.getElementById('chatMessages');
