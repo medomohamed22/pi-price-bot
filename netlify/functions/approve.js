@@ -23,6 +23,7 @@ async function piFetch(path, opts = {}) {
     ...opts,
     headers: {
       Authorization: `Key ${PI_API_KEY}`,
+      "Content-Type": "application/json",
       ...(opts.headers || {}),
     },
   });
@@ -59,7 +60,7 @@ exports.handler = async (event) => {
     const payment = getP.json || {};
     const pi_uid = payment.user_uid || null;
     
-    // 2) إلغاء أي عمليات معلقة قديمة لنفس المستخدم لتجنب تعليق المحفظة
+    // 2) إلغاء أي عمليات معلقة قديمة لنفس المستخدم
     const pending = await piFetch(`/payments/incomplete_server_payments`);
     if (pending.ok && pending.json) {
       const list = Array.isArray(pending.json) ? pending.json : (pending.json.incomplete_server_payments || []);
@@ -82,32 +83,65 @@ exports.handler = async (event) => {
       return res(approveR.status, { error: "Pi approve failed", details: approveR.text });
     }
     
-    // 4) تحديث قاعدة البيانات لتتوافق مع الفرونت إند والجدول
-    // استخراج البيانات من metadata التي أرسلها الفرونت إند
+    // 4) تحديد نوع الدفع من metadata
+    const paymentType = payment.metadata?.type || 'installment'; // 'installment' | 'insurance'
     const member_id = payment.metadata?.memberId || null;
+    const cycle_id = payment.metadata?.cycleId || null;
     const installment_number = payment.metadata?.installment || null;
+    const platformFee = payment.metadata?.platformFee || 1.00;
+    const originalAmount = payment.metadata?.originalAmount || payment.amount;
     
-    const row = {
-      payment_id: paymentId,
-      member_id: member_id, 
-      amount: payment.amount || null,
-      status: "approved", // حالة مؤقتة حتى يكتمل الـ TxID من الفرونت إند
-      installment_number: installment_number,
-      // حفظ النسخة الكاملة للبيانات للاحتياط
-      raw_json: payment,
-    };
-    
-    // استخدام upsert بناءً على payment_id لتجنب التكرار
-    const { error: upErr } = await supabase
-      .from("payments")
-      .upsert(row, { onConflict: "payment_id" });
-    
-    if (upErr) {
-      console.error("Supabase Error:", upErr);
-      // نستمر حتى لو فشل التحديث هنا لأن الفرونت إند سيقوم بمحاولة أخرى عند Completion
+    // 5) حفظ بيانات مؤقتة في قاعدة البيانات حسب نوع الدفع
+    if (paymentType === 'insurance') {
+      // دفع تأمين - نحفظ في insurance_deposits مؤقتاً
+      const { error: insErr } = await supabase
+        .from("insurance_deposits")
+        .upsert({
+          member_id: member_id,
+          pi_uid: pi_uid,
+          cycle_id: cycle_id,
+          amount: payment.amount,
+          status: "pending", // سيتم التحديث لـ 'held' عند الـ complete
+          payment_id: paymentId,
+          txid: null,
+        }, { onConflict: "payment_id" });
+        
+      if (insErr) {
+        console.error("Insurance deposit save error:", insErr);
+      }
+      
+    } else {
+      // دفع قسط عادي + رسوم المنصة
+      
+      // أولاً: حفظ سجل الرسوم
+      const { error: feeErr } = await supabase
+        .from("platform_fees")
+        .upsert({
+          member_id: member_id,
+          cycle_id: cycle_id,
+          installment_amount: originalAmount,
+          fee_amount: platformFee,
+          total_amount: payment.amount,
+          pi_payment_id: paymentId,
+          status: "pending",
+        }, { onConflict: "pi_payment_id" });
+        
+      if (feeErr) {
+        console.error("Platform fee save error:", feeErr);
+      }
+      
+      // ثانياً: حفظ بيانات الدفع المؤقتة (سيتم إنشاء سجل payments الحقيقي عند الـ complete)
+      // نستخدم جدول مؤقت أو ننتظر الـ complete من الفرونت إند
     }
     
-    return res(200, { ok: true, message: "Approved", paymentId });
+    return res(200, { 
+      ok: true, 
+      message: "Approved", 
+      paymentId,
+      type: paymentType,
+      metadata: payment.metadata
+    });
+    
   } catch (e) {
     console.error("approve error:", e);
     return res(500, { error: e.message || "Server error" });
