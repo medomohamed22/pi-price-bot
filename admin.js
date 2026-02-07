@@ -370,7 +370,387 @@ async function toggleBan(pi_uid, shouldBan, username) {
     showToast('فشل: ' + err.message, 'error');
   }
 }
+// ===================== Notification System =====================
 
+// تبديل حقول اختيار المستلم
+function toggleRecipientSelect() {
+    const type = document.querySelector('input[name="recipientType"]:checked').value;
+    
+    $('cycleSelectField').style.display = type === 'cycle' ? 'block' : 'none';
+    $('userSelectField').style.display = type === 'user' ? 'block' : 'none';
+    
+    // تحميل البيانات حسب النوع
+    if (type === 'cycle') {
+        loadCyclesForNotification();
+    } else if (type === 'user') {
+        loadUsersForNotification();
+    }
+}
+
+// تحميل الدورات لقائمة الإشعارات
+async function loadCyclesForNotification() {
+    const select = $('notifyCycleSelect');
+    select.innerHTML = '<option value="">جارٍ التحميل...</option>';
+    
+    try {
+        const { data: cycles, error } = await sb
+            .from('cycles')
+            .select('id, title, groups(name), status')
+            .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        select.innerHTML = '<option value="">-- اختر دورة --</option>' +
+            (cycles || []).map(c => `
+                <option value="${c.id}">
+                    ${c.groups?.name || 'جمعية'} - ${c.title} (${c.status === 'open' ? 'نشطة' : 'مغلقة'})
+                </option>
+            `).join('');
+            
+    } catch (err) {
+        select.innerHTML = '<option value="">خطأ في التحميل</option>';
+    }
+}
+
+// تحميل المستخدمين لقائمة الإشعارات
+async function loadUsersForNotification() {
+    const select = $('notifyUserSelect');
+    select.innerHTML = '<option value="">جارٍ التحميل...</option>';
+    
+    try {
+        // جلب المستخدمين من جدول profiles
+        const { data: profiles, error } = await sb
+            .from('profiles')
+            .select('pi_uid, username, created_at')
+            .order('created_at', { ascending: false })
+            .limit(100);
+        
+        if (error) throw error;
+        
+        select.innerHTML = '<option value="">-- اختر مستخدم --</option>' +
+            (profiles || []).map(p => `
+                <option value="${p.pi_uid}">
+                    @${p.username || 'مستخدم'} - ${p.pi_uid.substring(0, 16)}...
+                </option>
+            `).join('');
+            
+    } catch (err) {
+        select.innerHTML = '<option value="">خطأ في التحميل</option>';
+    }
+}
+
+// تحميل أعضاء دورة محددة للإشعار
+async function loadCycleMembersForNotify() {
+    const cycleId = $('notifyCycleSelect').value;
+    if (!cycleId) return;
+    
+    // يمكن استخدامها لعرض عدد المستلمين المتوقع
+    try {
+        const { count, error } = await sb
+            .from('members')
+            .select('*', { count: 'exact', head: true })
+            .eq('cycle_id', cycleId);
+        
+        if (error) throw error;
+        
+        showToast(`📊 سيتم إرسال الإشعار لـ ${count} عضو في هذه الدورة`);
+        
+    } catch (err) {
+        console.error('Error counting members:', err);
+    }
+}
+
+// معاينة الإشعار
+function previewNotification() {
+    const title = $('notifyTitle').value.trim();
+    const message = $('notifyMessage').value.trim();
+    const type = $('notifyType').value;
+    const recipientType = document.querySelector('input[name="recipientType"]:checked').value;
+    
+    if (!title || !message) {
+        showToast('يرجى إدخال العنوان والمحتوى', 'error');
+        return;
+    }
+    
+    const typeLabels = {
+        'system': '🔧 نظام',
+        'payment_due': '💰 دفع',
+        'payout_ready': '🎉 استلام',
+        'cycle_complete': '🏆 إنجاز',
+        'warning': '⚠️ تحذير'
+    };
+    
+    const recipientLabels = {
+        'all': 'جميع المستخدمين',
+        'cycle': 'أعضاء دورة محددة',
+        'user': 'مستخدم محدد'
+    };
+    
+    const previewBox = $('previewBox');
+    previewBox.innerHTML = `
+        <div class="preview-header">
+            <span class="preview-type type-${type}">${typeLabels[type]}</span>
+            <span style="color: #999; font-size: 12px;">${recipientLabels[recipientType]}</span>
+        </div>
+        <div class="preview-title">${escapeHtml(title)}</div>
+        <div class="preview-message">${escapeHtml(message)}</div>
+        <div class="preview-meta">
+            <span>🕐 ${new Date().toLocaleString('ar-EG')}</span>
+            <span>•</span>
+            <span>من: المايسترو Admin</span>
+        </div>
+    `;
+    
+    $('notifyPreview').style.display = 'block';
+}
+
+// إرسال الإشعار الرئيسي
+async function sendNotification() {
+    const title = $('notifyTitle').value.trim();
+    const message = $('notifyMessage').value.trim();
+    const type = $('notifyType').value;
+    const recipientType = document.querySelector('input[name="recipientType"]:checked').value;
+    
+    // التحقق من البيانات
+    if (!title || !message) {
+        showToast('يرجى إدخال العنوان والمحتوى', 'error');
+        return;
+    }
+    
+    // تحديد المستلمين
+    let targetUsers = [];
+    let recipientInfo = '';
+    
+    try {
+        // جلب قائمة المستلمين
+        if (recipientType === 'all') {
+            const { data: profiles, error } = await sb
+                .from('profiles')
+                .select('pi_uid');
+            
+            if (error) throw error;
+            targetUsers = profiles.map(p => p.pi_uid);
+            recipientInfo = 'جميع المستخدمين';
+            
+        } else if (recipientType === 'cycle') {
+            const cycleId = $('notifyCycleSelect').value;
+            if (!cycleId) {
+                showToast('يرجى اختيار دورة', 'error');
+                return;
+            }
+            
+            const { data: members, error } = await sb
+                .from('members')
+                .select('pi_uid')
+                .eq('cycle_id', cycleId);
+            
+            if (error) throw error;
+            targetUsers = members.map(m => m.pi_uid);
+            recipientInfo = `أعضاء الدورة #${cycleId}`;
+            
+        } else if (recipientType === 'user') {
+            const userId = $('notifyUserSelect').value;
+            if (!userId) {
+                showToast('يرجى اختيار مستخدم', 'error');
+                return;
+            }
+            targetUsers = [userId];
+            recipientInfo = `مستخدم محدد`;
+        }
+        
+        if (targetUsers.length === 0) {
+            showToast('لا يوجد مستلمون للإشعار', 'error');
+            return;
+        }
+        
+        // تأكيد الإرسال
+        if (!confirm(`سيتم إرسال الإشعار لـ ${targetUsers.length} مستخدم\n\nهل تريد المتابعة؟`)) {
+            return;
+        }
+        
+        // تعطيل الزر أثناء الإرسال
+        const sendBtn = document.querySelector('button[onclick="sendNotification()"]');
+        sendBtn.classList.add('sending');
+        sendBtn.disabled = true;
+        
+        // إنشاء الإشعارات
+        const notifications = targetUsers.map(uid => ({
+            pi_uid: uid,
+            title: title,
+            message: message,
+            type: type,
+            read: false,
+            metadata: {
+                sent_by: 'admin',
+                sent_at: new Date().toISOString(),
+                recipient_count: targetUsers.length
+            }
+        }));
+        
+        // إرسال دفعات (batches) لتجنب الحد الأقصى
+        const batchSize = 100;
+        let successCount = 0;
+        let failCount = 0;
+        
+        for (let i = 0; i < notifications.length; i += batchSize) {
+            const batch = notifications.slice(i, i + batchSize);
+            const { error } = await sb.from('notifications').insert(batch);
+            
+            if (error) {
+                console.error('Batch error:', error);
+                failCount += batch.length;
+            } else {
+                successCount += batch.length;
+            }
+        }
+        
+        // تسجيل في سجل الإشعارات المرسلة (جدول منفصل للأدمن)
+        await logAdminNotification({
+            title,
+            message,
+            type,
+            recipient_type: recipientType,
+            recipient_count: targetUsers.length,
+            success_count: successCount,
+            fail_count: failCount,
+            sent_by: 'admin',
+            sent_at: new Date().toISOString()
+        });
+        
+        // إعادة تفعيل الزر
+        sendBtn.classList.remove('sending');
+        sendBtn.disabled = false;
+        
+        // النتيجة
+        if (failCount === 0) {
+            showToast(`✅ تم إرسال الإشعار بنجاح لـ ${successCount} مستخدم`);
+        } else {
+            showToast(`⚠️ تم الإرسال: ${successCount} نجاح، ${failCount} فشل`, 'error');
+        }
+        
+        // تحديث السجل ومسح النموذج
+        loadNotificationHistory();
+        clearNotificationForm();
+        
+    } catch (err) {
+        showToast('خطأ في الإرسال: ' + err.message, 'error');
+        const sendBtn = document.querySelector('button[onclick="sendNotification()"]');
+        if (sendBtn) {
+            sendBtn.classList.remove('sending');
+            sendBtn.disabled = false;
+        }
+    }
+}
+
+// تسجيل إشعار الأدمن (يمكن إنشاء جدول منفصل أو استخدام localStorage مؤقتاً)
+async function logAdminNotification(logData) {
+    try {
+        // محاولة حفظ في قاعدة البيانات (جدول admin_notifications)
+        const { error } = await sb
+            .from('admin_notifications_log')
+            .insert(logData);
+        
+        if (error) {
+            // إذا الجدول غير موجود، نستخدم localStorage كاحتياطي
+            const logs = JSON.parse(localStorage.getItem('admin_notification_logs') || '[]');
+            logs.unshift(logData);
+            localStorage.setItem('admin_notification_logs', JSON.stringify(logs.slice(0, 50)));
+        }
+    } catch (e) {
+        console.error('Logging error:', e);
+    }
+}
+
+// تحميل سجل الإشعارات المرسلة
+async function loadNotificationHistory() {
+    const container = $('notificationHistoryList');
+    container.innerHTML = '<div class="loading">جارٍ التحميل...</div>';
+    
+    try {
+        // محاولة جلب من قاعدة البيانات أولاً
+        const { data: logs, error } = await sb
+            .from('admin_notifications_log')
+            .select('*')
+            .order('sent_at', { ascending: false })
+            .limit(20);
+        
+        let historyData = logs;
+        
+        // إذا فشل، نستخدم localStorage
+        if (error || !logs || logs.length === 0) {
+            historyData = JSON.parse(localStorage.getItem('admin_notification_logs') || '[]');
+        }
+        
+        if (!historyData || historyData.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">📭</div>
+                    <div>لا توجد إشعارات مرسلة بعد</div>
+                </div>`;
+            return;
+        }
+        
+        const typeLabels = {
+            'system': '🔧 نظام',
+            'payment_due': '💰 دفع',
+            'payout_ready': '🎉 استلام',
+            'cycle_complete': '🏆 إنجاز',
+            'warning': '⚠️ تحذير'
+        };
+        
+        container.innerHTML = historyData.map((log, index) => {
+            const isSuccess = log.fail_count === 0;
+            const date = new Date(log.sent_at).toLocaleString('ar-EG');
+            
+            return `
+                <div class="history-item ${isSuccess ? 'success-sent' : 'failed-sent'}">
+                    <div class="history-info">
+                        <div class="history-title">
+                            ${typeLabels[log.type] || '🔔 إشعار'}
+                            ${log.title}
+                        </div>
+                        <div class="history-recipients">
+                            👥 ${log.recipient_type === 'all' ? 'جميع المستخدمين' : 
+                                 log.recipient_type === 'cycle' ? 'أعضاء دورة' : 'مستخدم محدد'}
+                            (${log.recipient_count} مستلم)
+                        </div>
+                        <div class="history-message">${log.message.substring(0, 100)}${log.message.length > 100 ? '...' : ''}</div>
+                        <div class="history-stats">
+                            <span class="stat-badge success">✅ ${log.success_count || log.recipient_count}</span>
+                            ${log.fail_count > 0 ? `<span class="stat-badge failed">❌ ${log.fail_count}</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="history-meta">
+                        <div>${date}</div>
+                        <div style="margin-top: 5px;">#${historyData.length - index}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+    } catch (err) {
+        container.innerHTML = `<div class="empty-state">خطأ في التحميل: ${err.message}</div>`;
+    }
+}
+
+// مسح نموذج الإشعار
+function clearNotificationForm() {
+    $('notifyTitle').value = '';
+    $('notifyMessage').value = '';
+    $('notifyType').value = 'system';
+    $('notifyPreview').style.display = 'none';
+    
+    // إعادة تعيين المستلمين
+    document.querySelector('input[name="recipientType"][value="all"]').checked = true;
+    toggleRecipientSelect();
+}
+
+// دالة مساعدة لتجنب XSS
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
 // ===================== Initialize =====================
 window.addEventListener("load", () => {
   loadAdminGroups();
