@@ -1,106 +1,0 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Dashboard | جمعيتي</title>
-
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;600;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="dashboard.css">
-
-  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-</head>
-
-<body>
-
-  <div class="toasts" id="toasts"></div>
-
-  <header class="topbar">
-    <div class="brand">
-      <div class="logo">π</div>
-      <div>
-        <h1>لوحة جمعيتي</h1>
-        <p>متابعة الدور + مواعيد الدفع + التقدم</p>
-      </div>
-    </div>
-
-    <div class="actions">
-      <span class="chip" id="userChip">👤 ضيف</span>
-      <button class="btn ghost" type="button" onclick="location.href='index.html'">رجوع</button>
-      <button class="btn primary" id="btnLogin" onclick="login()">تسجيل دخول</button>
-      <button class="btn ghost" id="btnLogout" onclick="logout()" style="display:none">خروج</button>
-    </div>
-  </header>
-
-  <main class="wrap">
-
-    <section class="dashGrid">
-      <!-- Card: Summary -->
-      <div class="card dashMain">
-        <div class="dashTop">
-          <div>
-            <h2 id="dashTitle">جاري التحميل...</h2>
-            <p class="muted" id="dashSub">—</p>
-          </div>
-          <span class="badge ok" id="dashStatus">نشط</span>
-        </div>
-
-        <div class="progressWrap">
-          <div class="progressMeta">
-            <span class="muted" id="progressText">—</span>
-            <span class="muted" id="progressPct">—</span>
-          </div>
-          <div class="progressBar">
-            <div class="progressFill" id="progressFill" style="width:0%"></div>
-          </div>
-        </div>
-
-        <div class="kpis">
-          <div class="kpi">
-            <div class="kpiLabel">دورك رقم</div>
-            <div class="kpiValue" id="kpiPosition">—</div>
-          </div>
-          <div class="kpi">
-            <div class="kpiLabel">هتستلم</div>
-            <div class="kpiValue" id="kpiPayoutDate">—</div>
-          </div>
-          <div class="kpi">
-            <div class="kpiLabel">القسط القادم</div>
-            <div class="kpiValue" id="kpiNextPay">—</div>
-          </div>
-        </div>
-
-        <div class="dashActions">
-          <button class="btn primary" onclick="payNext()" id="btnPay">دفع القسط</button>
-          <button class="btn soft" onclick="refreshDash()">تحديث</button>
-        </div>
-
-        <div class="muted small" id="dashNote"></div>
-      </div>
-
-      <!-- Card: Details -->
-      <div class="card">
-        <h3 style="margin:0 0 10px">تفاصيل الدورة</h3>
-        <div class="detailList">
-          <div class="detailRow"><span class="muted">القسط الشهري</span><b id="dMonthly">—</b></div>
-          <div class="detailRow"><span class="muted">مدة الدورة</span><b id="dMonths">—</b></div>
-          <div class="detailRow"><span class="muted">بداية الدورة</span><b id="dStart">—</b></div>
-          <div class="detailRow"><span class="muted">الشهر الحالي</span><b id="dCurrent">—</b></div>
-        </div>
-
-        <div class="divider"></div>
-
-        <h3 style="margin:0 0 10px">مدفوعاتي</h3>
-        <div id="paymentsBox" class="paymentsBox">
-          <div class="muted">جاري التحميل...</div>
-        </div>
-      </div>
-    </section>
-
-  </main>
-
-  <script src="dashboard.js"></script>
-</body>
-</html>
