@@ -1680,970 +1680,1115 @@
   </div>
 
   <script>
-    // ===================== تهيئة Supabase =====================
-    const SUPABASE_URL = "https://xncapmzlwuisupkjlftb.supabase.co"; 
-    const SUPABASE_KEY = "sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS"; 
-    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+   // ===================== تهيئة Supabase =====================
+const SUPABASE_URL = "https://xncapmzlwuisupkjlftb.supabase.co"; 
+const SUPABASE_KEY = "sb_publishable_zPECXAiI_bDbeLtRYe3vIw_IEt_p_AS"; 
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // ===================== المتغيرات العامة =====================
-    let user = null;
-    let currentCycleId = null;
-    let unreadNotifications = 0;
-    const PLATFORM_FEE = 1; // 1 Pi per installment
+// ===================== المتغيرات العامة =====================
+let user = null;
+let currentCycleId = null;
+let unreadNotifications = 0;
+const PLATFORM_FEE = 1;
+
+const icons = { 
+  success: '<i class="fas fa-check-circle"></i>', 
+  error: '<i class="fas fa-exclamation-circle"></i>', 
+  info: '<i class="fas fa-info-circle"></i>', 
+  warning: '<i class="fas fa-exclamation-triangle"></i>' 
+};
+
+// ===================== نظام التنبيهات (Toast) =====================
+function toast(title, msg = "", type = "info", duration = 4000) {
+  const container = document.getElementById("toasts");
+  const el = document.createElement("div");
+  el.className = `toast ${type}`;
+  el.innerHTML = `
+    <div class="toast-icon">${icons[type]}</div>
+    <div class="toast-content">
+      <div class="toast-title">${escapeHtml(title)}</div>
+      ${msg ? `<div class="toast-msg">${escapeHtml(msg)}</div>` : ''}
+    </div>
+    <button class="toast-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+  `;
+  container.appendChild(el);
+  setTimeout(() => {
+    el.style.opacity = "0";
+    el.style.transform = "translateY(-20px)";
+    setTimeout(() => el.remove(), 300);
+  }, duration);
+}
+
+// ===================== أدوات مساعدة =====================
+function escapeHtml(str) { 
+  return String(str ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); 
+}
+
+function formatDate(date) {
+  if(!date) return "---";
+  return new Date(date).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function formatCurrency(amount) {
+  return new Intl.NumberFormat('ar-SA').format(amount) + ' Pi';
+}
+
+// ===================== تحديث واجهة المستخدم =====================
+function updateUI() {
+  const chip = document.getElementById("userChip");
+  const btn = document.getElementById("btnLogin");
+  if (user && user.username) {
+    chip.style.display = "inline-flex";
+    chip.querySelector('span').textContent = user.username;
+    btn.style.display = "none";
     
-    const icons = { 
-      success: '<i class="fas fa-check-circle"></i>', 
-      error: '<i class="fas fa-exclamation-circle"></i>', 
-      info: '<i class="fas fa-info-circle"></i>', 
-      warning: '<i class="fas fa-exclamation-triangle"></i>' 
-    };
+    // ✅ مهم: تحميل الإشعارات فوراً بعد تسجيل الدخول
+    loadUnreadNotifications();
+    
+    // ✅ الاشتراك في التحديثات الفورية للإشعارات
+    subscribeToNotifications();
+  } else {
+    chip.style.display = "none";
+    btn.style.display = "inline-flex";
+  }
+}
 
-    // ===================== نظام التنبيهات (Toast) =====================
-    function toast(title, msg = "", type = "info", duration = 4000) {
-      const container = document.getElementById("toasts");
-      const el = document.createElement("div");
-      el.className = `toast ${type}`;
-      el.innerHTML = `
-        <div class="toast-icon">${icons[type]}</div>
-        <div class="toast-content">
-          <div class="toast-title">${escapeHtml(title)}</div>
-          ${msg ? `<div class="toast-msg">${escapeHtml(msg)}</div>` : ''}
+function requireLogin() {
+  if (!user?.uid) {
+    toast("تنبيه", "يجب تسجيل الدخول بـ Pi Browser أولاً", "warning");
+    return false;
+  }
+  return true;
+}
+
+// ===================== Dark Mode =====================
+function toggleTheme() {
+  const html = document.documentElement;
+  const current = html.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+  
+  const icon = document.querySelector('.theme-toggle i');
+  icon.className = next === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+}
+
+const savedTheme = localStorage.getItem('theme') || 'light';
+document.documentElement.setAttribute('data-theme', savedTheme);
+if(savedTheme === 'dark') {
+  document.querySelector('.theme-toggle i').className = 'fas fa-sun';
+}
+
+// ===================== نظام الإشعارات - النسخة المصححة =====================
+
+// ✅ 1. الاشتراك في التحديثات الفورية (Real-time)
+function subscribeToNotifications() {
+  if (!user?.uid) return;
+  
+  console.log('📡 Subscribing to notifications for:', user.uid);
+  
+  sb.channel('user-notifications')
+    .on('postgres_changes', { 
+      event: 'INSERT', 
+      schema: 'public', 
+      table: 'notifications',
+      filter: `pi_uid=eq.${user.uid}`
+    }, (payload) => {
+      console.log('🔔 New notification received:', payload.new);
+      
+      // تحديث العداد
+      unreadNotifications++;
+      updateNotificationBadge();
+      
+      // إظهار toast للإشعار الجديد
+      toast(payload.new.title, payload.new.message, payload.new.type || 'info');
+      
+      // إذا كانت لوحة الإشعارات مفتوحة، تحديثها
+      if (document.getElementById('notificationsPanel').classList.contains('active')) {
+        loadNotifications();
+      }
+    })
+    .subscribe();
+}
+
+// ✅ 2. تحديث شارة الإشعارات
+function updateNotificationBadge() {
+  const badge = document.getElementById('notificationBadge');
+  if (unreadNotifications > 0) {
+    badge.textContent = unreadNotifications > 9 ? '9+' : unreadNotifications;
+    badge.style.display = 'flex';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+// ✅ 3. تحميل الإشعارات غير المقروءة - نسخة مصححة
+async function loadUnreadNotifications() {
+  if (!user?.uid) {
+    console.log('No user logged in');
+    return;
+  }
+  
+  try {
+    console.log('Loading unread notifications for:', user.uid);
+    
+    const { data, error, count } = await sb
+      .from('notifications')
+      .select('*', { count: 'exact' })
+      .eq('pi_uid', user.uid)
+      .eq('read', false);
+    
+    if (error) {
+      console.error('Error loading notifications:', error);
+      return;
+    }
+    
+    console.log('Unread notifications:', count, data);
+    
+    unreadNotifications = count || 0;
+    updateNotificationBadge();
+    
+  } catch (e) {
+    console.error('Exception loading notifications:', e);
+  }
+}
+
+// ✅ 4. فتح لوحة الإشعارات
+function openNotifications() {
+  if (!requireLogin()) return;
+  
+  document.getElementById('notificationsPanel').classList.add('active');
+  document.getElementById('overlay').classList.add('active');
+  document.body.style.overflow = 'hidden';
+  
+  // تحميل الإشعارات مباشرة
+  loadNotifications();
+}
+
+// ✅ 5. إغلاق لوحة الإشعارات
+function closeNotifications() {
+  document.getElementById('notificationsPanel').classList.remove('active');
+  document.getElementById('overlay').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+// ✅ 6. تحميل جميع الإشعارات - نسخة مصححة
+async function loadNotifications() {
+  const list = document.getElementById('notificationsList');
+  
+  if (!user?.uid) {
+    list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--danger);">يجب تسجيل الدخول أولاً</div>';
+    return;
+  }
+  
+  list.innerHTML = '<div style="text-align: center; padding: 40px;"><div class="loader"></div><p>جاري تحميل الإشعارات...</p></div>';
+  
+  try {
+    console.log('Fetching notifications for user:', user.uid);
+    
+    const { data: notifications, error } = await sb
+      .from('notifications')
+      .select('*')
+      .eq('pi_uid', user.uid)  // ✅ التأكد من تطابق pi_uid
+      .order('created_at', { ascending: false })
+      .limit(50);
+    
+    if (error) {
+      console.error('Error fetching notifications:', error);
+      list.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--danger);">خطأ: ${error.message}</div>`;
+      return;
+    }
+    
+    console.log('Fetched notifications:', notifications);
+    
+    if (!notifications || notifications.length === 0) {
+      list.innerHTML = `
+        <div style="text-align: center; padding: 60px 40px; color: var(--text-muted);">
+          <i class="fas fa-bell-slash" style="font-size: 64px; margin-bottom: 20px; opacity: 0.3;"></i>
+          <p style="font-size: 16px;">لا توجد إشعارات</p>
+          <p style="font-size: 13px; margin-top: 10px;">ستظهر هنا الإشعارات الجديدة</p>
         </div>
-        <button class="toast-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
       `;
-      container.appendChild(el);
-      setTimeout(() => {
-        el.style.opacity = "0";
-        el.style.transform = "translateY(-20px)";
-        setTimeout(() => el.remove(), 300);
-      }, duration);
+      return;
     }
-
-    // ===================== أدوات مساعدة =====================
-    function escapeHtml(str) { 
-      return String(str ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); 
-    }
-
-    function formatDate(date) {
-      if(!date) return "---";
-      return new Date(date).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' });
-    }
-
-    function formatCurrency(amount) {
-      return new Intl.NumberFormat('ar-SA').format(amount) + ' Pi';
-    }
-
-    function updateUI() {
-      const chip = document.getElementById("userChip");
-      const btn = document.getElementById("btnLogin");
-      if (user && user.username) {
-        chip.style.display = "inline-flex";
-        chip.querySelector('span').textContent = user.username;
-        btn.style.display = "none";
-        loadUnreadNotifications();
-      } else {
-        chip.style.display = "none";
-        btn.style.display = "inline-flex";
-      }
-    }
-
-    function requireLogin() {
-      if (!user?.uid) {
-        toast("تنبيه", "يجب تسجيل الدخول بـ Pi Browser أولاً", "warning");
-        return false;
-      }
-      return true;
-    }
-
-    // ===================== Dark Mode =====================
-    function toggleTheme() {
-      const html = document.documentElement;
-      const current = html.getAttribute('data-theme');
-      const next = current === 'dark' ? 'light' : 'dark';
-      html.setAttribute('data-theme', next);
-      localStorage.setItem('theme', next);
+    
+    // عرض الإشعارات
+    list.innerHTML = notifications.map(n => {
+      const typeColors = {
+        'system': 'var(--primary)',
+        'payment_due': 'var(--warning)',
+        'payout_ready': 'var(--success)',
+        'payment_received': 'var(--success)',
+        'cycle_complete': 'var(--info)',
+        'warning': 'var(--danger)'
+      };
       
-      const icon = document.querySelector('.theme-toggle i');
-      icon.className = next === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
-    }
-
-    // Load saved theme
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    if(savedTheme === 'dark') {
-      document.querySelector('.theme-toggle i').className = 'fas fa-sun';
-    }
-
-    // ===================== Notifications System =====================
-    async function loadUnreadNotifications() {
-      if (!user) return;
+      const typeIcons = {
+        'system': '🔧',
+        'payment_due': '💰',
+        'payout_ready': '🎉',
+        'payment_received': '💳',
+        'cycle_complete': '🏆',
+        'warning': '⚠️'
+      };
       
-      try {
-        const { count } = await sb
-          .from('notifications')
-          .select('*', { count: 'exact', head: true })
-          .eq('pi_uid', user.uid)
-          .eq('read', false);
-        
-        const badge = document.getElementById('notificationBadge');
-        if (count > 0) {
-          badge.textContent = count > 9 ? '9+' : count;
-          badge.style.display = 'flex';
-          unreadNotifications = count;
-        } else {
-          badge.style.display = 'none';
-        }
-      } catch (e) {
-        console.error('Error loading notifications:', e);
-      }
-    }
-
-    function openNotifications() {
-      if (!requireLogin()) return;
-      
-      document.getElementById('notificationsPanel').classList.add('active');
-      document.getElementById('overlay').classList.add('active');
-      document.body.style.overflow = 'hidden';
-      loadNotifications();
-    }
-
-    function closeNotifications() {
-      document.getElementById('notificationsPanel').classList.remove('active');
-      document.getElementById('overlay').classList.remove('active');
-      document.body.style.overflow = '';
-    }
-
-    async function loadNotifications() {
-      const list = document.getElementById('notificationsList');
-      list.innerHTML = '<div style="text-align: center; padding: 40px;"><div class="loader"></div></div>';
-      
-      try {
-        const { data: notifications } = await sb
-          .from('notifications')
-          .select('*')
-          .eq('pi_uid', user.uid)
-          .order('created_at', { ascending: false })
-          .limit(50);
-        
-        if (!notifications || notifications.length === 0) {
-          list.innerHTML = `
-            <div style="text-align: center; padding: 40px; color: var(--text-muted);">
-              <i class="fas fa-bell-slash" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
-              <p>لا توجد إشعارات</p>
+      return `
+        <div class="notification-item ${n.read ? 'read' : 'unread'}" 
+             style="border-right-color: ${typeColors[n.type] || 'var(--primary)'};"
+             onclick="handleNotificationClick('${n.id}', '${n.type}')">
+          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 18px;">${typeIcons[n.type] || '🔔'}</span>
+              <strong style="font-size: 14px; color: var(--text);">${escapeHtml(n.title)}</strong>
             </div>
-          `;
-          return;
-        }
-        
-        list.innerHTML = notifications.map(n => `
-          <div class="notification-item ${n.read ? 'read' : 'unread'} ${n.type}" onclick="markNotificationRead('${n.id}')">
-            <div style="display: flex; justify-content: space-between; align-items: start;">
-              <strong style="font-size: 14px;">${escapeHtml(n.title)}</strong>
-              ${!n.read ? '<span class="badge badge-primary" style="font-size: 10px;">جديد</span>' : ''}
-            </div>
-            <p style="margin: 8px 0; font-size: 13px; color: var(--text-muted);">${escapeHtml(n.message)}</p>
-            <div class="notification-time">
-              <i class="fas fa-clock"></i> ${formatDate(n.created_at)}
-            </div>
+            ${!n.read ? '<span class="badge badge-primary" style="font-size: 10px; animation: pulse 2s infinite;">جديد</span>' : ''}
           </div>
-        `).join('');
-        
-        // Mark all as read
-        await sb.from('notifications').update({ read: true }).eq('pi_uid', user.uid).eq('read', false);
-        document.getElementById('notificationBadge').style.display = 'none';
-        
-      } catch (e) {
-        list.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--danger);">فشل تحميل الإشعارات</div>';
-      }
-    }
-
-    async function markNotificationRead(id) {
-      // Handle notification click - could navigate to specific section
-      toast("تم", "تمت قراءة الإشعار", "success");
-    }
-
-    // ===================== تسجيل الدخول (مع التحقق من الحظر) =====================
-    async function login() {
-      try {
-        if (!window.Pi) {
-          toast("خطأ متصفح", "يرجى فتح الموقع داخل متصفح Pi Browser", "error");
-          return;
-        }
-
-        Pi.init({ version: "2.0", sandbox: false });
-        const scopes = ['username', 'payments'];
-        const auth = await Pi.authenticate(scopes, onIncompletePaymentFound);
-        
-        // التحقق من الحظر
-        const { data: profile } = await sb
-            .from('profiles')
-            .select('is_banned')
-            .eq('pi_uid', auth.user.uid)
-            .single();
-
-        if (profile && profile.is_banned) {
-          document.body.innerHTML = `
-            <div style="height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center; background:linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); color:#991b1b; font-family:Tajawal,sans-serif; text-align:center; padding:20px;">
-              <div style="font-size:80px; margin-bottom:20px;">🚫</div>
-              <h2 style="margin:0 0 10px; font-size:28px;">حسابك محظور</h2>
-              <p style="font-size:16px; opacity:0.9;">لا يمكنك الوصول للتطبيق. تواصل مع الدعم إذا كنت تعتقد أن هذا خطأ.</p>
-            </div>
-          `;
-          return;
-        }
-
-        // تحديث بيانات المستخدم
-        await sb.from('profiles').upsert({ 
-            pi_uid: auth.user.uid, 
-            username: auth.user.username 
-        });
-
-        user = auth.user;
-        updateUI();
-        toast("تم الدخول بنجاح", `أهلاً بك يا @${user.username}`, "success");
-        
-        if(document.getElementById("dashboardModal").classList.contains("active")){
-            openDashboard();
-        }
-
-      } catch (e) {
-        console.error("Login Error:", e);
-        toast("فشل الدخول", "حاول مرة أخرى", "error");
-      }
-    }
-
-    function onIncompletePaymentFound(payment) {
-      if (payment.transaction_id) {
-         fetch("/.netlify/functions/complete", {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ paymentId: payment.identifier, txid: payment.transaction_id }),
-         });
-      }
-    }
-
-    // ===================== Tabs System =====================
-    function switchTab(tabName, tabElement) {
-      // Update active tab
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      tabElement.classList.add('active');
-      
-      // Update active content
-      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-      document.getElementById(`tab-${tabName}`).classList.add('active');
-      
-      // Load specific data
-      if (tabName === 'subscriptions') loadMyCycles();
-      if (tabName === 'chat') loadChatCycles();
-      if (tabName === 'reports') loadReports();
-    }
-
-    // ===================== لوحة التحكم (Dashboard) =====================
-    function openDashboard() {
-      if (!requireLogin()) return;
-      document.getElementById("dashboardModal").classList.add("active");
-      document.body.style.overflow = 'hidden';
-      
-      document.getElementById("userSummary").innerHTML = `
-        <div class="avatar-circle"><i class="fas fa-user"></i></div>
-        <div class="user-info">
-            <div>@${user.username}</div>
-            <div>ID: ${user.uid.substring(0,8)}...</div>
+          <p style="margin: 8px 0; font-size: 13px; color: var(--text-muted); line-height: 1.5;">
+            ${escapeHtml(n.message)}
+          </p>
+          <div class="notification-time" style="display: flex; align-items: center; gap: 5px;">
+            <i class="fas fa-clock" style="font-size: 10px;"></i>
+            ${formatDate(n.created_at)}
+            ${n.metadata?.sent_by === 'admin' ? '<span style="margin-right: 10px; color: var(--primary);">• من الإدارة</span>' : ''}
+          </div>
         </div>
       `;
+    }).join('');
+    
+    // تحديث حالة القراءة
+    await markAllAsRead();
+    
+  } catch (e) {
+    console.error('Exception in loadNotifications:', e);
+    list.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--danger);">حدث خطأ غير متوقع</div>`;
+  }
+}
 
-      loadWallet();
-      loadPlatformFees();
-      loadMyCycles();
+// ✅ 7. تحديث حالة القراءة
+async function markAllAsRead() {
+  if (!user?.uid) return;
+  
+  try {
+    const { error } = await sb
+      .from('notifications')
+      .update({ read: true })
+      .eq('pi_uid', user.uid)
+      .eq('read', false);
+    
+    if (error) {
+      console.error('Error marking as read:', error);
+      return;
+    }
+    
+    // إعادة تعيين العداد
+    unreadNotifications = 0;
+    updateNotificationBadge();
+    
+  } catch (e) {
+    console.error('Exception marking as read:', e);
+  }
+}
+
+// ✅ 8. معالجة النقر على إشعار
+async function handleNotificationClick(id, type) {
+  console.log('Notification clicked:', id, type);
+  
+  // يمكن إضافة منطق خاص حسب نوع الإشعار
+  switch(type) {
+    case 'payment_due':
+      openDashboard();
+      switchTab('subscriptions', document.querySelector('.tab:nth-child(2)'));
+      break;
+    case 'payout_ready':
+    case 'cycle_complete':
+      openDashboard();
+      switchTab('subscriptions', document.querySelector('.tab:nth-child(2)'));
+      break;
+  }
+  
+  toast("تم", "تمت قراءة الإشعار", "success");
+}
+
+// ===================== تسجيل الدخول (مع التحقق من الحظر) =====================
+async function login() {
+  try {
+    if (!window.Pi) {
+      toast("خطأ متصفح", "يرجى فتح الموقع داخل متصفح Pi Browser", "error");
+      return;
     }
 
-    function closeModal(id) {
-      document.getElementById(id).classList.remove("active");
-      document.body.style.overflow = '';
+    Pi.init({ version: "2.0", sandbox: false });
+    const scopes = ['username', 'payments'];
+    const auth = await Pi.authenticate(scopes, onIncompletePaymentFound);
+    
+    console.log('User authenticated:', auth.user);
+    
+    // التحقق من الحظر
+    const { data: profile } = await sb
+        .from('profiles')
+        .select('is_banned')
+        .eq('pi_uid', auth.user.uid)
+        .single();
+
+    if (profile && profile.is_banned) {
+      document.body.innerHTML = `
+        <div style="height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center; background:linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); color:#991b1b; font-family:Tajawal,sans-serif; text-align:center; padding:20px;">
+          <div style="font-size:80px; margin-bottom:20px;">🚫</div>
+          <h2 style="margin:0 0 10px; font-size:28px;">حسابك محظور</h2>
+          <p style="font-size:16px; opacity:0.9;">لا يمكنك الوصول للتطبيق. تواصل مع الدعم إذا كنت تعتقد أن هذا خطأ.</p>
+        </div>
+      `;
+      return;
     }
 
-    function closeModalOnBackdrop(event) {
-      if (event.target === event.currentTarget) {
-        closeModal(event.target.id);
-      }
+    // تحديث بيانات المستخدم
+    await sb.from('profiles').upsert({ 
+        pi_uid: auth.user.uid, 
+        username: auth.user.username 
+    });
+
+    user = auth.user;
+    updateUI();  // ✅ هذا سيستدعي loadUnreadNotifications() و subscribeToNotifications()
+    
+    toast("تم الدخول بنجاح", `أهلاً بك يا @${user.username}`, "success");
+    
+    if(document.getElementById("dashboardModal").classList.contains("active")){
+        openDashboard();
     }
 
-    async function loadWallet() {
-      const input = document.getElementById("walletInput");
-      input.value = "";
-      input.placeholder = "جاري التحميل...";
-      
-      try {
-        const { data } = await sb.from("user_wallets").select("wallet_address").eq("pi_uid", user.uid).single();
-        input.value = data ? data.wallet_address : "";
-        input.placeholder = "GDT...";
-      } catch(e) {
-        input.placeholder = "GDT...";
-      }
-    }
+  } catch (e) {
+    console.error("Login Error:", e);
+    toast("فشل الدخول", "حاول مرة أخرى", "error");
+  }
+}
 
-    async function saveWallet() {
-      const address = document.getElementById("walletInput").value.trim();
-      if (!address || address.length < 20) {
-        toast("تنبيه", "تأكد من صحة عنوان المحفظة", "warning");
+function onIncompletePaymentFound(payment) {
+  if (payment.transaction_id) {
+     fetch("/.netlify/functions/complete", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentId: payment.identifier, txid: payment.transaction_id }),
+     });
+  }
+}
+
+// ===================== Tabs System =====================
+function switchTab(tabName, tabElement) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  tabElement.classList.add('active');
+  
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById(`tab-${tabName}`).classList.add('active');
+  
+  if (tabName === 'subscriptions') loadMyCycles();
+  if (tabName === 'chat') loadChatCycles();
+  if (tabName === 'reports') loadReports();
+}
+
+// ===================== لوحة التحكم (Dashboard) =====================
+function openDashboard() {
+  if (!requireLogin()) return;
+  document.getElementById("dashboardModal").classList.add("active");
+  document.body.style.overflow = 'hidden';
+  
+  document.getElementById("userSummary").innerHTML = `
+    <div class="avatar-circle"><i class="fas fa-user"></i></div>
+    <div class="user-info">
+        <div>@${user.username}</div>
+        <div>ID: ${user.uid.substring(0,8)}...</div>
+    </div>
+  `;
+
+  loadWallet();
+  loadPlatformFees();
+  loadMyCycles();
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove("active");
+  document.body.style.overflow = '';
+}
+
+function closeModalOnBackdrop(event) {
+  if (event.target === event.currentTarget) {
+    closeModal(event.target.id);
+  }
+}
+
+async function loadWallet() {
+  const input = document.getElementById("walletInput");
+  input.value = "";
+  input.placeholder = "جاري التحميل...";
+  
+  try {
+    const { data } = await sb.from("user_wallets").select("wallet_address").eq("pi_uid", user.uid).single();
+    input.value = data ? data.wallet_address : "";
+    input.placeholder = "GDT...";
+  } catch(e) {
+    input.placeholder = "GDT...";
+  }
+}
+
+async function saveWallet() {
+  const address = document.getElementById("walletInput").value.trim();
+  if (!address || address.length < 20) {
+    toast("تنبيه", "تأكد من صحة عنوان المحفظة", "warning");
+    return;
+  }
+  
+  const btn = event.target;
+  const originalContent = btn.innerHTML;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+  btn.disabled = true;
+  
+  const { error } = await sb.from("user_wallets").upsert({ pi_uid: user.uid, wallet_address: address });
+  
+  btn.innerHTML = originalContent;
+  btn.disabled = false;
+  
+  if (error) toast("خطأ", "فشل الحفظ، حاول مرة أخرى", "error");
+  else toast("تم الحفظ", "تم تحديث المحفظة بنجاح", "success");
+}
+
+// ===================== Platform Fees =====================
+async function loadPlatformFees() {
+  try {
+    const { data: paidFees } = await sb
+      .from('platform_fees')
+      .select('fee_amount')
+      .eq('member_id', user.uid)
+      .eq('status', 'paid');
+    
+    const totalPaid = paidFees ? paidFees.reduce((sum, f) => sum + (f.fee_amount || 0), 0) : 0;
+    
+    const { data: pendingFees } = await sb
+      .from('platform_fees')
+      .select('fee_amount')
+      .eq('member_id', user.uid)
+      .eq('status', 'pending');
+    
+    const totalPending = pendingFees ? pendingFees.reduce((sum, f) => sum + (f.fee_amount || 0), 0) : 0;
+    
+    document.getElementById('totalFeesPaid').textContent = formatCurrency(totalPaid);
+    document.getElementById('pendingFees').textContent = formatCurrency(totalPending);
+    
+  } catch (e) {
+    console.error('Error loading fees:', e);
+  }
+}
+
+// ===================== تحميل بيانات الاشتراك والمدفوعات =====================
+async function loadMyCycles() {
+  const list = document.getElementById("myCyclesList");
+  list.innerHTML = `<div style="text-align:center; padding:40px;"><div class="loader"></div><p class="muted" style="margin-top:16px;">جاري جلب بيانات الدفع...</p></div>`;
+
+  try {
+      const { data: members, error } = await sb
+        .from("members")
+        .select(`
+          id, position, created_at,
+          cycles (
+            id, title, monthly_amount, status, months, created_at, insurance_required, insurance_amount, platform_fee_per_installment,
+            groups ( name )
+          )
+        `)
+        .eq("pi_uid", user.uid);
+
+      if (error || !members || members.length === 0) {
+        list.innerHTML = `
+          <div style="text-align:center; padding:40px; background:var(--bg); border-radius:var(--radius); border:2px dashed var(--border);">
+            <i class="fas fa-inbox" style="font-size:48px; color:var(--text-muted); margin-bottom:16px; display:block;"></i>
+            <p class="muted">لست مشتركاً في أي جمعية حالياً</p>
+            <button class="btn btn-primary btn-sm" onclick="closeModal('dashboardModal')" style="margin-top:12px;">
+              استعرض الجمعيات المتاحة
+            </button>
+          </div>
+        `;
         return;
       }
-      
-      const btn = event.target;
-      const originalContent = btn.innerHTML;
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-      btn.disabled = true;
-      
-      const { error } = await sb.from("user_wallets").upsert({ pi_uid: user.uid, wallet_address: address });
-      
-      btn.innerHTML = originalContent;
-      btn.disabled = false;
-      
-      if (error) toast("خطأ", "فشل الحفظ، حاول مرة أخرى", "error");
-      else toast("تم الحفظ", "تم تحديث المحفظة بنجاح", "success");
-    }
 
-    // ===================== Platform Fees =====================
-    async function loadPlatformFees() {
-      try {
-        // Get total fees paid
-        const { data: paidFees } = await sb
-          .from('platform_fees')
-          .select('fee_amount')
-          .eq('member_id', user.uid)
-          .eq('status', 'paid');
+      list.innerHTML = "";
+
+      for (let m of members) {
+        const c = m.cycles;
+        if(!c) continue;
+
+        // Check insurance status
+        const { data: insurance } = await sb
+          .from('insurance_deposits')
+          .select('*')
+          .eq('member_id', m.id)
+          .single();
+
+        const { data: payments } = await sb
+            .from('payments')
+            .select('amount, created_at, status')
+            .eq('member_id', m.id)
+            .eq('status', 'confirmed') 
+            .order('created_at', { ascending: true });
         
-        const totalPaid = paidFees ? paidFees.reduce((sum, f) => sum + (f.fee_amount || 0), 0) : 0;
+        const paidRows = payments || [];
+        const paidCount = paidRows.length; 
+        const nextInstallmentNum = paidCount + 1;
         
-        // Get pending fees
-        const { data: pendingFees } = await sb
-          .from('platform_fees')
-          .select('fee_amount')
-          .eq('member_id', user.uid)
-          .eq('status', 'pending');
+        const totalAmount = c.monthly_amount * c.months;
+        const paidAmountTotal = paidRows.reduce((sum, p) => sum + (p.amount || 0), 0);
+        const remainingAmount = totalAmount - paidAmountTotal;
+        const progressPercent = Math.min((paidCount / c.months) * 100, 100);
         
-        const totalPending = pendingFees ? pendingFees.reduce((sum, f) => sum + (f.fee_amount || 0), 0) : 0;
-        
-        document.getElementById('totalFeesPaid').textContent = formatCurrency(totalPaid);
-        document.getElementById('pendingFees').textContent = formatCurrency(totalPending);
-        
-      } catch (e) {
-        console.error('Error loading fees:', e);
-      }
-    }
+        const cycleStartDate = new Date(c.created_at);
+        const payoutDate = new Date(cycleStartDate);
+        payoutDate.setMonth(payoutDate.getMonth() + (m.position - 1));
 
-    // === تحميل بيانات الاشتراك والمدفوعات ===
-    async function loadMyCycles() {
-      const list = document.getElementById("myCyclesList");
-      list.innerHTML = `<div style="text-align:center; padding:40px;"><div class="loader"></div><p class="muted" style="margin-top:16px;">جاري جلب بيانات الدفع...</p></div>`;
+        const isCompleted = paidCount >= c.months;
+        const isPayoutSoon = !isCompleted && paidCount >= (m.position - 1);
+        const needsInsurance = c.insurance_required && !insurance;
 
-      try {
-          const { data: members, error } = await sb
-            .from("members")
-            .select(`
-              id, position, created_at,
-              cycles (
-                id, title, monthly_amount, status, months, created_at, insurance_required, insurance_amount, platform_fee_per_installment,
-                groups ( name )
-              )
-            `)
-            .eq("pi_uid", user.uid);
-
-          if (error || !members || members.length === 0) {
-            list.innerHTML = `
-              <div style="text-align:center; padding:40px; background:var(--bg); border-radius:var(--radius); border:2px dashed var(--border);">
-                <i class="fas fa-inbox" style="font-size:48px; color:var(--text-muted); margin-bottom:16px; display:block;"></i>
-                <p class="muted">لست مشتركاً في أي جمعية حالياً</p>
-                <button class="btn btn-primary btn-sm" onclick="closeModal('dashboardModal')" style="margin-top:12px;">
-                  استعرض الجمعيات المتاحة
-                </button>
-              </div>
-            `;
-            return;
-          }
-
-          list.innerHTML = "";
-
-          for (let m of members) {
-            const c = m.cycles;
-            if(!c) continue;
-
-            // Check insurance status
-            const { data: insurance } = await sb
-              .from('insurance_deposits')
-              .select('*')
-              .eq('member_id', m.id)
-              .single();
-
-            const { data: payments } = await sb
-                .from('payments')
-                .select('amount, created_at, status')
-                .eq('member_id', m.id)
-                .eq('status', 'confirmed') 
-                .order('created_at', { ascending: true });
-            
-            const paidRows = payments || [];
-            const paidCount = paidRows.length; 
-            const nextInstallmentNum = paidCount + 1;
-            
-            const totalAmount = c.monthly_amount * c.months;
-            const paidAmountTotal = paidRows.reduce((sum, p) => sum + (p.amount || 0), 0);
-            const remainingAmount = totalAmount - paidAmountTotal;
-            const progressPercent = Math.min((paidCount / c.months) * 100, 100);
-            
-            const cycleStartDate = new Date(c.created_at);
-            const payoutDate = new Date(cycleStartDate);
-            payoutDate.setMonth(payoutDate.getMonth() + (m.position - 1));
-
-            const isCompleted = paidCount >= c.months;
-            const isPayoutSoon = !isCompleted && paidCount >= (m.position - 1);
-            const needsInsurance = c.insurance_required && !insurance;
-
-            let historyHTML = "";
-            if(paidCount > 0) {
-                historyHTML = `<div class="payment-history">
-                    <div class="history-title"><i class="fas fa-receipt"></i> سجل الدفعات (${paidCount})</div>
-                    ${paidRows.map((p, index) => `
-                        <div class="history-item">
-                            <span><i class="fas fa-check" style="color:var(--success); margin-left:6px;"></i> قسط رقم ${index + 1}</span>
-                            <span class="muted">${formatDate(p.created_at)}</span>
-                        </div>
-                    `).join('')}
-                </div>`;
-            }
-
-            const payoutBadge = isPayoutSoon ? '<span class="badge badge-success" style="animation:pulse 2s infinite;"><i class="fas fa-gift"></i> موعد الاستلام قريب!</span>' : '';
-            
-            const insuranceHTML = c.insurance_required ? `
-              <div class="insurance-card" style="margin: 16px 0;">
-                <div class="insurance-header">
-                  <h4><i class="fas fa-shield-alt"></i> تأمين الضمان</h4>
-                  ${insurance ? '<span class="badge badge-success">مدفوع</span>' : '<span class="badge badge-warning">مطلوب</span>'}
-                </div>
-                <p class="muted" style="font-size: 13px; margin-bottom: 12px;">
-                  يتطلب دفع تأمين قدره ${c.insurance_amount} Pi كضمان للالتزام بالدفعات
-                </p>
-                ${!insurance ? `
-                  <button class="btn btn-warning btn-sm" onclick="payInsurance(${m.id}, ${c.id}, ${c.insurance_amount})">
-                    <i class="fas fa-shield-alt"></i> دفع التأمين (${c.insurance_amount} Pi)
-                  </button>
-                ` : `
-                  <div class="success-badge" style="margin-top: 0;">
-                    <i class="fas fa-check-circle"></i> تم دفع التأمين - يُسترد بعد اكتمال الدورة
-                  </div>
-                `}
-              </div>
-            ` : '';
-
-            list.innerHTML += `
-              <div class="dashboard-card fadeIn">
-                <div class="dash-header">
-                  <div class="dash-title">
-                    <h4><i class="fas fa-users" style="color:var(--primary); margin-left:8px;"></i> ${escapeHtml(c.groups?.name)} - ${escapeHtml(c.title)}</h4>
-                    <span><i class="fas fa-circle" style="color:${c.status === 'open' ? '#10b981' : '#ef4444'}; font-size:8px; margin-left:6px;"></i> ${c.status === 'open' ? 'نشطة' : 'مغلقة'}</span>
-                  </div>
-                  <div class="badge" style="font-size:13px; padding:8px 14px;">
-                    <i class="fas fa-coins" style="margin-left:6px;"></i>
-                    ${c.monthly_amount} Pi/شهر
-                  </div>
-                </div>
-
-                ${payoutBadge}
-                ${insuranceHTML}
-
-                <div class="payment-progress">
-                  <div class="progress-label">
-                    <span>تم سداد ${paidCount} من ${c.months} أقساط</span>
-                    <span style="color:var(--primary); font-weight:800;">${Math.round(progressPercent)}%</span>
-                  </div>
-                  <div class="track">
-                    <div class="fill" style="width: ${progressPercent}%"></div>
-                  </div>
-                </div>
-
-                <div class="stats-grid">
-                   <div class="stat-box">
-                     <small><i class="fas fa-sort-numeric-up"></i> دورك</small>
-                     <strong>${m.position}</strong>
-                   </div>
-                   <div class="stat-box ${isPayoutSoon ? 'highlight' : ''}">
-                     <small><i class="fas fa-calendar-day"></i> موعد القبض</small>
-                     <strong>${formatDate(payoutDate)}</strong>
-                   </div>
-                   <div class="stat-box">
-                     <small><i class="fas fa-money-bill-wave"></i> مدفوع</small>
-                     <strong>${paidAmountTotal} Pi</strong>
-                   </div>
-                   <div class="stat-box">
-                     <small><i class="fas fa-hourglass-half"></i> متبقي</small>
-                     <strong>${remainingAmount} Pi</strong>
-                   </div>
-                </div>
-
-                ${historyHTML}
-
-                <div style="margin-top:16px;">
-                  ${!isCompleted ? 
-                    `<button class="btn btn-primary action-btn" onclick="payInstallment(${c.id}, ${c.monthly_amount}, ${m.id}, ${nextInstallmentNum}, ${c.platform_fee_per_installment || 1})" ${needsInsurance ? 'disabled' : ''}>
-                       <i class="fas fa-credit-card"></i>
-                       دفع القسط القادم (${nextInstallmentNum}) + ${c.platform_fee_per_installment || 1} Pi رسوم
-                     </button>` 
-                    : 
-                    `<div class="success-badge">
-                      <i class="fas fa-trophy"></i>
-                      مبروك! اكتملت جميع الأقساط
+        let historyHTML = "";
+        if(paidCount > 0) {
+            historyHTML = `<div class="payment-history">
+                <div class="history-title"><i class="fas fa-receipt"></i> سجل الدفعات (${paidCount})</div>
+                ${paidRows.map((p, index) => `
+                    <div class="history-item">
+                        <span><i class="fas fa-check" style="color:var(--success); margin-left:6px;"></i> قسط رقم ${index + 1}</span>
+                        <span class="muted">${formatDate(p.created_at)}</span>
                     </div>
-                    <button class="btn btn-soft action-btn" onclick="openRatingModal(${c.id})" style="margin-top: 8px;">
-                      <i class="fas fa-star"></i> تقييم الأعضاء
-                    </button>`
-                  }
-                  ${needsInsurance ? '<p class="muted" style="text-align: center; margin-top: 8px; font-size: 12px; color: var(--warning);">يجب دفع التأمين أولاً</p>' : ''}
-                </div>
+                `).join('')}
+            </div>`;
+        }
+
+        const payoutBadge = isPayoutSoon ? '<span class="badge badge-success" style="animation:pulse 2s infinite;"><i class="fas fa-gift"></i> موعد الاستلام قريب!</span>' : '';
+        
+        const insuranceHTML = c.insurance_required ? `
+          <div class="insurance-card" style="margin: 16px 0;">
+            <div class="insurance-header">
+              <h4><i class="fas fa-shield-alt"></i> تأمين الضمان</h4>
+              ${insurance ? '<span class="badge badge-success">مدفوع</span>' : '<span class="badge badge-warning">مطلوب</span>'}
+            </div>
+            <p class="muted" style="font-size: 13px; margin-bottom: 12px;">
+              يتطلب دفع تأمين قدره ${c.insurance_amount} Pi كضمان للالتزام بالدفعات
+            </p>
+            ${!insurance ? `
+              <button class="btn btn-warning btn-sm" onclick="payInsurance(${m.id}, ${c.id}, ${c.insurance_amount})">
+                <i class="fas fa-shield-alt"></i> دفع التأمين (${c.insurance_amount} Pi)
+              </button>
+            ` : `
+              <div class="success-badge" style="margin-top: 0;">
+                <i class="fas fa-check-circle"></i> تم دفع التأمين - يُسترد بعد اكتمال الدورة
               </div>
-            `;
-          }
+            `}
+          </div>
+        ` : '';
 
-      } catch (err) {
-          console.error(err);
-          list.innerHTML = `<div class="muted" style="text-align:center; padding:20px; color:var(--danger);"><i class="fas fa-exclamation-triangle"></i> حدث خطأ أثناء تحميل البيانات</div>`;
+        list.innerHTML += `
+          <div class="dashboard-card fadeIn">
+            <div class="dash-header">
+              <div class="dash-title">
+                <h4><i class="fas fa-users" style="color:var(--primary); margin-left:8px;"></i> ${escapeHtml(c.groups?.name)} - ${escapeHtml(c.title)}</h4>
+                <span><i class="fas fa-circle" style="color:${c.status === 'open' ? '#10b981' : '#ef4444'}; font-size:8px; margin-left:6px;"></i> ${c.status === 'open' ? 'نشطة' : 'مغلقة'}</span>
+              </div>
+              <div class="badge" style="font-size:13px; padding:8px 14px;">
+                <i class="fas fa-coins" style="margin-left:6px;"></i>
+                ${c.monthly_amount} Pi/شهر
+              </div>
+            </div>
+
+            ${payoutBadge}
+            ${insuranceHTML}
+
+            <div class="payment-progress">
+              <div class="progress-label">
+                <span>تم سداد ${paidCount} من ${c.months} أقساط</span>
+                <span style="color:var(--primary); font-weight:800;">${Math.round(progressPercent)}%</span>
+              </div>
+              <div class="track">
+                <div class="fill" style="width: ${progressPercent}%"></div>
+              </div>
+            </div>
+
+            <div class="stats-grid">
+               <div class="stat-box">
+                 <small><i class="fas fa-sort-numeric-up"></i> دورك</small>
+                 <strong>${m.position}</strong>
+               </div>
+               <div class="stat-box ${isPayoutSoon ? 'highlight' : ''}">
+                 <small><i class="fas fa-calendar-day"></i> موعد القبض</small>
+                 <strong>${formatDate(payoutDate)}</strong>
+               </div>
+               <div class="stat-box">
+                 <small><i class="fas fa-money-bill-wave"></i> مدفوع</small>
+                 <strong>${paidAmountTotal} Pi</strong>
+               </div>
+               <div class="stat-box">
+                 <small><i class="fas fa-hourglass-half"></i> متبقي</small>
+                 <strong>${remainingAmount} Pi</strong>
+               </div>
+            </div>
+
+            ${historyHTML}
+
+            <div style="margin-top:16px;">
+              ${!isCompleted ? 
+                `<button class="btn btn-primary action-btn" onclick="payInstallment(${c.id}, ${c.monthly_amount}, ${m.id}, ${nextInstallmentNum}, ${c.platform_fee_per_installment || 1})" ${needsInsurance ? 'disabled' : ''}>
+                   <i class="fas fa-credit-card"></i>
+                   دفع القسط القادم (${nextInstallmentNum}) + ${c.platform_fee_per_installment || 1} Pi رسوم
+                 </button>` 
+                : 
+                `<div class="success-badge">
+                  <i class="fas fa-trophy"></i>
+                  مبروك! اكتملت جميع الأقساط
+                </div>
+                <button class="btn btn-soft action-btn" onclick="openRatingModal(${c.id})" style="margin-top: 8px;">
+                  <i class="fas fa-star"></i> تقييم الأعضاء
+                </button>`
+              }
+              ${needsInsurance ? '<p class="muted" style="text-align: center; margin-top: 8px; font-size: 12px; color: var(--warning);">يجب دفع التأمين أولاً</p>' : ''}
+            </div>
+          </div>
+        `;
       }
-    }
 
-    // ===================== Insurance Payment =====================
-    async function payInsurance(memberId, cycleId, amount) {
-      if (!requireLogin()) return;
+  } catch (err) {
+      console.error(err);
+      list.innerHTML = `<div class="muted" style="text-align:center; padding:20px; color:var(--danger);"><i class="fas fa-exclamation-triangle"></i> حدث خطأ أثناء تحميل البيانات</div>`;
+  }
+}
+
+// ===================== Insurance Payment =====================
+async function payInsurance(memberId, cycleId, amount) {
+  if (!requireLogin()) return;
+  
+  const confirmed = confirm(`تأكيد دفع تأمين بمبلغ ${amount} Pi؟\n\nسيتم استرداد هذا المبلغ بعد اكتمال الدورة بنجاح.`);
+  if(!confirmed) return;
+
+  toast("جاري التحضير", "يتم الاتصال بمحفظة Pi...", "info");
+
+  try {
+    const paymentData = {
+      amount: amount,
+      memo: `تأمين ضمان - عضو ${memberId}`,
+      metadata: { 
+          type: 'insurance',
+          memberId: memberId,
+          cycleId: cycleId
+      }
+    };
+
+    const callbacks = {
+      onReadyForServerApproval: (paymentId) => {
+        toast("الموافقة", "جاري التحقق من المعاملة...", "info");
+        fetch("/.netlify/functions/approve", {
+             method: "POST", headers: { "Content-Type": "application/json" },
+             body: JSON.stringify({ paymentId })
+        }).catch(() => {}); 
+      },
       
-      const confirmed = confirm(`تأكيد دفع تأمين بمبلغ ${amount} Pi؟\n\nسيتم استرداد هذا المبلغ بعد اكتمال الدورة بنجاح.`);
-      if(!confirmed) return;
+      onReadyForServerCompletion: async (paymentId, txid) => {
+        toast("جاري الحفظ", "يتم تسجيل التأمين...", "info");
 
-      toast("جاري التحضير", "يتم الاتصال بمحفظة Pi...", "info");
+        const { error } = await sb.from('insurance_deposits').insert({
+            member_id: memberId,
+            pi_uid: user.uid,
+            cycle_id: cycleId,
+            amount: amount,
+            status: 'held',
+            payment_id: paymentId,
+            txid: txid
+        });
 
-      try {
-        const paymentData = {
-          amount: amount,
-          memo: `تأمين ضمان - عضو ${memberId}`,
-          metadata: { 
-              type: 'insurance',
-              memberId: memberId,
-              cycleId: cycleId
-          }
-        };
-
-        const callbacks = {
-          onReadyForServerApproval: (paymentId) => {
-            toast("الموافقة", "جاري التحقق من المعاملة...", "info");
-            fetch("/.netlify/functions/approve", {
-                 method: "POST", headers: { "Content-Type": "application/json" },
-                 body: JSON.stringify({ paymentId })
-            }).catch(() => {}); 
-          },
-          
-          onReadyForServerCompletion: async (paymentId, txid) => {
-            toast("جاري الحفظ", "يتم تسجيل التأمين...", "info");
-
-            const { error } = await sb.from('insurance_deposits').insert({
-                member_id: memberId,
-                pi_uid: user.uid,
-                cycle_id: cycleId,
-                amount: amount,
-                status: 'held',
-                payment_id: paymentId,
-                txid: txid
+        if (error) {
+            toast("تنبيه", "تم الدفع ولكن فشل الحفظ", "warning");
+        } else {
+            toast("تم بنجاح!", "تم دفع التأمين بنجاح", "success");
+            fetch("/.netlify/functions/complete", {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ paymentId, txid })
             });
-
-            if (error) {
-                toast("تنبيه", "تم الدفع ولكن فشل الحفظ", "warning");
-            } else {
-                toast("تم بنجاح!", "تم دفع التأمين بنجاح", "success");
-                fetch("/.netlify/functions/complete", {
-                    method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ paymentId, txid })
-                });
-                loadMyCycles();
-            }
-          },
-          
-          onCancel: () => { toast("إلغاء", "تم إلغاء العملية", "warning"); },
-          onError: (err) => { toast("خطأ", "حدث خطأ: " + err.message, "error"); }
-        };
-
-        await Pi.createPayment(paymentData, callbacks);
-
-      } catch (e) {
-        toast("خطأ", "فشل بدء الدفع", "error");
-      }
-    }
-
-    // ===================== عملية الدفع (مع الرسوم) =====================
-    async function payInstallment(cycleId, amount, memberId, installmentNum, platformFee) {
-      if (!requireLogin()) return;
+            loadMyCycles();
+        }
+      },
       
-      const totalAmount = amount + platformFee;
-      const confirmed = confirm(`تفاصيل الدفع:
+      onCancel: () => { toast("إلغاء", "تم إلغاء العملية", "warning"); },
+      onError: (err) => { toast("خطأ", "حدث خطأ: " + err.message, "error"); }
+    };
+
+    await Pi.createPayment(paymentData, callbacks);
+
+  } catch (e) {
+    toast("خطأ", "فشل بدء الدفع", "error");
+  }
+}
+
+// ===================== عملية الدفع (مع الرسوم) =====================
+async function payInstallment(cycleId, amount, memberId, installmentNum, platformFee) {
+  if (!requireLogin()) return;
+  
+  const totalAmount = amount + platformFee;
+  const confirmed = confirm(`تفاصيل الدفع:
 • مبلغ القسط: ${amount} Pi
 • رسوم المنصة: ${platformFee} Pi
 • الإجمالي: ${totalAmount} Pi
 
 تأكيد الدفع؟`);
-      
-      if(!confirmed) return;
+  
+  if(!confirmed) return;
 
-      toast("جاري التحضير", "يتم الاتصال بمحفظة Pi...", "info");
+  toast("جاري التحضير", "يتم الاتصال بمحفظة Pi...", "info");
 
-      try {
-        // First payment: Installment + Fee
-        const paymentData = {
-          amount: totalAmount,
-          memo: `قسط ${installmentNum} + رسوم - عضو ${memberId}`,
-          metadata: { 
-              cycleId: cycleId, 
-              memberId: memberId,
-              installment: installmentNum,
-              platformFee: platformFee,
-              originalAmount: amount
-          }
-        };
-
-        const callbacks = {
-          onReadyForServerApproval: (paymentId) => {
-            toast("الموافقة", "جاري التحقق من المعاملة...", "info");
-            fetch("/.netlify/functions/approve", {
-                 method: "POST", headers: { "Content-Type": "application/json" },
-                 body: JSON.stringify({ paymentId })
-            }).catch(() => {}); 
-          },
-          
-          onReadyForServerCompletion: async (paymentId, txid) => {
-            toast("جاري الحفظ", "يتم تسجيل الدفعة...", "info");
-
-            // Save main payment
-            const { data: paymentRecord, error: paymentError } = await sb.from('payments').insert({
-                member_id: memberId,
-                amount: amount,
-                status: 'confirmed',
-                installment_number: installmentNum,
-                payment_id: paymentId,
-                txid: txid
-            }).select().single();
-
-            if (paymentError) {
-                toast("تنبيه", "تم الدفع ولكن فشل حفظ القسط", "warning");
-                return;
-            }
-
-            // Save platform fee record
-            await sb.from('platform_fees').insert({
-                payment_id: paymentRecord.id,
-                member_id: memberId,
-                cycle_id: cycleId,
-                installment_amount: amount,
-                fee_amount: platformFee,
-                total_amount: totalAmount,
-                pi_payment_id: paymentId,
-                txid: txid,
-                status: 'paid',
-                paid_at: new Date().toISOString()
-            });
-
-            // Create notification for successful payment
-            await sb.from('notifications').insert({
-                pi_uid: user.uid,
-                title: 'تم دفع القسط بنجاح',
-                message: `تم دفع القسط رقم ${installmentNum} بمبلغ ${amount} Pi بنجاح`,
-                type: 'payment_received'
-            });
-
-            toast("تم بنجاح!", `تم دفع القسط ${installmentNum} والرسوم بنجاح`, "success");
-            
-            fetch("/.netlify/functions/complete", {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ paymentId, txid })
-            });
-
-            setTimeout(() => loadMyCycles(), 1500);
-          },
-          
-          onCancel: () => { toast("إلغاء", "تم إلغاء العملية", "warning"); },
-          onError: (err) => { toast("خطأ", "حدث خطأ: " + err.message, "error"); }
-        };
-
-        await Pi.createPayment(paymentData, callbacks);
-
-      } catch (e) {
-        toast("خطأ", "فشل بدء الدفع", "error");
+  try {
+    // First payment: Installment + Fee
+    const paymentData = {
+      amount: totalAmount,
+      memo: `قسط ${installmentNum} + رسوم - عضو ${memberId}`,
+      metadata: { 
+          cycleId: cycleId, 
+          memberId: memberId,
+          installment: installmentNum,
+          platformFee: platformFee,
+          originalAmount: amount
       }
-    }
+    };
 
-    // ===================== Chat System =====================
-    async function loadChatCycles() {
-      const container = document.getElementById('chatContainer');
+    const callbacks = {
+      onReadyForServerApproval: (paymentId) => {
+        toast("الموافقة", "جاري التحقق من المعاملة...", "info");
+        fetch("/.netlify/functions/approve", {
+             method: "POST", headers: { "Content-Type": "application/json" },
+             body: JSON.stringify({ paymentId })
+        }).catch(() => {}); 
+      },
       
-      try {
-        const { data: members } = await sb
-          .from('members')
-          .select(`
-            id,
-            cycles (id, title, groups(name))
-          `)
-          .eq('pi_uid', user.uid);
-        
-        if (!members || members.length === 0) {
-          container.innerHTML = `
-            <div class="muted" style="text-align: center; padding: 40px;">
-              <i class="fas fa-comments" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
-              <p>لست مشتركاً في أي جمعية للدردشة</p>
-            </div>
-          `;
-          return;
+      onReadyForServerCompletion: async (paymentId, txid) => {
+        toast("جاري الحفظ", "يتم تسجيل الدفعة...", "info");
+
+        // Save main payment
+        const { data: paymentRecord, error: paymentError } = await sb.from('payments').insert({
+            member_id: memberId,
+            amount: amount,
+            status: 'confirmed',
+            installment_number: installmentNum,
+            payment_id: paymentId,
+            txid: txid
+        }).select().single();
+
+        if (paymentError) {
+            toast("تنبيه", "تم الدفع ولكن فشل حفظ القسط", "warning");
+            return;
         }
-        
-        // Show cycle selector and chat
-        const currentMember = members[0]; // Default to first, could add selector
-        currentCycleId = parseInt(currentMember.cycles.id);
-        
-        container.innerHTML = `
-          <div style="margin-bottom: 16px;">
-            <select class="btn btn-ghost" style="width: 100%; justify-content: space-between;" onchange="switchChatCycle(this.value)">
-              ${members.map(m => `<option value="${m.cycles.id}">${m.cycles.groups.name} - ${m.cycles.title}</option>`).join('')}
-            </select>
-          </div>
-          <div class="chat-container">
-            <div class="chat-messages" id="chatMessages"></div>
-            <div class="chat-input-area">
-              <input type="text" id="chatInput" placeholder="اكتب رسالتك..." onkeypress="if(event.key==='Enter') sendMessage()">
-              <button class="btn btn-primary" onclick="sendMessage()">
-                <i class="fas fa-paper-plane"></i>
-              </button>
-            </div>
-          </div>
-        `;
-        
-        loadMessages(currentCycleId);
-        
-        // Subscribe to new messages
-        sb.channel('chat-messages')
-          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `cycle_id=eq.${currentCycleId}` }, payload => {
-            appendMessage(payload.new);
-          })
-          .subscribe();
-          
-      } catch (e) {
-        container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--danger);">فشل تحميل المحادثات</div>';
-      }
-    }
 
-    function switchChatCycle(cycleId) {
-      currentCycleId = cycleId;
-      loadMessages(cycleId);
-    }
+        // Save platform fee record
+        await sb.from('platform_fees').insert({
+            payment_id: paymentRecord.id,
+            member_id: memberId,
+            cycle_id: cycleId,
+            installment_amount: amount,
+            fee_amount: platformFee,
+            total_amount: totalAmount,
+            pi_payment_id: paymentId,
+            txid: txid,
+            status: 'paid',
+            paid_at: new Date().toISOString()
+        });
 
-    async function loadMessages(cycleId) {
-      const container = document.getElementById('chatMessages');
-      container.innerHTML = '<div style="text-align: center; padding: 20px;"><div class="loader" style="width: 30px; height: 30px;"></div></div>';
+        // Create notification for successful payment
+        await sb.from('notifications').insert({
+            pi_uid: user.uid,
+            title: 'تم دفع القسط بنجاح',
+            message: `تم دفع القسط رقم ${installmentNum} بمبلغ ${amount} Pi بنجاح`,
+            type: 'payment_received'
+        });
+
+        toast("تم بنجاح!", `تم دفع القسط ${installmentNum} والرسوم بنجاح`, "success");
+        
+        fetch("/.netlify/functions/complete", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ paymentId, txid })
+        });
+
+        setTimeout(() => loadMyCycles(), 1500);
+      },
       
-      try {
-        const { data: messages } = await sb
-          .from('messages')
-          .select('*')
-          .eq('cycle_id', cycleId)
-          .order('created_at', { ascending: true })
-          .limit(50);
-        
-        container.innerHTML = '';
-        messages.forEach(m => appendMessage(m));
-        container.scrollTop = container.scrollHeight;
-      } catch (e) {
-        container.innerHTML = '<div style="text-align: center; color: var(--danger);">فشل تحميل الرسائل</div>';
-      }
-    }
+      onCancel: () => { toast("إلغاء", "تم إلغاء العملية", "warning"); },
+      onError: (err) => { toast("خطأ", "حدث خطأ: " + err.message, "error"); }
+    };
 
-    function appendMessage(msg) {
-      const container = document.getElementById('chatMessages');
-      const isOwn = msg.pi_uid === user.uid;
-      
-      const div = document.createElement('div');
-      div.className = `chat-message ${isOwn ? 'own' : 'other'}`;
-      div.innerHTML = `
-        ${!isOwn ? `<div class="sender">${escapeHtml(msg.username)}</div>` : ''}
-        <div>${escapeHtml(msg.message)}</div>
-        <div class="time">${new Date(msg.created_at).toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'})}</div>
+    await Pi.createPayment(paymentData, callbacks);
+
+  } catch (e) {
+    toast("خطأ", "فشل بدء الدفع", "error");
+  }
+}
+
+// ===================== Chat System =====================
+async function loadChatCycles() {
+  const container = document.getElementById('chatContainer');
+  
+  try {
+    const { data: members } = await sb
+      .from('members')
+      .select(`
+        id,
+        cycles (id, title, groups(name))
+      `)
+      .eq('pi_uid', user.uid);
+    
+    if (!members || members.length === 0) {
+      container.innerHTML = `
+        <div class="muted" style="text-align: center; padding: 40px;">
+          <i class="fas fa-comments" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+          <p>لست مشتركاً في أي جمعية للدردشة</p>
+        </div>
       `;
-      
-      container.appendChild(div);
-      container.scrollTop = container.scrollHeight;
+      return;
     }
-
-    async function sendMessage() {
-      const input = document.getElementById('chatInput');
-      const message = input.value.trim();
-      if (!message || !currentCycleId) return;
+    
+    // Show cycle selector and chat
+    const currentMember = members[0]; // Default to first, could add selector
+    currentCycleId = parseInt(currentMember.cycles.id);
+    
+    container.innerHTML = `
+      <div style="margin-bottom: 16px;">
+        <select class="btn btn-ghost" style="width: 100%; justify-content: space-between;" onchange="switchChatCycle(this.value)">
+          ${members.map(m => `<option value="${m.cycles.id}">${m.cycles.groups.name} - ${m.cycles.title}</option>`).join('')}
+        </select>
+      </div>
+      <div class="chat-container">
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input-area">
+          <input type="text" id="chatInput" placeholder="اكتب رسالتك..." onkeypress="if(event.key==='Enter') sendMessage()">
+          <button class="btn btn-primary" onclick="sendMessage()">
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </div>
+      </div>
+    `;
+    
+    loadMessages(currentCycleId);
+    
+    // Subscribe to new messages
+    sb.channel('chat-messages')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `cycle_id=eq.${currentCycleId}` }, payload => {
+        appendMessage(payload.new);
+      })
+      .subscribe();
       
-      input.value = '';
-      
-      try {
-        await sb.from('messages').insert({
-          cycle_id: currentCycleId,
-          pi_uid: user.uid,
-          username: user.username,
-          message: message
-        });
-      } catch (e) {
-        toast("خطأ", "فشل إرسال الرسالة", "error");
-      }
-    }
+  } catch (e) {
+    container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--danger);">فشل تحميل المحادثات</div>';
+  }
+}
 
-    // ===================== Rating System =====================
-    function openRatingModal(cycleId) {
-      document.getElementById('ratingModal').classList.add('active');
-      loadRatingMembers(cycleId);
-    }
+function switchChatCycle(cycleId) {
+  currentCycleId = cycleId;
+  loadMessages(cycleId);
+}
 
-    async function loadRatingMembers(cycleId) {
-      const container = document.getElementById('ratingList');
-      container.innerHTML = '<div style="text-align: center; padding: 20px;"><div class="loader"></div></div>';
-      
-      try {
-        const { data: members } = await sb
-          .from('members')
-          .select('pi_uid, username')
-          .eq('cycle_id', cycleId)
-          .neq('pi_uid', user.uid);
-        
-        const { data: existingRatings } = await sb
-          .from('ratings')
-          .select('rated_uid, rating')
-          .eq('cycle_id', cycleId)
-          .eq('rater_uid', user.uid);
-        
-        const ratedMap = new Map(existingRatings?.map(r => [r.rated_uid, r.rating]));
-        
-        container.innerHTML = members.map(m => `
-          <div style="padding: 16px; border-bottom: 1px solid var(--border);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-              <strong>${escapeHtml(m.username)}</strong>
-              ${ratedMap.has(m.pi_uid) ? '<span class="badge badge-success">تم التقييم</span>' : ''}
-            </div>
-            <div class="rating-stars" data-user="${m.pi_uid}">
-              ${[1,2,3,4,5].map(star => `
-                <i class="fas fa-star star ${ratedMap.get(m.pi_uid) >= star ? 'active' : ''}" 
-                   onclick="submitRating('${cycleId}', '${m.pi_uid}', ${star})"
-                   style="${ratedMap.has(m.pi_uid) ? 'pointer-events: none; opacity: 0.6;' : ''}"></i>
-              `).join('')}
-            </div>
-          </div>
-        `).join('');
-        
-      } catch (e) {
-        container.innerHTML = '<div style="text-align: center; color: var(--danger);">فشل تحميل الأعضاء</div>';
-      }
-    }
+async function loadMessages(cycleId) {
+  const container = document.getElementById('chatMessages');
+  container.innerHTML = '<div style="text-align: center; padding: 20px;"><div class="loader" style="width: 30px; height: 30px;"></div></div>';
+  
+  try {
+    const { data: messages } = await sb
+      .from('messages')
+      .select('*')
+      .eq('cycle_id', cycleId)
+      .order('created_at', { ascending: true })
+      .limit(50);
+    
+    container.innerHTML = '';
+    messages.forEach(m => appendMessage(m));
+    container.scrollTop = container.scrollHeight;
+  } catch (e) {
+    container.innerHTML = '<div style="text-align: center; color: var(--danger);">فشل تحميل الرسائل</div>';
+  }
+}
 
-    async function submitRating(cycleId, ratedUid, rating) {
-      try {
-        const { error } = await sb.from('ratings').insert({
-          cycle_id: parseInt(cycleId),
-          rater_uid: user.uid,
-          rated_uid: ratedUid,
-          rating: rating
-        });
-        
-        if (error) throw error;
-        
-        toast("تم", "تم حفظ تقييمك بنجاح", "success");
-        loadRatingMembers(cycleId);
-        
-      } catch (e) {
-        toast("خطأ", "فشل حفظ التقييم", "error");
-      }
-    }
+function appendMessage(msg) {
+  const container = document.getElementById('chatMessages');
+  const isOwn = msg.pi_uid === user.uid;
+  
+  const div = document.createElement('div');
+  div.className = `chat-message ${isOwn ? 'own' : 'other'}`;
+  div.innerHTML = `
+    ${!isOwn ? `<div class="sender">${escapeHtml(msg.username)}</div>` : ''}
+    <div>${escapeHtml(msg.message)}</div>
+    <div class="time">${new Date(msg.created_at).toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'})}</div>
+  `;
+  
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
 
-    // ===================== Reports System =====================
-    async function loadReports() {
-      const container = document.getElementById('reportsContainer');
-      
-      try {
-        const { data: members } = await sb
-          .from('members')
-          .select(`
-            cycle_id,
-            cycles(id, title, status, groups(name))
-          `)
-          .eq('pi_uid', user.uid);
-        
-        if (!members || members.length === 0) {
-          container.innerHTML = `
-            <div class="muted" style="text-align: center; padding: 40px;">
-              <i class="fas fa-file-alt" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
-              <p>لا توجد دورات مشترك بها للحصول على تقارير</p>
-            </div>
-          `;
-          return;
-        }
-        
-        // Generate reports for completed cycles
-        const completedCycles = members.filter(m => m.cycles.status === 'completed');
-        
-        if (completedCycles.length === 0) {
-          container.innerHTML = `
-            <div class="muted" style="text-align: center; padding: 40px;">
-              <i class="fas fa-clock" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
-              <p>ستتوفر التقارير بعد اكتمال الدورات</p>
-            </div>
-          `;
-          return;
-        }
-        
-        container.innerHTML = completedCycles.map(m => `
-          <div class="report-card">
-            <div class="report-info">
-              <h5>${escapeHtml(m.cycles.groups.name)} - ${escapeHtml(m.cycles.title)}</h5>
-              <span><i class="fas fa-check-circle" style="color: var(--success);"></i> دورة مكتملة</span>
-            </div>
-            <button class="btn btn-soft btn-sm" onclick="generateReport(${m.cycle_id})">
-              <i class="fas fa-download"></i> تحميل التقرير
-            </button>
-          </div>
-        `).join('');
-        
-      } catch (e) {
-        container.innerHTML = '<div style="text-align: center; color: var(--danger);">فشل تحميل التقارير</div>';
-      }
-    }
+async function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const message = input.value.trim();
+  if (!message || !currentCycleId) return;
+  
+  input.value = '';
+  
+  try {
+    await sb.from('messages').insert({
+      cycle_id: currentCycleId,
+      pi_uid: user.uid,
+      username: user.username,
+      message: message
+    });
+  } catch (e) {
+    toast("خطأ", "فشل إرسال الرسالة", "error");
+  }
+}
 
-    async function generateReport(cycleId) {
-      toast("جاري التحضير", "يتم إنشاء التقرير المالي...", "info");
-      
-      try {
-        // Fetch all data for report
-        const { data: payments } = await sb
-          .from('payments')
-          .select('*, members(username, position)')
-          .eq('cycle_id', cycleId)
-          .eq('status', 'confirmed');
-        
-        const { data: cycle } = await sb
-          .from('cycles')
-          .select('*, groups(name)')
-          .eq('id', cycleId)
-          .single();
-        
-        // Generate PDF content (simplified - in production use proper PDF library)
-        const reportData = {
-          cycle: cycle,
-          payments: payments,
-          generatedAt: new Date().toISOString(),
-          totalCollected: payments.reduce((sum, p) => sum + p.amount, 0)
-        };
-        
-        // Save report to database
-        await sb.from('financial_reports').insert({
-          cycle_id: cycleId,
-          report_type: 'cycle_complete',
-          report_data: reportData,
-          generated_by: user.uid
-        });
-        
-        // Create downloadable content
-        const reportText = `
+// ===================== Rating System =====================
+function openRatingModal(cycleId) {
+  document.getElementById('ratingModal').classList.add('active');
+  loadRatingMembers(cycleId);
+}
+
+async function loadRatingMembers(cycleId) {
+  const container = document.getElementById('ratingList');
+  container.innerHTML = '<div style="text-align: center; padding: 20px;"><div class="loader"></div></div>';
+  
+  try {
+    const { data: members } = await sb
+      .from('members')
+      .select('pi_uid, username')
+      .eq('cycle_id', cycleId)
+      .neq('pi_uid', user.uid);
+    
+    const { data: existingRatings } = await sb
+      .from('ratings')
+      .select('rated_uid, rating')
+      .eq('cycle_id', cycleId)
+      .eq('rater_uid', user.uid);
+    
+    const ratedMap = new Map(existingRatings?.map(r => [r.rated_uid, r.rating]));
+    
+    container.innerHTML = members.map(m => `
+      <div style="padding: 16px; border-bottom: 1px solid var(--border);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <strong>${escapeHtml(m.username)}</strong>
+          ${ratedMap.has(m.pi_uid) ? '<span class="badge badge-success">تم التقييم</span>' : ''}
+        </div>
+        <div class="rating-stars" data-user="${m.pi_uid}">
+          ${[1,2,3,4,5].map(star => `
+            <i class="fas fa-star star ${ratedMap.get(m.pi_uid) >= star ? 'active' : ''}" 
+               onclick="submitRating('${cycleId}', '${m.pi_uid}', ${star})"
+               style="${ratedMap.has(m.pi_uid) ? 'pointer-events: none; opacity: 0.6;' : ''}"></i>
+          `).join('')}
+        </div>
+      </div>
+    `).join('');
+    
+  } catch (e) {
+    container.innerHTML = '<div style="text-align: center; color: var(--danger);">فشل تحميل الأعضاء</div>';
+  }
+}
+
+async function submitRating(cycleId, ratedUid, rating) {
+  try {
+    const { error } = await sb.from('ratings').insert({
+      cycle_id: parseInt(cycleId),
+      rater_uid: user.uid,
+      rated_uid: ratedUid,
+      rating: rating
+    });
+    
+    if (error) throw error;
+    
+    toast("تم", "تم حفظ تقييمك بنجاح", "success");
+    loadRatingMembers(cycleId);
+    
+  } catch (e) {
+    toast("خطأ", "فشل حفظ التقييم", "error");
+  }
+}
+
+// ===================== Reports System =====================
+async function loadReports() {
+  const container = document.getElementById('reportsContainer');
+  
+  try {
+    const { data: members } = await sb
+      .from('members')
+      .select(`
+        cycle_id,
+        cycles(id, title, status, groups(name))
+      `)
+      .eq('pi_uid', user.uid);
+    
+    if (!members || members.length === 0) {
+      container.innerHTML = `
+        <div class="muted" style="text-align: center; padding: 40px;">
+          <i class="fas fa-file-alt" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+          <p>لا توجد دورات مشترك بها للحصول على تقارير</p>
+        </div>
+      `;
+      return;
+    }
+    
+    // Generate reports for completed cycles
+    const completedCycles = members.filter(m => m.cycles.status === 'completed');
+    
+    if (completedCycles.length === 0) {
+      container.innerHTML = `
+        <div class="muted" style="text-align: center; padding: 40px;">
+          <i class="fas fa-clock" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+          <p>ستتوفر التقارير بعد اكتمال الدورات</p>
+        </div>
+      `;
+      return;
+    }
+    
+    container.innerHTML = completedCycles.map(m => `
+      <div class="report-card">
+        <div class="report-info">
+          <h5>${escapeHtml(m.cycles.groups.name)} - ${escapeHtml(m.cycles.title)}</h5>
+          <span><i class="fas fa-check-circle" style="color: var(--success);"></i> دورة مكتملة</span>
+        </div>
+        <button class="btn btn-soft btn-sm" onclick="generateReport(${m.cycle_id})">
+          <i class="fas fa-download"></i> تحميل التقرير
+        </button>
+      </div>
+    `).join('');
+    
+  } catch (e) {
+    container.innerHTML = '<div style="text-align: center; color: var(--danger);">فشل تحميل التقارير</div>';
+  }
+}
+
+async function generateReport(cycleId) {
+  toast("جاري التحضير", "يتم إنشاء التقرير المالي...", "info");
+  
+  try {
+    // Fetch all data for report
+    const { data: payments } = await sb
+      .from('payments')
+      .select('*, members(username, position)')
+      .eq('cycle_id', cycleId)
+      .eq('status', 'confirmed');
+    
+    const { data: cycle } = await sb
+      .from('cycles')
+      .select('*, groups(name)')
+      .eq('id', cycleId)
+      .single();
+    
+    // Generate PDF content (simplified - in production use proper PDF library)
+    const reportData = {
+      cycle: cycle,
+      payments: payments,
+      generatedAt: new Date().toISOString(),
+      totalCollected: payments.reduce((sum, p) => sum + p.amount, 0)
+    };
+    
+    // Save report to database
+    await sb.from('financial_reports').insert({
+      cycle_id: cycleId,
+      report_type: 'cycle_complete',
+      report_data: reportData,
+      generated_by: user.uid
+    });
+    
+    // Create downloadable content
+    const reportText = `
 تقرير مالي - ${cycle.groups.name} - ${cycle.title}
 =====================================
 تاريخ التقرير: ${formatDate(new Date())}
@@ -2655,208 +2800,214 @@ ${payments.map(p => `- ${p.members.username} (دور ${p.members.position}): ${p
 
 =====================================
 تم إنشاء هذا التقرير بواسطة moneypi
-        `;
-        
-        const blob = new Blob([reportText], { type: 'text/plain;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `تقرير_${cycle.groups.name}_${cycle.title}_${Date.now()}.txt`;
-        a.click();
-        URL.revokeObjectURL(url);
-        
-        toast("تم", "تم إنشاء وتحميل التقرير بنجاح", "success");
-        
-      } catch (e) {
-        toast("خطأ", "فشل إنشاء التقرير", "error");
-      }
+    `;
+    
+    const blob = new Blob([reportText], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `تقرير_${cycle.groups.name}_${cycle.title}_${Date.now()}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    toast("تم", "تم إنشاء وتحميل التقرير بنجاح", "success");
+    
+  } catch (e) {
+    toast("خطأ", "فشل إنشاء التقرير", "error");
+  }
+}
+
+// ===================== تحميل الجمعيات =====================
+async function loadGroups() {
+  const grid = document.getElementById("groups");
+  if(!grid) return;
+  
+  grid.innerHTML = `<div class="card" style="grid-column:1/-1; text-align:center; padding:40px;"><div class="loader"></div><p class="muted" style="margin-top:16px;">جاري تحميل الجمعيات...</p></div>`;
+
+  try {
+    const { data: groups } = await sb.from("groups").select("*, cycles(*)").order('created_at', { ascending: false });
+
+    if (!groups || groups.length === 0) {
+      grid.innerHTML = `
+        <div class="card" style="grid-column:1/-1; text-align:center; padding:40px;">
+          <i class="fas fa-folder-open" style="font-size:48px; color:var(--text-muted); margin-bottom:16px;"></i>
+          <p class="muted">لا توجد جمعيات متاحة حالياً</p>
+        </div>`;
+      return;
     }
 
-    // ===================== تحميل الجمعيات =====================
-    async function loadGroups() {
-      const grid = document.getElementById("groups");
-      if(!grid) return;
+    grid.innerHTML = groups.map(g => {
+      const activeCycle = g.cycles?.find(c => c.status === 'open') || g.cycles?.[0];
+      const amount = activeCycle ? activeCycle.monthly_amount : "---";
+      const status = activeCycle?.status === 'open' ? 
+        '<span class="badge" style="background:#d1fae5; color:#065f46;"><i class="fas fa-circle" style="font-size:6px; margin-left:6px;"></i>متاحة</span>' : 
+        '<span class="badge" style="background:#fee2e2; color:#991b1b;">مغلقة</span>';
       
-      grid.innerHTML = `<div class="card" style="grid-column:1/-1; text-align:center; padding:40px;"><div class="loader"></div><p class="muted" style="margin-top:16px;">جاري تحميل الجمعيات...</p></div>`;
-
-      try {
-        const { data: groups } = await sb.from("groups").select("*, cycles(*)").order('created_at', { ascending: false });
-
-        if (!groups || groups.length === 0) {
-          grid.innerHTML = `
-            <div class="card" style="grid-column:1/-1; text-align:center; padding:40px;">
-              <i class="fas fa-folder-open" style="font-size:48px; color:var(--text-muted); margin-bottom:16px;"></i>
-              <p class="muted">لا توجد جمعيات متاحة حالياً</p>
-            </div>`;
-          return;
-        }
-
-        grid.innerHTML = groups.map(g => {
-          const activeCycle = g.cycles?.find(c => c.status === 'open') || g.cycles?.[0];
-          const amount = activeCycle ? activeCycle.monthly_amount : "---";
-          const status = activeCycle?.status === 'open' ? 
-            '<span class="badge" style="background:#d1fae5; color:#065f46;"><i class="fas fa-circle" style="font-size:6px; margin-left:6px;"></i>متاحة</span>' : 
-            '<span class="badge" style="background:#fee2e2; color:#991b1b;">مغلقة</span>';
-          
-          const insuranceBadge = activeCycle?.insurance_required ? 
-            `<span class="badge badge-warning" style="margin-right: 8px;"><i class="fas fa-shield-alt"></i> تأمين ${activeCycle.insurance_amount} Pi</span>` : '';
-          
-          return `
-            <div class="card fadeIn">
-              <div class="cardTop">
-                <div>
-                  <h3>${escapeHtml(g.name)}</h3>
-                  <div style="margin-top: 8px;">
-                    ${status}
-                    ${insuranceBadge}
-                  </div>
-                </div>
-                <div class="badge" style="font-size:14px; padding:8px 12px;">
-                  <i class="fas fa-coins" style="margin-left:6px;"></i>
-                  ${amount} Pi
-                </div>
-              </div>
-              <p class="muted" style="margin-bottom:16px; min-height:40px;">${escapeHtml(g.description || "جمعية مضمونة وآمنة عبر Pi Network")}</p>
-              <div style="background: var(--bg); padding: 12px; border-radius: var(--radius); margin-bottom: 12px; font-size: 12px; color: var(--text-muted);">
-                <i class="fas fa-info-circle"></i> رسوم المنصة: ${activeCycle?.platform_fee_per_installment || 1} Pi على كل قسط
-              </div>
-              <button class="btn btn-soft full-width" onclick="showCycles(${g.id})" style="width:100%;">
-                <i class="fas fa-eye"></i>
-                عرض التفاصيل والاشتراك
-              </button>
-              <div id="group-cycles-${g.id}" style="margin-top:16px; display:none;"></div>
-            </div>
-          `;
-        }).join("");
-      } catch(e) {
-        grid.innerHTML = `<div class="card" style="grid-column:1/-1; color:var(--danger); text-align:center;"><i class="fas fa-exclamation-circle"></i> فشل تحميل الجمعيات</div>`;
-      }
-    }
-
-    async function showCycles(groupId) {
-      const container = document.getElementById(`group-cycles-${groupId}`);
-      if (container.style.display === "block") { 
-        container.style.display = "none"; 
-        return; 
-      }
+      const insuranceBadge = activeCycle?.insurance_required ? 
+        `<span class="badge badge-warning" style="margin-right: 8px;"><i class="fas fa-shield-alt"></i> تأمين ${activeCycle.insurance_amount} Pi</span>` : '';
       
-      container.style.display = "block";
-      container.innerHTML = '<div style="text-align:center; padding:20px;"><div class="loader" style="width:30px; height:30px;"></div></div>';
-  
-      try {
-        const { data: cycles } = await sb.from("cycles").select("*").eq("group_id", groupId).eq("status", "open");
-        if(!cycles || cycles.length === 0) {
-          container.innerHTML = "<div class='muted' style='text-align:center; padding:16px; background:var(--bg); border-radius:var(--radius); margin-top:8px;'><i class='fas fa-info-circle'></i> لا توجد دورات متاحة حالياً</div>"; 
-          return;
-        }
-  
-        container.innerHTML = cycles.map(c => `
-          <div style="background:linear-gradient(135deg, var(--bg) 0%, var(--surface) 100%); padding:16px; border-radius:var(--radius); margin-top:8px; border:1px solid var(--border);">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-              <div>
-                <b style="font-size:16px; color:var(--text);">${escapeHtml(c.title)}</b>
-                <div style="font-size:13px; color:var(--text-muted); margin-top:4px;">
-                  <i class="fas fa-clock" style="margin-left:4px;"></i>
-                  ${c.months} أشهر
-                  ${c.insurance_required ? `<br><i class="fas fa-shield-alt" style="margin-left:4px; color: var(--warning);"></i> تأمين: ${c.insurance_amount} Pi` : ''}
-                </div>
-              </div>
-              <div style="font-weight:700; color:var(--primary); font-size:18px;">
-                ${c.monthly_amount} Pi
-                <div style="font-size:11px; color:var(--text-muted); font-weight:400;">شهرياً + ${c.platform_fee_per_installment || 1} Pi رسوم</div>
+      return `
+        <div class="card fadeIn">
+          <div class="cardTop">
+            <div>
+              <h3>${escapeHtml(g.name)}</h3>
+              <div style="margin-top: 8px;">
+                ${status}
+                ${insuranceBadge}
               </div>
             </div>
-            <button class="btn btn-primary btn-sm full-width" onclick="loadSlots(${c.id}, ${c.months})" style="width:100%; margin-bottom:8px;">
-              <i class="fas fa-hand-pointer"></i>
-              اختر دورك
-            </button>
-            <div id="slots-${c.id}" class="slotGrid"></div>
+            <div class="badge" style="font-size:14px; padding:8px 12px;">
+              <i class="fas fa-coins" style="margin-left:6px;"></i>
+              ${amount} Pi
+            </div>
           </div>
-        `).join("");
-      } catch(e) {
-        container.innerHTML = `<div style="color:var(--danger); text-align:center; padding:12px;">فشل التحميل</div>`;
-      }
-    }
+          <p class="muted" style="margin-bottom:16px; min-height:40px;">${escapeHtml(g.description || "جمعية مضمونة وآمنة عبر Pi Network")}</p>
+          <div style="background: var(--bg); padding: 12px; border-radius: var(--radius); margin-bottom: 12px; font-size: 12px; color: var(--text-muted);">
+            <i class="fas fa-info-circle"></i> رسوم المنصة: ${activeCycle?.platform_fee_per_installment || 1} Pi على كل قسط
+          </div>
+          <button class="btn btn-soft full-width" onclick="showCycles(${g.id})" style="width:100%;">
+            <i class="fas fa-eye"></i>
+            عرض التفاصيل والاشتراك
+          </button>
+          <div id="group-cycles-${g.id}" style="margin-top:16px; display:none;"></div>
+        </div>
+      `;
+    }).join("");
+  } catch(e) {
+    grid.innerHTML = `<div class="card" style="grid-column:1/-1; color:var(--danger); text-align:center;"><i class="fas fa-exclamation-circle"></i> فشل تحميل الجمعيات</div>`;
+  }
+}
 
-    async function loadSlots(cycleId, totalMonths) {
-      const box = document.getElementById(`slots-${cycleId}`);
-      box.innerHTML = '<div class="loader" style="width:24px; height:24px; margin:12px auto;"></div>';
-      
-      try {
-        const { data: members } = await sb.from("members").select("position").eq("cycle_id", cycleId);
-        const taken = new Set(members?.map(m => m.position) || []);
+async function showCycles(groupId) {
+  const container = document.getElementById(`group-cycles-${groupId}`);
+  if (container.style.display === "block") { 
+    container.style.display = "none"; 
+    return; 
+  }
   
-        let html = '<div style="width:100%; margin-top:8px;"><p style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">الأرقام المتاحة (اختر رقم دورك):</p><div style="display:flex; flex-wrap:wrap; gap:8px;">';
-        for(let i=1; i<=totalMonths; i++) {
-          const isTaken = taken.has(i);
-          html += `
-            <button 
-              class="btn ${isTaken ? 'btn-ghost' : 'btn-primary'} slotBtn" 
-              ${isTaken ? 'disabled' : ''} 
-              onclick="joinCycle(${cycleId}, ${i})"
-              title="${isTaken ? 'محجوز' : 'متاح'}"
-            >
-              ${isTaken ? '<i class="fas fa-lock" style="font-size:12px;"></i>' : i}
-            </button>
-          `;
-        }
-        html += '</div></div>';
-        box.innerHTML = html;
-      } catch(e) {
-        box.innerHTML = '<div style="color:var(--danger); font-size:12px;">فشل التحميل</div>';
-      }
+  container.style.display = "block";
+  container.innerHTML = '<div style="text-align:center; padding:20px;"><div class="loader" style="width:30px; height:30px;"></div></div>';
+
+  try {
+    const { data: cycles } = await sb.from("cycles").select("*").eq("group_id", groupId).eq("status", "open");
+    if(!cycles || cycles.length === 0) {
+      container.innerHTML = "<div class='muted' style='text-align:center; padding:16px; background:var(--bg); border-radius:var(--radius); margin-top:8px;'><i class='fas fa-info-circle'></i> لا توجد دورات متاحة حالياً</div>"; 
+      return;
     }
 
-    async function joinCycle(cycleId, pos) {
-      if (!requireLogin()) return;
-      
-      const btn = event.target;
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-      btn.disabled = true;
-      
-      const { error } = await sb.from("members").insert({ 
-        cycle_id: cycleId, 
-        pi_uid: user.uid, 
-        username: user.username, 
-        position: pos 
-      });
-      
-      if (error) {
-        toast("فشل الحجز", "هذا الدور محجوز مسبقاً", "error");
-        btn.innerHTML = pos;
-        btn.disabled = false;
-      } else {
-        toast("تم بنجاح!", `تم حجز الدور رقم ${pos}`, "success");
-        openDashboard();
-      }
+    container.innerHTML = cycles.map(c => `
+      <div style="background:linear-gradient(135deg, var(--bg) 0%, var(--surface) 100%); padding:16px; border-radius:var(--radius); margin-top:8px; border:1px solid var(--border);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <div>
+            <b style="font-size:16px; color:var(--text);">${escapeHtml(c.title)}</b>
+            <div style="font-size:13px; color:var(--text-muted); margin-top:4px;">
+              <i class="fas fa-clock" style="margin-left:4px;"></i>
+              ${c.months} أشهر
+              ${c.insurance_required ? `<br><i class="fas fa-shield-alt" style="margin-left:4px; color: var(--warning);"></i> تأمين: ${c.insurance_amount} Pi` : ''}
+            </div>
+          </div>
+          <div style="font-weight:700; color:var(--primary); font-size:18px;">
+            ${c.monthly_amount} Pi
+            <div style="font-size:11px; color:var(--text-muted); font-weight:400;">شهرياً + ${c.platform_fee_per_installment || 1} Pi رسوم</div>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm full-width" onclick="loadSlots(${c.id}, ${c.months})" style="width:100%; margin-bottom:8px;">
+          <i class="fas fa-hand-pointer"></i>
+          اختر دورك
+        </button>
+        <div id="slots-${c.id}" class="slotGrid"></div>
+      </div>
+    `).join("");
+  } catch(e) {
+    container.innerHTML = `<div style="color:var(--danger); text-align:center; padding:12px;">فشل التحميل</div>`;
+  }
+}
+
+async function loadSlots(cycleId, totalMonths) {
+  const box = document.getElementById(`slots-${cycleId}`);
+  box.innerHTML = '<div class="loader" style="width:24px; height:24px; margin:12px auto;"></div>';
+  
+  try {
+    const { data: members } = await sb.from("members").select("position").eq("cycle_id", cycleId);
+    const taken = new Set(members?.map(m => m.position) || []);
+
+    let html = '<div style="width:100%; margin-top:8px;"><p style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">الأرقام المتاحة (اختر رقم دورك):</p><div style="display:flex; flex-wrap:wrap; gap:8px;">';
+    for(let i=1; i<=totalMonths; i++) {
+      const isTaken = taken.has(i);
+      html += `
+        <button 
+          class="btn ${isTaken ? 'btn-ghost' : 'btn-primary'} slotBtn" 
+          ${isTaken ? 'disabled' : ''} 
+          onclick="joinCycle(${cycleId}, ${i})"
+          title="${isTaken ? 'محجوز' : 'متاح'}"
+        >
+          ${isTaken ? '<i class="fas fa-lock" style="font-size:12px;"></i>' : i}
+        </button>
+      `;
     }
+    html += '</div></div>';
+    box.innerHTML = html;
+  } catch(e) {
+    box.innerHTML = '<div style="color:var(--danger); font-size:12px;">فشل التحميل</div>';
+  }
+}
 
-    function filterGroups(query) {
-      const cards = document.querySelectorAll('.grid > .card');
-      const lower = query.toLowerCase();
-      cards.forEach(card => {
-        const text = card.textContent.toLowerCase();
-        card.style.display = text.includes(lower) ? '' : 'none';
-      });
+async function joinCycle(cycleId, pos) {
+  if (!requireLogin()) return;
+  
+  const btn = event.target;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+  btn.disabled = true;
+  
+  const { error } = await sb.from("members").insert({ 
+    cycle_id: cycleId, 
+    pi_uid: user.uid, 
+    username: user.username, 
+    position: pos 
+  });
+  
+  if (error) {
+    toast("فشل الحجز", "هذا الدور محجوز مسبقاً", "error");
+    btn.innerHTML = pos;
+    btn.disabled = false;
+  } else {
+    toast("تم بنجاح!", `تم حجز الدور رقم ${pos}`, "success");
+    openDashboard();
+  }
+}
+
+function filterGroups(query) {
+  const cards = document.querySelectorAll('.grid > .card');
+  const lower = query.toLowerCase();
+  cards.forEach(card => {
+    const text = card.textContent.toLowerCase();
+    card.style.display = text.includes(lower) ? '' : 'none';
+  });
+}
+
+// ===================== Initialize =====================
+window.addEventListener('load', () => {
+  loadGroups();
+  
+  if(window.Pi) {
+    Pi.init({ version: "2.0", sandbox: false });
+  }
+  
+  // ✅ تحديث الإشعارات كل 30 ثانية (احتياطي)
+  setInterval(() => {
+    if (user?.uid) {
+      loadUnreadNotifications();
     }
+  }, 30000);
+});
 
-    // Initialize
-    window.addEventListener('load', () => {
-      loadGroups();
-      
-      if(window.Pi) {
-        Pi.init({ version: "2.0", sandbox: false });
-      }
-    });
-
-    // Close modal on Escape key
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        closeModal('dashboardModal');
-        closeModal('ratingModal');
-        closeNotifications();
-      }
-    });
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeModal('dashboardModal');
+    closeModal('ratingModal');
+    closeNotifications();
+  }
+});
   </script>
 </body>
 </html>
