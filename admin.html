@@ -75,6 +75,105 @@
         </div>
     </section>
 
+        <!-- قسم 5: إرسال الإشعارات -->
+    <section class="card" style="border: 2px solid var(--success); background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);">
+        <h2 style="color: var(--success); display: flex; align-items: center; gap: 10px;">
+            <span>📢</span>
+            إرسال الإشعارات للمستخدمين
+        </h2>
+        
+        <div class="notification-form">
+            <!-- اختيار نوع المستلم -->
+            <div class="field">
+                <label>نوع المستلم:</label>
+                <div class="radio-group">
+                    <label class="radio-label">
+                        <input type="radio" name="recipientType" value="all" checked onchange="toggleRecipientSelect()">
+                        <span>📢 جميع المستخدمين</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="recipientType" value="cycle" onchange="toggleRecipientSelect()">
+                        <span>👥 أعضاء دورة محددة</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="recipientType" value="user" onchange="toggleRecipientSelect()">
+                        <span>👤 مستخدم محدد</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- اختيار الدورة (يظهر عند اختيار أعضاء دورة) -->
+            <div class="field" id="cycleSelectField" style="display: none;">
+                <label>اختر الدورة:</label>
+                <select id="notifyCycleSelect" onchange="loadCycleMembersForNotify()">
+                    <option value="">-- اختر دورة --</option>
+                </select>
+            </div>
+
+            <!-- اختيار المستخدم (يظهر عند اختيار مستخدم محدد) -->
+            <div class="field" id="userSelectField" style="display: none;">
+                <label>اختر المستخدم:</label>
+                <select id="notifyUserSelect">
+                    <option value="">-- اختر مستخدم --</option>
+                </select>
+            </div>
+
+            <!-- نوع الإشعار -->
+            <div class="field">
+                <label>نوع الإشعار:</label>
+                <select id="notifyType">
+                    <option value="system">🔧 إشعار نظام</option>
+                    <option value="payment_due">💰 تذكير بدفع</option>
+                    <option value="payout_ready">🎉 استلام جاهز</option>
+                    <option value="cycle_complete">🏆 اكتمال دورة</option>
+                    <option value="warning">⚠️ تحذير</option>
+                </select>
+            </div>
+
+            <!-- عنوان الإشعار -->
+            <div class="field">
+                <label>عنوان الإشعار:</label>
+                <input type="text" id="notifyTitle" placeholder="مثال: تذكير بدفع القسط الشهري">
+            </div>
+
+            <!-- محتوى الإشعار -->
+            <div class="field">
+                <label>محتوى الإشعار:</label>
+                <textarea id="notifyMessage" rows="3" placeholder="اكتب محتوى الإشعار هنا..."></textarea>
+            </div>
+
+            <!-- معاينة الإشعار -->
+            <div class="notification-preview" id="notifyPreview" style="display: none;">
+                <h4>معاينة الإشعار:</h4>
+                <div class="preview-box" id="previewBox"></div>
+            </div>
+
+            <!-- أزرار التحكم -->
+            <div class="actions-row" style="margin-top: 20px;">
+                <button class="btn soft" onclick="previewNotification()">
+                    👁️ معاينة
+                </button>
+                <button class="btn success" onclick="sendNotification()">
+                    📤 إرسال الإشعار
+                </button>
+            </div>
+
+            <!-- سجل الإشعارات المرسلة -->
+            <div class="notification-history" style="margin-top: 30px; border-top: 1px dashed #ccc; padding-top: 20px;">
+                <h3 style="color: var(--p); margin-bottom: 15px;">📜 سجل الإشعارات المرسلة</h3>
+                <button class="btn soft sm" onclick="loadNotificationHistory()" style="margin-bottom: 15px;">
+                    🔄 تحديث السجل
+                </button>
+                <div id="notificationHistoryList" class="list">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <div>اضغط تحديث لعرض السجل</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
   </main>
 
   <script src="admin.js"></script>
