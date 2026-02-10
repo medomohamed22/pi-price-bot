@@ -1,181 +1,494 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Dashboard | المايسترو</title>
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="admin.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Deal Way | لوحة الإدارة</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+
+<style>
+:root {
+  --primary: #7C3AED;
+  --primary-dark: #5B21B6;
+  --accent: #F59E0B;
+  --bg-body: #F3F4F6;
+  --surface: #FFFFFF;
+  --text-main: #111827;
+  --text-muted: #6B7280;
+  --danger: #EF4444;
+  --success: #10B981;
+  --border: #E5E7EB;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: 'Tajawal', sans-serif;
+  background-color: var(--bg-body);
+  color: var(--text-main);
+  margin: 0;
+  padding: 0;
+}
+
+/* --- Login Screen --- */
+#login-screen {
+  position: fixed; inset: 0; background: var(--surface); z-index: 2000;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.login-box {
+    text-align: center; width: 90%; max-width: 400px;
+    padding: 40px; border-radius: 24px;
+    box-shadow: 0 10px 40px rgba(124, 58, 237, 0.15);
+    border: 1px solid var(--border);
+}
+.login-msg { margin-top: 15px; font-size: 14px; color: var(--danger); font-weight: bold; min-height: 20px; }
+
+/* --- Dashboard Layout --- */
+.sidebar {
+    width: 250px; background: var(--surface); height: 100vh; position: fixed; top: 0; right: 0;
+    border-left: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column;
+}
+.main-content {
+    margin-right: 250px; padding: 30px;
+}
+@media (max-width: 768px) {
+    .sidebar { width: 100%; height: auto; position: relative; border-left: none; border-bottom: 1px solid var(--border); flex-direction: row; justify-content: space-between; align-items: center; padding: 10px 20px; }
+    .main-content { margin-right: 0; padding: 15px; }
+    .nav-label { display: none; }
+}
+
+/* --- Brand --- */
+.brand { font-size: 22px; font-weight: 900; color: var(--primary); display: flex; align-items: center; gap: 8px; margin-bottom: 40px; }
+@media (max-width: 768px) { .brand { margin-bottom: 0; } }
+
+/* --- Nav Buttons --- */
+.nav-btn {
+    display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+    color: var(--text-muted); text-decoration: none; border-radius: 12px;
+    margin-bottom: 8px; transition: 0.2s; cursor: pointer; font-weight: 700;
+}
+.nav-btn:hover, .nav-btn.active { background: #F5F3FF; color: var(--primary); }
+.nav-btn i { font-size: 18px; width: 24px; text-align: center; }
+
+/* --- Stats Cards --- */
+.stats-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;
+}
+.stat-card {
+    background: var(--surface); padding: 20px; border-radius: 16px;
+    border: 1px solid var(--border); display: flex; align-items: center; gap: 15px;
+}
+.stat-icon {
+    width: 50px; height: 50px; border-radius: 12px;
+    display: grid; place-items: center; font-size: 24px;
+}
+.stat-info h4 { margin: 0; color: var(--text-muted); font-size: 12px; }
+.stat-info h2 { margin: 5px 0 0; font-size: 24px; font-weight: 800; color: var(--text-main); }
+
+/* --- Tables --- */
+.table-container {
+    background: var(--surface); border-radius: 16px; border: 1px solid var(--border);
+    overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+}
+.table-header {
+    padding: 20px; border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+}
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 16px; text-align: right; border-bottom: 1px solid var(--border); font-size: 14px; }
+th { background: #F9FAFB; color: var(--text-muted); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+tr:hover { background: #F9FAFB; }
+
+/* --- Components --- */
+.btn {
+    padding: 12px 24px; border: none; border-radius: 10px; cursor: pointer;
+    font-weight: 700; font-family: inherit; transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+}
+.btn-pi { background: linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%); color: white; box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3); font-size: 16px; width: 100%; }
+.btn-pi:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(124, 58, 237, 0.4); }
+
+.btn-danger { background: #FEE2E2; color: var(--danger); padding: 6px 12px; border-radius: 8px; font-size: 13px; }
+.btn-danger:hover { background: var(--danger); color: white; }
+
+.btn-action { background: #D1FAE5; color: #065F46; padding: 6px 12px; border-radius: 8px; font-size: 13px; }
+.btn-action:hover { background: #10B981; color: white; }
+
+.status-badge {
+    padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px;
+}
+.bg-green { background: #D1FAE5; color: #065F46; }
+.bg-red { background: #FEE2E2; color: #991B1B; }
+.bg-yellow { background: #FEF3C7; color: #92400E; }
+
+.product-img { width: 45px; height: 45px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border); }
+.search-input { padding: 10px 16px; border: 1px solid var(--border); border-radius: 10px; outline: none; width: 250px; font-family: inherit; }
+
+/* --- Tab Logic --- */
+.tab-content { display: none; animation: fadeIn 0.3s; }
+.tab-content.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+</style>
 </head>
 <body>
 
-  <header class="topbar">
-    <div class="brand">
-      <div class="logo">A</div>
-      <div>
-        <h1>لوحة التحكم الشاملة</h1>
-        <p>إدارة الجمعيات، المدفوعات، والمستخدمين</p>
-      </div>
+<div id="login-screen">
+  <div class="login-box">
+    <div class="brand" style="justify-content:center;margin-bottom:10px">
+        <span style="color:var(--primary)">Deal</span><span style="color:var(--accent)">Way</span>
     </div>
-    <div class="status">Admin Mode 🛡️</div>
-  </header>
-
-  <main class="wrap">
+    <div style="margin-bottom:30px;color:var(--text-muted);font-weight:600">لوحة تحكم المسؤول</div>
     
-    <!-- قسم 1 و 2 (إنشاء الجمعيات والدورات) -->
-    <section class="card">
-        <h2 style="color:var(--p)">1. التحكم السريع</h2>
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <button class="btn soft" onclick="toggleCreateSection()">➕ إنشاء جديد</button>
-            <button class="btn soft" onclick="loadAdminGroups()">🔄 تحديث البيانات</button>
+    <div style="font-size:80px;color:var(--primary);margin-bottom:30px">
+        <i class="fa-solid fa-user-shield"></i>
+    </div>
+
+    <button id="piLoginBtn" class="btn btn-pi" onclick="loginWithPi()">
+        <i class="fa-solid fa-fingerprint"></i> تسجيل الدخول عبر Pi
+    </button>
+    <div id="loginStatus" class="login-msg"></div>
+  </div>
+</div>
+
+<div id="dashboard" style="display:none">
+    
+    <div class="sidebar">
+        <div class="brand">
+            <i class="fa-solid fa-layer-group"></i>
+            <span class="nav-label"><span style="color:var(--primary)">Deal</span><span style="color:var(--accent)">Way</span></span>
         </div>
         
-        <div id="createSection" style="display:none; margin-top:15px; border-top:1px dashed #ccc; padding-top:15px;">
-            <h3 style="margin-top:0; color:var(--p)">إنشاء جمعية جديدة</h3>
-            <div class="form-grid">
-                <div class="field"><label>اسم الجمعية</label><input id="groupName"></div>
-                <div class="field"><label>عدد الأعضاء</label><input id="membersCount" type="number" value="10"></div>
-                <div class="field full-width"><label>الوصف</label><input id="groupDesc"></div>
-            </div>
-            <button class="btn primary sm" onclick="createGroup()">حفظ الجمعية</button>
-            
-            <hr style="margin:20px 0; border:none; border-top:1px solid #eee;">
-            
-            <h3 style="color:var(--p)">إنشاء دورة جديدة</h3>
-            <div class="form-grid">
-                <div class="field"><label>اختر الجمعية</label><select id="groupSelectCreate"></select></div>
-                <div class="field"><label>اسم الدورة</label><input id="cycleTitle"></div>
-                <div class="field"><label>القسط الشهري (Pi)</label><input id="monthlyAmount" type="number"></div>
-                <div class="field"><label>عدد الشهور</label><input id="months" type="number" value="10"></div>
-            </div>
-            <button class="btn primary sm" onclick="createCycle()">طرح الدورة</button>
+        <div class="nav-btn active" onclick="switchTab('products', this)">
+            <i class="fa-solid fa-box-open"></i> <span class="nav-label">المنتجات</span>
         </div>
-    </section>
-
-    <!-- قسم 3: عرض الدورات واختيارها -->
-    <section class="card">
-        <h2>2. تصفح الجمعيات والدورات</h2>
-        <label class="field">
-            <span>اختر الجمعية لعرض التفاصيل:</span>
-            <select id="groupSelect" onchange="loadCyclesForGroup()"></select>
-        </label>
-        <div id="cyclesList" class="list"></div>
-    </section>
-
-    <!-- قسم 4: إدارة الأعضاء -->
-    <section class="card" id="membersSection" style="display:none; border:2px solid var(--p);">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
-            <h2 id="membersSectionTitle">3. أعضاء الدورة وتقدم الدفع</h2>
-            <span class="badge" id="cycleInfoBadge"></span>
+        <div class="nav-btn" onclick="switchTab('users', this)">
+            <i class="fa-solid fa-users"></i> <span class="nav-label">المستخدمين</span>
         </div>
-
-        <div class="table-container">
-            <div id="membersList" class="list"></div>
-        </div>
-    </section>
-
-        <!-- قسم 5: إرسال الإشعارات -->
-    <section class="card" style="border: 2px solid var(--success); background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);">
-        <h2 style="color: var(--success); display: flex; align-items: center; gap: 10px;">
-            <span>📢</span>
-            إرسال الإشعارات للمستخدمين
-        </h2>
         
-        <div class="notification-form">
-            <!-- اختيار نوع المستلم -->
-            <div class="field">
-                <label>نوع المستلم:</label>
-                <div class="radio-group">
-                    <label class="radio-label">
-                        <input type="radio" name="recipientType" value="all" checked onchange="toggleRecipientSelect()">
-                        <span>📢 جميع المستخدمين</span>
-                    </label>
-                    <label class="radio-label">
-                        <input type="radio" name="recipientType" value="cycle" onchange="toggleRecipientSelect()">
-                        <span>👥 أعضاء دورة محددة</span>
-                    </label>
-                    <label class="radio-label">
-                        <input type="radio" name="recipientType" value="user" onchange="toggleRecipientSelect()">
-                        <span>👤 مستخدم محدد</span>
-                    </label>
+        <div style="margin-top:auto">
+            <div style="padding:10px;background:#F9FAFB;border-radius:12px;margin-bottom:10px;font-size:12px;color:var(--text-muted)">
+                مسجل الدخول كـ:<br>
+                <strong id="adminName" style="color:var(--text-main);font-size:14px">...</strong>
+            </div>
+            <button onclick="logout()" class="nav-btn" style="width:100%;color:var(--danger)">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i> <span class="nav-label">خروج</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon" style="background:#EDE9FE;color:var(--primary)"><i class="fa-solid fa-box"></i></div>
+                <div class="stat-info"><h4>إجمالي المنتجات</h4><h2 id="total-products">0</h2></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background:#D1FAE5;color:#059669"><i class="fa-solid fa-users"></i></div>
+                <div class="stat-info"><h4>إجمالي المستخدمين</h4><h2 id="total-users">0</h2></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background:#FEE2E2;color:#DC2626"><i class="fa-solid fa-ban"></i></div>
+                <div class="stat-info"><h4>مستخدمين محظورين</h4><h2 id="banned-users">0</h2></div>
+            </div>
+        </div>
+
+        <div id="tab-products" class="tab-content active">
+            <div class="table-container">
+                <div class="table-header">
+                    <h3 style="margin:0">إدارة المنتجات</h3>
+                    <input type="text" class="search-input" placeholder="بحث باسم المنتج..." onkeyup="filterTable('prodTable', this.value)">
                 </div>
-            </div>
-
-            <!-- اختيار الدورة (يظهر عند اختيار أعضاء دورة) -->
-            <div class="field" id="cycleSelectField" style="display: none;">
-                <label>اختر الدورة:</label>
-                <select id="notifyCycleSelect" onchange="loadCycleMembersForNotify()">
-                    <option value="">-- اختر دورة --</option>
-                </select>
-            </div>
-
-            <!-- اختيار المستخدم (يظهر عند اختيار مستخدم محدد) -->
-            <div class="field" id="userSelectField" style="display: none;">
-                <label>اختر المستخدم:</label>
-                <select id="notifyUserSelect">
-                    <option value="">-- اختر مستخدم --</option>
-                </select>
-            </div>
-
-            <!-- نوع الإشعار -->
-            <div class="field">
-                <label>نوع الإشعار:</label>
-                <select id="notifyType">
-                    <option value="system">🔧 إشعار نظام</option>
-                    <option value="payment_due">💰 تذكير بدفع</option>
-                    <option value="payout_ready">🎉 استلام جاهز</option>
-                    <option value="cycle_complete">🏆 اكتمال دورة</option>
-                    <option value="warning">⚠️ تحذير</option>
-                </select>
-            </div>
-
-            <!-- عنوان الإشعار -->
-            <div class="field">
-                <label>عنوان الإشعار:</label>
-                <input type="text" id="notifyTitle" placeholder="مثال: تذكير بدفع القسط الشهري">
-            </div>
-
-            <!-- محتوى الإشعار -->
-            <div class="field">
-                <label>محتوى الإشعار:</label>
-                <textarea id="notifyMessage" rows="3" placeholder="اكتب محتوى الإشعار هنا..."></textarea>
-            </div>
-
-            <!-- معاينة الإشعار -->
-            <div class="notification-preview" id="notifyPreview" style="display: none;">
-                <h4>معاينة الإشعار:</h4>
-                <div class="preview-box" id="previewBox"></div>
-            </div>
-
-            <!-- أزرار التحكم -->
-            <div class="actions-row" style="margin-top: 20px;">
-                <button class="btn soft" onclick="previewNotification()">
-                    👁️ معاينة
-                </button>
-                <button class="btn success" onclick="sendNotification()">
-                    📤 إرسال الإشعار
-                </button>
-            </div>
-
-            <!-- سجل الإشعارات المرسلة -->
-            <div class="notification-history" style="margin-top: 30px; border-top: 1px dashed #ccc; padding-top: 20px;">
-                <h3 style="color: var(--p); margin-bottom: 15px;">📜 سجل الإشعارات المرسلة</h3>
-                <button class="btn soft sm" onclick="loadNotificationHistory()" style="margin-bottom: 15px;">
-                    🔄 تحديث السجل
-                </button>
-                <div id="notificationHistoryList" class="list">
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📭</div>
-                        <div>اضغط تحديث لعرض السجل</div>
-                    </div>
+                <div style="overflow-x:auto">
+                    <table id="prodTable">
+                        <thead>
+                            <tr>
+                                <th>المنتج</th>
+                                <th>السعر</th>
+                                <th>البائع</th>
+                                <th>الحالة</th>
+                                <th>الموقع</th>
+                                <th>إجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody id="products-body">
+                            <tr><td colspan="6" style="text-align:center">جاري التحميل...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
-    </section>
 
-  </main>
+        <div id="tab-users" class="tab-content">
+            <div class="table-container">
+                <div class="table-header">
+                    <h3 style="margin:0">إدارة المستخدمين</h3>
+                    <input type="text" class="search-input" placeholder="بحث باسم المستخدم..." onkeyup="filterTable('userTable', this.value)">
+                </div>
+                <div style="overflow-x:auto">
+                    <table id="userTable">
+                        <thead>
+                            <tr>
+                                <th>المستخدم</th>
+                                <th>Pi ID</th>
+                                <th>تاريخ الانضمام</th>
+                                <th>حالة الحساب</th>
+                                <th>إجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-body">
+                            <tr><td colspan="5" style="text-align:center">جاري التحميل...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
 
-  <script src="admin.js"></script>
+    </div>
+</div>
+
+<script>
+// --- CONFIGURATION ---
+const SUPABASE_URL = "https://ssvyxrtyvdxxojmunrcv.supabase.co";
+const SUPABASE_KEY = "sb_publishable_8egOM2-lT9J6kPQTbluC4w_8YHtB4K3"; 
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let currentUser = null;
+
+// --- INITIALIZE PI SDK ---
+document.addEventListener("DOMContentLoaded", () => {
+    if(window.Pi) {
+        Pi.init({ version: "2.0", sandbox: false });
+    } else {
+        // Developer Mode Override (For testing in browser)
+        document.getElementById('piLoginBtn').innerText = "Developer Login (Test)";
+        document.getElementById('piLoginBtn').onclick = () => devLogin();
+    }
+});
+
+// --- LOGIN LOGIC ---
+async function loginWithPi() {
+    const statusEl = document.getElementById('loginStatus');
+    const btn = document.getElementById('piLoginBtn');
+    
+    try {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> جاري التحقق...';
+        statusEl.innerText = "";
+
+        // 1. Authenticate with Pi
+        const scopes = ['username', 'payments'];
+        const onIncompletePayment = (payment) => { console.log("Incomplete Payment", payment); };
+        
+        const auth = await Pi.authenticate(scopes, onIncompletePayment);
+        const piUser = auth.user;
+
+        // 2. Check Admin Status in Database
+        await verifyAdmin(piUser.uid, piUser.username);
+
+    } catch (err) {
+        console.error(err);
+        statusEl.innerText = "فشل تسجيل الدخول. حاول مرة أخرى.";
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-fingerprint"></i> تسجيل الدخول عبر Pi';
+    }
+}
+
+// For testing without Pi Browser
+async function devLogin() {
+    const testUid = prompt("Enter Admin Pi ID for testing:");
+    if(testUid) await verifyAdmin(testUid, "Test_Admin");
+}
+
+async function verifyAdmin(uid, username) {
+    const statusEl = document.getElementById('loginStatus');
+    
+    // Query Supabase to see if this user is an admin
+    const { data, error } = await sb
+        .from('users')
+        .select('is_admin, username')
+        .eq('pi_id', uid)
+        .single();
+
+    if (error || !data) {
+        statusEl.innerText = "خطأ: المستخدم غير موجود في قاعدة البيانات.";
+        resetLoginBtn();
+        return;
+    }
+
+    if (data.is_admin === true) {
+        // Success!
+        currentUser = { uid, username: data.username };
+        document.getElementById('adminName').innerText = data.username;
+        showDashboard();
+    } else {
+        // Fail!
+        statusEl.innerText = "عذراً، ليس لديك صلاحيات المسؤول.";
+        resetLoginBtn();
+    }
+}
+
+function resetLoginBtn() {
+    const btn = document.getElementById('piLoginBtn');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-fingerprint"></i> تسجيل الدخول عبر Pi';
+}
+
+function showDashboard() {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    loadData();
+}
+
+function logout() {
+    location.reload();
+}
+
+// --- DASHBOARD FUNCTIONS ---
+
+function switchTab(tabId, btn) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-' + tabId).classList.add('active');
+    
+    document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+    if(btn) btn.classList.add('active');
+}
+
+async function loadData() {
+    await Promise.all([fetchProducts(), fetchUsers()]);
+}
+
+// --- FETCH PRODUCTS ---
+async function fetchProducts() {
+    const { data, error } = await sb.from('products').select('*').order('created_at', {ascending: false});
+    if(error) return console.error(error);
+
+    document.getElementById('total-products').innerText = data.length;
+    const tbody = document.getElementById('products-body');
+    tbody.innerHTML = '';
+
+    const now = new Date();
+
+    data.forEach(p => {
+        const isPromoted = p.promoted_until && new Date(p.promoted_until) > now;
+        const statusBadge = isPromoted 
+            ? `<span class="status-badge bg-yellow"><i class="fa-solid fa-star"></i> مميز</span>`
+            : `<span class="status-badge bg-green">عادي</span>`;
+        
+        const img = (p.images && p.images.length > 0) ? p.images[0] : (p.image_url || 'https://placehold.co/50');
+
+        tbody.innerHTML += `
+            <tr>
+                <td style="display:flex;align-items:center;gap:10px">
+                    <img src="${img}" class="product-img">
+                    <span style="font-weight:700;font-size:13px">${p.name}</span>
+                </td>
+                <td style="color:var(--primary);font-weight:bold">${p.price} Pi</td>
+                <td>${p.seller_username || 'Unknown'}</td>
+                <td>${statusBadge}</td>
+                <td style="font-size:12px;color:#666">${p.country || '-'}</td>
+                <td>
+                    <button class="btn-danger" onclick="deleteProduct(${p.id})">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+}
+
+// --- DELETE PRODUCT ---
+async function deleteProduct(id) {
+    if(!confirm("هل أنت متأكد من حذف هذا المنتج؟")) return;
+    
+    // RLS Policy in database will allow this ONLY if currentUser is Admin
+    const { error } = await sb.from('products').delete().eq('id', id);
+    
+    if(!error) {
+        // Clean up messages
+        await sb.from('messages').delete().eq('product_id', id);
+        fetchProducts();
+        alert("تم الحذف بنجاح");
+    } else {
+        alert("فشل الحذف: قد لا تملك صلاحية، أو حدث خطأ.");
+        console.error(error);
+    }
+}
+
+// --- FETCH USERS ---
+async function fetchUsers() {
+    const { data, error } = await sb.from('users').select('*').order('created_at', {ascending: false});
+    if(error) return console.error(error);
+
+    document.getElementById('total-users').innerText = data.length;
+    
+    const bannedCount = data.filter(u => u.is_banned).length;
+    document.getElementById('banned-users').innerText = bannedCount;
+
+    const tbody = document.getElementById('users-body');
+    tbody.innerHTML = '';
+
+    data.forEach(u => {
+        const isBanned = u.is_banned === true;
+        const isAdmin = u.is_admin === true;
+        const joinDate = new Date(u.created_at).toLocaleDateString('en-GB');
+        
+        let statusBadge = `<span class="status-badge bg-green">نشط</span>`;
+        if (isBanned) statusBadge = `<span class="status-badge bg-red">محظور</span>`;
+        if (isAdmin) statusBadge = `<span class="status-badge bg-yellow">مسؤول</span>`;
+
+        let btnAction = "";
+        if (!isAdmin) { // Don't allow banning admins easily
+            btnAction = isBanned
+                ? `<button class="btn-action" onclick="toggleBan('${u.pi_id}', false)">فك الحظر</button>`
+                : `<button class="btn-danger" onclick="toggleBan('${u.pi_id}', true)">حظر</button>`;
+        }
+
+        tbody.innerHTML += `
+            <tr>
+                <td style="font-weight:bold">${u.username}</td>
+                <td style="font-size:11px;color:#666;font-family:monospace">${u.pi_id}</td>
+                <td>${joinDate}</td>
+                <td>${statusBadge}</td>
+                <td>${btnAction}</td>
+            </tr>
+        `;
+    });
+}
+
+// --- BAN/UNBAN USER ---
+async function toggleBan(uid, status) {
+    const action = status ? "حظر" : "فك حظر";
+    if(!confirm(`هل تريد ${action} هذا المستخدم؟`)) return;
+    
+    // RLS Policy ensures only admins can do this
+    const { error } = await sb.from('users').update({ is_banned: status }).eq('pi_id', uid);
+    
+    if(!error) {
+        fetchUsers();
+    } else {
+        alert("فشل العملية: ليس لديك صلاحية أو حدث خطأ.");
+    }
+}
+
+// --- SEARCH FUNCTION ---
+function filterTable(tableId, query) {
+    const filter = query.toUpperCase();
+    const table = document.getElementById(tableId);
+    const tr = table.getElementsByTagName("tr");
+    for (let i = 1; i < tr.length; i++) {
+        const td = tr[i].getElementsByTagName("td")[0]; 
+        if (td) {
+            const txtValue = td.textContent || td.innerText;
+            tr[i].style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? "" : "none";
+        }
+    }
+}
+</script>
+
 </body>
 </html>
