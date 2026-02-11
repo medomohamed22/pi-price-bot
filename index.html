@@ -2074,7 +2074,9 @@ function formatCurrency(num) {
 // --- Translations ---
 const translations = {
   ar: { 
-    brand_name: "Deal Way", login: "دخول",label_views: "المشاهدات:",stat_views: "المشاهدات",stat_chats: "المحادثات",feat_gold: "شريط ذهبي",feat_priority: "أولوية الظهور",feat_high_priority: "أولوية عالية",feat_save: "توفير 44%",
+    brand_name: "Deal Way",inbox_empty_hint: "ستظهر رسائلك هنا عندما تتواصل مع البائعين",
+  no_ads_title: "لا توجد إعلانات",
+  no_ads_hint: "ابدأ بإضافة إعلانك الأول!", login: "دخول",label_views: "المشاهدات:",stat_views: "المشاهدات",stat_chats: "المحادثات",feat_gold: "شريط ذهبي",feat_priority: "أولوية الظهور",feat_high_priority: "أولوية عالية",feat_save: "توفير 44%",
     link_privacy: "سياسة الخصوصية", link_terms: "شروط الخدمة",
     latest_products: "أحدث المعروضات", loading: "جاري التحميل...", 
     inbox_title: "الرسائل الواردة", guest_title: "أنت زائر", 
@@ -2127,7 +2129,9 @@ const translations = {
     toast_fill_data: "Please fill all required fields", toast_upload_fail: "Image upload failed", 
     toast_success_add: "Ad published successfully", toast_send_fail: "Failed to send", 
     toast_max_images: "Max 3 images allowed", banned_title: "Account Banned", 
-    banned_msg: "Your account is suspended due to violations.", 
+    banned_msg: "Your account is suspended due to violations.", inbox_empty_hint: "Your messages will appear here when you contact sellers",
+  no_ads_title: "No ads found",
+  no_ads_hint: "Start by adding your first ad!",
     ph_prod_name: "Ex: iPhone 13 Pro", ph_desc: "Describe item details...", 
     cat_all: "All", cat_cars: "Cars", cat_electronics: "Electronics", 
     cat_phones: "Phones", cat_fashion: "Fashion", cat_home: "Home", cat_other: "Other", 
@@ -2604,29 +2608,25 @@ async function loadMyAds() {
   // 1. جلب منتجاتي
   const { data: products } = await sb.from("products").select("*").eq("seller_pi_id", user.uid).order("created_at", {ascending:false});
   
-  // 2. حساب إجمالي المشاهدات الحقيقي لجميع المنتجات
+  // 2. حساب الإحصائيات (كما هي)
   let totalViews = 0;
   if(products) {
     totalViews = products.reduce((sum, p) => sum + (p.views || 0), 0);
   }
   
-  // 3. حساب عدد المحادثات الحقيقي
-  // نقوم بجلب كل الرسائل الخاصة بالمستخدم ثم نصفيها لنعرف عدد المحادثات الفريدة
   const { data: messages } = await sb.from("messages").select("product_id, sender_pi_id, receiver_pi_id").or(`sender_pi_id.eq.${user.uid},receiver_pi_id.eq.${user.uid}`);
   
   let uniqueChats = new Set();
   if(messages) {
     messages.forEach(m => {
       const otherId = (m.sender_pi_id === user.uid) ? m.receiver_pi_id : m.sender_pi_id;
-      // نعتبر المحادثة فريدة بناءً على المنتج والشخص الآخر
       uniqueChats.add(`${m.product_id}_${otherId}`);
     });
   }
 
-  // تحديث بطاقات الإحصائيات بالأرقام الحقيقية
   document.getElementById('stat-ads').innerText = products ? products.length : 0;
-  document.getElementById('stat-views').innerText = formatCurrency(totalViews); // مشاهدات حقيقية
-  document.getElementById('stat-chats').innerText = uniqueChats.size; // محادثات حقيقية
+  document.getElementById('stat-views').innerText = formatCurrency(totalViews);
+  document.getElementById('stat-chats').innerText = uniqueChats.size;
   
   list.innerHTML = ""; 
   const now = new Date();
@@ -2645,14 +2645,14 @@ async function loadMyAds() {
        
        let img = (p.images && Array.isArray(p.images) && p.images.length > 0) ? p.images[0] : (p.image_url || "https://placehold.co/400x400/f1f5f9/94a3b8?text=No+Image");
        
-       // إضافة عدد المشاهدات للكارت المصغر أيضاً
+       // 👇👇 هنا التعديل الأمني الهام: استخدام escapeHtml 👇👇
        list.innerHTML += `
          <div class="card" onclick="openProductDetails(${p.id})">
            <div class="card-img-wrap">
              <img src="${img}" class="card-img" onerror="this.src='https://placehold.co/400x400/f1f5f9/94a3b8?text=No+Image'">
            </div>
            <div class="card-body">
-             <div class="card-title">${p.name}</div>
+             <div class="card-title">${escapeHtml(p.name)}</div> 
              <div style="font-size:12px;color:var(--text-muted);font-weight:600;display:flex;justify-content:space-between;width:100%">
                <span>${isPromoted ? '<i class="fa-solid fa-crown" style="color:var(--accent);"></i> ' + t('promoted_until') + ' ' + promoDateStr : '<i class="fa-regular fa-clock"></i> ' + new Date(p.created_at).toLocaleDateString()}</span>
                <span><i class="fa-solid fa-eye"></i> ${formatCurrency(p.views || 0)}</span>
@@ -2665,8 +2665,8 @@ async function loadMyAds() {
     list.innerHTML = `
       <div class="empty-state" style="grid-column:1/-1;">
         <div class="empty-state-icon"><i class="fa-solid fa-folder-open"></i></div>
-        <h3>لا توجد إعلانات</h3>
-        <p>ابدأ بإضافة إعلانك الأول!</p>
+        <h3>${t('no_ads_title')}</h3>
+        <p>${t('no_ads_hint')}</p>
       </div>
     `;
   }
@@ -2979,12 +2979,13 @@ async function loadInbox() {
   
   if(!data || !data.length) {
     return list.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-state-icon"><i class="fa-solid fa-inbox"></i></div>
-        <h3>${t('no_messages')}</h3>
-        <p>ستظهر رسائلك هنا عندما تتواصل مع البائعين</p>
-      </div>
-    `;
+  <div class="empty-state">
+    <div class="empty-state-icon"><i class="fa-solid fa-inbox"></i></div>
+    <h3>${t('no_messages')}</h3>
+    <p>${t('inbox_empty_hint')}</p>
+  </div>
+`;
+
   }
   
   const threads = new Map();
