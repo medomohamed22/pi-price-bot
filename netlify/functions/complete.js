@@ -1,5 +1,6 @@
 const { createClient } = require('@supabase/supabase-js');
 
+// استدعاء المتغيرات البيئية
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY; 
 const PI_API_KEY = process.env.PI_API_KEY;
@@ -8,103 +9,168 @@ const PI_API_BASE = 'https://api.minepi.com/v2';
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 exports.handler = async (event, context) => {
-  // CORS Header
-  const headers = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Allow-Methods': 'POST, OPTIONS' };
+  // إعداد الهيدر لتجنب مشاكل CORS
+  const headers = { 
+    'Access-Control-Allow-Origin': '*', 
+    'Access-Control-Allow-Headers': 'Content-Type', 
+    'Access-Control-Allow-Methods': 'POST, OPTIONS' 
+  };
   
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers, body: '' };
 
   try {
     const { paymentId, txid } = JSON.parse(event.body);
-    console.log(`🔥 FORCE COMPLETING: ${paymentId}`);
 
-    // 1. الخطوة الأهم: إبلاغ Pi بإتمام الدفع (عشان الفلوس تثبت)
-    // حتى لو فشل اللي تحته، لازم دي تتم
-    await fetch(`${PI_API_BASE}/payments/${paymentId}/complete`, {
-      method: 'POST',
-      headers: { 'Authorization': `Key ${PI_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ txid }),
-    });
+    if (!paymentId || !txid) {
+      return { statusCode: 400, headers, body: JSON.stringify({ error: "Missing paymentId or txid" }) };
+    }
 
-    // 2. جلب الحقيقة من المصدر (سيرفرات Pi)
-    const piRes = await fetch(`${PI_API_BASE}/payments/${paymentId}`, {
+    console.log(`🔍 Verifying Payment: ${paymentId}`);
+
+    // ---------------------------------------------------------
+    // 1. الخطوة الأولى: التحقق من صحة الدفع من سيرفرات Pi مباشرة
+    // ---------------------------------------------------------
+    const verifyRes = await fetch(`${PI_API_BASE}/payments/${paymentId}`, {
+      method: 'GET',
       headers: { 'Authorization': `Key ${PI_API_KEY}` }
     });
 
-    if (!piRes.ok) throw new Error("Could not fetch data from Pi");
+    if (!verifyRes.ok) {
+      // إذا رد سيرفر باي بخطأ، فهذا يعني أن عملية الدفع غير موجودة أو وهمية
+      throw new Error("Payment verification failed on Pi Server.");
+    }
     
-    const piData = await piRes.json();
-    console.log("📥 Pi Data Received:", JSON.stringify(piData));
+    let piData = await verifyRes.json();
 
-    // 3. استخراج البيانات بذكاء (لمعالجة مشاكل الـ Metadata)
+    // ---------------------------------------------------------
+    // 2. الخطوة الثانية: فحص حالة الدفع (Security Check)
+    // ---------------------------------------------------------
+    // نتأكد أن المستخدم لم يقم بإلغاء العملية
+    if (piData.status.cancelled || piData.status.user_cancelled) {
+        return { statusCode: 400, headers, body: JSON.stringify({ error: "Payment was cancelled by user." }) };
+    }
+
+    // ---------------------------------------------------------
+    // 3. الخطوة الثالثة: إتمام الدفع رسمياً (Server-Side Completion)
+    // ---------------------------------------------------------
+    // نقوم بإرسال التاكيد فقط إذا لم تكن مكتملة بالفعل
+    // الحالة PAYMENT_APPROVED تعني أن المستخدم دفع، ونحن نحتاج أن نؤكد الاستلام
+    if (piData.status.developer_approved === false && !piData.status.completed) {
+        console.log(`⚡ Completing transaction on Pi Network...`);
+        
+        const completeRes = await fetch(`${PI_API_BASE}/payments/${paymentId}/complete`, {
+            method: 'POST',
+            headers: { 
+                'Authorization': `Key ${PI_API_KEY}`, 
+                'Content-Type': 'application/json' 
+            },
+            body: JSON.stringify({ txid }),
+        });
+
+        if (!completeRes.ok) {
+            const errText = await completeRes.text();
+            throw new Error(`Failed to complete payment on Pi: ${errText}`);
+        }
+        
+        // تحديث البيانات بعد الإتمام
+        piData = await completeRes.json();
+    }
+
+    console.log("✅ Payment Verified & Completed via Pi Server.");
+
+    // ---------------------------------------------------------
+    // 4. استخراج البيانات (الميتا داتا)
+    // ---------------------------------------------------------
     let productId = null;
-    let days = 3; // الافتراضي
+    let days = 3; // القيمة الافتراضية
     const amount = parseFloat(piData.amount);
 
-    // فك تشفير الميتا داتا بحذر
     if (piData.metadata) {
         let meta = piData.metadata;
+        // أحياناً تصل الميتا كنص JSON، نحاول تحويلها
         if (typeof meta === 'string') {
-            try { meta = JSON.parse(meta); } catch(e) { console.log("Metadata parse error"); }
+            try { meta = JSON.parse(meta); } catch(e) { console.log("Metadata parsing info:", e.message); }
         }
-        // لاحظ: قد تكون productId أو product_id حسب ما أرسلته من الفرونت
+        
+        // دعم صيغ مختلفة لاسم المفتاح
         productId = meta.productId || meta.product_id || meta.id;
         
-        // لو باعت الأيام في الميتا، خدها. لو لأ، احسبها من الفلوس
+        // تحديد عدد الأيام بناءً على الميتا أو المبلغ
         if (meta.days) days = parseInt(meta.days);
-        else if (amount >= 4.9) days = 7;
+        else if (amount >= 4.9) days = 7; // إذا دفع 5 تقريباً نعطيه 7 أيام
     }
 
     if (!productId) {
-        console.error("❌ Fatal: No Product ID found in Pi response.");
-        return { statusCode: 200, headers, body: JSON.stringify({ error: "Product ID missing from metadata" }) };
+        console.error("❌ Fatal: Product ID missing in metadata.");
+        // نسجل الدفع في الجدول لكن لا يمكننا ترقية منتج مجهول
+        await supabase.from('payments').upsert({
+            payment_id: paymentId,
+            user_id: piData.user_uid,
+            amount: amount,
+            status: 'completed_no_product',
+            txid: txid
+        });
+        return { statusCode: 200, headers, body: JSON.stringify({ error: "Payment received but Product ID missing." }) };
     }
 
-    // 4. تسجيل العملية في جدول المدفوعات (إجباري)
+    // ---------------------------------------------------------
+    // 5. تسجيل العملية في قاعدة البيانات (Payments Table)
+    // ---------------------------------------------------------
     const { error: payError } = await supabase.from('payments').upsert({
         payment_id: paymentId,
-        user_id: piData.user_uid,
-        product_id: productId, // سيتم تحويله لنص تلقائياً حسب تعديل الـ SQL
+        user_id: piData.user_uid, // Pi User ID
+        product_id: productId,
         amount: amount,
         status: 'completed',
-        txid: txid
+        txid: txid,
+        created_at: new Date().toISOString()
     }, { onConflict: 'payment_id' });
 
-    if (payError) console.error("⚠️ Payment DB Log Failed:", payError);
+    if (payError) {
+        console.error("⚠️ DB Error (Payments Log):", payError);
+        // لا نوقف العملية هنا لأن الدفع تم بالفعل، فقط نسجل الخطأ في اللوج
+    }
 
-    // 5. تطبيق التمييز على المنتج
-    console.log(`✨ Promoting Product ${productId} for ${days} days...`);
+    // ---------------------------------------------------------
+    // 6. تطبيق الخدمة (Promote Product)
+    // ---------------------------------------------------------
+    console.log(`✨ Applying Promotion: Product ${productId} (+${days} Days)`);
     
-    // جلب التاريخ الحالي للمنتج
-    const { data: prod } = await supabase.from('products').select('promoted_until').eq('id', productId).single();
+    // جلب المنتج الحالي لمعرفة هل هو مميز بالفعل أم لا
+    const { data: prod } = await supabase
+        .from('products')
+        .select('promoted_until')
+        .eq('id', productId)
+        .single();
     
     let newExpiry = new Date();
-    // لو لسه مميز، زود على الميعاد القديم
+    // إذا كان المنتج مميزاً بالفعل ومازال الوقت سارياً، نضيف الأيام فوق الوقت المتبقي
     if (prod && prod.promoted_until && new Date(prod.promoted_until) > new Date()) {
         newExpiry = new Date(prod.promoted_until);
     }
     
+    // إضافة الأيام
     newExpiry.setDate(newExpiry.getDate() + days);
 
+    // تحديث المنتج
     const { error: promoError } = await supabase
       .from('products')
       .update({ promoted_until: newExpiry.toISOString() })
       .eq('id', productId);
 
     if (promoError) {
-        console.error("❌ Promotion DB Update Failed:", promoError);
-        return { statusCode: 500, headers, body: JSON.stringify({ error: "Promotion Failed" }) };
+        console.error("❌ DB Error (Update Product):", promoError);
+        return { statusCode: 500, headers, body: JSON.stringify({ error: "Payment successful, but failed to update product." }) };
     }
 
-    console.log("✅ SUCCESS: Product Promoted!");
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ success: true, daysAdded: days })
+      body: JSON.stringify({ success: true, daysAdded: days, newExpiry: newExpiry })
     };
 
   } catch (err) {
-    console.error("💥 SYSTEM ERROR:", err);
-    // نرجع 200 عشان Pi ميعلقش، بس نسجل الخطأ عندنا
-    return { statusCode: 200, headers, body: JSON.stringify({ error: err.message }) };
+    console.error("💥 SYSTEM ERROR:", err.message);
+    return { statusCode: 500, headers, body: JSON.stringify({ error: err.message }) };
   }
 };
