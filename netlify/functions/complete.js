@@ -1,213 +1,110 @@
-const { createClient } = require("@supabase/supabase-js");
+const { createClient } = require('@supabase/supabase-js');
 
-const PI_API_KEY = process.env.PI_API_KEY;
 const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SUPABASE_KEY = process.env.SUPABASE_KEY; 
+const PI_API_KEY = process.env.PI_API_KEY;
+const PI_API_BASE = 'https://api.minepi.com/v2';
 
-const PI_BASE = "https://api.minepi.com/v2";
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-function res(statusCode, bodyObj) {
-  return {
-    statusCode,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "Content-Type",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(bodyObj),
-  };
-}
-
-async function piFetch(path, opts = {}) {
-  const r = await fetch(`${PI_BASE}${path}`, {
-    ...opts,
-    headers: {
-      Authorization: `Key ${PI_API_KEY}`,
-      "Content-Type": "application/json",
-      ...(opts.headers || {}),
-    },
-  });
-  const text = await r.text();
-  let json;
-  try { json = text ? JSON.parse(text) : null; } catch { json = null; }
-  return { ok: r.ok, status: r.status, text, json };
-}
-
-exports.handler = async (event) => {
-  if (event.httpMethod === "OPTIONS") return res(200, {});
-  if (event.httpMethod !== "POST") return res(405, { error: "Method Not Allowed" });
+exports.handler = async (event, context) => {
+  // CORS Header
+  const headers = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Allow-Methods': 'POST, OPTIONS' };
+  
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers, body: '' };
 
   try {
-    if (!PI_API_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-      return res(500, {
-        error: "Missing env vars",
-        details: "PI_API_KEY / SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY",
-      });
-    }
+    const { paymentId, txid } = JSON.parse(event.body);
+    console.log(`🔥 FORCE COMPLETING: ${paymentId}`);
 
-    const { paymentId, txid } = JSON.parse(event.body || "{}");
-    if (!paymentId || !txid) return res(400, { error: "Missing paymentId/txid" });
-
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-      auth: { persistSession: false },
-    });
-
-    // 1) إكمال المعاملة على خوادم Pi Network
-    const comp = await piFetch(`/payments/${paymentId}/complete`, {
-      method: "POST",
+    // 1. الخطوة الأهم: إبلاغ Pi بإتمام الدفع (عشان الفلوس تثبت)
+    // حتى لو فشل اللي تحته، لازم دي تتم
+    await fetch(`${PI_API_BASE}/payments/${paymentId}/complete`, {
+      method: 'POST',
+      headers: { 'Authorization': `Key ${PI_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ txid }),
     });
 
-    if (!comp.ok) {
-      console.warn("Pi complete warning:", comp.status, comp.text);
-      // نكمل حتى لو كانت مكتملة بالفعل على Pi
-    }
-
-    // 2) جلب بيانات الدفع من Pi API للتأكد
-    const getP = await piFetch(`/payments/${paymentId}`);
-    const payment = getP.json || {};
-    const paymentType = payment.metadata?.type || 'installment';
-    const member_id = payment.metadata?.memberId || null;
-    const cycle_id = payment.metadata?.cycleId || null;
-    const installment_number = payment.metadata?.installment || null;
-    const originalAmount = payment.metadata?.originalAmount || payment.amount;
-    const platformFee = payment.metadata?.platformFee || 1.00;
-
-    // 3) معالجة حسب نوع الدفع
-    if (paymentType === 'insurance') {
-      // ==== دفع تأمين ====
-      
-      // تحديث insurance_deposits
-      const { error: insErr } = await supabase
-        .from("insurance_deposits")
-        .update({
-          status: "held",
-          txid: txid,
-        })
-        .eq("payment_id", paymentId);
-        
-      if (insErr) {
-        console.error("Insurance update error:", insErr);
-        return res(500, { error: "Failed to update insurance record", details: insErr.message });
-      }
-      
-      // إنشاء إشعار للمستخدم
-      await supabase.from("notifications").insert({
-        pi_uid: payment.user_uid,
-        title: "تم استلام التأمين",
-        message: `تم دفع تأمين بمبلغ ${payment.amount} Pi بنجاح. سيُسترد بعد اكتمال الدورة.`,
-        type: "system",
-      });
-
-    } else {
-      // ==== دفع قسط + رسوم ====
-      
-      // 3.1) إنشاء سجل الدفع الرئيسي في payments
-      const { data: paymentRecord, error: payErr } = await supabase
-        .from("payments")
-        .insert({
-          member_id: member_id,
-          amount: originalAmount,
-          status: "confirmed",
-          installment_number: installment_number,
-          payment_id: paymentId,
-          txid: txid,
-        })
-        .select()
-        .single();
-
-      if (payErr) {
-        console.error("Payment insert error:", payErr);
-        return res(500, { error: "Failed to create payment record", details: payErr.message });
-      }
-
-      // 3.2) تحديث سجل الرسوم وربطه بالدفع
-      const { error: feeErr } = await supabase
-        .from("platform_fees")
-        .update({
-          payment_id: paymentRecord.id,
-          txid: txid,
-          status: "paid",
-          paid_at: new Date().toISOString(),
-        })
-        .eq("pi_payment_id", paymentId);
-
-      if (feeErr) {
-        console.error("Fee update error:", feeErr);
-        // نستمر لأن الدفع تم بنجاح
-      }
-
-      // 3.3) إنشاء إشعار للمستخدم
-      await supabase.from("notifications").insert({
-        pi_uid: payment.user_uid,
-        title: "تم دفع القسط بنجاح",
-        message: `تم دفع القسط رقم ${installment_number} بمبلغ ${originalAmount} Pi + ${platformFee} Pi رسوم منصة`,
-        type: "payment_received",
-        metadata: {
-          cycle_id: cycle_id,
-          installment_number: installment_number,
-          amount: originalAmount,
-        }
-      });
-
-      // 3.4) التحقق من اكتمال جميع الأقساط وإنشاء تقرير تلقائي
-      const { data: memberData } = await supabase
-        .from("members")
-        .select("cycles(months)")
-        .eq("id", member_id)
-        .single();
-        
-      const totalMonths = memberData?.cycles?.months || 0;
-      
-      const { count: paidCount } = await supabase
-        .from("payments")
-        .select("*", { count: "exact", head: true })
-        .eq("member_id", member_id)
-        .eq("status", "confirmed");
-        
-      if (paidCount >= totalMonths) {
-        // الدورة مكتملة للعضو - إنشاء إشعار
-        await supabase.from("notifications").insert({
-          pi_uid: payment.user_uid,
-          title: "🎉 مبروك! اكتملت الدورة",
-          message: `لقد أكملت سداد جميع أقساطك (${totalMonths} أقساط). يمكنك الآن استلام جمعيتك!`,
-          type: "cycle_complete",
-        });
-        
-        // استرداد التأمين إذا موجود
-        const { data: insurance } = await supabase
-          .from("insurance_deposits")
-          .select("*")
-          .eq("member_id", member_id)
-          .eq("status", "held")
-          .single();
-          
-        if (insurance) {
-          await supabase
-            .from("insurance_deposits")
-            .update({ status: "returned", released_at: new Date().toISOString() })
-            .eq("id", insurance.id);
-            
-          await supabase.from("notifications").insert({
-            pi_uid: payment.user_uid,
-            title: "تم استرداد التأمين",
-            message: `تم استرداد مبلغ التأمين ${insurance.amount} Pi لاكتمالك الدورة بنجاح`,
-            type: "system",
-          });
-        }
-      }
-    }
-
-    return res(200, { 
-      ok: true, 
-      message: "Transaction completed successfully", 
-      paymentId, 
-      txid,
-      type: paymentType
+    // 2. جلب الحقيقة من المصدر (سيرفرات Pi)
+    const piRes = await fetch(`${PI_API_BASE}/payments/${paymentId}`, {
+      headers: { 'Authorization': `Key ${PI_API_KEY}` }
     });
+
+    if (!piRes.ok) throw new Error("Could not fetch data from Pi");
     
-  } catch (e) {
-    console.error("complete error:", e);
-    return res(500, { error: e.message || "Server error" });
+    const piData = await piRes.json();
+    console.log("📥 Pi Data Received:", JSON.stringify(piData));
+
+    // 3. استخراج البيانات بذكاء (لمعالجة مشاكل الـ Metadata)
+    let productId = null;
+    let days = 3; // الافتراضي
+    const amount = parseFloat(piData.amount);
+
+    // فك تشفير الميتا داتا بحذر
+    if (piData.metadata) {
+        let meta = piData.metadata;
+        if (typeof meta === 'string') {
+            try { meta = JSON.parse(meta); } catch(e) { console.log("Metadata parse error"); }
+        }
+        // لاحظ: قد تكون productId أو product_id حسب ما أرسلته من الفرونت
+        productId = meta.productId || meta.product_id || meta.id;
+        
+        // لو باعت الأيام في الميتا، خدها. لو لأ، احسبها من الفلوس
+        if (meta.days) days = parseInt(meta.days);
+        else if (amount >= 4.9) days = 7;
+    }
+
+    if (!productId) {
+        console.error("❌ Fatal: No Product ID found in Pi response.");
+        return { statusCode: 200, headers, body: JSON.stringify({ error: "Product ID missing from metadata" }) };
+    }
+
+    // 4. تسجيل العملية في جدول المدفوعات (إجباري)
+    const { error: payError } = await supabase.from('payments').upsert({
+        payment_id: paymentId,
+        user_id: piData.user_uid,
+        product_id: productId, // سيتم تحويله لنص تلقائياً حسب تعديل الـ SQL
+        amount: amount,
+        status: 'completed',
+        txid: txid
+    }, { onConflict: 'payment_id' });
+
+    if (payError) console.error("⚠️ Payment DB Log Failed:", payError);
+
+    // 5. تطبيق التمييز على المنتج
+    console.log(`✨ Promoting Product ${productId} for ${days} days...`);
+    
+    // جلب التاريخ الحالي للمنتج
+    const { data: prod } = await supabase.from('products').select('promoted_until').eq('id', productId).single();
+    
+    let newExpiry = new Date();
+    // لو لسه مميز، زود على الميعاد القديم
+    if (prod && prod.promoted_until && new Date(prod.promoted_until) > new Date()) {
+        newExpiry = new Date(prod.promoted_until);
+    }
+    
+    newExpiry.setDate(newExpiry.getDate() + days);
+
+    const { error: promoError } = await supabase
+      .from('products')
+      .update({ promoted_until: newExpiry.toISOString() })
+      .eq('id', productId);
+
+    if (promoError) {
+        console.error("❌ Promotion DB Update Failed:", promoError);
+        return { statusCode: 500, headers, body: JSON.stringify({ error: "Promotion Failed" }) };
+    }
+
+    console.log("✅ SUCCESS: Product Promoted!");
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({ success: true, daysAdded: days })
+    };
+
+  } catch (err) {
+    console.error("💥 SYSTEM ERROR:", err);
+    // نرجع 200 عشان Pi ميعلقش، بس نسجل الخطأ عندنا
+    return { statusCode: 200, headers, body: JSON.stringify({ error: err.message }) };
   }
 };
