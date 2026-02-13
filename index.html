@@ -521,6 +521,26 @@ body {
   display: flex; align-items: center; gap: 4px;
 }
 
+/* حالة المنتج - جديد/مستعمل */
+.condition-badge {
+  position: absolute; top: 8px; left: 8px; z-index: 10; 
+  padding: 4px 10px; 
+  border-radius: 6px; 
+  font-size: 10px; 
+  font-weight: 800; 
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  display: flex; align-items: center; gap: 4px;
+}
+
+.condition-badge.new {
+  background: linear-gradient(135deg, var(--success) 0%, #059669 100%); 
+  color: white; 
+}
+
+.condition-badge.used {
+  background: linear-gradient(135deg, var(--text-muted) 0%, #475569 100%); 
+  color: white; 
+}
 
 .card.promoted { 
   border: 2px solid var(--accent); 
@@ -1777,18 +1797,24 @@ select.input-box {
     </div>
 
     <div style="background:white;padding:24px;border-radius:var(--radius-xl);border:1px solid var(--border);margin-bottom:20px;box-shadow:var(--shadow-sm);">
-  <h4 style="margin:0 0 12px 0;font-size:16px;color:var(--text-main);display:flex;align-items:center;gap:8px;">
-    <i class="fa-solid fa-align-right" style="color:var(--primary);"></i>
-    <span data-i18n="label_desc">الوصف</span>
-  </h4>
-  <p id="detail-desc" style="color:#475569;font-size:15px;line-height:1.8;margin:0;white-space:pre-wrap;"></p>
-  
- <div style="margin-top:15px;padding-top:15px;border-top:1px solid var(--border);font-size:13px;color:var(--text-muted);display:flex;align-items:center;gap:6px;">
-  <i class="fa-solid fa-eye" style="color:var(--primary);"></i> 
-  <span data-i18n="label_views">المشاهدات:</span> <span id="detail-views" style="font-weight:bold;color:var(--text-main);">0</span>
-</div>
-
-  </div>
+      <h4 style="margin:0 0 12px 0;font-size:16px;color:var(--text-main);display:flex;align-items:center;gap:8px;">
+        <i class="fa-solid fa-align-right" style="color:var(--primary);"></i>
+        <span data-i18n="label_desc">الوصف</span>
+      </h4>
+      <p id="detail-desc" style="color:#475569;font-size:15px;line-height:1.8;margin:0;white-space:pre-wrap;"></p>
+      
+      <div style="margin-top:15px;padding-top:15px;border-top:1px solid var(--border);font-size:13px;color:var(--text-muted);display:flex;align-items:center;gap:6px;">
+        <i class="fa-solid fa-eye" style="color:var(--primary);"></i> 
+        <span data-i18n="label_views">المشاهدات:</span> <span id="detail-views" style="font-weight:bold;color:var(--text-main);">0</span>
+      </div>
+      
+      <!-- حالة المنتج في التفاصيل -->
+      <div id="detail-condition-row" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+        <i class="fa-solid fa-tag" style="color:var(--primary);"></i>
+        <span data-i18n="label_condition" style="font-size:13px;color:var(--text-muted);">الحالة:</span>
+        <span id="detail-condition" style="font-weight:800;font-size:13px;"></span>
+      </div>
+    </div>
 
     
     <div class="seller-card">
@@ -1932,6 +1958,19 @@ select.input-box {
         <span data-i18n="label_category">القسم</span>
       </label>
       <select id="addCategory" class="input-box"></select>
+    </div>
+    
+    <!-- حالة المنتج - جديد أو مستعمل -->
+    <div class="form-group">
+      <label class="form-label">
+        <i class="fa-solid fa-star"></i>
+        <span data-i18n="label_condition">حالة المنتج</span>
+      </label>
+      <select id="addCondition" class="input-box">
+        <option value="" disabled selected data-i18n="select_condition">اختر حالة المنتج</option>
+        <option value="new" data-i18n="condition_new">جديد</option>
+        <option value="used" data-i18n="condition_used">مستعمل</option>
+      </select>
     </div>
     
     <div class="form-group">
@@ -2109,7 +2148,14 @@ const translations = {
     intro_feat_2: "ابحث عن المنتجات بعملة الباي في بلدك.",
     intro_feat_3: "الدفع خارج الموقع (P2P) ومسؤولية المستخدمين.",
     intro_feat_4: "ميز إعلانك بشريط <b>أصفر</b> للوصول لأكبر عدد!",
-    intro_switch_btn: "Switch to English"
+    intro_switch_btn: "Switch to English",
+    // ترجمات حالة المنتج
+    label_condition: "حالة المنتج",
+    select_condition: "اختر حالة المنتج",
+    condition_new: "جديد",
+    condition_used: "مستعمل",
+    condition_new_badge: "جديد",
+    condition_used_badge: "مستعمل"
   },
   en: { 
     brand_name: "Deal Way", login: "Login",label_views: "Views:",stat_views: "Views",stat_chats: "Chats",feat_gold: "Golden Badge",feat_priority: "Standard Priority",feat_high_priority: "High Priority",feat_save: "Save 44%",
@@ -2147,7 +2193,14 @@ const translations = {
     intro_feat_2: "Find products priced in Pi near you.",
     intro_feat_3: "Payments are off-platform (P2P) & user responsibility.",
     intro_feat_4: "Boost ads with a <b>Yellow Badge</b> to reach more!",
-    intro_switch_btn: "التحويل للعربية"
+    intro_switch_btn: "التحويل للعربية",
+    // Product condition translations
+    label_condition: "Condition",
+    select_condition: "Select Condition",
+    condition_new: "New",
+    condition_used: "Used",
+    condition_new_badge: "New",
+    condition_used_badge: "Used"
   }
 };
 
@@ -2488,10 +2541,20 @@ function renderProducts() {
     
     const locText = `${p.country || ''} - ${p.location || ''}`;
 
-        // نستخدم escapeHtml لحماية النصوص
+    // شارة حالة المنتج
+    let conditionBadge = '';
+    if(p.condition) {
+      const isNew = p.condition === 'new';
+      const conditionKey = isNew ? 'condition_new_badge' : 'condition_used_badge';
+      const conditionClass = isNew ? 'new' : 'used';
+      const conditionIcon = isNew ? 'fa-star' : 'fa-recycle';
+      conditionBadge = `<div class="condition-badge ${conditionClass}"><i class="fa-solid ${conditionIcon}"></i> ${t(conditionKey)}</div>`;
+    }
+
     const html = `
       <div class="card ${isPromoted ? 'promoted' : ''}" onclick="openProductDetails(${p.id})">
         ${isPromoted ? `<div class="promo-badge"><i class="fa-solid fa-crown"></i> ${t('promoted_badge')}</div>` : ''}
+        ${conditionBadge}
         <div class="card-img-wrap">
           <img src="${img}" class="card-img" loading="lazy" onerror="this.src='https://placehold.co/400x400/f1f5f9/94a3b8?text=No+Image'">
           <div class="location-tag"><i class="fa-solid fa-location-dot"></i> ${escapeHtml(locText)}</div>
@@ -2546,6 +2609,19 @@ sb.rpc('increment_views', { row_id: pid }).then();
   
   // 2. عرض عدد المشاهدات
   document.getElementById('detail-views').innerText = formatCurrency(newViews);
+
+  // عرض حالة المنتج في التفاصيل
+  const conditionRow = document.getElementById('detail-condition-row');
+  const conditionSpan = document.getElementById('detail-condition');
+  if(p.condition) {
+    const isNew = p.condition === 'new';
+    const conditionKey = isNew ? 'condition_new_badge' : 'condition_used_badge';
+    const conditionColor = isNew ? 'var(--success)' : 'var(--text-muted)';
+    conditionSpan.innerHTML = `<span style="color:${conditionColor}"><i class="fa-solid ${isNew ? 'fa-star' : 'fa-recycle'}"></i> ${t(conditionKey)}</span>`;
+    conditionRow.style.display = 'flex';
+  } else {
+    conditionRow.style.display = 'none';
+  }
 
   document.getElementById('detail-seller-name').innerText = p.seller_username || "Unknown"; 
   document.getElementById('detail-seller-avatar').innerText = (p.seller_username || "U").charAt(0).toUpperCase();
@@ -2741,6 +2817,7 @@ function resetForm() {
   document.getElementById("addPrice").value = ""; 
   document.getElementById("addDesc").value = ""; 
   document.getElementById("addCategory").value = ""; 
+  document.getElementById("addCondition").value = ""; 
   document.getElementById("addCountry").value = ""; 
   document.getElementById("addState").innerHTML = '<option value="" disabled selected>Select Country First</option>';
   selectedFiles = []; 
@@ -2752,12 +2829,13 @@ async function submitProduct(){
     const price = document.getElementById("addPrice").value;
     const desc = document.getElementById("addDesc").value;
     const category = document.getElementById("addCategory").value;
+    const condition = document.getElementById("addCondition").value;
     const country = document.getElementById("addCountry").value;
     const state = document.getElementById("addState").value; 
 
     const btn = document.getElementById("publishBtn");
     
-    if(!name || !price || !category || !country || !state) {
+    if(!name || !price || !category || !condition || !country || !state) {
       showToast('toast_fill_data', 'error');
       return;
     }
@@ -2795,6 +2873,7 @@ async function submitProduct(){
       seller_pi_id: user.uid, 
       seller_username: user.username, 
       category: category, 
+      condition: condition,
       location: state,
       country: country
     });
