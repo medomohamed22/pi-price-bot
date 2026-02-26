@@ -16,4 +16,4 @@
   for = "/.well-known/*"
   [headers.values]
     Access-Control-Allow-Origin = "*"
-    
+    Content-Type = "text/plain; charset=utf-8"
