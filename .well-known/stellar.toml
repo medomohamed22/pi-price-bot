@@ -1,0 +1,18 @@
+# Network Info
+NETWORK_PASSPHRASE="Pi Testnet"
+HORIZON_URL="https://api.testnet.minepi.com"
+
+# Organization Info
+ORG_NAME="DealWay"
+ORG_URL="https://pi-links.netlify.app"
+ORG_DESCRIPTION="Product display site"
+ORG_LOGO="https://testapp2026.netlify.app/token_512.png"
+
+# Token Info
+[[CURRENCIES]]
+code="DEALWAY"
+issuer="GBQ3H472BMOMTFRSK5P26FBRVOE3ZFCB5F3FTGXEGOV5CN7RAB6TRPJR"
+display_decimals=7
+name="DealWay Token"
+desc="Product display site"
+image="https://testapp2026.netlify.app/token_512.png"
