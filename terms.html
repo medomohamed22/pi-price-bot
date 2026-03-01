@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Terms of Service | Deal Way</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+
+<style>
+:root {
+  --primary: #7C3AED;
+  --bg-body: #F3F4F6;
+  --text-main: #111827;
+  --text-muted: #6B7280;
+  --border: #E5E7EB;
+}
+
+body {
+  margin: 0;
+  font-family: 'Tajawal', sans-serif;
+  background-color: var(--bg-body);
+  color: var(--text-main);
+  line-height: 1.6;
+  padding: 20px;
+  transition: all 0.3s ease;
+}
+
+.container { max-width: 800px; margin: 0 auto; }
+
+/* Header Styling */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.header-start {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.back-btn {
+  background: white; border: 1px solid var(--border); width: 40px; height: 40px;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  color: var(--text-main); text-decoration: none;
+  transition: 0.2s; font-size: 18px;
+}
+.back-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+/* Language Button */
+.lang-btn {
+  background: white; border: 1px solid var(--border); padding: 8px 16px;
+  border-radius: 12px; cursor: pointer; font-family: 'Tajawal', sans-serif;
+  font-weight: 700; color: var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  transition: 0.2s;
+}
+.lang-btn:active { transform: scale(0.95); }
+
+.page-title { margin: 0; font-size: 24px; font-weight: 800; color: var(--primary); }
+
+/* Content Box */
+.content-box {
+  background: white; padding: 25px; border-radius: 16px;
+  border: 1px solid var(--border); box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+}
+
+h2 { font-size: 18px; font-weight: 700; margin-top: 25px; margin-bottom: 10px; color: var(--text-main); }
+p, li { font-size: 14px; color: #4B5563; margin-bottom: 10px; }
+ul { padding-inline-start: 20px; }
+
+.important-notice {
+    background-color: #FEF3C7; border: 1px solid #FCD34D;
+    color: #92400E; padding: 15px; border-radius: 12px; margin-bottom: 20px; font-size: 14px; font-weight: 500;
+}
+
+.last-updated {
+  margin-top: 30px; font-size: 12px; color: var(--text-muted);
+  text-align: center; border-top: 1px solid var(--border); padding-top: 20px;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="page-header">
+    <div class="header-start">
+        <a href="index.html" class="back-btn">
+          <i id="back-icon" class="fa-solid fa-arrow-left"></i>
+        </a>
+        <h1 class="page-title" data-i18n="title">Terms of Service</h1>
+    </div>
+    <button class="lang-btn" onclick="toggleLanguage()">AR</button>
+  </div>
+
+  <div class="content-box">
+    <p data-i18n="intro">Please read these Terms of Service ("Terms") carefully before using the Deal Way application. Your access to and use of the service is conditioned on your acceptance of and compliance with these Terms.</p>
+
+    <div class="important-notice">
+        <i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n="notice_text">Important Disclaimer: Deal Way is an intermediary platform connecting buyers and sellers within the Pi Network community. We do not own the listed products nor guarantee their quality. The responsibility for completing the deal lies with both parties.</span>
+    </div>
+
+    <h2 data-i18n="sec1_title">1. Account & Eligibility</h2>
+    <p data-i18n="sec1_desc">You must have a valid Pi Network account to use the application. You are responsible for maintaining the confidentiality of your account information and for all activities that occur under it.</p>
+
+    <h2 data-i18n="sec2_title">2. Posting & Selling Rules</h2>
+    <ul>
+        <li data-i18n="sec2_p1">Items listed must be real, legal, and accurately described.</li>
+        <li data-i18n="sec2_p2">Selling counterfeit, stolen items, or items infringing on intellectual property rights is prohibited.</li>
+        <li data-i18n="sec2_p3">Posting offensive, racist, or inappropriate content is prohibited.</li>
+        <li data-i18n="sec2_p4">Deal Way administration reserves the right to delete any ad violating these rules and ban the offender's account.</li>
+    </ul>
+
+    <h2 data-i18n="sec3_title">3. Payments (Pi Coin)</h2>
+    <ul>
+        <li data-i18n="sec3_p1">All financial transactions are made using Pi coin directly between wallets (Wallet-to-Wallet) on the Pi Network blockchain.</li>
+        <li data-i18n="sec3_p2">Deal Way does not hold user funds and cannot reverse transactions once completed on the blockchain.</li>
+        <li data-i18n="sec3_p3">You are responsible for verifying the recipient's wallet address and the amount before confirming any transfer.</li>
+    </ul>
+
+    <h2 data-i18n="sec4_title">4. Disclaimer</h2>
+    <p data-i18n="sec4_desc">The service is provided "AS IS" and "AS AVAILABLE". Deal Way makes no warranties, expressed or implied, regarding the reliability of the service or the accuracy of ads posted by users. We are not a party to any dispute that may arise between the seller and buyer.</p>
+
+    <h2 data-i18n="sec5_title">5. Changes to Terms</h2>
+    <p data-i18n="sec5_desc">We reserve the right to modify or replace these Terms at any time. It is your responsibility to review these Terms periodically for changes.</p>
+
+    <div class="last-updated" data-i18n="footer">
+      Last Updated: Feb 9, 2026
+    </div>
+  </div>
+</div>
+
+<script>
+    const translations = {
+        en: {
+            btn_lang: "العربية",
+            title: "Terms of Service",
+            intro: "Please read these Terms of Service ('Terms') carefully before using the Deal Way application. Your access to and use of the service is conditioned on your acceptance of and compliance with these Terms.",
+            notice_text: "Important Disclaimer: Deal Way is an intermediary platform connecting buyers and sellers within the Pi Network community. We do not own the listed products nor guarantee their quality. The responsibility for completing the deal lies with both parties.",
+            sec1_title: "1. Account & Eligibility",
+            sec1_desc: "You must have a valid Pi Network account to use the application. You are responsible for maintaining the confidentiality of your account information and for all activities that occur under it.",
+            sec2_title: "2. Posting & Selling Rules",
+            sec2_p1: "Items listed must be real, legal, and accurately described.",
+            sec2_p2: "Selling counterfeit, stolen items, or items infringing on intellectual property rights is prohibited.",
+            sec2_p3: "Posting offensive, racist, or inappropriate content is prohibited.",
+            sec2_p4: "Deal Way administration reserves the right to delete any ad violating these rules and ban the offender's account.",
+            sec3_title: "3. Payments (Pi Coin)",
+            sec3_p1: "All financial transactions are made using Pi coin directly between wallets (Wallet-to-Wallet) on the Pi Network blockchain.",
+            sec3_p2: "Deal Way does not hold user funds and cannot reverse transactions once completed on the blockchain.",
+            sec3_p3: "You are responsible for verifying the recipient's wallet address and the amount before confirming any transfer.",
+            sec4_title: "4. Disclaimer",
+            sec4_desc: "The service is provided 'AS IS' and 'AS AVAILABLE'. Deal Way makes no warranties, expressed or implied, regarding the reliability of the service or the accuracy of ads posted by users. We are not a party to any dispute that may arise between the seller and buyer.",
+            sec5_title: "5. Changes to Terms",
+            sec5_desc: "We reserve the right to modify or replace these Terms at any time. It is your responsibility to review these Terms periodically for changes.",
+            footer: "Last Updated: Feb 9, 2026"
+        },
+        ar: {
+            btn_lang: "English",
+            title: "شروط الخدمة",
+            intro: "يرجى قراءة شروط الخدمة هذه ('الشروط') بعناية قبل استخدام تطبيق Deal Way. وصولك إلى التطبيق واستخدامه مشروط بقبولك لهذه الشروط والامتثال لها.",
+            notice_text: "تنويه هام: Deal Way هو منصة وسيطة تربط بين البائعين والمشترين داخل مجتمع Pi Network. نحن لا نملك المنتجات المعروضة ولا نضمن جودتها، وتقع مسؤولية إتمام الصفقة على عاتق الطرفين.",
+            sec1_title: "1. الحساب والأهلية",
+            sec1_desc: "يجب أن يكون لديك حساب Pi Network صالح لاستخدام التطبيق. أنت مسؤول عن الحفاظ على سرية معلومات حسابك وعن جميع الأنشطة التي تحدث تحته.",
+            sec2_title: "2. قواعد النشر والبيع",
+            sec2_p1: "يجب أن تكون السلع المعروضة حقيقية، قانونية، وموصوفة بدقة.",
+            sec2_p2: "يُحظر بيع المنتجات المقلدة، المسروقة، أو التي تنتهك حقوق الملكية الفكرية.",
+            sec2_p3: "يُحظر نشر محتوى مسيء، عنصري، أو غير لائق.",
+            sec2_p4: "تحتفظ إدارة Deal Way بالحق في حذف أي إعلان يخالف هذه القواعد وحظر حساب المخالف.",
+            sec3_title: "3. المدفوعات (عملة Pi)",
+            sec3_p1: "جميع المعاملات المالية تتم باستخدام عملة Pi مباشرة بين المحافظ (Wallet-to-Wallet) على البلوكشين الخاص بـ Pi Network.",
+            sec3_p2: "Deal Way لا يحتفظ بأموال المستخدمين ولا يمكنه عكس المعاملات بعد إتمامها على البلوكشين.",
+            sec3_p3: "أنت مسؤول عن التأكد من عنوان محفظة المستلم والمبلغ قبل تأكيد أي تحويل.",
+            sec4_title: "4. إخلاء المسؤولية",
+            sec4_desc: "يتم تقديم الخدمة 'كما هي' و'حسب التوفر'. لا تقدم Deal Way أي ضمانات، صريحة أو ضمنية، فيما يتعلق بموثوقية الخدمة أو دقة الإعلانات المنشورة من قبل المستخدمين. نحن لسنا طرفاً في أي نزاع قد ينشأ بين البائع والمشتري.",
+            sec5_title: "5. التعديلات على الشروط",
+            sec5_desc: "نحتفظ بالحق في تعديل أو استبدال هذه الشروط في أي وقت. يقع على عاتقك مسؤولية مراجعة هذه الشروط بشكل دوري لمعرفة أي تغييرات.",
+            footer: "آخر تحديث: 9 فبراير 2026"
+        }
+    };
+
+    let currentLang = 'en'; // Default to English
+
+    function toggleLanguage() {
+        currentLang = currentLang === 'en' ? 'ar' : 'en';
+        updateContent();
+    }
+
+    function updateContent() {
+        const t = translations[currentLang];
+        
+        // Direction & Lang Attribute
+        document.documentElement.lang = currentLang;
+        document.documentElement.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
+
+        // Update Button
+        document.querySelector('.lang-btn').innerText = t.btn_lang;
+
+        // Update Back Icon
+        const backIcon = document.getElementById('back-icon');
+        if (currentLang === 'ar') {
+            backIcon.classList.remove('fa-arrow-left');
+            backIcon.classList.add('fa-arrow-right');
+        } else {
+            backIcon.classList.remove('fa-arrow-right');
+            backIcon.classList.add('fa-arrow-left');
+        }
+
+        // Update Text
+        document.querySelectorAll('[data-i18n]').forEach(element => {
+            const key = element.getAttribute('data-i18n');
+            if (t[key]) {
+                element.innerText = t[key];
+            }
+        });
+    }
+
+    // Initialize
+    updateContent();
+</script>
+
+</body>
+</html>

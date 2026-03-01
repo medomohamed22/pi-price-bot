@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Privacy Policy | Deal Way</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+
+<style>
+:root {
+  --primary: #7C3AED;
+  --bg-body: #F3F4F6;
+  --text-main: #111827;
+  --text-muted: #6B7280;
+  --border: #E5E7EB;
+}
+
+body {
+  margin: 0;
+  font-family: 'Tajawal', sans-serif;
+  background-color: var(--bg-body);
+  color: var(--text-main);
+  line-height: 1.6;
+  padding: 20px;
+  transition: all 0.3s ease;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Header Styling */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* Space between title/back and lang btn */
+  margin-bottom: 20px;
+}
+
+.header-start {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.back-btn {
+  background: white;
+  border: 1px solid var(--border);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-main);
+  text-decoration: none;
+  transition: 0.2s;
+  font-size: 18px;
+}
+
+.back-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* Language Toggle Button */
+.lang-btn {
+  background: white;
+  border: 1px solid var(--border);
+  padding: 8px 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: 'Tajawal', sans-serif;
+  font-weight: 700;
+  color: var(--primary);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  transition: 0.2s;
+}
+
+.lang-btn:active {
+    transform: scale(0.95);
+}
+
+.page-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+/* Content Box Styling */
+.content-box {
+  background: white;
+  padding: 25px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+}
+
+h2 {
+  font-size: 18px;
+  font-weight: 700;
+  margin-top: 25px;
+  margin-bottom: 10px;
+  color: var(--text-main);
+}
+
+p, li {
+  font-size: 14px;
+  color: #4B5563;
+  margin-bottom: 10px;
+}
+
+ul {
+  padding-inline-start: 20px; /* Better for RTL/LTR switching */
+}
+
+.last-updated {
+  margin-top: 30px;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="page-header">
+    <div class="header-start">
+        <a href="index.html" class="back-btn">
+          <i id="back-icon" class="fa-solid fa-arrow-left"></i>
+        </a>
+        <h1 class="page-title" data-i18n="title">Privacy Policy</h1>
+    </div>
+    <button class="lang-btn" onclick="toggleLanguage()">AR</button>
+  </div>
+
+  <div class="content-box">
+    <p data-i18n="intro">Welcome to Deal Way. We take your privacy seriously. This Privacy Policy explains how we collect, use, and protect your information when you use our application.</p>
+
+    <h2 data-i18n="sec1_title">1. Information We Collect</h2>
+    <p data-i18n="sec1_desc">To provide our services, we may collect the following information:</p>
+    <ul>
+        <li><strong data-i18n="sec1_p1_bold">Pi Account Info:</strong> <span data-i18n="sec1_p1_text">We collect your Pi Network username and Wallet Address to facilitate payments and identification within the app.</span></li>
+        <li><strong data-i18n="sec1_p2_bold">User Content:</strong> <span data-i18n="sec1_p2_text">Details of the ads you post, including product images, descriptions, and prices.</span></li>
+        <li><strong data-i18n="sec1_p3_bold">Communication Data:</strong> <span data-i18n="sec1_p3_text">Messages exchanged between you and other users via the internal chat system.</span></li>
+        <li><strong data-i18n="sec1_p4_bold">Usage Data:</strong> <span data-i18n="sec1_p4_text">Information about how you interact with the app to improve user experience.</span></li>
+    </ul>
+
+    <h2 data-i18n="sec2_title">2. How We Use Information</h2>
+    <p data-i18n="sec2_desc">We use the collected information for the following purposes:</p>
+    <ul>
+        <li data-i18n="sec2_p1">To enable you to post ads and communicate with buyers/sellers.</li>
+        <li data-i18n="sec2_p2">To facilitate and verify Pi payments (Testnet/Mainnet).</li>
+        <li data-i18n="sec2_p3">To improve app performance and develop new features.</li>
+        <li data-i18n="sec2_p4">To prevent fraud and misuse and ensure community security.</li>
+    </ul>
+
+    <h2 data-i18n="sec3_title">3. Sharing Information</h2>
+    <p data-i18n="sec3_desc">We do not sell your personal information to third parties. We may share your information only in the following cases:</p>
+    <ul>
+        <li data-i18n="sec3_p1">With other users to the extent necessary to complete transactions (e.g., showing your username and product image).</li>
+        <li data-i18n="sec3_p2">To comply with legal requirements or respond to official requests if necessary.</li>
+    </ul>
+
+    <h2 data-i18n="sec4_title">4. Data Security</h2>
+    <p data-i18n="sec4_desc">We take reasonable security measures to protect your information from unauthorized access, alteration, or disclosure. However, please remember that no method of transmission over the internet is 100% secure.</p>
+
+    <h2 data-i18n="sec5_title">5. Changes to This Policy</h2>
+    <p data-i18n="sec5_desc">We may update this Privacy Policy from time to time. Any changes will be posted on this page, and your continued use of the app constitutes acceptance of those changes.</p>
+
+    <h2 data-i18n="sec6_title">6. Contact Us</h2>
+    <p data-i18n="sec6_desc">If you have any questions about this Privacy Policy, please contact us via the support channels available in the app.</p>
+
+    <div class="last-updated" data-i18n="footer">
+      Last Updated: Feb 9, 2026
+    </div>
+  </div>
+</div>
+
+<script>
+    // Translations Object
+    const translations = {
+        en: {
+            btn_lang: "العربية",
+            title: "Privacy Policy",
+            intro: "Welcome to Deal Way. We take your privacy seriously. This Privacy Policy explains how we collect, use, and protect your information when you use our application.",
+            sec1_title: "1. Information We Collect",
+            sec1_desc: "To provide our services, we may collect the following information:",
+            sec1_p1_bold: "Pi Account Info:",
+            sec1_p1_text: "We collect your Pi Network username and Wallet Address to facilitate payments and identification within the app.",
+            sec1_p2_bold: "User Content:",
+            sec1_p2_text: "Details of the ads you post, including product images, descriptions, and prices.",
+            sec1_p3_bold: "Communication Data:",
+            sec1_p3_text: "Messages exchanged between you and other users via the internal chat system.",
+            sec1_p4_bold: "Usage Data:",
+            sec1_p4_text: "Information about how you interact with the app to improve user experience.",
+            sec2_title: "2. How We Use Information",
+            sec2_desc: "We use the collected information for the following purposes:",
+            sec2_p1: "To enable you to post ads and communicate with buyers/sellers.",
+            sec2_p2: "To facilitate and verify Pi payments (Testnet/Mainnet).",
+            sec2_p3: "To improve app performance and develop new features.",
+            sec2_p4: "To prevent fraud and misuse and ensure community security.",
+            sec3_title: "3. Sharing Information",
+            sec3_desc: "We do not sell your personal information to third parties. We may share your information only in the following cases:",
+            sec3_p1: "With other users to the extent necessary to complete transactions (e.g., showing your username and product image).",
+            sec3_p2: "To comply with legal requirements or respond to official requests if necessary.",
+            sec4_title: "4. Data Security",
+            sec4_desc: "We take reasonable security measures to protect your information from unauthorized access, alteration, or disclosure. However, please remember that no method of transmission over the internet is 100% secure.",
+            sec5_title: "5. Changes to This Policy",
+            sec5_desc: "We may update this Privacy Policy from time to time. Any changes will be posted on this page, and your continued use of the app constitutes acceptance of those changes.",
+            sec6_title: "6. Contact Us",
+            sec6_desc: "If you have any questions about this Privacy Policy, please contact us via the support channels available in the app.",
+            footer: "Last Updated: Feb 9, 2026"
+        },
+        ar: {
+            btn_lang: "English",
+            title: "سياسة الخصوصية",
+            intro: "مرحباً بك في Deal Way. نحن نأخذ خصوصيتك على محمل الجد. تشرح سياسة الخصوصية هذه كيفية جمعنا واستخدامنا وحمايتنا لمعلوماتك عند استخدامك لتطبيقنا.",
+            sec1_title: "1. المعلومات التي نجمعها",
+            sec1_desc: "لتقديم خدماتنا، قد نقوم بجمع المعلومات التالية:",
+            sec1_p1_bold: "معلومات حساب Pi:",
+            sec1_p1_text: "نقوم بجمع اسم المستخدم الخاص بك على شبكة Pi وعنوان محفظتك لتسهيل عمليات الدفع والتعريف داخل التطبيق.",
+            sec1_p2_bold: "المحتوى الذي تنشئه:",
+            sec1_p2_text: "تفاصيل الإعلانات التي تقوم بنشرها، بما في ذلك صور المنتجات، الأوصاف، والأسعار.",
+            sec1_p3_bold: "بيانات التواصل:",
+            sec1_p3_text: "الرسائل المتبادلة بينك وبين المستخدمين الآخرين عبر نظام المحادثات الداخلي.",
+            sec1_p4_bold: "بيانات الاستخدام:",
+            sec1_p4_text: "معلومات حول كيفية تفاعلك مع التطبيق لتحسين تجربة المستخدم.",
+            sec2_title: "2. كيف نستخدم معلوماتك",
+            sec2_desc: "نستخدم المعلومات التي نجمعها للأغراض التالية:",
+            sec2_p1: "تمكينك من نشر الإعلانات والتواصل مع البائعين والمشترين.",
+            sec2_p2: "تسهيل وإثبات عمليات الدفع باستخدام عملة Pi.",
+            sec2_p3: "تحسين أداء التطبيق وتطوير ميزات جديدة.",
+            sec2_p4: "منع الاحتيال وإساءة الاستخدام وضمان أمن المجتمع.",
+            sec3_title: "3. مشاركة المعلومات",
+            sec3_desc: "نحن لا نقوم ببيع معلوماتك الشخصية لأطراف ثالثة. قد نشارك معلوماتك فقط في الحالات التالية:",
+            sec3_p1: "مع مستخدمين آخرين بالقدر اللازم لإتمام المعاملات (مثل ظهور اسمك وصورة المنتج للمشتري).",
+            sec3_p2: "الامتثال للمتطلبات القانونية أو الاستجابة لطلبات الجهات الرسمية إذا لزم الأمر.",
+            sec4_title: "4. أمن البيانات",
+            sec4_desc: "نحن نتخذ تدابير أمنية معقولة لحماية معلوماتك من الوصول غير المصرح به أو التغيير أو الكشف. ومع ذلك، يرجى تذكر أنه لا توجد وسيلة نقل عبر الإنترنت آمنة بنسبة 100%.",
+            sec5_title: "5. التغييرات على هذه السياسة",
+            sec5_desc: "قد نقوم بتحديث سياسة الخصوصية هذه من وقت لآخر. سيتم نشر أي تغييرات على هذه الصفحة، ويعتبر استمرارك في استخدام التطبيق بعد نشر التغييرات موافقة عليها.",
+            sec6_title: "6. اتصل بنا",
+            sec6_desc: "إذا كان لديك أي أسئلة حول سياسة الخصوصية هذه، يرجى التواصل معنا عبر قنوات الدعم المتاحة في التطبيق.",
+            footer: "آخر تحديث: 9 فبراير 2026"
+        }
+    };
+
+    let currentLang = 'en'; // Default language
+
+    function toggleLanguage() {
+        // Switch language
+        currentLang = currentLang === 'en' ? 'ar' : 'en';
+        updateContent();
+    }
+
+    function updateContent() {
+        const t = translations[currentLang];
+        
+        // Update Direction and HTML Lang attribute
+        document.documentElement.lang = currentLang;
+        document.documentElement.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
+
+        // Update Button Text
+        document.querySelector('.lang-btn').innerText = t.btn_lang;
+
+        // Update Back Icon (Flip arrow)
+        const backIcon = document.getElementById('back-icon');
+        if (currentLang === 'ar') {
+            backIcon.classList.remove('fa-arrow-left');
+            backIcon.classList.add('fa-arrow-right');
+        } else {
+            backIcon.classList.remove('fa-arrow-right');
+            backIcon.classList.add('fa-arrow-left');
+        }
+
+        // Update Text Elements
+        document.querySelectorAll('[data-i18n]').forEach(element => {
+            const key = element.getAttribute('data-i18n');
+            if (t[key]) {
+                element.innerText = t[key];
+            }
+        });
+    }
+
+    // Initialize on load
+    updateContent();
+
+</script>
+
+</body>
+</html>
