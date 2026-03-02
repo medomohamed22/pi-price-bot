@@ -1,16 +1,17 @@
 const { createClient } = require('@supabase/supabase-js');
-const StellarSdk = require('stellar-sdk'); // استدعاء مكتبة البلوكتشين
+const StellarSdk = require('stellar-sdk'); 
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY; 
-const WALLET_PRIVATE_KEY = process.env.WALLET_PRIVATE_KEY; // المفتاح السري لمحفظتك (يبدأ بحرف S)
+const WALLET_PRIVATE_KEY = process.env.WALLET_PRIVATE_KEY; 
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// إعدادات شبكة Pi Network
-const IS_TESTNET = true; // ✅ تم التعديل إلى true لتجربة السحب على شبكة الاختبار (Testnet)
+// إعدادات شبكة Pi
+const IS_TESTNET = true; 
 const HORIZON_URL = IS_TESTNET ? 'https://api.testnet.minepi.com' : 'https://api.mainnet.minepi.com';
-const NETWORK_PASSPHRASE = IS_TESTNET ? 'Pi Network Testnet' : 'Pi Network Mainnet';
+// ✅ تم تصحيح الـ Passphrase بناءً على الكود الخاص بك
+const NETWORK_PASSPHRASE = IS_TESTNET ? 'Pi Testnet' : 'Pi Network';
 
 exports.handler = async (event, context) => {
   const headers = { 
@@ -22,9 +23,9 @@ exports.handler = async (event, context) => {
 
   try {
     const { uid, amount, address } = JSON.parse(event.body);
+    const withdrawAmount = parseFloat(amount);
 
-    // 1. التحقق من صحة البيانات والعنوان
-    if (!uid || !amount || amount < 1 || !address || !address.startsWith('G')) {
+    if (!uid || !withdrawAmount || withdrawAmount < 1 || !address || !address.startsWith('G')) {
       return { statusCode: 400, headers, body: JSON.stringify({ error: "بيانات غير صالحة أو عنوان المحفظة المستلمة خاطئ." }) };
     }
     
@@ -32,10 +33,10 @@ exports.handler = async (event, context) => {
         throw new Error("المفتاح السري للمحفظة غير موجود في إعدادات السيرفر.");
     }
 
-    console.log(`💸 Processing Withdrawal directly on Blockchain for ${uid}, Amount: ${amount}, To: ${address}`);
+    console.log(`💸 Processing Withdrawal for ${uid}, Amount: ${withdrawAmount}, To: ${address}`);
 
     // =========================================================
-    // 2. حساب الرصيد الآمن من قاعدة البيانات
+    // 1. حساب الرصيد الآمن من قاعدة البيانات
     // =========================================================
     const { data: escrows } = await supabase.from('escrow_transactions').select('amount').eq('seller_pi_id', uid).eq('status', 'COMPLETED');
     let totalEarned = 0;
@@ -47,74 +48,78 @@ exports.handler = async (event, context) => {
 
     const actualBalance = totalEarned - totalWithdrawn;
 
-    if (amount > actualBalance) {
+    if (withdrawAmount > actualBalance) {
         return { statusCode: 400, headers, body: JSON.stringify({ error: "رصيدك غير كافٍ لإتمام العملية." }) };
     }
 
     // =========================================================
-    // 3. بناء وتوقيع المعاملة مباشرة على البلوكتشين (تخطي Pi API)
+    // 2. تهيئة شبكة Pi وبناء المعاملة
     // =========================================================
-    
-    // ✅ [تم التعديل] استخدام Horizon.Server لحل مشكلة TypeError
     const server = new StellarSdk.Horizon.Server(HORIZON_URL);
     const sourceKeypair = StellarSdk.Keypair.fromSecret(WALLET_PRIVATE_KEY);
     
-    // جلب حالة محفظة التطبيق من البلوكتشين لمعرفة الـ Sequence Number
-    let sourceAccount;
-    try {
-        sourceAccount = await server.loadAccount(sourceKeypair.publicKey());
-    } catch(e) {
-        // ✅ تسجيل الخطأ التفصيلي في Netlify لمعرفة المشكلة بدقة
-        console.error("❌ Blockchain Account Error:", e.response ? JSON.stringify(e.response.data) : e);
-        throw new Error("فشل الوصول لمحفظة الموقع الرئيسية (تأكد من اختيار Testnet، وتأكد من وجود رصيد أدنى 1 Test-Pi في المحفظة).");
-    }
+    const sourceAccount = await server.loadAccount(sourceKeypair.publicKey());
 
-    // تجهيز التحويل
+    // ✅ تطبيق التعديلات الجوهرية (الرسوم المحدثة والتوقيت)
     const transaction = new StellarSdk.TransactionBuilder(sourceAccount, {
-      fee: StellarSdk.BASE_FEE, // رسوم البلوكتشين القياسية (0.01 Pi تقريباً)
+      fee: "100000", // 0.01 Pi لحل خطأ tx_insufficient_fee
       networkPassphrase: NETWORK_PASSPHRASE
     })
     .addOperation(StellarSdk.Operation.payment({
       destination: address,
       asset: StellarSdk.Asset.native(),
-      amount: amount.toString()
+      amount: withdrawAmount.toFixed(7).toString()
     }))
-    .addMemo(StellarSdk.Memo.text("DealWay Withdraw")) // رسالة تظهر في محفظة المستخدم
-    .setTimeout(300) 
+    .setTimeout(30) // تم التعديل إلى 30 ثانية لتجنب التعليق
     .build();
 
-    // التوقيع السري باستخدام Private Key
+    // التوقيع السري
     transaction.sign(sourceKeypair);
 
-    // =========================================================
-    // 4. إرسال المعاملة الموقعة إلى شبكة البلوكتشين الفعلية
-    // =========================================================
+    // إرسال المعاملة إلى شبكة البلوكتشين
     const submitRes = await server.submitTransaction(transaction);
-    const txid = submitRes.hash; // معرف المعاملة في البلوكتشين
+    const txid = submitRes.hash; 
 
     // =========================================================
-    // 5. تسجيل العملية في قاعدة البيانات لدينا
+    // 3. تسجيل العملية في قاعدة البيانات
     // =========================================================
     await supabase.from('withdrawals').insert({
         user_pi_id: uid,
-        amount: amount,
+        amount: withdrawAmount,
         status: 'COMPLETED',
         txid: txid
     });
 
-    console.log("✅ Withdrawal Successful on Blockchain! TXID:", txid);
+    console.log("✅ Withdrawal Successful! TXID:", txid);
     return { statusCode: 200, headers, body: JSON.stringify({ success: true, txid: txid }) };
 
   } catch (err) {
-    console.error("❌ Withdrawal Error:", err);
-    
-    // استخراج رسالة الخطأ من البلوكتشين لتسهيل حل المشاكل
-    let errorMsg = err.message || "حدث خطأ أثناء السحب.";
+    // ✅ معالجة الأخطاء المتقدمة مقتبسة من الكود الخاص بك
+    console.error("--- ERROR LOG START ---");
+    let errorResponse = {
+        error: 'فشلت المعاملة',
+        details: err.message
+    };
+
     if (err.response && err.response.data && err.response.data.extras) {
-        const resultCodes = err.response.data.extras.result_codes;
-        errorMsg = "رفض البلوكتشين العملية: " + (resultCodes.operations ? resultCodes.operations.join(", ") : resultCodes.transaction);
+        const codes = err.response.data.extras.result_codes;
+        const opCodes = codes.operations ? codes.operations.join(', ') : 'no_op_code';
+        errorResponse.details = `Blockchain Error: ${codes.transaction} (${opCodes})`;
+        
+        if (codes.transaction === 'tx_bad_seq') {
+            errorResponse.error = 'يوجد ضغط على الشبكة، حاول مرة أخرى بعد لحظات.';
+        } else if (codes.transaction === 'tx_insufficient_fee') {
+            errorResponse.error = 'رسوم الشبكة مرتفعة حالياً، حاول مرة أخرى.';
+        } else if (opCodes.includes('op_underfunded')) {
+            errorResponse.error = 'محفظة الموقع (السيرفر) تحتاج شحن رصيد لدفع الرسوم.';
+        } else if (opCodes.includes('op_no_destination')) {
+            errorResponse.error = 'المحفظة المستلمة غير مفعلة على البلوكتشين.';
+        }
     }
-    
-    return { statusCode: 500, headers, body: JSON.stringify({ error: errorMsg }) };
+
+    console.error(errorResponse.details);
+    console.error("--- ERROR LOG END ---");
+
+    return { statusCode: 400, headers, body: JSON.stringify(errorResponse) };
   }
 };
