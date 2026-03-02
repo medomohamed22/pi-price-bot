@@ -521,26 +521,6 @@ body {
   display: flex; align-items: center; gap: 4px;
 }
 
-/* حالة المنتج - جديد/مستعمل */
-.condition-badge {
-  position: absolute; top: 8px; left: 8px; z-index: 10; 
-  padding: 4px 10px; 
-  border-radius: 6px; 
-  font-size: 10px; 
-  font-weight: 800; 
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  display: flex; align-items: center; gap: 4px;
-}
-
-.condition-badge.new {
-  background: linear-gradient(135deg, var(--success) 0%, #059669 100%); 
-  color: white; 
-}
-
-.condition-badge.used {
-  background: linear-gradient(135deg, var(--text-muted) 0%, #475569 100%); 
-  color: white; 
-}
 
 .card.promoted { 
   border: 2px solid var(--accent); 
@@ -1797,24 +1777,18 @@ select.input-box {
     </div>
 
     <div style="background:white;padding:24px;border-radius:var(--radius-xl);border:1px solid var(--border);margin-bottom:20px;box-shadow:var(--shadow-sm);">
-      <h4 style="margin:0 0 12px 0;font-size:16px;color:var(--text-main);display:flex;align-items:center;gap:8px;">
-        <i class="fa-solid fa-align-right" style="color:var(--primary);"></i>
-        <span data-i18n="label_desc">الوصف</span>
-      </h4>
-      <p id="detail-desc" style="color:#475569;font-size:15px;line-height:1.8;margin:0;white-space:pre-wrap;"></p>
-      
-      <div style="margin-top:15px;padding-top:15px;border-top:1px solid var(--border);font-size:13px;color:var(--text-muted);display:flex;align-items:center;gap:6px;">
-        <i class="fa-solid fa-eye" style="color:var(--primary);"></i> 
-        <span data-i18n="label_views">المشاهدات:</span> <span id="detail-views" style="font-weight:bold;color:var(--text-main);">0</span>
-      </div>
-      
-      <!-- حالة المنتج في التفاصيل -->
-      <div id="detail-condition-row" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;">
-        <i class="fa-solid fa-tag" style="color:var(--primary);"></i>
-        <span data-i18n="label_condition" style="font-size:13px;color:var(--text-muted);">الحالة:</span>
-        <span id="detail-condition" style="font-weight:800;font-size:13px;"></span>
-      </div>
-    </div>
+  <h4 style="margin:0 0 12px 0;font-size:16px;color:var(--text-main);display:flex;align-items:center;gap:8px;">
+    <i class="fa-solid fa-align-right" style="color:var(--primary);"></i>
+    <span data-i18n="label_desc">الوصف</span>
+  </h4>
+  <p id="detail-desc" style="color:#475569;font-size:15px;line-height:1.8;margin:0;white-space:pre-wrap;"></p>
+  
+ <div style="margin-top:15px;padding-top:15px;border-top:1px solid var(--border);font-size:13px;color:var(--text-muted);display:flex;align-items:center;gap:6px;">
+  <i class="fa-solid fa-eye" style="color:var(--primary);"></i> 
+  <span data-i18n="label_views">المشاهدات:</span> <span id="detail-views" style="font-weight:bold;color:var(--text-main);">0</span>
+</div>
+
+  </div>
 
     
     <div class="seller-card">
@@ -1960,19 +1934,6 @@ select.input-box {
       <select id="addCategory" class="input-box"></select>
     </div>
     
-    <!-- حالة المنتج - جديد أو مستعمل -->
-    <div class="form-group">
-      <label class="form-label">
-        <i class="fa-solid fa-star"></i>
-        <span data-i18n="label_condition">حالة المنتج</span>
-      </label>
-      <select id="addCondition" class="input-box">
-        <option value="" disabled selected data-i18n="select_condition">اختر حالة المنتج</option>
-        <option value="new" data-i18n="condition_new">جديد</option>
-        <option value="used" data-i18n="condition_used">مستعمل</option>
-      </select>
-    </div>
-    
     <div class="form-group">
       <label class="form-label">
         <i class="fa-solid fa-earth-americas"></i>
@@ -2086,17 +2047,6 @@ select.input-box {
 const SUPABASE_URL = "https://ssvyxrtyvdxxojmunrcv.supabase.co";
 const SUPABASE_KEY = "sb_publishable_8egOM2-lT9J6kPQTbluC4w_8YHtB4K3"; 
 const API_BASE = "/.netlify/functions";
-// --- Security Helper ---
-function escapeHtml(text) {
-  if (!text) return "";
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
 
 let sb, user = null;
 let activeChat = null;
@@ -2113,9 +2063,7 @@ function formatCurrency(num) {
 // --- Translations ---
 const translations = {
   ar: { 
-    brand_name: "Deal Way",inbox_empty_hint: "ستظهر رسائلك هنا عندما تتواصل مع البائعين",
-  no_ads_title: "لا توجد إعلانات",
-  no_ads_hint: "ابدأ بإضافة إعلانك الأول!", login: "دخول",label_views: "المشاهدات:",stat_views: "المشاهدات",stat_chats: "المحادثات",feat_gold: "شريط ذهبي",feat_priority: "أولوية الظهور",feat_high_priority: "أولوية عالية",feat_save: "توفير 44%",
+    brand_name: "Deal Way", login: "دخول",label_views: "المشاهدات:",stat_views: "المشاهدات",stat_chats: "المحادثات",feat_gold: "شريط ذهبي",feat_priority: "أولوية الظهور",feat_high_priority: "أولوية عالية",feat_save: "توفير 44%",
     link_privacy: "سياسة الخصوصية", link_terms: "شروط الخدمة",
     latest_products: "أحدث المعروضات", loading: "جاري التحميل...", 
     inbox_title: "الرسائل الواردة", guest_title: "أنت زائر", 
@@ -2148,14 +2096,7 @@ const translations = {
     intro_feat_2: "ابحث عن المنتجات بعملة الباي في بلدك.",
     intro_feat_3: "الدفع خارج الموقع (P2P) ومسؤولية المستخدمين.",
     intro_feat_4: "ميز إعلانك بشريط <b>أصفر</b> للوصول لأكبر عدد!",
-    intro_switch_btn: "Switch to English",
-    // ترجمات حالة المنتج
-    label_condition: "حالة المنتج",
-    select_condition: "اختر حالة المنتج",
-    condition_new: "جديد",
-    condition_used: "مستعمل",
-    condition_new_badge: "جديد",
-    condition_used_badge: "مستعمل"
+    intro_switch_btn: "Switch to English"
   },
   en: { 
     brand_name: "Deal Way", login: "Login",label_views: "Views:",stat_views: "Views",stat_chats: "Chats",feat_gold: "Golden Badge",feat_priority: "Standard Priority",feat_high_priority: "High Priority",feat_save: "Save 44%",
@@ -2175,9 +2116,7 @@ const translations = {
     toast_fill_data: "Please fill all required fields", toast_upload_fail: "Image upload failed", 
     toast_success_add: "Ad published successfully", toast_send_fail: "Failed to send", 
     toast_max_images: "Max 3 images allowed", banned_title: "Account Banned", 
-    banned_msg: "Your account is suspended due to violations.", inbox_empty_hint: "Your messages will appear here when you contact sellers",
-  no_ads_title: "No ads found",
-  no_ads_hint: "Start by adding your first ad!",
+    banned_msg: "Your account is suspended due to violations.", 
     ph_prod_name: "Ex: iPhone 13 Pro", ph_desc: "Describe item details...", 
     cat_all: "All", cat_cars: "Cars", cat_electronics: "Electronics", 
     cat_phones: "Phones", cat_fashion: "Fashion", cat_home: "Home", cat_other: "Other", 
@@ -2193,14 +2132,7 @@ const translations = {
     intro_feat_2: "Find products priced in Pi near you.",
     intro_feat_3: "Payments are off-platform (P2P) & user responsibility.",
     intro_feat_4: "Boost ads with a <b>Yellow Badge</b> to reach more!",
-    intro_switch_btn: "التحويل للعربية",
-    // Product condition translations
-    label_condition: "Condition",
-    select_condition: "Select Condition",
-    condition_new: "New",
-    condition_used: "Used",
-    condition_new_badge: "New",
-    condition_used_badge: "Used"
+    intro_switch_btn: "التحويل للعربية"
   }
 };
 
@@ -2541,31 +2473,19 @@ function renderProducts() {
     
     const locText = `${p.country || ''} - ${p.location || ''}`;
 
-    // شارة حالة المنتج
-    let conditionBadge = '';
-    if(p.condition) {
-      const isNew = p.condition === 'new';
-      const conditionKey = isNew ? 'condition_new_badge' : 'condition_used_badge';
-      const conditionClass = isNew ? 'new' : 'used';
-      const conditionIcon = isNew ? 'fa-star' : 'fa-recycle';
-      conditionBadge = `<div class="condition-badge ${conditionClass}"><i class="fa-solid ${conditionIcon}"></i> ${t(conditionKey)}</div>`;
-    }
-
     const html = `
       <div class="card ${isPromoted ? 'promoted' : ''}" onclick="openProductDetails(${p.id})">
         ${isPromoted ? `<div class="promo-badge"><i class="fa-solid fa-crown"></i> ${t('promoted_badge')}</div>` : ''}
-        ${conditionBadge}
         <div class="card-img-wrap">
           <img src="${img}" class="card-img" loading="lazy" onerror="this.src='https://placehold.co/400x400/f1f5f9/94a3b8?text=No+Image'">
-          <div class="location-tag"><i class="fa-solid fa-location-dot"></i> ${escapeHtml(locText)}</div>
+          <div class="location-tag"><i class="fa-solid fa-location-dot"></i> ${locText}</div>
         </div>
         <div class="card-body">
-          <h4 class="card-title">${escapeHtml(p.name)}</h4>
+          <h4 class="card-title">${p.name}</h4>
           <div class="price-pill"><span>${formatCurrency(p.price)}</span> <span>π</span></div>
-          <div class="card-desc">${escapeHtml(p.description || '')}</div>
+          <div class="card-desc">${p.description || ''}</div>
         </div>
       </div>`;
-
     list.innerHTML += html;
   });
 }
@@ -2579,9 +2499,7 @@ async function openProductDetails(pid) {
   // تحديث الواجهة فوراً
   p.views = newViews; 
   // إرسال التحديث للسيرفر (بدون انتظار النتيجة لعدم تعطيل المستخدم)
- // استدعاء دالة قاعدة البيانات الآمنة لزيادة المشاهدات
-sb.rpc('increment_views', { row_id: pid }).then();
-
+  sb.from('products').update({ views: newViews }).eq('id', pid).then();
 
   const images = (p.images && Array.isArray(p.images) && p.images.length > 0) 
     ? p.images 
@@ -2610,19 +2528,6 @@ sb.rpc('increment_views', { row_id: pid }).then();
   // 2. عرض عدد المشاهدات
   document.getElementById('detail-views').innerText = formatCurrency(newViews);
 
-  // عرض حالة المنتج في التفاصيل
-  const conditionRow = document.getElementById('detail-condition-row');
-  const conditionSpan = document.getElementById('detail-condition');
-  if(p.condition) {
-    const isNew = p.condition === 'new';
-    const conditionKey = isNew ? 'condition_new_badge' : 'condition_used_badge';
-    const conditionColor = isNew ? 'var(--success)' : 'var(--text-muted)';
-    conditionSpan.innerHTML = `<span style="color:${conditionColor}"><i class="fa-solid ${isNew ? 'fa-star' : 'fa-recycle'}"></i> ${t(conditionKey)}</span>`;
-    conditionRow.style.display = 'flex';
-  } else {
-    conditionRow.style.display = 'none';
-  }
-
   document.getElementById('detail-seller-name').innerText = p.seller_username || "Unknown"; 
   document.getElementById('detail-seller-avatar').innerText = (p.seller_username || "U").charAt(0).toUpperCase();
   document.getElementById('detail-join-date').innerText = "..."; 
@@ -2632,7 +2537,7 @@ sb.rpc('increment_views', { row_id: pid }).then();
   const isOwner = user && p.seller_pi_id === user.uid; 
   const now = new Date();
   
-  if(isOwner) {
+    if(isOwner) {
      let promoteBtn = "";
      if(p.promoted_until && new Date(p.promoted_until) > now) {
         const dateStr = new Date(p.promoted_until).toLocaleDateString(currentLang === 'ar' ? 'ar-EG' : 'en-US');
@@ -2651,10 +2556,17 @@ sb.rpc('increment_views', { row_id: pid }).then();
        </button>
      `;
   } else {
-     actionsDiv.innerHTML = `<button onclick="openChatRoom(${p.id}, '${p.seller_pi_id}', '${p.name}', '${p.seller_username}')" class="btn btn-primary" style="width:100%">
-       <i class="fa-solid fa-comment-dots"></i> ${t('message_seller')}
-     </button>`;
+     // هنا أضفنا زر الدفع الآمن بجانب زر المراسلة
+     actionsDiv.innerHTML = `
+       <button onclick="window.location.href='escrow.html?productId=${p.id}'" class="btn btn-gold" style="width:100%; margin-bottom: 12px; font-size: 16px;">
+         <i class="fa-solid fa-shield-halved"></i> شراء آمن (نظام الوسيط)
+       </button>
+       <button onclick="openChatRoom(${p.id}, '${p.seller_pi_id}', '${p.name}', '${p.seller_username}')" class="btn btn-primary" style="width:100%">
+         <i class="fa-solid fa-comment-dots"></i> ${t('message_seller')}
+       </button>
+     `;
   }
+
   
   document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
   const view = document.getElementById('view-details'); 
@@ -2684,25 +2596,29 @@ async function loadMyAds() {
   // 1. جلب منتجاتي
   const { data: products } = await sb.from("products").select("*").eq("seller_pi_id", user.uid).order("created_at", {ascending:false});
   
-  // 2. حساب الإحصائيات (كما هي)
+  // 2. حساب إجمالي المشاهدات الحقيقي لجميع المنتجات
   let totalViews = 0;
   if(products) {
     totalViews = products.reduce((sum, p) => sum + (p.views || 0), 0);
   }
   
+  // 3. حساب عدد المحادثات الحقيقي
+  // نقوم بجلب كل الرسائل الخاصة بالمستخدم ثم نصفيها لنعرف عدد المحادثات الفريدة
   const { data: messages } = await sb.from("messages").select("product_id, sender_pi_id, receiver_pi_id").or(`sender_pi_id.eq.${user.uid},receiver_pi_id.eq.${user.uid}`);
   
   let uniqueChats = new Set();
   if(messages) {
     messages.forEach(m => {
       const otherId = (m.sender_pi_id === user.uid) ? m.receiver_pi_id : m.sender_pi_id;
+      // نعتبر المحادثة فريدة بناءً على المنتج والشخص الآخر
       uniqueChats.add(`${m.product_id}_${otherId}`);
     });
   }
 
+  // تحديث بطاقات الإحصائيات بالأرقام الحقيقية
   document.getElementById('stat-ads').innerText = products ? products.length : 0;
-  document.getElementById('stat-views').innerText = formatCurrency(totalViews);
-  document.getElementById('stat-chats').innerText = uniqueChats.size;
+  document.getElementById('stat-views').innerText = formatCurrency(totalViews); // مشاهدات حقيقية
+  document.getElementById('stat-chats').innerText = uniqueChats.size; // محادثات حقيقية
   
   list.innerHTML = ""; 
   const now = new Date();
@@ -2721,14 +2637,14 @@ async function loadMyAds() {
        
        let img = (p.images && Array.isArray(p.images) && p.images.length > 0) ? p.images[0] : (p.image_url || "https://placehold.co/400x400/f1f5f9/94a3b8?text=No+Image");
        
-       // 👇👇 هنا التعديل الأمني الهام: استخدام escapeHtml 👇👇
+       // إضافة عدد المشاهدات للكارت المصغر أيضاً
        list.innerHTML += `
          <div class="card" onclick="openProductDetails(${p.id})">
            <div class="card-img-wrap">
              <img src="${img}" class="card-img" onerror="this.src='https://placehold.co/400x400/f1f5f9/94a3b8?text=No+Image'">
            </div>
            <div class="card-body">
-             <div class="card-title">${escapeHtml(p.name)}</div> 
+             <div class="card-title">${p.name}</div>
              <div style="font-size:12px;color:var(--text-muted);font-weight:600;display:flex;justify-content:space-between;width:100%">
                <span>${isPromoted ? '<i class="fa-solid fa-crown" style="color:var(--accent);"></i> ' + t('promoted_until') + ' ' + promoDateStr : '<i class="fa-regular fa-clock"></i> ' + new Date(p.created_at).toLocaleDateString()}</span>
                <span><i class="fa-solid fa-eye"></i> ${formatCurrency(p.views || 0)}</span>
@@ -2741,8 +2657,8 @@ async function loadMyAds() {
     list.innerHTML = `
       <div class="empty-state" style="grid-column:1/-1;">
         <div class="empty-state-icon"><i class="fa-solid fa-folder-open"></i></div>
-        <h3>${t('no_ads_title')}</h3>
-        <p>${t('no_ads_hint')}</p>
+        <h3>لا توجد إعلانات</h3>
+        <p>ابدأ بإضافة إعلانك الأول!</p>
       </div>
     `;
   }
@@ -2763,18 +2679,6 @@ function closeAddModal(){
 function handleFileSelect(input) { 
   if (input.files) { 
     const files = Array.from(input.files); 
-    
-    // --- Security Check: Validate File Type ---
-    const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
-    const invalidFiles = files.filter(file => !validTypes.includes(file.type));
-    
-    if (invalidFiles.length > 0) {
-      showToast('يسمح فقط برفع الصور (JPG, PNG)', 'error');
-      input.value = ""; // تفريغ الحقل
-      return;
-    }
-    // -------------------------------------------
-
     if (selectedFiles.length + files.length > 3) { 
       showToast('toast_max_images', 'error'); 
       return; 
@@ -2784,7 +2688,6 @@ function handleFileSelect(input) {
   } 
   input.value = ""; 
 }
-
 
 function updateImagePreviews() { 
   const container = document.getElementById('image-previews'); 
@@ -2817,7 +2720,6 @@ function resetForm() {
   document.getElementById("addPrice").value = ""; 
   document.getElementById("addDesc").value = ""; 
   document.getElementById("addCategory").value = ""; 
-  document.getElementById("addCondition").value = ""; 
   document.getElementById("addCountry").value = ""; 
   document.getElementById("addState").innerHTML = '<option value="" disabled selected>Select Country First</option>';
   selectedFiles = []; 
@@ -2829,13 +2731,12 @@ async function submitProduct(){
     const price = document.getElementById("addPrice").value;
     const desc = document.getElementById("addDesc").value;
     const category = document.getElementById("addCategory").value;
-    const condition = document.getElementById("addCondition").value;
     const country = document.getElementById("addCountry").value;
     const state = document.getElementById("addState").value; 
 
     const btn = document.getElementById("publishBtn");
     
-    if(!name || !price || !category || !condition || !country || !state) {
+    if(!name || !price || !category || !country || !state) {
       showToast('toast_fill_data', 'error');
       return;
     }
@@ -2873,7 +2774,6 @@ async function submitProduct(){
       seller_pi_id: user.uid, 
       seller_username: user.username, 
       category: category, 
-      condition: condition,
       location: state,
       country: country
     });
@@ -3058,13 +2958,12 @@ async function loadInbox() {
   
   if(!data || !data.length) {
     return list.innerHTML = `
-  <div class="empty-state">
-    <div class="empty-state-icon"><i class="fa-solid fa-inbox"></i></div>
-    <h3>${t('no_messages')}</h3>
-    <p>${t('inbox_empty_hint')}</p>
-  </div>
-`;
-
+      <div class="empty-state">
+        <div class="empty-state-icon"><i class="fa-solid fa-inbox"></i></div>
+        <h3>${t('no_messages')}</h3>
+        <p>ستظهر رسائلك هنا عندما تتواصل مع البائعين</p>
+      </div>
+    `;
   }
   
   const threads = new Map();
@@ -3099,14 +2998,14 @@ async function loadInbox() {
   
   threads.forEach(t => {
       list.innerHTML += `
-      <div class="inbox-item ${t.unread ? 'unread' : ''}" onclick="openChatRoom(${t.pid}, '${t.otherId}', '${escapeHtml(t.pName)}', '${escapeHtml(t.name)}')">
-        <div class="inbox-avatar">${escapeHtml(t.name).charAt(0)}</div>
+      <div class="inbox-item ${t.unread ? 'unread' : ''}" onclick="openChatRoom(${t.pid}, '${t.otherId}', '${t.pName}', '${t.name}')">
+        <div class="inbox-avatar">${t.name.charAt(0)}</div>
         <div class="inbox-info">
           <div class="inbox-name">
-            ${escapeHtml(t.name)} 
-            <span style="font-weight:400;color:var(--text-light);font-size:12px">(${escapeHtml(t.pName)})</span>
+            ${t.name} 
+            <span style="font-weight:400;color:var(--text-light);font-size:12px">(${t.pName})</span>
           </div>
-          <div class="inbox-msg">${escapeHtml(t.last)}</div>
+          <div class="inbox-msg">${t.last}</div>
         </div>
         ${t.unread ? '<div class="unread-dot"></div>' : ''}
       </div>`;
