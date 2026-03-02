@@ -4,6 +4,7 @@
   "description": "Pi Network Market with Supabase Backend",
   "main": "index.html",
   "dependencies": {
-    "@supabase/supabase-js": "^2.39.0"
+    "@supabase/supabase-js": "^2.39.0",
+    "stellar-sdk": "^11.2.2"
   }
 }
