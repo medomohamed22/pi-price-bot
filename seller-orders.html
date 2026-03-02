@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>متابعة الطلبات - Deal Way</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script defer src="https://sdk.minepi.com/pi-sdk.js"></script>
+
+<style>
+/* --- نفس تصميم الموقع الأساسي --- */
+:root {
+  --primary: #6366F1; --primary-dark: #4F46E5; --primary-light: #818CF8;
+  --accent: #F59E0B; --bg-body: #F8FAFC; --surface: #FFFFFF;
+  --text-main: #0F172A; --text-muted: #64748B; --success: #10B981;
+  --danger: #EF4444; --border: #E2E8F0; --radius-lg: 16px; --radius-xl: 24px;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: var(--text-main); line-height: 1.6; padding-bottom: 40px; }
+.container { width: min(100%, 800px); margin: 0 auto; padding: 16px; }
+
+/* الأزرار والهيدر */
+.btn { border: none; cursor: pointer; border-radius: var(--radius-lg); padding: 12px 20px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-family: inherit; transition: all 0.3s; font-size: 14px;}
+.btn-primary { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; }
+.btn-success { background: linear-gradient(135deg, var(--success) 0%, #059669 100%); color: white; }
+.btn-ghost { background: white; border: 1px solid var(--border); color: var(--text-muted); }
+
+.header { background: white; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; box-shadow: var(--shadow-sm);}
+.back-btn { background: none; border: none; font-size: 20px; color: var(--text-main); cursor: pointer; display: flex; align-items: center; gap: 10px; font-weight: 800; font-family: inherit;}
+
+/* بطاقة الطلب (Order Card) */
+.order-card { background: white; border-radius: var(--radius-xl); border: 1px solid var(--border); margin-bottom: 16px; overflow: hidden; box-shadow: var(--shadow-sm); transition: transform 0.3s; }
+.order-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+.order-header { background: #F8FAFC; padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; color: var(--text-muted); }
+.order-body { padding: 16px; }
+.buyer-info { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px dashed var(--border); }
+.buyer-avatar { width: 40px; height: 40px; background: var(--primary-light); color: white; border-radius: 50%; display: grid; place-items: center; font-weight: 800; }
+.status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 800; }
+.status-PENDING { background: #F1F5F9; color: #64748B; }
+.status-FUNDED { background: #FEF3C7; color: #D97706; }
+.status-SHIPPED { background: #E0E7FF; color: var(--primary-dark); }
+.status-COMPLETED { background: #D1FAE5; color: #059669; }
+
+.order-actions { padding: 16px; background: #F8FAFC; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+
+/* رسائل الخطأ أو التحميل */
+.empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+.empty-state i { font-size: 48px; margin-bottom: 16px; color: var(--border); }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <button class="back-btn" onclick="window.location.href='index.html'">
+    <i class="fa-solid fa-arrow-right"></i> لوحة تحكم البائع
+  </button>
+</header>
+
+<div class="container">
+  <h2 style="margin-bottom: 20px; font-size: 20px; color: var(--text-main);">
+    <i class="fa-solid fa-boxes-packing" style="color: var(--primary);"></i> طلبات المنتج
+  </h2>
+
+  <div id="orders-container">
+    <div class="empty-state">
+      <i class="fa-solid fa-circle-notch fa-spin" style="color: var(--primary);"></i>
+      <p>جاري جلب الطلبات...</p>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://ssvyxrtyvdxxojmunrcv.supabase.co";
+const SUPABASE_KEY = "sb_publishable_8egOM2-lT9J6kPQTbluC4w_8YHtB4K3"; 
+let sb;
+let currentUser = null;
+
+const urlParams = new URLSearchParams(window.location.search);
+const productId = urlParams.get('productId');
+
+document.addEventListener("DOMContentLoaded", async () => {
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  
+  if(!productId) { 
+    alert("رقم المنتج مفقود"); 
+    window.location.href = 'index.html'; 
+    return; 
+  }
+
+  await initPiUser(); 
+  await loadSellerOrders();
+});
+
+async function initPiUser() {
+  try {
+    if(typeof Pi !== 'undefined') {
+        Pi.init({ version: "2.0", sandbox: false });
+        const auth = await Pi.authenticate(["username", "payments"], (payment) => console.log(payment));
+        currentUser = { uid: auth.user.uid, username: auth.user.username };
+    }
+  } catch(e) { console.log("Pi Login Failed", e); }
+
+  if(!currentUser) {
+      // حساب اختباري في حال فتحت من متصفح عادي
+      currentUser = { uid: "test_seller_123", username: "TestSeller" }; 
+  }
+}
+
+async function loadSellerOrders() {
+  const container = document.getElementById('orders-container');
+
+  try {
+    // نجلب كل المعاملات الخاصة بهذا المنتج والتي يكون فيها المستخدم الحالي هو البائع
+    const { data: orders, error } = await sb.from("escrow_transactions")
+      .select("*")
+      .eq("product_id", productId)
+      .eq("seller_pi_id", currentUser.uid)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    if (!orders || orders.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <i class="fa-solid fa-box-open"></i>
+          <h3>لا توجد طلبات حتى الآن</h3>
+          <p>لم يقم أي شخص بشراء هذا المنتج عبر الوسيط بعد.</p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = "";
+    orders.forEach(order => {
+      container.innerHTML += renderOrderCard(order);
+    });
+
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = `
+      <div class="empty-state">
+        <i class="fa-solid fa-triangle-exclamation" style="color: var(--danger);"></i>
+        <h3>حدث خطأ</h3>
+        <p>لا يمكن تحميل الطلبات حالياً. (تأكد من إنشاء جدول escrow_transactions)</p>
+      </div>
+    `;
+  }
+}
+
+function renderOrderCard(order) {
+  // تنسيق التاريخ
+  const dateStr = new Date(order.created_at).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' });
+  
+  // تحديد اسم الحالة وشكلها
+  let statusText = "";
+  let statusIcon = "";
+  let actionHtml = "";
+
+  if(order.status === 'PENDING') {
+      statusText = "بانتظار دفع المشتري";
+      statusIcon = "fa-clock";
+      actionHtml = `<span style="color: var(--text-muted); font-size: 13px;">لا تقم بشحن المنتج حتى يتم دفع المبلغ.</span>`;
+  } else if(order.status === 'FUNDED') {
+      statusText = "تم تجميد الرصيد (جاهز للشحن)";
+      statusIcon = "fa-lock";
+      actionHtml = `<button onclick="updateOrderStatus('${order.id}', 'SHIPPED')" class="btn btn-primary"><i class="fa-solid fa-truck-fast"></i> تأكيد شحن المنتج</button>`;
+  } else if(order.status === 'SHIPPED') {
+      statusText = "تم الشحن";
+      statusIcon = "fa-truck-fast";
+      actionHtml = `<span style="color: var(--text-muted); font-size: 13px;">في انتظار تأكيد المشتري للاستلام لتحويل الرصيد لك.</span>`;
+  } else if(order.status === 'COMPLETED') {
+      statusText = "مكتمل (تم تحويل الرصيد)";
+      statusIcon = "fa-check-double";
+      actionHtml = `<button class="btn btn-ghost" disabled><i class="fa-solid fa-check"></i> تم استلام الرصيد بنجاح</button>`;
+  }
+
+  // معرف وهمي للمشتري لسهولة القراءة (أول 8 حروف)
+  const shortBuyerId = order.buyer_pi_id.substring(0, 8) + "...";
+
+  return `
+    <div class="order-card" id="order-${order.id}">
+      <div class="order-header">
+        <span>رقم الطلب: #${order.id.substring(0, 6).toUpperCase()}</span>
+        <span>${dateStr}</span>
+      </div>
+      <div class="order-body">
+        <div class="buyer-info">
+          <div class="buyer-avatar"><i class="fa-solid fa-user"></i></div>
+          <div>
+            <div style="font-size: 14px; font-weight: 800;">معرف المشتري: <span style="font-family: monospace; color: var(--primary);">${shortBuyerId}</span></div>
+            <div style="font-size: 12px; color: var(--text-muted);">تواصل معه من خلال الشات للإتفاق على التوصيل.</div>
+          </div>
+        </div>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div style="font-size: 16px; font-weight: 800; color: var(--text-main);">
+            المبلغ المستحق: <span style="color: var(--accent);">${order.amount} π</span>
+          </div>
+          <div class="status-badge status-${order.status}">
+            <i class="fa-solid ${statusIcon}"></i> ${statusText}
+          </div>
+        </div>
+      </div>
+      <div class="order-actions">
+        ${actionHtml}
+      </div>
+    </div>
+  `;
+}
+
+// دالة لتحديث حالة الطلب
+async function updateOrderStatus(orderId, newStatus) {
+  if(!confirm("هل أنت متأكد أنك قمت بشحن المنتج وتسليمه للمندوب/المشتري؟")) return;
+
+  try {
+    // تغيير زر الشحن لعلامة تحميل مؤقتاً
+    const btn = document.querySelector(`#order-${orderId} .btn-primary`);
+    if(btn) btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> جاري التحديث...`;
+
+    // تحديث الحالة في قاعدة البيانات
+    const { error } = await sb.from('escrow_transactions')
+      .update({ status: newStatus })
+      .eq('id', orderId);
+
+    if (error) throw error;
+
+    // إعادة تحميل الطلبات لإظهار التحديث
+    await loadSellerOrders();
+
+  } catch (err) {
+    console.error("فشل التحديث:", err);
+    alert("حدث خطأ أثناء تحديث حالة الطلب. تأكد من اتصالك بالإنترنت.");
+    await loadSellerOrders(); // إعادة التحميل لإرجاع الزر لشكله الطبيعي
+  }
+}
+</script>
+</body>
+</html>
