@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -133,6 +134,9 @@ let currentProduct = null;
 let currentEscrow = null; 
 let userRole = ''; 
 
+// متغير لمنع ظهور إشعار الدفع أكثر من مرة
+let isPaymentAlertShown = false; 
+
 const urlParams = new URLSearchParams(window.location.search);
 const productId = urlParams.get('productId');
 
@@ -188,14 +192,16 @@ async function loadEscrowData() {
 
     let escrowData = null;
     try {
-        const { data: escrow, error: escrowError } = await sb.from("escrow_transactions")
+        // ✅ التعديل هنا: نستخدم limit(1) بدلاً من maybeSingle() لجلب أحدث معاملة وتجنب توقف الكود
+        const { data: escrowList, error: escrowError } = await sb.from("escrow_transactions")
           .select("*")
           .eq("product_id", productId)
           .eq("buyer_pi_id", userRole === 'BUYER' ? currentUser.uid : currentProduct.buyer_pi_id)
-          .maybeSingle();
+          .order("created_at", { ascending: false })
+          .limit(1);
           
-        if(!escrowError && escrow) {
-            escrowData = escrow;
+        if(!escrowError && escrowList && escrowList.length > 0) {
+            escrowData = escrowList[0];
         }
     } catch(err) {
         console.log("جدول escrow_transactions غير موجود أو به مشكلة:", err);
@@ -270,7 +276,7 @@ function setStep(stepNumber) {
   });
 }
 
-// ---- ربط الدفع الفعلي بشبكة Pi Network (مفصول تماماً عن قاعدة البيانات) ----
+// ---- ربط الدفع الفعلي بشبكة Pi Network ----
 async function payToEscrow() {
   if (typeof Pi === 'undefined') {
     alert("يرجى فتح الموقع من متصفح Pi Browser لإتمام عملية الدفع بأمان.");
@@ -280,6 +286,9 @@ async function payToEscrow() {
   const btn = document.querySelector('.btn-gold');
   btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> جاري فتح محفظة Pi...`;
   btn.disabled = true;
+  
+  // تصفير المتغير قبل بدء الدفع
+  isPaymentAlertShown = false;
 
   try {
     const paymentData = {
@@ -298,7 +307,7 @@ async function payToEscrow() {
           });
         } catch (e) {
           console.error("Error approving payment:", e);
-          alert("خطأ في الاتصال بالسيرفر للموافقة.");
+          if(!isPaymentAlertShown) alert("خطأ في الاتصال بالسيرفر للموافقة.");
           updateUI();
         }
       },
@@ -312,19 +321,23 @@ async function payToEscrow() {
           const json = await res.json();
           
           if(res.ok && (json.completed || json.success)) {
-            alert("تم الدفع وتجميد الرصيد بنجاح! سيتم إشعار البائع لشحن المنتج.");
+            // ✅ منع الرسالة من الظهور مرتين
+            if(!isPaymentAlertShown) {
+                alert("تم الدفع وتجميد الرصيد بنجاح! سيتم إشعار البائع لشحن المنتج.");
+                isPaymentAlertShown = true;
+            }
             
-            // السيرفر هو من قام بتسجيل المعاملة الآن، فنحن فقط نُعيد تحميل البيانات لتحديث الواجهة
+            // إعادة تحميل البيانات لتحديث الواجهة تلقائياً للحالة الجديدة (FUNDED)
             document.getElementById('action-hint').innerText = "جاري تحديث حالة الطلب...";
             await loadEscrowData(); 
             
           } else {
-            alert("حدث خطأ أثناء تأكيد الدفع من السيرفر.");
+            if(!isPaymentAlertShown) alert("حدث خطأ أثناء تأكيد الدفع من السيرفر.");
             updateUI();
           }
         } catch (err) {
           console.error("Error completing payment:", err);
-          alert("خطأ في الاتصال بالسيرفر لإكمال الدفع.");
+          if(!isPaymentAlertShown) alert("خطأ في الاتصال بالسيرفر لإكمال الدفع.");
           updateUI();
         }
       },
@@ -334,7 +347,7 @@ async function payToEscrow() {
       },
       onError: (error, payment) => {
         console.error("خطأ في الدفع", error);
-        alert("حدث خطأ أثناء عملية الدفع.");
+        if(!isPaymentAlertShown) alert("حدث خطأ أثناء عملية الدفع.");
         updateUI(); 
       }
     };
@@ -342,7 +355,7 @@ async function payToEscrow() {
     Pi.createPayment(paymentData, paymentCallbacks);
   } catch(err) {
     console.error("Payment initialization error:", err);
-    alert("حدث خطأ في تهيئة نافذة الدفع.");
+    if(!isPaymentAlertShown) alert("حدث خطأ في تهيئة نافذة الدفع.");
     updateUI();
   }
 }
