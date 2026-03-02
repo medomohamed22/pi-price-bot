@@ -122,10 +122,10 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 </div>
 
 <script>
-// الإعدادات ومسارات الـ API (تأكد من مسار API_BASE أنه يتوافق مع سيرفرك)
+// الإعدادات ومسارات الـ API
 const SUPABASE_URL = "https://ssvyxrtyvdxxojmunrcv.supabase.co";
 const SUPABASE_KEY = "sb_publishable_8egOM2-lT9J6kPQTbluC4w_8YHtB4K3"; 
-const API_BASE = "/.netlify/functions"; // مسار الـ Backend (نفس الموجود في ملفك الرئيسي)
+const API_BASE = "/.netlify/functions"; 
 
 let sb; 
 let currentUser = null;
@@ -270,7 +270,7 @@ function setStep(stepNumber) {
   });
 }
 
-// ---- ربط الدفع الفعلي بشبكة Pi Network وتسجيله في قاعدة البيانات ----
+// ---- ربط الدفع الفعلي بشبكة Pi Network (مفصول تماماً عن قاعدة البيانات) ----
 async function payToEscrow() {
   if (typeof Pi === 'undefined') {
     alert("يرجى فتح الموقع من متصفح Pi Browser لإتمام عملية الدفع بأمان.");
@@ -289,7 +289,6 @@ async function payToEscrow() {
     };
 
     const paymentCallbacks = {
-      // 1. طلب الموافقة من السيرفر الخاص بك
       onReadyForServerApproval: async (paymentId) => {
         try {
           await fetch(`${API_BASE}/approve`, {
@@ -300,9 +299,9 @@ async function payToEscrow() {
         } catch (e) {
           console.error("Error approving payment:", e);
           alert("خطأ في الاتصال بالسيرفر للموافقة.");
+          updateUI();
         }
       },
-      // 2. الدفع نجح في المحفظة، نطلب من السيرفر إكمال المعاملة
       onReadyForServerCompletion: async (paymentId, txid) => {
         try {
           const res = await fetch(`${API_BASE}/complete`, {
@@ -313,20 +312,12 @@ async function payToEscrow() {
           const json = await res.json();
           
           if(res.ok && (json.completed || json.success)) {
-            // 3. الدفع اكتمل! نقوم الآن بإنشاء سجل المعاملة في قاعدة البيانات وتحديث الحالة
-            const { data, error } = await sb.from('escrow_transactions').insert({
-              product_id: currentProduct.id,
-              buyer_pi_id: currentUser.uid,
-              seller_pi_id: currentProduct.seller_pi_id,
-              amount: currentProduct.price,
-              status: 'FUNDED'
-            }).select().single();
-
-            if (error) throw error;
-
-            currentEscrow = data;
-            updateUI();
-            alert("تم الدفع وتجميد الرصيد بنجاح! يمكن للبائع الآن شحن المنتج.");
+            alert("تم الدفع وتجميد الرصيد بنجاح! سيتم إشعار البائع لشحن المنتج.");
+            
+            // السيرفر هو من قام بتسجيل المعاملة الآن، فنحن فقط نُعيد تحميل البيانات لتحديث الواجهة
+            document.getElementById('action-hint').innerText = "جاري تحديث حالة الطلب...";
+            await loadEscrowData(); 
+            
           } else {
             alert("حدث خطأ أثناء تأكيد الدفع من السيرفر.");
             updateUI();
@@ -348,7 +339,6 @@ async function payToEscrow() {
       }
     };
 
-    // بدء الدفع فعلياً
     Pi.createPayment(paymentData, paymentCallbacks);
   } catch(err) {
     console.error("Payment initialization error:", err);
