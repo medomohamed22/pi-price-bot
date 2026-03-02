@@ -2541,22 +2541,27 @@ async function openProductDetails(pid) {
      let promoteBtn = "";
      if(p.promoted_until && new Date(p.promoted_until) > now) {
         const dateStr = new Date(p.promoted_until).toLocaleDateString(currentLang === 'ar' ? 'ar-EG' : 'en-US');
-        promoteBtn = `<button class="btn btn-disabled" style="width:100%" disabled>
+        promoteBtn = `<button class="btn btn-disabled" style="width:100%; margin-bottom: 12px;" disabled>
           <i class="fa-solid fa-clock"></i> ${t('promoted_until')} ${dateStr}
         </button>`;
      } else { 
-        promoteBtn = `<button onclick="openPromoteOptions(${p.id})" class="btn" style="width:100%;background:linear-gradient(135deg, #FDE047 0%, #F59E0B 100%);color:#854D0E;border:none;">
+        promoteBtn = `<button onclick="openPromoteOptions(${p.id})" class="btn" style="width:100%; background:linear-gradient(135deg, #FDE047 0%, #F59E0B 100%); color:#854D0E; border:none; margin-bottom: 12px;">
           <i class="fa-solid fa-rocket"></i> ${t('promote_ad_btn')}
         </button>`; 
      }
+     
+     // هنا أضفنا زر متابعة الطلبات للبائع في الأعلى
      actionsDiv.innerHTML = `
+       <button onclick="window.location.href='seller-orders.html?productId=${p.id}'" class="btn btn-success" style="width:100%; margin-bottom: 12px;">
+         <i class="fa-solid fa-boxes-packing"></i> متابعة طلبات هذا المنتج
+       </button>
        ${promoteBtn}
        <button onclick="deleteProduct(${p.id})" class="btn btn-danger" style="width:100%;">
          <i class="fa-solid fa-trash"></i> ${t('delete_btn')}
        </button>
      `;
   } else {
-     // هنا أضفنا زر الدفع الآمن بجانب زر المراسلة
+     // هنا أضفنا زر الدفع الآمن بجانب زر المراسلة للمشتري
      actionsDiv.innerHTML = `
        <button onclick="window.location.href='escrow.html?productId=${p.id}'" class="btn btn-gold" style="width:100%; margin-bottom: 12px; font-size: 16px;">
          <i class="fa-solid fa-shield-halved"></i> شراء آمن (نظام الوسيط)
