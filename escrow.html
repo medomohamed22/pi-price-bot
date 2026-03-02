@@ -12,7 +12,7 @@
 <script defer src="https://sdk.minepi.com/pi-sdk.js"></script>
 
 <style>
-/* --- نسخ نفس الـ Root Variables من موقعك --- */
+/* --- التصميم (كما هو بدون تغيير) --- */
 :root {
   --primary: #6366F1; --primary-dark: #4F46E5; --primary-light: #818CF8;
   --accent: #F59E0B; --bg-body: #F8FAFC; --surface: #FFFFFF;
@@ -26,22 +26,18 @@
 body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: var(--text-main); line-height: 1.6; }
 .container { width: min(100%, 800px); margin: 0 auto; padding: 16px; padding-bottom: 80px; }
 
-/* --- الأزرار --- */
 .btn { border: none; cursor: pointer; border-radius: var(--radius-lg); padding: 14px 24px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 10px; font-family: inherit; width: 100%; transition: all 0.3s; }
 .btn-primary { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; }
 .btn-success { background: linear-gradient(135deg, var(--success) 0%, #059669 100%); color: white; }
 .btn-gold { background: linear-gradient(135deg, var(--accent) 0%, #D97706 100%); color: white; }
 .btn-ghost { background: white; border: 1px solid var(--border); color: var(--text-muted); }
 
-/* --- الهيدر --- */
 .header { background: white; padding: 16px 20px; display: flex; align-items: center; gap: 16px; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; }
 .back-btn { background: none; border: none; font-size: 20px; color: var(--text-main); cursor: pointer; }
 .header-title { font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 8px; color: var(--primary); }
 
-/* --- الكروت --- */
 .card { background: white; border-radius: var(--radius-xl); padding: 20px; border: 1px solid var(--border); margin-bottom: 20px; box-shadow: var(--shadow-sm); }
 
-/* --- شريط التقدم (Stepper) --- */
 .stepper { display: flex; justify-content: space-between; position: relative; margin-bottom: 10px; }
 .stepper::before { content: ''; position: absolute; top: 20px; left: 30px; right: 30px; height: 3px; background: var(--border); z-index: 1; }
 .step { display: flex; flex-direction: column; align-items: center; gap: 8px; z-index: 2; width: 25%; }
@@ -51,13 +47,11 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 .step-text { font-size: 12px; font-weight: 700; color: var(--text-muted); text-align: center; }
 .step.active .step-text { color: var(--primary); }
 
-/* --- معلومات المنتج --- */
 .product-summary { display: flex; gap: 16px; align-items: center; }
 .product-img { width: 80px; height: 80px; border-radius: 12px; object-fit: cover; border: 1px solid var(--border); }
 .product-details h3 { font-size: 16px; margin-bottom: 4px; }
 .price-tag { background: #FEF3C7; color: #92400E; padding: 4px 12px; border-radius: 20px; font-weight: 800; font-size: 14px; display: inline-block; }
 
-/* --- الشات --- */
 .chat-box { background: var(--bg-body); border-radius: var(--radius-lg); padding: 16px; height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; border: 1px solid var(--border); margin-bottom: 12px; }
 .bubble { max-width: 80%; padding: 12px 16px; border-radius: 16px; font-size: 14px; line-height: 1.5; }
 .bubble.me { background: var(--primary); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
@@ -66,20 +60,19 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 .chat-input { flex: 1; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-lg); font-family: inherit; outline: none; }
 .chat-input:focus { border-color: var(--primary); }
 .send-btn { background: var(--primary); color: white; border: none; width: 50px; border-radius: var(--radius-lg); cursor: pointer; }
-
 </style>
 </head>
 <body>
 
 <header class="header">
-  <button class="back-btn" onclick="window.history.back()"><i class="fa-solid fa-arrow-right"></i></button>
+  <button class="back-btn" onclick="window.location.href='index.html'"><i class="fa-solid fa-arrow-right"></i></button>
   <div class="header-title"><i class="fa-solid fa-shield-halved"></i> نظام الوسيط الآمن</div>
 </header>
 
 <div class="container">
   
   <div class="card product-summary">
-    <img id="escrow-img" src="" class="product-img" alt="Product">
+    <img id="escrow-img" src="https://placehold.co/400x400/f1f5f9/94a3b8?text=Loading..." class="product-img" alt="Product">
     <div class="product-details">
       <h3 id="escrow-title">جاري التحميل...</h3>
       <div class="price-tag"><span id="escrow-price">0</span> π</div>
@@ -110,7 +103,9 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 
   <div class="card" id="action-area" style="text-align: center;">
     <p style="color: var(--text-muted); margin-bottom: 15px; font-size: 14px;" id="action-hint">جاري التحقق من حالة المعاملة...</p>
-    <div id="action-buttons"></div>
+    <div id="action-buttons">
+      <button class="btn btn-ghost" disabled><i class="fa-solid fa-circle-notch fa-spin"></i> يرجى الانتظار</button>
+    </div>
   </div>
 
   <div class="card" style="padding: 16px;">
@@ -127,11 +122,12 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 </div>
 
 <script>
-// الإعدادات
+// الإعدادات ومسارات الـ API (تأكد من مسار API_BASE أنه يتوافق مع سيرفرك)
 const SUPABASE_URL = "https://ssvyxrtyvdxxojmunrcv.supabase.co";
 const SUPABASE_KEY = "sb_publishable_8egOM2-lT9J6kPQTbluC4w_8YHtB4K3"; 
-let sb; // تعريف المتغير هنا ليكون متاحاً للكل
+const API_BASE = "/.netlify/functions"; // مسار الـ Backend (نفس الموجود في ملفك الرئيسي)
 
+let sb; 
 let currentUser = null;
 let currentProduct = null;
 let currentEscrow = null; 
@@ -140,74 +136,81 @@ let userRole = '';
 const urlParams = new URLSearchParams(window.location.search);
 const productId = urlParams.get('productId');
 
-// نقلنا تهيئة Supabase لداخل هذا الحدث لضمان تحميل المكتبة أولاً
 document.addEventListener("DOMContentLoaded", async () => {
-  // 1. تهيئة قاعدة البيانات
   sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-  
-  // 2. التحقق من المستخدم
-  await initPiUser(); 
   
   if(!productId) { 
     alert("رقم المنتج مفقود"); 
-    window.history.back(); 
+    window.location.href = 'index.html'; 
     return; 
   }
-  
-  // 3. تحميل البيانات
+
+  await initPiUser(); 
   await loadEscrowData();
 });
 
 async function initPiUser() {
-  if(window.Pi) {
-      Pi.init({ version: "2.0", sandbox: false });
-      try {
-          const auth = await Pi.authenticate(["username", "payments"], (payment) => console.log(payment));
-          currentUser = { uid: auth.user.uid, username: auth.user.username };
-      } catch(e) { console.error(e); }
-  } else {
+  try {
+    if(typeof Pi !== 'undefined') {
+        Pi.init({ version: "2.0", sandbox: false });
+        const auth = await Pi.authenticate(["username", "payments"], (payment) => console.log(payment));
+        currentUser = { uid: auth.user.uid, username: auth.user.username };
+    }
+  } catch(e) { 
+    console.log("فشل تسجيل الدخول عبر Pi، سيتم استخدام حساب اختباري.", e); 
+  }
+
+  if(!currentUser) {
       currentUser = { uid: "test_buyer_123", username: "TestBuyer" }; 
   }
 }
 
 async function loadEscrowData() {
   try {
-    // جلب بيانات المنتج
     const { data: prod, error: prodError } = await sb.from("products").select("*").eq("id", productId).single();
     
     if (prodError || !prod) {
       document.getElementById('action-hint').innerText = "لم يتم العثور على المنتج!";
+      document.getElementById('escrow-title').innerText = "خطأ في التحميل";
+      document.getElementById('action-buttons').innerHTML = '';
       return;
     }
 
     currentProduct = prod;
     
-    // تحديث واجهة المستخدم بمعلومات المنتج
-    document.getElementById('escrow-img').src = (prod.images && prod.images.length > 0) ? prod.images[0] : (prod.image_url || "https://placehold.co/400x400/f1f5f9/94a3b8?text=No+Image");
+    const imgUrl = (prod.images && prod.images.length > 0) ? prod.images[0] : (prod.image_url || "https://placehold.co/400x400/f1f5f9/94a3b8?text=No+Image");
+    document.getElementById('escrow-img').src = imgUrl;
     document.getElementById('escrow-title').innerText = prod.name;
     document.getElementById('escrow-price').innerText = prod.price;
-    document.getElementById('escrow-seller').innerText = prod.seller_username;
+    document.getElementById('escrow-seller').innerText = prod.seller_username || "غير معروف";
     
     userRole = (currentUser.uid === prod.seller_pi_id) ? 'SELLER' : 'BUYER';
 
-    // البحث عن معاملة وسيط سابقة (استخدمنا maybeSingle بدلاً من single لتجنب توقف الكود إذا لم تكن موجودة)
-    const { data: escrow } = await sb.from("escrow_transactions")
-      .select("*")
-      .eq("product_id", productId)
-      .eq("buyer_pi_id", userRole === 'BUYER' ? currentUser.uid : currentProduct.buyer_pi_id)
-      .maybeSingle();
+    let escrowData = null;
+    try {
+        const { data: escrow, error: escrowError } = await sb.from("escrow_transactions")
+          .select("*")
+          .eq("product_id", productId)
+          .eq("buyer_pi_id", userRole === 'BUYER' ? currentUser.uid : currentProduct.buyer_pi_id)
+          .maybeSingle();
+          
+        if(!escrowError && escrow) {
+            escrowData = escrow;
+        }
+    } catch(err) {
+        console.log("جدول escrow_transactions غير موجود أو به مشكلة:", err);
+    }
       
-    if(escrow) {
-        currentEscrow = escrow;
-    } else if (userRole === 'BUYER') {
-        currentEscrow = { status: 'PENDING' };
+    if(escrowData) {
+        currentEscrow = escrowData;
     } else {
-        currentEscrow = { status: 'PENDING' }; // في حال دخل البائع ولم يدفع المشتري بعد
+        currentEscrow = { status: 'PENDING' };
     }
 
     updateUI();
   } catch (err) {
-    console.error("حدث خطأ أثناء تحميل البيانات:", err);
+    console.error("حدث خطأ عام أثناء التحميل:", err);
+    document.getElementById('action-hint').innerText = "حدث خطأ غير متوقع في جلب البيانات.";
   }
 }
 
@@ -219,7 +222,7 @@ function updateUI() {
   if(status === 'FUNDED') { setStep(2); }
   else if(status === 'SHIPPED') { setStep(3); }
   else if(status === 'COMPLETED') { setStep(4); }
-  else { setStep(1); } // الحالة الافتراضية PENDING
+  else { setStep(1); } 
 
   if(userRole === 'BUYER') {
       if(status === 'PENDING') {
@@ -240,7 +243,7 @@ function updateUI() {
       }
   } 
   else if (userRole === 'SELLER') {
-      if(status === 'PENDING' || !currentEscrow.id) {
+      if(status === 'PENDING') {
           hint.innerText = "المشتري لم يقم بالدفع وتجميد الرصيد بعد. لا تقم بشحن المنتج.";
           btns.innerHTML = `<button class="btn btn-ghost" disabled><i class="fa-solid fa-clock"></i> في انتظار دفع المشتري</button>`;
       }
@@ -267,23 +270,138 @@ function setStep(stepNumber) {
   });
 }
 
-// الدوال التفاعلية (سيتم ربطها بقاعدة البيانات لاحقاً)
+// ---- ربط الدفع الفعلي بشبكة Pi Network وتسجيله في قاعدة البيانات ----
 async function payToEscrow() {
-  alert("في هذه الخطوة ستفتح نافذة الدفع الخاصة بـ Pi Network...");
-  // كود الدفع وإضافة المعاملة في الجدول
-  currentEscrow.status = 'FUNDED';
-  updateUI();
+  if (typeof Pi === 'undefined') {
+    alert("يرجى فتح الموقع من متصفح Pi Browser لإتمام عملية الدفع بأمان.");
+    return;
+  }
+
+  const btn = document.querySelector('.btn-gold');
+  btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> جاري فتح محفظة Pi...`;
+  btn.disabled = true;
+
+  try {
+    const paymentData = {
+      amount: parseFloat(currentProduct.price),
+      memo: `شراء آمن لمنتج: ${currentProduct.name}`,
+      metadata: { productId: currentProduct.id, type: "escrow", buyerId: currentUser.uid }
+    };
+
+    const paymentCallbacks = {
+      // 1. طلب الموافقة من السيرفر الخاص بك
+      onReadyForServerApproval: async (paymentId) => {
+        try {
+          await fetch(`${API_BASE}/approve`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ paymentId })
+          });
+        } catch (e) {
+          console.error("Error approving payment:", e);
+          alert("خطأ في الاتصال بالسيرفر للموافقة.");
+        }
+      },
+      // 2. الدفع نجح في المحفظة، نطلب من السيرفر إكمال المعاملة
+      onReadyForServerCompletion: async (paymentId, txid) => {
+        try {
+          const res = await fetch(`${API_BASE}/complete`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ paymentId, txid })
+          });
+          const json = await res.json();
+          
+          if(res.ok && (json.completed || json.success)) {
+            // 3. الدفع اكتمل! نقوم الآن بإنشاء سجل المعاملة في قاعدة البيانات وتحديث الحالة
+            const { data, error } = await sb.from('escrow_transactions').insert({
+              product_id: currentProduct.id,
+              buyer_pi_id: currentUser.uid,
+              seller_pi_id: currentProduct.seller_pi_id,
+              amount: currentProduct.price,
+              status: 'FUNDED'
+            }).select().single();
+
+            if (error) throw error;
+
+            currentEscrow = data;
+            updateUI();
+            alert("تم الدفع وتجميد الرصيد بنجاح! يمكن للبائع الآن شحن المنتج.");
+          } else {
+            alert("حدث خطأ أثناء تأكيد الدفع من السيرفر.");
+            updateUI();
+          }
+        } catch (err) {
+          console.error("Error completing payment:", err);
+          alert("خطأ في الاتصال بالسيرفر لإكمال الدفع.");
+          updateUI();
+        }
+      },
+      onCancel: (paymentId) => {
+        console.log("تم إلغاء الدفع", paymentId);
+        updateUI(); // يرجع الزر لشكله الطبيعي
+      },
+      onError: (error, payment) => {
+        console.error("خطأ في الدفع", error);
+        alert("حدث خطأ أثناء عملية الدفع.");
+        updateUI(); 
+      }
+    };
+
+    // بدء الدفع فعلياً
+    Pi.createPayment(paymentData, paymentCallbacks);
+  } catch(err) {
+    console.error("Payment initialization error:", err);
+    alert("حدث خطأ في تهيئة نافذة الدفع.");
+    updateUI();
+  }
 }
 
+// تحديث حالة المعاملة إلى "تم الشحن" (يضغط عليه البائع)
 async function markAsShipped() {
-  currentEscrow.status = 'SHIPPED';
-  updateUI();
+  const btn = document.querySelector('.btn-primary');
+  btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> جاري التحديث...`;
+  btn.disabled = true;
+
+  try {
+    const { error } = await sb.from('escrow_transactions')
+      .update({ status: 'SHIPPED' })
+      .eq('id', currentEscrow.id);
+
+    if (error) throw error;
+
+    currentEscrow.status = 'SHIPPED';
+    updateUI();
+  } catch(e) {
+    console.error("Error updating status:", e);
+    alert("فشل تحديث الحالة. تأكد من اتصالك.");
+    updateUI();
+  }
 }
 
+// تحديث حالة المعاملة إلى "مكتمل" (يضغط عليه المشتري بعد الاستلام)
 async function confirmReceipt() {
-  currentEscrow.status = 'COMPLETED';
-  updateUI();
-  alert("تم تأكيد الاستلام بنجاح!");
+  if(!confirm("هل أنت متأكد أنك استلمت المنتج سليماً؟ بمجرد التأكيد، سيتم نقل العملات إلى محفظة البائع (عن طريق الإدارة) ولا يمكن التراجع.")) return;
+
+  const btn = document.querySelector('.btn-success');
+  btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> جاري التأكيد...`;
+  btn.disabled = true;
+
+  try {
+    const { error } = await sb.from('escrow_transactions')
+      .update({ status: 'COMPLETED' })
+      .eq('id', currentEscrow.id);
+
+    if (error) throw error;
+
+    currentEscrow.status = 'COMPLETED';
+    updateUI();
+    alert("تم تأكيد الاستلام بنجاح!");
+  } catch(e) {
+    console.error("Error confirming receipt:", e);
+    alert("فشل تأكيد الاستلام. تأكد من اتصالك.");
+    updateUI();
+  }
 }
 
 function sendEscrowMsg() {
@@ -294,7 +412,6 @@ function sendEscrowMsg() {
   inp.value = '';
   box.scrollTop = box.scrollHeight;
 }
-
 </script>
 </body>
 </html>
