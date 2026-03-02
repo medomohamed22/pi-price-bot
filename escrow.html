@@ -127,23 +127,34 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 </div>
 
 <script>
-// الإعدادات (نفس الموجودة في موقعك)
+// الإعدادات
 const SUPABASE_URL = "https://ssvyxrtyvdxxojmunrcv.supabase.co";
 const SUPABASE_KEY = "sb_publishable_8egOM2-lT9J6kPQTbluC4w_8YHtB4K3"; 
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let sb; // تعريف المتغير هنا ليكون متاحاً للكل
 
 let currentUser = null;
 let currentProduct = null;
-let currentEscrow = null; // تفاصيل معاملة الوسيط من قاعدة البيانات
-let userRole = ''; // 'BUYER' or 'SELLER'
+let currentEscrow = null; 
+let userRole = ''; 
 
-// استخراج رقم المنتج من الرابط
 const urlParams = new URLSearchParams(window.location.search);
 const productId = urlParams.get('productId');
 
+// نقلنا تهيئة Supabase لداخل هذا الحدث لضمان تحميل المكتبة أولاً
 document.addEventListener("DOMContentLoaded", async () => {
-  await initPiUser(); // يجب التأكد من تسجيل الدخول أولاً
-  if(!productId) { alert("رقم المنتج مفقود"); window.history.back(); return; }
+  // 1. تهيئة قاعدة البيانات
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  
+  // 2. التحقق من المستخدم
+  await initPiUser(); 
+  
+  if(!productId) { 
+    alert("رقم المنتج مفقود"); 
+    window.history.back(); 
+    return; 
+  }
+  
+  // 3. تحميل البيانات
   await loadEscrowData();
 });
 
@@ -155,39 +166,49 @@ async function initPiUser() {
           currentUser = { uid: auth.user.uid, username: auth.user.username };
       } catch(e) { console.error(e); }
   } else {
-      // للمتصفح العادي (اختبار)
       currentUser = { uid: "test_buyer_123", username: "TestBuyer" }; 
   }
 }
 
 async function loadEscrowData() {
-  // 1. جلب بيانات المنتج
-  const { data: prod } = await sb.from("products").select("*").eq("id", productId).single();
-  currentProduct = prod;
-  
-  if(prod) {
-      document.getElementById('escrow-img').src = (prod.images && prod.images.length > 0) ? prod.images[0] : prod.image_url;
-      document.getElementById('escrow-title').innerText = prod.name;
-      document.getElementById('escrow-price').innerText = prod.price;
-      document.getElementById('escrow-seller').innerText = prod.seller_username;
-      
-      userRole = (currentUser.uid === prod.seller_pi_id) ? 'SELLER' : 'BUYER';
-  }
-
-  // 2. التحقق مما إذا كان هناك معاملة وسيط سابقة لهذا المنتج والمشتري
-  // ملاحظة: يجب أن تقوم بإنشاء جدول "escrow_transactions" في Supabase
-  const { data: escrow } = await sb.from("escrow_transactions")
-    .select("*").eq("product_id", productId).eq("buyer_pi_id", userRole === 'BUYER' ? currentUser.uid : currentProduct.buyer_pi_id).single();
+  try {
+    // جلب بيانات المنتج
+    const { data: prod, error: prodError } = await sb.from("products").select("*").eq("id", productId).single();
     
-  if(escrow) {
-      currentEscrow = escrow;
-  } else if (userRole === 'BUYER') {
-      // حالة جديدة تماماً
-      currentEscrow = { status: 'PENDING' };
-  }
+    if (prodError || !prod) {
+      document.getElementById('action-hint').innerText = "لم يتم العثور على المنتج!";
+      return;
+    }
 
-  updateUI();
-  // يمكنك هنا إضافة كود تحميل الرسائل الخاص بالشات كما في ملفك الرئيسي
+    currentProduct = prod;
+    
+    // تحديث واجهة المستخدم بمعلومات المنتج
+    document.getElementById('escrow-img').src = (prod.images && prod.images.length > 0) ? prod.images[0] : (prod.image_url || "https://placehold.co/400x400/f1f5f9/94a3b8?text=No+Image");
+    document.getElementById('escrow-title').innerText = prod.name;
+    document.getElementById('escrow-price').innerText = prod.price;
+    document.getElementById('escrow-seller').innerText = prod.seller_username;
+    
+    userRole = (currentUser.uid === prod.seller_pi_id) ? 'SELLER' : 'BUYER';
+
+    // البحث عن معاملة وسيط سابقة (استخدمنا maybeSingle بدلاً من single لتجنب توقف الكود إذا لم تكن موجودة)
+    const { data: escrow } = await sb.from("escrow_transactions")
+      .select("*")
+      .eq("product_id", productId)
+      .eq("buyer_pi_id", userRole === 'BUYER' ? currentUser.uid : currentProduct.buyer_pi_id)
+      .maybeSingle();
+      
+    if(escrow) {
+        currentEscrow = escrow;
+    } else if (userRole === 'BUYER') {
+        currentEscrow = { status: 'PENDING' };
+    } else {
+        currentEscrow = { status: 'PENDING' }; // في حال دخل البائع ولم يدفع المشتري بعد
+    }
+
+    updateUI();
+  } catch (err) {
+    console.error("حدث خطأ أثناء تحميل البيانات:", err);
+  }
 }
 
 function updateUI() {
@@ -195,12 +216,11 @@ function updateUI() {
   const hint = document.getElementById('action-hint');
   const btns = document.getElementById('action-buttons');
   
-  // تحديث شريط التقدم
   if(status === 'FUNDED') { setStep(2); }
   else if(status === 'SHIPPED') { setStep(3); }
   else if(status === 'COMPLETED') { setStep(4); }
+  else { setStep(1); } // الحالة الافتراضية PENDING
 
-  // تحديث الأزرار بناءً على الدور والحالة
   if(userRole === 'BUYER') {
       if(status === 'PENDING') {
           hint.innerText = "قم بالدفع الآن. سيتم تجميد رصيدك في محفظة الموقع ولن يصل للبائع حتى تؤكد الاستلام.";
@@ -220,7 +240,7 @@ function updateUI() {
       }
   } 
   else if (userRole === 'SELLER') {
-      if(status === 'PENDING' || !currentEscrow) {
+      if(status === 'PENDING' || !currentEscrow.id) {
           hint.innerText = "المشتري لم يقم بالدفع وتجميد الرصيد بعد. لا تقم بشحن المنتج.";
           btns.innerHTML = `<button class="btn btn-ghost" disabled><i class="fa-solid fa-clock"></i> في انتظار دفع المشتري</button>`;
       }
@@ -247,41 +267,26 @@ function setStep(stepNumber) {
   });
 }
 
-// محاكاة الإجراءات (يجب ربطها بقاعدة البيانات الخاصة بك)
+// الدوال التفاعلية (سيتم ربطها بقاعدة البيانات لاحقاً)
 async function payToEscrow() {
-  // هنا تستدعي Pi.createPayment لدفع المبلغ لمحفظة التطبيق الخاصة بك (User-to-App)
-  alert("سيتم فتح واجهة Pi لدفع المبلغ لمحفظة الموقع...");
-  // بعد نجاح الدفع، تقوم بإدراج المعاملة في قاعدة البيانات
-  /*
-  await sb.from('escrow_transactions').insert({
-    product_id: currentProduct.id,
-    buyer_pi_id: currentUser.uid,
-    seller_pi_id: currentProduct.seller_pi_id,
-    amount: currentProduct.price,
-    status: 'FUNDED'
-  });
-  */
+  alert("في هذه الخطوة ستفتح نافذة الدفع الخاصة بـ Pi Network...");
+  // كود الدفع وإضافة المعاملة في الجدول
   currentEscrow.status = 'FUNDED';
   updateUI();
 }
 
 async function markAsShipped() {
-  // تحديث حالة المعاملة في قاعدة البيانات
-  // await sb.from('escrow_transactions').update({status: 'SHIPPED'}).eq('id', currentEscrow.id);
   currentEscrow.status = 'SHIPPED';
   updateUI();
 }
 
 async function confirmReceipt() {
-  // تحديث الحالة
-  // await sb.from('escrow_transactions').update({status: 'COMPLETED'}).eq('id', currentEscrow.id);
   currentEscrow.status = 'COMPLETED';
   updateUI();
-  alert("تم تأكيد الاستلام! سيقوم النظام بتحويل عملات Pi إلى محفظة البائع.");
+  alert("تم تأكيد الاستلام بنجاح!");
 }
 
 function sendEscrowMsg() {
-  // كود إرسال الرسائل (نفس الموجود في ملفك الرئيسي)
   const inp = document.getElementById('escrow-msg-input');
   if(!inp.value.trim()) return;
   const box = document.getElementById('escrow-chat');
@@ -289,6 +294,7 @@ function sendEscrowMsg() {
   inp.value = '';
   box.scrollTop = box.scrollHeight;
 }
+
 </script>
 </body>
 </html>
