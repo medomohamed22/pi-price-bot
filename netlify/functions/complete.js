@@ -42,6 +42,7 @@ exports.handler = async (event, context) => {
         console.log(`⚠️ Payment ${paymentId} already processed locally.`);
         
         // 🔥 الخطوة الحاسمة لفك التعليق:
+        // حتى لو مسجلة عندنا، نعيد إرسال التأكيد لـ Pi لأن التطبيق ربما لم يستلم الرد الأول
         try {
             const piComplete = await fetch(`${PI_API_BASE}/payments/${paymentId}/complete`, {
                 method: 'POST',
@@ -56,6 +57,7 @@ exports.handler = async (event, context) => {
             console.log("ℹ️ Pi likely already knows it's complete.");
         }
 
+        // نرجع نجاح عشان الـ Frontend يكمل
         return {
             statusCode: 200,
             headers,
@@ -77,9 +79,11 @@ exports.handler = async (event, context) => {
     
     let piData = await verifyRes.json();
 
+    // فحص الإلغاء
     if (piData.status.cancelled || piData.status.user_cancelled) {
         return { statusCode: 400, headers, body: JSON.stringify({ error: "Payment was cancelled." }) };
     }
+
 
     // =========================================================
     // 3. إتمام الدفع رسمياً على Pi (Completion)
@@ -97,6 +101,7 @@ exports.handler = async (event, context) => {
         });
 
         if (!completeRes.ok) {
+            // لو فشل هنا، نرجع خطأ عشان Pi يعيد المحاولة
             const errTxt = await completeRes.text();
             throw new Error(`Failed to complete on Pi: ${errTxt}`);
         }
@@ -104,8 +109,9 @@ exports.handler = async (event, context) => {
         piData = await completeRes.json();
     }
 
+
     // =========================================================
-    // 4. استخراج البيانات (Metadata Parsing) - [تم التعديل هنا]
+    // 4. استخراج البيانات (Metadata Parsing) - [معدل لتشمل نوع الدفع]
     // =========================================================
     let productId = null;
     let days = 3; 
@@ -131,6 +137,7 @@ exports.handler = async (event, context) => {
     }
 
     if (!productId) {
+        // نسجل العملية لكن بدون تحديث منتج (لحفظ الحق المالي)
         await supabase.from('payments').upsert({
             payment_id: paymentId,
             user_id: piData.user_uid,
@@ -141,6 +148,7 @@ exports.handler = async (event, context) => {
         return { statusCode: 200, headers, body: JSON.stringify({ error: "Product ID missing" }) };
     }
 
+
     // =========================================================
     // 5. تسجيل العملية في قاعدة البيانات (Log Payment)
     // =========================================================
@@ -149,28 +157,39 @@ exports.handler = async (event, context) => {
         user_id: piData.user_uid,
         product_id: productId,
         amount: amount,
-        status: 'completed', 
+        status: 'completed', // ✅ العلامة التي تمنع التكرار مستقبلاً
         txid: txid,
         created_at: new Date().toISOString()
     }, { onConflict: 'payment_id' });
 
     if (payError) console.error("⚠️ DB Log Error:", payError);
 
+
     // =========================================================
-    // 6. تطبيق الخدمة بناءً على نوع الدفع (Promotion VS Escrow) - [تم التعديل هنا]
+    // 6. تطبيق الخدمة بناءً على نوع الدفع (Promotion VS Escrow)
     // =========================================================
     
     // أ- حالة تمييز الإعلان (Promotion)
     if (paymentType === 'promotion') {
         console.log(`✨ Applying Promotion: Product ${productId} (+${days} Days)`);
         
-        const { data: prod } = await supabase.from('products').select('promoted_until').eq('id', productId).single();
+        // جلب التاريخ الحالي
+        const { data: prod } = await supabase
+            .from('products')
+            .select('promoted_until')
+            .eq('id', productId)
+            .single();
+        
         let newExpiry = new Date();
+        // لو لسه ساري، زود عليه
         if (prod && prod.promoted_until && new Date(prod.promoted_until) > new Date()) {
             newExpiry = new Date(prod.promoted_until);
         }
+        
+        // إضافة الأيام
         newExpiry.setDate(newExpiry.getDate() + days);
 
+        // التحديث
         const { error: promoError } = await supabase
           .from('products')
           .update({ promoted_until: newExpiry.toISOString() })
@@ -201,24 +220,48 @@ exports.handler = async (event, context) => {
             throw new Error("Product not found for escrow transaction");
         }
         
-        // 2. إدخال أو تحديث معاملة الوسيط في قاعدة البيانات
-        const { error: escrowError } = await supabase
+        // 2. التحقق من وجود معاملة سابقة لنفس المنتج والمشتري (لمنع التكرار)
+        const { data: existingEscrow } = await supabase
             .from('escrow_transactions')
-            .upsert({
-                product_id: productId,
-                buyer_pi_id: buyerId,
-                seller_pi_id: productData.seller_pi_id,
-                amount: amount, 
-                status: 'FUNDED',
-                updated_at: new Date().toISOString()
-            });
+            .select('id')
+            .eq('product_id', productId)
+            .eq('buyer_pi_id', buyerId)
+            .order('created_at', { ascending: false })
+            .limit(1);
 
-        if (escrowError) {
-            console.error("Escrow Insert Error:", escrowError);
-            throw new Error("Failed to insert escrow transaction");
+        let escrowError;
+
+        if (existingEscrow && existingEscrow.length > 0) {
+            // ✅ تحديث المعاملة الحالية بدلاً من إنشاء واحدة جديدة
+            const res = await supabase
+                .from('escrow_transactions')
+                .update({ 
+                    status: 'FUNDED', 
+                    amount: amount, 
+                    updated_at: new Date().toISOString() 
+                })
+                .eq('id', existingEscrow[0].id);
+            escrowError = res.error;
+        } else {
+            // ✅ إنشاء معاملة جديدة لو لم تكن موجودة
+            const res = await supabase
+                .from('escrow_transactions')
+                .insert({
+                    product_id: productId,
+                    buyer_pi_id: buyerId,
+                    seller_pi_id: productData.seller_pi_id,
+                    amount: amount, 
+                    status: 'FUNDED'
+                });
+            escrowError = res.error;
         }
 
-        console.log("✅ SUCCESS: Escrow Transaction Created and Funded!");
+        if (escrowError) {
+            console.error("Escrow Insert/Update Error:", escrowError);
+            throw new Error("Failed to save/update escrow transaction");
+        }
+
+        console.log("✅ SUCCESS: Escrow Transaction Created/Updated and Funded!");
         return {
           statusCode: 200,
           headers,
@@ -228,6 +271,7 @@ exports.handler = async (event, context) => {
 
   } catch (err) {
     console.error("💥 SYSTEM ERROR:", err.message);
+    // نرجع 500 في حالة الخطأ الحقيقي عشان Pi يعيد المحاولة لاحقاً
     return { statusCode: 500, headers, body: JSON.stringify({ error: err.message }) };
   }
 };
