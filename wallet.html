@@ -70,8 +70,9 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 .modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 2000; display: none; align-items: flex-end; justify-content: center; backdrop-filter: blur(8px); }
 .sheet { background: white; width: 100%; max-width: 600px; border-radius: var(--radius-xl) var(--radius-xl) 0 0; padding: 28px; animation: slideUp 0.3s ease-out; }
 @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-.input-box { width: 100%; padding: 16px; border: 2px solid var(--border); border-radius: var(--radius-lg); font-family: inherit; font-size: 16px; font-weight: 800; outline: none; margin-bottom: 16px; text-align: center; color: var(--primary);}
-.input-box:focus { border-color: var(--primary); }
+.input-box { width: 100%; padding: 16px; border: 2px solid var(--border); border-radius: var(--radius-lg); font-family: inherit; font-size: 15px; font-weight: 700; outline: none; margin-bottom: 16px; color: var(--text-main); transition: all 0.3s;}
+.input-box:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
+.input-label { display: block; font-weight: 800; margin-bottom: 8px; color: var(--text-main); font-size: 14px; }
 </style>
 </head>
 <body>
@@ -114,11 +115,15 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 <div id="withdrawModal" class="modal" onclick="if(event.target==this) closeWithdrawModal()">
   <div class="sheet">
     <h3 style="margin-bottom: 8px; font-size: 20px; color: var(--text-main);">سحب الرصيد</h3>
-    <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">الحد الأدنى للسحب هو 1 Pi. سيتم تحويل المبلغ لمحفظة Pi الخاصة بك فوراً.</p>
+    <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 24px;">الحد الأدنى للسحب هو 1 Pi. يرجى التأكد من عنوان المحفظة بشكل صحيح لتجنب فقدان العملات.</p>
     
-    <input type="number" id="withdrawAmount" class="input-box" placeholder="أدخل المبلغ (مثال: 10.5)" step="0.1" min="1" />
+    <label class="input-label">كمية Pi المراد سحبها:</label>
+    <input type="number" id="withdrawAmount" class="input-box" placeholder="مثال: 10.5" step="0.1" min="1" style="text-align: center; color: var(--primary); font-size: 18px;" />
     
-    <button id="confirmWithdrawBtn" class="btn btn-primary" onclick="submitWithdraw()">
+    <label class="input-label">عنوان المحفظة المستلمة (Public Key):</label>
+    <input type="text" id="withdrawAddress" class="input-box" placeholder="G..." dir="ltr" style="text-align: left; font-family: monospace;" autocomplete="off" autocorrect="off" spellcheck="false" />
+    
+    <button id="confirmWithdrawBtn" class="btn btn-primary" onclick="submitWithdraw()" style="margin-top: 8px;">
       <i class="fa-solid fa-check"></i> تأكيد السحب
     </button>
   </div>
@@ -178,7 +183,6 @@ async function loadWalletData() {
               if (tx.status === 'COMPLETED') availableBalance += parseFloat(tx.amount);
               else pendingBalance += parseFloat(tx.amount);
           }
-          // إضافة المعاملة للقائمة لترتيبها وعرضها
           allTxs.push({
              type: isSeller ? 'sell' : 'buy',
              data: tx,
@@ -187,7 +191,7 @@ async function loadWalletData() {
         });
     }
 
-    // معالجة السحوبات (نطرحها من الرصيد المتاح)
+    // معالجة السحوبات
     if (withdrawals) {
         withdrawals.forEach(w => {
             totalWithdrawn += parseFloat(w.amount);
@@ -273,28 +277,39 @@ async function loadWalletData() {
   }
 }
 
-// إعدادات المودال
-function openWithdrawModal() { document.getElementById('withdrawModal').style.display = 'flex'; }
+function openWithdrawModal() { 
+  document.getElementById('withdrawAmount').value = '';
+  document.getElementById('withdrawAddress').value = '';
+  document.getElementById('withdrawModal').style.display = 'flex'; 
+}
 function closeWithdrawModal() { document.getElementById('withdrawModal').style.display = 'none'; }
 
-// دالة طلب السحب من السيرفر
+// دالة طلب السحب من السيرفر مع المتغيرات الجديدة
 async function submitWithdraw() {
     const amountInput = document.getElementById('withdrawAmount').value;
+    const addressInput = document.getElementById('withdrawAddress').value.trim();
+    
     const amount = parseFloat(amountInput);
 
     if(!amount || amount < 1) return alert("الحد الأدنى للسحب هو 1 Pi");
     if(amount > currentActualBalance) return alert("الرصيد المطلوب أكبر من رصيدك المتاح!");
+    if(!addressInput) return alert("يرجى إدخال عنوان المحفظة المستلمة.");
+    if(addressInput.length < 40 || !addressInput.startsWith('G')) return alert("يرجى إدخال عنوان محفظة Pi صحيح (يبدأ بحرف G).");
 
     const btn = document.getElementById('confirmWithdrawBtn');
     btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> جاري المعالجة...`;
     btn.disabled = true;
 
     try {
-        // نرسل الطلب للسيرفر الخاص بنا الذي سيقوم بالباقي
+        // نرسل الطلب للسيرفر مع إضافة العنوان (address)
         const res = await fetch(`${API_BASE}/withdraw`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ uid: currentUser.uid, amount: amount })
+            body: JSON.stringify({ 
+                uid: currentUser.uid, 
+                amount: amount,
+                address: addressInput // ⬅️ الإضافة الجديدة هنا
+            })
         });
         
         const data = await res.json();
