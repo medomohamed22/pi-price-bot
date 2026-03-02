@@ -23,17 +23,19 @@ exports.handler = async (event, context) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers, body: '' };
 
   try {
-    const { uid, amount } = JSON.parse(event.body);
+    // 1. استقبال البيانات وتتضمن الآن عنوان المحفظة (address)
+    const { uid, amount, address } = JSON.parse(event.body);
 
-    if (!uid || !amount || amount < 1) {
-      return { statusCode: 400, headers, body: JSON.stringify({ error: "بيانات غير صالحة." }) };
+    // 2. التحقق من صحة البيانات والعنوان (يجب أن يبدأ بحرف G)
+    if (!uid || !amount || amount < 1 || !address || !address.startsWith('G')) {
+      return { statusCode: 400, headers, body: JSON.stringify({ error: "بيانات غير صالحة أو عنوان المحفظة خاطئ." }) };
     }
     
     if(!WALLET_PRIVATE_KEY) {
         throw new Error("Missing WALLET_PRIVATE_KEY in Netlify environments.");
     }
 
-    console.log(`💸 Processing Withdrawal for ${uid}, Amount: ${amount}`);
+    console.log(`💸 Processing Withdrawal for ${uid}, Amount: ${amount}, To: ${address}`);
 
     // =========================================================
     // 1. حساب الرصيد الآمن من قاعدة البيانات
@@ -53,7 +55,7 @@ exports.handler = async (event, context) => {
     }
 
     // =========================================================
-    // 2. طلب إذن الدفع من Pi API (للحصول على عنوان المستلم)
+    // 2. طلب إذن الدفع من Pi API 
     // =========================================================
     const createRes = await fetch(`${PI_API_BASE}/payments`, {
         method: 'POST',
@@ -62,7 +64,7 @@ exports.handler = async (event, context) => {
             payment: {
                 amount: parseFloat(amount),
                 memo: "Withdraw from Deal Way",
-                metadata: { type: "withdrawal" },
+                metadata: { type: "withdrawal", to_address: address }, // حفظ العنوان في السجلات
                 uid: uid 
             }
         })
@@ -72,7 +74,7 @@ exports.handler = async (event, context) => {
     if (!createRes.ok) throw new Error("فشل إنشاء المعاملة في سيرفر Pi");
     
     const paymentId = paymentData.identifier;
-    const destinationAddress = paymentData.to_address; // محفظة المستخدم النهائية
+    // لم نعد نعتمد على paymentData.to_address الافتراضي، سنستخدم المتغير address مباشرة.
 
     // =========================================================
     // 3. بناء وتوقيع المعاملة على البلوكتشين (Stellar/Pi Horizon)
@@ -88,7 +90,7 @@ exports.handler = async (event, context) => {
       networkPassphrase: NETWORK_PASSPHRASE
     })
     .addOperation(StellarSdk.Operation.payment({
-      destination: destinationAddress,
+      destination: address, // استخدام العنوان الذي أدخله المستخدم في الواجهة
       asset: StellarSdk.Asset.native(),
       amount: amount.toString()
     }))
