@@ -1,4 +1,3 @@
-
 const { createClient } = require('@supabase/supabase-js');
 
 // استدعاء المتغيرات البيئية
@@ -43,7 +42,6 @@ exports.handler = async (event, context) => {
         console.log(`⚠️ Payment ${paymentId} already processed locally.`);
         
         // 🔥 الخطوة الحاسمة لفك التعليق:
-        // حتى لو مسجلة عندنا، نعيد إرسال التأكيد لـ Pi لأن التطبيق ربما لم يستلم الرد الأول
         try {
             const piComplete = await fetch(`${PI_API_BASE}/payments/${paymentId}/complete`, {
                 method: 'POST',
@@ -53,14 +51,11 @@ exports.handler = async (event, context) => {
                 },
                 body: JSON.stringify({ txid: existingPayment.txid || txid }),
             });
-            
-            // إذا رد باي بـ 200 أو خطأ (أنها مكتملة بالفعل)، فالمهمة تمت
             console.log("🔄 Re-sent completion signal to Pi (Confirmation).");
         } catch (e) {
             console.log("ℹ️ Pi likely already knows it's complete.");
         }
 
-        // نرجع نجاح عشان الـ Frontend يكمل
         return {
             statusCode: 200,
             headers,
@@ -82,11 +77,9 @@ exports.handler = async (event, context) => {
     
     let piData = await verifyRes.json();
 
-    // فحص الإلغاء
     if (piData.status.cancelled || piData.status.user_cancelled) {
         return { statusCode: 400, headers, body: JSON.stringify({ error: "Payment was cancelled." }) };
     }
-
 
     // =========================================================
     // 3. إتمام الدفع رسمياً على Pi (Completion)
@@ -104,7 +97,6 @@ exports.handler = async (event, context) => {
         });
 
         if (!completeRes.ok) {
-            // لو فشل هنا، نرجع خطأ عشان Pi يعيد المحاولة
             const errTxt = await completeRes.text();
             throw new Error(`Failed to complete on Pi: ${errTxt}`);
         }
@@ -112,12 +104,14 @@ exports.handler = async (event, context) => {
         piData = await completeRes.json();
     }
 
-
     // =========================================================
-    // 4. استخراج البيانات (Metadata Parsing)
+    // 4. استخراج البيانات (Metadata Parsing) - [تم التعديل هنا]
     // =========================================================
     let productId = null;
     let days = 3; 
+    let paymentType = 'promotion'; // الافتراضي هو تمييز الإعلان
+    let buyerId = piData.user_uid; // الافتراضي هو الشخص الذي دفع
+    
     const amount = parseFloat(piData.amount);
 
     if (piData.metadata) {
@@ -128,12 +122,15 @@ exports.handler = async (event, context) => {
         
         productId = meta.productId || meta.product_id || meta.id;
         
+        // استخراج نوع العملية ومعرف المشتري إذا كانت موجودة
+        if (meta.type) paymentType = meta.type;
+        if (meta.buyerId) buyerId = meta.buyerId;
+        
         if (meta.days) days = parseInt(meta.days);
         else if (amount >= 4.9) days = 7;
     }
 
     if (!productId) {
-        // نسجل العملية لكن بدون تحديث منتج (لحفظ الحق المالي)
         await supabase.from('payments').upsert({
             payment_id: paymentId,
             user_id: piData.user_uid,
@@ -144,7 +141,6 @@ exports.handler = async (event, context) => {
         return { statusCode: 200, headers, body: JSON.stringify({ error: "Product ID missing" }) };
     }
 
-
     // =========================================================
     // 5. تسجيل العملية في قاعدة البيانات (Log Payment)
     // =========================================================
@@ -153,53 +149,85 @@ exports.handler = async (event, context) => {
         user_id: piData.user_uid,
         product_id: productId,
         amount: amount,
-        status: 'completed', // ✅ العلامة التي تمنع التكرار مستقبلاً
+        status: 'completed', 
         txid: txid,
         created_at: new Date().toISOString()
     }, { onConflict: 'payment_id' });
 
     if (payError) console.error("⚠️ DB Log Error:", payError);
 
+    // =========================================================
+    // 6. تطبيق الخدمة بناءً على نوع الدفع (Promotion VS Escrow) - [تم التعديل هنا]
+    // =========================================================
+    
+    // أ- حالة تمييز الإعلان (Promotion)
+    if (paymentType === 'promotion') {
+        console.log(`✨ Applying Promotion: Product ${productId} (+${days} Days)`);
+        
+        const { data: prod } = await supabase.from('products').select('promoted_until').eq('id', productId).single();
+        let newExpiry = new Date();
+        if (prod && prod.promoted_until && new Date(prod.promoted_until) > new Date()) {
+            newExpiry = new Date(prod.promoted_until);
+        }
+        newExpiry.setDate(newExpiry.getDate() + days);
 
-    // =========================================================
-    // 6. تطبيق الخدمة: تمييز المنتج (Promote Product)
-    // =========================================================
-    console.log(`✨ Applying Promotion: Product ${productId} (+${days} Days)`);
+        const { error: promoError } = await supabase
+          .from('products')
+          .update({ promoted_until: newExpiry.toISOString() })
+          .eq('id', productId);
+
+        if (promoError) throw new Error("Database Update Failed");
+
+        console.log("✅ SUCCESS: Product Promoted!");
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({ success: true, type: 'promotion', daysAdded: days, newExpiry })
+        };
+    } 
     
-    // جلب التاريخ الحالي
-    const { data: prod } = await supabase
-        .from('products')
-        .select('promoted_until')
-        .eq('id', productId)
-        .single();
-    
-    let newExpiry = new Date();
-    // لو لسه ساري، زود عليه
-    if (prod && prod.promoted_until && new Date(prod.promoted_until) > new Date()) {
-        newExpiry = new Date(prod.promoted_until);
+    // ب- حالة الدفع الآمن / الوسيط (Escrow)
+    else if (paymentType === 'escrow') {
+        console.log(`🛡️ Applying Escrow: Product ${productId} for Buyer ${buyerId}`);
+        
+        // 1. جلب بيانات البائع والسعر من جدول المنتجات
+        const { data: productData, error: productError } = await supabase
+            .from('products')
+            .select('seller_pi_id, price')
+            .eq('id', productId)
+            .single();
+            
+        if (productError || !productData) {
+            throw new Error("Product not found for escrow transaction");
+        }
+        
+        // 2. إدخال أو تحديث معاملة الوسيط في قاعدة البيانات
+        const { error: escrowError } = await supabase
+            .from('escrow_transactions')
+            .upsert({
+                product_id: productId,
+                buyer_pi_id: buyerId,
+                seller_pi_id: productData.seller_pi_id,
+                amount: amount, 
+                status: 'FUNDED',
+                updated_at: new Date().toISOString()
+            });
+
+        if (escrowError) {
+            console.error("Escrow Insert Error:", escrowError);
+            throw new Error("Failed to insert escrow transaction");
+        }
+
+        console.log("✅ SUCCESS: Escrow Transaction Created and Funded!");
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({ success: true, type: 'escrow', status: 'FUNDED' })
+        };
     }
-    
-    // إضافة الأيام
-    newExpiry.setDate(newExpiry.getDate() + days);
-
-    // التحديث (يستخدم Service Role لتجاوز الـ Trigger إذا لزم، أو يعمل بشكل طبيعي)
-    const { error: promoError } = await supabase
-      .from('products')
-      .update({ promoted_until: newExpiry.toISOString() })
-      .eq('id', productId);
-
-    if (promoError) throw new Error("Database Update Failed");
-
-    console.log("✅ SUCCESS: Product Promoted!");
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({ success: true, daysAdded: days, newExpiry })
-    };
 
   } catch (err) {
     console.error("💥 SYSTEM ERROR:", err.message);
-    // نرجع 500 في حالة الخطأ الحقيقي عشان Pi يعيد المحاولة لاحقاً
     return { statusCode: 500, headers, body: JSON.stringify({ error: err.message }) };
   }
 };
