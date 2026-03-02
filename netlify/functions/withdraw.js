@@ -54,7 +54,9 @@ exports.handler = async (event, context) => {
     // =========================================================
     // 3. بناء وتوقيع المعاملة مباشرة على البلوكتشين (تخطي Pi API)
     // =========================================================
-    const server = new StellarSdk.Server(HORIZON_URL);
+    
+    // ✅ [التعديل هنا] استخدمنا Horizon.Server بدلاً من Server لتتوافق مع التحديث الأخير للمكتبة
+    const server = new StellarSdk.Horizon.Server(HORIZON_URL);
     const sourceKeypair = StellarSdk.Keypair.fromSecret(WALLET_PRIVATE_KEY);
     
     // جلب حالة محفظة التطبيق من البلوكتشين لمعرفة الـ Sequence Number
