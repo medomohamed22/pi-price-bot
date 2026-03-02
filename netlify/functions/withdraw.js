@@ -3,14 +3,12 @@ const StellarSdk = require('stellar-sdk'); // استدعاء مكتبة البل
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY; 
-const PI_API_KEY = process.env.PI_API_KEY;
-const WALLET_PRIVATE_KEY = process.env.WALLET_PRIVATE_KEY; // المفتاح السري لمحفظة التطبيق (يبدأ بحرف S)
+const WALLET_PRIVATE_KEY = process.env.WALLET_PRIVATE_KEY; // المفتاح السري لمحفظتك (يبدأ بحرف S)
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // إعدادات شبكة Pi Network
-const IS_TESTNET = false; // اجعلها true لو بتجرب على شبكة الـ Testnet
-const PI_API_BASE = 'https://api.minepi.com/v2';
+const IS_TESTNET = false; // اجعلها true لو بتجرب على شبكة Testnet
 const HORIZON_URL = IS_TESTNET ? 'https://api.testnet.minepi.com' : 'https://api.mainnet.minepi.com';
 const NETWORK_PASSPHRASE = IS_TESTNET ? 'Pi Network Testnet' : 'Pi Network Mainnet';
 
@@ -23,22 +21,21 @@ exports.handler = async (event, context) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers, body: '' };
 
   try {
-    // 1. استقبال البيانات وتتضمن الآن عنوان المحفظة (address)
     const { uid, amount, address } = JSON.parse(event.body);
 
-    // 2. التحقق من صحة البيانات والعنوان (يجب أن يبدأ بحرف G)
+    // 1. التحقق من صحة البيانات والعنوان
     if (!uid || !amount || amount < 1 || !address || !address.startsWith('G')) {
-      return { statusCode: 400, headers, body: JSON.stringify({ error: "بيانات غير صالحة أو عنوان المحفظة خاطئ." }) };
+      return { statusCode: 400, headers, body: JSON.stringify({ error: "بيانات غير صالحة أو عنوان المحفظة المستلمة خاطئ." }) };
     }
     
     if(!WALLET_PRIVATE_KEY) {
-        throw new Error("Missing WALLET_PRIVATE_KEY in Netlify environments.");
+        throw new Error("المفتاح السري للمحفظة غير موجود في إعدادات السيرفر.");
     }
 
-    console.log(`💸 Processing Withdrawal for ${uid}, Amount: ${amount}, To: ${address}`);
+    console.log(`💸 Processing Withdrawal directly on Blockchain for ${uid}, Amount: ${amount}, To: ${address}`);
 
     // =========================================================
-    // 1. حساب الرصيد الآمن من قاعدة البيانات
+    // 2. حساب الرصيد الآمن من قاعدة البيانات
     // =========================================================
     const { data: escrows } = await supabase.from('escrow_transactions').select('amount').eq('seller_pi_id', uid).eq('status', 'COMPLETED');
     let totalEarned = 0;
@@ -55,69 +52,44 @@ exports.handler = async (event, context) => {
     }
 
     // =========================================================
-    // 2. طلب إذن الدفع من Pi API 
-    // =========================================================
-    const createRes = await fetch(`${PI_API_BASE}/payments`, {
-        method: 'POST',
-        headers: { 'Authorization': `Key ${PI_API_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            payment: {
-                amount: parseFloat(amount),
-                memo: "Withdraw from Deal Way",
-                metadata: { type: "withdrawal", to_address: address }, // حفظ العنوان في السجلات
-                uid: uid 
-            }
-        })
-    });
-
-    const paymentData = await createRes.json();
-    if (!createRes.ok) throw new Error("فشل إنشاء المعاملة في سيرفر Pi");
-    
-    const paymentId = paymentData.identifier;
-    // لم نعد نعتمد على paymentData.to_address الافتراضي، سنستخدم المتغير address مباشرة.
-
-    // =========================================================
-    // 3. بناء وتوقيع المعاملة على البلوكتشين (Stellar/Pi Horizon)
+    // 3. بناء وتوقيع المعاملة مباشرة على البلوكتشين (تخطي Pi API)
     // =========================================================
     const server = new StellarSdk.Server(HORIZON_URL);
     const sourceKeypair = StellarSdk.Keypair.fromSecret(WALLET_PRIVATE_KEY);
     
-    // جلب حالة محفظة التطبيق من البلوكتشين
-    const sourceAccount = await server.loadAccount(sourceKeypair.publicKey());
+    // جلب حالة محفظة التطبيق من البلوكتشين لمعرفة الـ Sequence Number
+    let sourceAccount;
+    try {
+        sourceAccount = await server.loadAccount(sourceKeypair.publicKey());
+    } catch(e) {
+        throw new Error("فشل الوصول لمحفظة الموقع الرئيسية (تأكد من وجود رصيد بها لتغطية رسوم البلوكتشين).");
+    }
 
+    // تجهيز التحويل
     const transaction = new StellarSdk.TransactionBuilder(sourceAccount, {
-      fee: StellarSdk.BASE_FEE,
+      fee: StellarSdk.BASE_FEE, // رسوم البلوكتشين القياسية (0.01 Pi تقريباً)
       networkPassphrase: NETWORK_PASSPHRASE
     })
     .addOperation(StellarSdk.Operation.payment({
-      destination: address, // استخدام العنوان الذي أدخله المستخدم في الواجهة
+      destination: address,
       asset: StellarSdk.Asset.native(),
       amount: amount.toString()
     }))
-    .addMemo(StellarSdk.Memo.text(paymentId)) // Pi تشترط وجود معرف المعاملة في الـ Memo
+    .addMemo(StellarSdk.Memo.text("DealWay Withdraw")) // رسالة تظهر في محفظة المستخدم
     .setTimeout(300) 
     .build();
 
-    // التوقيع السري
+    // التوقيع السري باستخدام Private Key
     transaction.sign(sourceKeypair);
 
     // =========================================================
-    // 4. إرسال المعاملة الموقعة إلى شبكة البلوكتشين
+    // 4. إرسال المعاملة الموقعة إلى شبكة البلوكتشين الفعلية
     // =========================================================
     const submitRes = await server.submitTransaction(transaction);
     const txid = submitRes.hash; // معرف المعاملة في البلوكتشين
 
     // =========================================================
-    // 5. إبلاغ سيرفرات Pi أن المعاملة تمت بنجاح
-    // =========================================================
-    await fetch(`${PI_API_BASE}/payments/${paymentId}/complete`, {
-        method: 'POST',
-        headers: { 'Authorization': `Key ${PI_API_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ txid: txid })
-    });
-
-    // =========================================================
-    // 6. تسجيل العملية في قاعدة البيانات
+    // 5. تسجيل العملية في قاعدة البيانات لدينا
     // =========================================================
     await supabase.from('withdrawals').insert({
         user_pi_id: uid,
@@ -126,12 +98,19 @@ exports.handler = async (event, context) => {
         txid: txid
     });
 
-    console.log("✅ Withdrawal Successful! TXID:", txid);
+    console.log("✅ Withdrawal Successful on Blockchain! TXID:", txid);
     return { statusCode: 200, headers, body: JSON.stringify({ success: true, txid: txid }) };
 
   } catch (err) {
     console.error("❌ Withdrawal Error:", err);
-    // إرجاع تفاصيل الخطأ لتسهيل التتبع
-    return { statusCode: 500, headers, body: JSON.stringify({ error: err.message || "حدث خطأ أثناء السحب." }) };
+    
+    // استخراج رسالة الخطأ من البلوكتشين لتسهيل حل المشاكل
+    let errorMsg = err.message || "حدث خطأ أثناء السحب.";
+    if (err.response && err.response.data && err.response.data.extras) {
+        const resultCodes = err.response.data.extras.result_codes;
+        errorMsg = "رفض البلوكتشين العملية: " + (resultCodes.operations ? resultCodes.operations.join(", ") : resultCodes.transaction);
+    }
+    
+    return { statusCode: 500, headers, body: JSON.stringify({ error: errorMsg }) };
   }
 };
