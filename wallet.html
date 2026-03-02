@@ -28,40 +28,50 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 .header { background: white; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; box-shadow: var(--shadow-sm);}
 .back-btn { background: none; border: none; font-size: 20px; color: var(--text-main); cursor: pointer; display: flex; align-items: center; gap: 10px; font-weight: 800; font-family: inherit;}
 
-/* --- بطاقة المحفظة العلوية --- */
+.btn { border: none; cursor: pointer; border-radius: var(--radius-lg); padding: 14px 24px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 10px; font-family: inherit; width: 100%; transition: all 0.3s; }
+.btn-primary { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; }
+.btn-gold { background: linear-gradient(135deg, var(--accent) 0%, #D97706 100%); color: white; }
+
+/* --- المحفظة --- */
 .wallet-card { background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%); border-radius: var(--radius-xl); padding: 24px; color: white; margin-bottom: 24px; position: relative; overflow: hidden; box-shadow: 0 10px 25px rgba(15, 23, 42, 0.2); }
 .wallet-card::before { content: '\f0d6'; font-family: 'Font Awesome 6 Free'; font-weight: 900; position: absolute; left: -20px; bottom: -20px; font-size: 150px; opacity: 0.05; transform: rotate(-15deg); }
 .balance-label { font-size: 14px; color: #94A3B8; margin-bottom: 4px; font-weight: 600; }
-.balance-amount { font-size: 36px; font-weight: 900; color: #FDE047; display: flex; align-items: center; gap: 8px; margin-bottom: 20px; }
+.balance-amount { font-size: 36px; font-weight: 900; color: #FDE047; display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
 
-.pending-box { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius-lg); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; backdrop-filter: blur(10px); }
+.pending-box { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius-lg); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; backdrop-filter: blur(10px); margin-top: 16px; }
 .pending-box div:first-child { font-size: 13px; color: #CBD5E1; display: flex; align-items: center; gap: 6px; }
 .pending-box div:last-child { font-size: 16px; font-weight: 800; color: white; }
 
-/* --- سجل المعاملات --- */
+/* --- السجل --- */
 .section-title { font-size: 18px; font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: var(--text-main); }
 .tx-list { display: flex; flex-direction: column; gap: 12px; }
-.tx-item { background: white; border-radius: var(--radius-lg); padding: 16px; border: 1px solid var(--border); display: flex; align-items: center; gap: 16px; transition: all 0.3s; box-shadow: var(--shadow-sm); }
-.tx-item:hover { transform: translateX(-5px); box-shadow: var(--shadow); border-color: var(--primary-light); }
-
+.tx-item { background: white; border-radius: var(--radius-lg); padding: 16px; border: 1px solid var(--border); display: flex; align-items: center; gap: 16px; box-shadow: var(--shadow-sm); }
 .tx-icon { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; font-size: 20px; flex-shrink: 0; }
 .tx-icon.income { background: #D1FAE5; color: #059669; }
 .tx-icon.pending { background: #FEF3C7; color: #D97706; }
 .tx-icon.outcome { background: #F1F5F9; color: #64748B; }
+.tx-icon.withdraw { background: #FEE2E2; color: #EF4444; }
 
 .tx-details { flex: 1; overflow: hidden; }
-.tx-title { font-weight: 800; font-size: 15px; color: var(--text-main); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx-title { font-weight: 800; font-size: 15px; color: var(--text-main); margin-bottom: 4px; }
 .tx-date { font-size: 12px; color: var(--text-muted); }
-
 .tx-amount { font-weight: 900; font-size: 16px; display: flex; flex-direction: column; align-items: flex-end; }
 .tx-amount.positive { color: #059669; }
 .tx-amount.pending { color: #D97706; }
 .tx-amount.negative { color: var(--text-muted); }
+.tx-amount.withdraw-color { color: #EF4444; }
 .tx-status { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; margin-top: 4px; }
 .status-badge.completed { background: #D1FAE5; color: #059669; }
 .status-badge.pending { background: #FEF3C7; color: #D97706; }
 
 .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); background: white; border-radius: var(--radius-xl); border: 1px dashed var(--border); }
+
+/* --- المودال --- */
+.modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 2000; display: none; align-items: flex-end; justify-content: center; backdrop-filter: blur(8px); }
+.sheet { background: white; width: 100%; max-width: 600px; border-radius: var(--radius-xl) var(--radius-xl) 0 0; padding: 28px; animation: slideUp 0.3s ease-out; }
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.input-box { width: 100%; padding: 16px; border: 2px solid var(--border); border-radius: var(--radius-lg); font-family: inherit; font-size: 16px; font-weight: 800; outline: none; margin-bottom: 16px; text-align: center; color: var(--primary);}
+.input-box:focus { border-color: var(--primary); }
 </style>
 </head>
 <body>
@@ -75,12 +85,16 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 <div class="container">
   
   <div class="wallet-card">
-    <div class="balance-label">الرصيد المتاح (تم الاستلام)</div>
-    <div class="balance-amount" id="available-balance">0 <span style="font-size: 24px; color: white;">π</span></div>
+    <div class="balance-label">الرصيد المتاح للسحب</div>
+    <div class="balance-amount" id="available-balance">0.00 <span style="font-size: 24px; color: white; margin-right: 5px;">π</span></div>
     
+    <button class="btn btn-gold" onclick="openWithdrawModal()" style="width: auto; padding: 10px 24px; font-size: 14px; border-radius: 30px;">
+      <i class="fa-solid fa-money-bill-transfer"></i> سحب الرصيد لمحفظة Pi
+    </button>
+
     <div class="pending-box">
-      <div><i class="fa-solid fa-lock" style="color: #FCD34D;"></i> رصيد معلق (قيد الشحن/التسليم)</div>
-      <div id="pending-balance">0 π</div>
+      <div><i class="fa-solid fa-lock" style="color: #FCD34D;"></i> رصيد معلق (قيد التسليم)</div>
+      <div id="pending-balance">0.00 π</div>
     </div>
   </div>
 
@@ -97,11 +111,27 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 
 </div>
 
+<div id="withdrawModal" class="modal" onclick="if(event.target==this) closeWithdrawModal()">
+  <div class="sheet">
+    <h3 style="margin-bottom: 8px; font-size: 20px; color: var(--text-main);">سحب الرصيد</h3>
+    <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">الحد الأدنى للسحب هو 1 Pi. سيتم تحويل المبلغ لمحفظة Pi الخاصة بك فوراً.</p>
+    
+    <input type="number" id="withdrawAmount" class="input-box" placeholder="أدخل المبلغ (مثال: 10.5)" step="0.1" min="1" />
+    
+    <button id="confirmWithdrawBtn" class="btn btn-primary" onclick="submitWithdraw()">
+      <i class="fa-solid fa-check"></i> تأكيد السحب
+    </button>
+  </div>
+</div>
+
 <script>
 const SUPABASE_URL = "https://ssvyxrtyvdxxojmunrcv.supabase.co";
 const SUPABASE_KEY = "sb_publishable_8egOM2-lT9J6kPQTbluC4w_8YHtB4K3"; 
+const API_BASE = "/.netlify/functions"; // مسار السيرفر
+
 let sb;
 let currentUser = null;
+let currentActualBalance = 0; // الرصيد المتاح الفعلي بعد الحسابات
 
 document.addEventListener("DOMContentLoaded", async () => {
   sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -118,100 +148,173 @@ async function initPiUser() {
     }
   } catch(e) { console.log("Pi Login Failed", e); }
 
-  if(!currentUser) {
-      currentUser = { uid: "test_seller_123", username: "TestUser" }; // للمتصفح العادي
-  }
+  if(!currentUser) currentUser = { uid: "test_seller_123", username: "TestUser" };
 }
 
 async function loadWalletData() {
   const container = document.getElementById('tx-container');
 
   try {
-    // جلب المعاملات التي يكون فيها المستخدم إما بائعاً أو مشترياً، مع جلب اسم المنتج من جدول products
-    const { data: txs, error } = await sb.from("escrow_transactions")
+    // 1. جلب معاملات البيع والشراء
+    const { data: escrows } = await sb.from("escrow_transactions")
       .select("*, products(name)")
-      .or(`seller_pi_id.eq.${currentUser.uid},buyer_pi_id.eq.${currentUser.uid}`)
-      .order("created_at", { ascending: false });
+      .or(`seller_pi_id.eq.${currentUser.uid},buyer_pi_id.eq.${currentUser.uid}`);
 
-    if (error) throw error;
+    // 2. جلب عمليات السحب السابقة لهذا المستخدم
+    const { data: withdrawals } = await sb.from("withdrawals")
+      .select("*")
+      .eq("user_pi_id", currentUser.uid);
 
+    let allTxs = [];
     let availableBalance = 0;
     let pendingBalance = 0;
+    let totalWithdrawn = 0;
     
-    if (!txs || txs.length === 0) {
-      container.innerHTML = `
-        <div class="empty-state">
-          <i class="fa-solid fa-receipt" style="font-size: 40px; margin-bottom: 10px; color: var(--border);"></i>
-          <h3>لا توجد معاملات</h3>
-          <p>لم تقم بأي عمليات بيع أو شراء عبر نظام الوسيط حتى الآن.</p>
-        </div>
-      `;
+    // معالجة مبيعات ومشتريات الوسيط
+    if (escrows) {
+        escrows.forEach(tx => {
+          const isSeller = (tx.seller_pi_id === currentUser.uid);
+          if (isSeller) {
+              if (tx.status === 'COMPLETED') availableBalance += parseFloat(tx.amount);
+              else pendingBalance += parseFloat(tx.amount);
+          }
+          // إضافة المعاملة للقائمة لترتيبها وعرضها
+          allTxs.push({
+             type: isSeller ? 'sell' : 'buy',
+             data: tx,
+             date: new Date(tx.created_at)
+          });
+        });
+    }
+
+    // معالجة السحوبات (نطرحها من الرصيد المتاح)
+    if (withdrawals) {
+        withdrawals.forEach(w => {
+            totalWithdrawn += parseFloat(w.amount);
+            allTxs.push({
+                type: 'withdraw',
+                data: w,
+                date: new Date(w.created_at)
+            });
+        });
+    }
+
+    // حساب الرصيد النهائي القابل للسحب
+    currentActualBalance = availableBalance - totalWithdrawn;
+
+    // تحديث الواجهة بالأرقام
+    document.getElementById('available-balance').innerHTML = `${currentActualBalance.toFixed(2)} <span style="font-size: 24px; color: white;">π</span>`;
+    document.getElementById('pending-balance').innerHTML = `${pendingBalance.toFixed(2)} π`;
+
+    // ترتيب السجل بالأحدث أولاً
+    allTxs.sort((a, b) => b.date - a.date);
+
+    if (allTxs.length === 0) {
+      container.innerHTML = `<div class="empty-state"><i class="fa-solid fa-receipt" style="font-size: 40px; margin-bottom: 10px; color: var(--border);"></i><h3>لا توجد معاملات</h3></div>`;
       return;
     }
 
     container.innerHTML = "";
+    allTxs.forEach(item => {
+      const dateStr = item.date.toLocaleDateString('ar-EG', { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
+      let html = "";
 
-    txs.forEach(tx => {
-      const isSeller = (tx.seller_pi_id === currentUser.uid);
-      const productName = tx.products ? tx.products.name : "منتج غير معروف";
-      const dateStr = new Date(tx.created_at).toLocaleDateString('ar-EG', { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
-      
-      let iconClass, iconName, amountClass, sign, titleText, statusHtml;
-
-      // حساب الأرصدة للبائع
-      if (isSeller) {
-          if (tx.status === 'COMPLETED') {
-              availableBalance += parseFloat(tx.amount);
-              iconClass = "income"; iconName = "fa-arrow-down"; amountClass = "positive"; sign = "+";
-              titleText = `بيع: ${productName}`;
-              statusHtml = `<span class="tx-status status-badge completed">مكتمل وتم الاستلام</span>`;
-          } else {
-              // FUNDED أو SHIPPED
-              pendingBalance += parseFloat(tx.amount);
-              iconClass = "pending"; iconName = "fa-hourglass-half"; amountClass = "pending"; sign = "+";
-              titleText = `بيع معلق: ${productName}`;
-              statusHtml = `<span class="tx-status status-badge pending">رصيد محجوز مؤقتاً</span>`;
-          }
+      if(item.type === 'withdraw') {
+          html = `
+            <div class="tx-item">
+              <div class="tx-icon withdraw"><i class="fa-solid fa-money-bill-transfer"></i></div>
+              <div class="tx-details">
+                <div class="tx-title">سحب رصيد لمحفظة Pi</div>
+                <div class="tx-date">${dateStr}</div>
+              </div>
+              <div class="tx-amount withdraw-color">
+                <span>-${item.data.amount} π</span>
+                <span class="tx-status status-badge completed" style="background:#FEE2E2; color:#EF4444;">مكتمل</span>
+              </div>
+            </div>`;
       } 
-      // المشتري (تظهر كمدفوعات صادرة)
-      else {
-          iconClass = "outcome"; iconName = "fa-arrow-up"; amountClass = "negative"; sign = "-";
-          titleText = `شراء: ${productName}`;
-          if (tx.status === 'COMPLETED') {
-              statusHtml = `<span class="tx-status status-badge completed" style="background:#F1F5F9; color:#64748B;">عملية مكتملة</span>`;
-          } else {
-              statusHtml = `<span class="tx-status status-badge pending">في انتظار تسليمك</span>`;
-          }
+      else if(item.type === 'sell') {
+          const tx = item.data;
+          const isCompleted = tx.status === 'COMPLETED';
+          html = `
+            <div class="tx-item">
+              <div class="tx-icon ${isCompleted ? 'income' : 'pending'}"><i class="fa-solid ${isCompleted ? 'fa-arrow-down' : 'fa-hourglass-half'}"></i></div>
+              <div class="tx-details">
+                <div class="tx-title">بيع: ${tx.products?.name || 'منتج'}</div>
+                <div class="tx-date">${dateStr}</div>
+              </div>
+              <div class="tx-amount ${isCompleted ? 'positive' : 'pending'}">
+                <span>+${tx.amount} π</span>
+                <span class="tx-status status-badge ${isCompleted ? 'completed' : 'pending'}">${isCompleted ? 'مكتمل' : 'معلق'}</span>
+              </div>
+            </div>`;
       }
-
-      // رسم بطاقة المعاملة
-      container.innerHTML += `
-        <div class="tx-item">
-          <div class="tx-icon ${iconClass}"><i class="fa-solid ${iconName}"></i></div>
-          <div class="tx-details">
-            <div class="tx-title">${titleText}</div>
-            <div class="tx-date">${dateStr}</div>
-          </div>
-          <div class="tx-amount ${amountClass}">
-            <span>${sign}${tx.amount} π</span>
-            ${statusHtml}
-          </div>
-        </div>
-      `;
+      else if(item.type === 'buy') {
+          const tx = item.data;
+          html = `
+            <div class="tx-item">
+              <div class="tx-icon outcome"><i class="fa-solid fa-arrow-up"></i></div>
+              <div class="tx-details">
+                <div class="tx-title">شراء: ${tx.products?.name || 'منتج'}</div>
+                <div class="tx-date">${dateStr}</div>
+              </div>
+              <div class="tx-amount negative">
+                <span>-${tx.amount} π</span>
+                <span class="tx-status status-badge completed" style="background:#F1F5F9; color:#64748B;">مدفوع للوسيط</span>
+              </div>
+            </div>`;
+      }
+      container.innerHTML += html;
     });
-
-    // تحديث الأرصدة في الأعلى
-    document.getElementById('available-balance').innerHTML = `${availableBalance.toFixed(2)} <span style="font-size: 24px; color: white;">π</span>`;
-    document.getElementById('pending-balance').innerHTML = `${pendingBalance.toFixed(2)} π`;
 
   } catch (err) {
     console.error(err);
-    container.innerHTML = `
-      <div class="empty-state">
-        <p style="color: var(--danger);">حدث خطأ في جلب بيانات المحفظة.</p>
-      </div>
-    `;
+    container.innerHTML = `<div class="empty-state"><p style="color: var(--danger);">حدث خطأ في جلب البيانات.</p></div>`;
   }
+}
+
+// إعدادات المودال
+function openWithdrawModal() { document.getElementById('withdrawModal').style.display = 'flex'; }
+function closeWithdrawModal() { document.getElementById('withdrawModal').style.display = 'none'; }
+
+// دالة طلب السحب من السيرفر
+async function submitWithdraw() {
+    const amountInput = document.getElementById('withdrawAmount').value;
+    const amount = parseFloat(amountInput);
+
+    if(!amount || amount < 1) return alert("الحد الأدنى للسحب هو 1 Pi");
+    if(amount > currentActualBalance) return alert("الرصيد المطلوب أكبر من رصيدك المتاح!");
+
+    const btn = document.getElementById('confirmWithdrawBtn');
+    btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> جاري المعالجة...`;
+    btn.disabled = true;
+
+    try {
+        // نرسل الطلب للسيرفر الخاص بنا الذي سيقوم بالباقي
+        const res = await fetch(`${API_BASE}/withdraw`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ uid: currentUser.uid, amount: amount })
+        });
+        
+        const data = await res.json();
+
+        if(res.ok && data.success) {
+            alert("تم تحويل الرصيد إلى محفظتك بنجاح!");
+            closeWithdrawModal();
+            btn.innerHTML = `<i class="fa-solid fa-check"></i> تأكيد السحب`;
+            btn.disabled = false;
+            // إعادة تحميل الصفحة لتحديث الأرصدة
+            await loadWalletData();
+        } else {
+            throw new Error(data.error || "حدث خطأ غير معروف");
+        }
+    } catch(err) {
+        console.error(err);
+        alert("فشل السحب: " + err.message);
+        btn.innerHTML = `<i class="fa-solid fa-check"></i> تأكيد السحب`;
+        btn.disabled = false;
+    }
 }
 </script>
 </body>
