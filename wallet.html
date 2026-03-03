@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-<title>محفظتي - Deal Way</title>
+<title>My Wallet - Deal Way</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
@@ -28,13 +28,24 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 .header { background: white; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; box-shadow: var(--shadow-sm);}
 .back-btn { background: none; border: none; font-size: 20px; color: var(--text-main); cursor: pointer; display: flex; align-items: center; gap: 10px; font-weight: 800; font-family: inherit;}
 
+/* زر اللغة */
+.lang-btn {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: white; border: 1px solid var(--border);
+  color: var(--primary); font-weight: 800; font-size: 12px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  transition: border-color 0.2s, background-color 0.2s;
+}
+.lang-btn:hover { border-color: var(--primary); background-color: #F8FAFC; }
+
 .btn { border: none; cursor: pointer; border-radius: var(--radius-lg); padding: 14px 24px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 10px; font-family: inherit; width: 100%; transition: all 0.3s; }
 .btn-primary { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; }
 .btn-gold { background: linear-gradient(135deg, var(--accent) 0%, #D97706 100%); color: white; }
 
 /* --- المحفظة --- */
 .wallet-card { background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%); border-radius: var(--radius-xl); padding: 24px; color: white; margin-bottom: 24px; position: relative; overflow: hidden; box-shadow: 0 10px 25px rgba(15, 23, 42, 0.2); }
-.wallet-card::before { content: '\f0d6'; font-family: 'Font Awesome 6 Free'; font-weight: 900; position: absolute; left: -20px; bottom: -20px; font-size: 150px; opacity: 0.05; transform: rotate(-15deg); }
+.wallet-card::before { content: '\f0d6'; font-family: 'Font Awesome 6 Free'; font-weight: 900; position: absolute; inset-inline-start: -20px; bottom: -20px; font-size: 150px; opacity: 0.05; transform: rotate(-15deg); }
 .balance-label { font-size: 14px; color: #94A3B8; margin-bottom: 4px; font-weight: 600; }
 .balance-amount { font-size: 36px; font-weight: 900; color: #FDE047; display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
 
@@ -87,34 +98,37 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 
 <header class="header">
   <button class="back-btn" onclick="window.location.href='index.html'">
-    <i class="fa-solid fa-arrow-right"></i> حسابي
+    <i class="fa-solid fa-arrow-left" id="back-icon"></i> <span data-i18n="my_account">My Account</span>
+  </button>
+  <button class="lang-btn" onclick="toggleLanguage()">
+    <span id="langText">AR</span>
   </button>
 </header>
 
 <div class="container">
   
   <div class="wallet-card">
-    <div class="balance-label">الرصيد المتاح للسحب</div>
-    <div class="balance-amount" id="available-balance">0.00 <span style="font-size: 24px; color: white; margin-right: 5px;">π</span></div>
+    <div class="balance-label" data-i18n="avail_balance">Available Balance for Withdrawal</div>
+    <div class="balance-amount" id="available-balance">0.00 <span style="font-size: 24px; color: white; margin-inline-end: 5px;">π</span></div>
     
     <button class="btn btn-gold" onclick="openWithdrawModal()" style="width: auto; padding: 10px 24px; font-size: 14px; border-radius: 30px;">
-      <i class="fa-solid fa-money-bill-transfer"></i> سحب الرصيد لمحفظة Pi
+      <i class="fa-solid fa-money-bill-transfer"></i> <span data-i18n="withdraw_btn">Withdraw to Pi Wallet</span>
     </button>
 
     <div class="pending-box">
-      <div><i class="fa-solid fa-lock" style="color: #FCD34D;"></i> رصيد معلق (قيد التسليم)</div>
+      <div><i class="fa-solid fa-lock" style="color: #FCD34D;"></i> <span data-i18n="pending_balance">Pending Balance (Awaiting Delivery)</span></div>
       <div id="pending-balance">0.00 π</div>
     </div>
   </div>
 
   <div class="section-title">
-    <i class="fa-solid fa-clock-rotate-left" style="color: var(--primary);"></i> سجل المعاملات
+    <i class="fa-solid fa-clock-rotate-left" style="color: var(--primary);"></i> <span data-i18n="tx_history">Transaction History</span>
   </div>
 
   <div id="tx-container" class="tx-list">
     <div class="empty-state">
       <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 30px; color: var(--primary); margin-bottom: 10px;"></i>
-      <p>جاري تحميل محفظتك...</p>
+      <p data-i18n="loading">Loading your wallet...</p>
     </div>
   </div>
 
@@ -123,39 +137,147 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 <div id="withdrawModal" class="modal" onclick="if(event.target==this) closeWithdrawModal()">
   <div class="sheet">
     <div class="modal-header">
-        <h3 style="margin-bottom: 0; font-size: 20px; color: var(--text-main);">سحب الرصيد</h3>
+        <h3 style="margin-bottom: 0; font-size: 20px; color: var(--text-main);" data-i18n="withdraw_modal_title">Withdraw Balance</h3>
         <button onclick="closeWithdrawModal()" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
     </div>
-    <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 24px;">الحد الأدنى للسحب هو 1 Pi. يرجى التأكد من عنوان المحفظة لتجنب فقدان العملات.</p>
+    <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 24px;" data-i18n="withdraw_min_notice">Minimum withdrawal is 1 Pi. Please ensure the wallet address is correct to avoid losing funds.</p>
     
-    <label class="input-label">كمية Pi المراد سحبها:</label>
-    <input type="number" id="withdrawAmount" class="input-box" placeholder="مثال: 10.5" step="0.1" min="1" style="text-align: center; color: var(--primary); font-size: 18px;" oninput="calculateFee()" />
+    <label class="input-label" data-i18n="amount_label">Amount of Pi to withdraw:</label>
+    <input type="number" id="withdrawAmount" class="input-box" placeholder="10.5" step="0.1" min="1" style="text-align: center; color: var(--primary); font-size: 18px;" oninput="calculateFee()" />
     
     <div id="fee-summary" class="fee-summary-box">
       <div class="fee-row">
-        <span style="color: var(--text-muted);">المبلغ المخصوم من حسابك:</span>
+        <span style="color: var(--text-muted);" data-i18n="fee_deducted">Amount deducted from your account:</span>
         <span id="summary-requested" style="font-weight: bold; color: var(--text-main);">0.00 π</span>
       </div>
       <div class="fee-row">
-        <span style="color: var(--danger);"><i class="fa-solid fa-tags"></i> رسوم المنصة والشبكة:</span>
+        <span style="color: var(--danger);"><i class="fa-solid fa-tags"></i> <span data-i18n="fee_platform">Platform & Network fees:</span></span>
         <span style="font-weight: bold; color: var(--danger);">-0.05 π</span>
       </div>
       <div class="fee-row total">
-        <span>الصافي الواصل لمحفظتك:</span>
+        <span data-i18n="fee_net">Net amount to your wallet:</span>
         <span id="summary-receive">0.00 π</span>
       </div>
     </div>
 
-    <label class="input-label">عنوان المحفظة المستلمة (Public Key):</label>
+    <label class="input-label" data-i18n="address_label">Recipient Wallet Address (Public Key):</label>
     <input type="text" id="withdrawAddress" class="input-box" placeholder="G..." dir="ltr" style="text-align: left; font-family: monospace;" autocomplete="off" autocorrect="off" spellcheck="false" />
     
     <button id="confirmWithdrawBtn" class="btn btn-primary" onclick="submitWithdraw()" style="margin-top: 8px;">
-      <i class="fa-solid fa-check"></i> تأكيد السحب
+      <i class="fa-solid fa-check"></i> <span data-i18n="confirm_withdraw">Confirm Withdrawal</span>
     </button>
   </div>
 </div>
 
 <script>
+// --- Translations Setup ---
+let currentLang = localStorage.getItem('lang') || 'en';
+
+const translations = {
+  en: {
+    my_account: "My Account",
+    avail_balance: "Available Balance for Withdrawal",
+    withdraw_btn: "Withdraw to Pi Wallet",
+    pending_balance: "Pending Balance (Awaiting Delivery)",
+    tx_history: "Transaction History",
+    loading: "Loading your wallet...",
+    no_tx: "No transactions found",
+    withdraw_modal_title: "Withdraw Balance",
+    withdraw_min_notice: "Minimum withdrawal is 1 Pi. Please ensure the wallet address is correct to avoid losing funds.",
+    amount_label: "Amount of Pi to withdraw:",
+    ph_amount: "Example: 10.5",
+    fee_deducted: "Amount deducted from your account:",
+    fee_platform: "Platform & Network fees:",
+    fee_net: "Net amount to your wallet:",
+    address_label: "Recipient Wallet Address (Public Key):",
+    ph_address: "G...",
+    confirm_withdraw: "Confirm Withdrawal",
+    tx_withdraw: "Withdrawal to Pi Wallet",
+    tx_sell: "Sell:",
+    tx_buy: "Buy:",
+    stat_completed: "Completed",
+    stat_pending: "Pending",
+    stat_paid_escrow: "Paid to Escrow",
+    prod_deleted: "Product (Deleted from Site)",
+    prod_unknown: "Unknown Product",
+    alert_min_withdraw: "Minimum withdrawal is 1 Pi",
+    alert_insufficient: "Requested amount is greater than your available balance!",
+    alert_no_address: "Please enter the recipient wallet address.",
+    alert_invalid_address: "Please enter a valid Pi wallet address (starts with G).",
+    alert_success: "Balance transferred to your wallet successfully!",
+    err_fetch: "Error fetching data.",
+    processing: "Processing..."
+  },
+  ar: {
+    my_account: "حسابي",
+    avail_balance: "الرصيد المتاح للسحب",
+    withdraw_btn: "سحب الرصيد لمحفظة Pi",
+    pending_balance: "رصيد معلق (قيد التسليم)",
+    tx_history: "سجل المعاملات",
+    loading: "جاري تحميل محفظتك...",
+    no_tx: "لا توجد معاملات",
+    withdraw_modal_title: "سحب الرصيد",
+    withdraw_min_notice: "الحد الأدنى للسحب هو 1 Pi. يرجى التأكد من عنوان المحفظة لتجنب فقدان العملات.",
+    amount_label: "كمية Pi المراد سحبها:",
+    ph_amount: "مثال: 10.5",
+    fee_deducted: "المبلغ المخصوم من حسابك:",
+    fee_platform: "رسوم المنصة والشبكة:",
+    fee_net: "الصافي الواصل لمحفظتك:",
+    address_label: "عنوان المحفظة المستلمة (Public Key):",
+    ph_address: "G...",
+    confirm_withdraw: "تأكيد السحب",
+    tx_withdraw: "سحب رصيد لمحفظة Pi",
+    tx_sell: "بيع:",
+    tx_buy: "شراء:",
+    stat_completed: "مكتمل",
+    stat_pending: "معلق",
+    stat_paid_escrow: "مدفوع للوسيط",
+    prod_deleted: "منتج (تم حذفه من الموقع)",
+    prod_unknown: "منتج مجهول",
+    alert_min_withdraw: "الحد الأدنى للسحب هو 1 Pi",
+    alert_insufficient: "الرصيد المطلوب أكبر من رصيدك المتاح!",
+    alert_no_address: "يرجى إدخال عنوان المحفظة المستلمة.",
+    alert_invalid_address: "يرجى إدخال عنوان محفظة Pi صحيح (يبدأ بحرف G).",
+    alert_success: "تم تحويل الرصيد إلى محفظتك بنجاح!",
+    err_fetch: "حدث خطأ في جلب البيانات.",
+    processing: "جاري المعالجة..."
+  }
+};
+
+function t(key) {
+    return translations[currentLang][key] || key;
+}
+
+function toggleLanguage() {
+    currentLang = currentLang === 'en' ? 'ar' : 'en';
+    localStorage.setItem('lang', currentLang);
+    updateLanguageUI();
+    if(currentUser) loadWalletData(); // Refresh history text
+}
+
+function updateLanguageUI() {
+    document.documentElement.lang = currentLang;
+    document.documentElement.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
+    
+    document.getElementById('langText').innerText = currentLang === 'ar' ? 'EN' : 'AR';
+    
+    const backIcon = document.getElementById('back-icon');
+    if (backIcon) {
+        backIcon.className = currentLang === 'ar' ? 'fa-solid fa-arrow-right' : 'fa-solid fa-arrow-left';
+    }
+
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (translations[currentLang][key]) {
+            el.innerText = translations[currentLang][key];
+        }
+    });
+
+    document.getElementById('withdrawAmount').placeholder = t('ph_amount');
+    document.title = currentLang === 'ar' ? "محفظتي - Deal Way" : "My Wallet - Deal Way";
+}
+
+// --- App Config & Logic ---
 const SUPABASE_URL = "https://ssvyxrtyvdxxojmunrcv.supabase.co";
 const SUPABASE_KEY = "sb_publishable_8egOM2-lT9J6kPQTbluC4w_8YHtB4K3"; 
 const API_BASE = "/.netlify/functions"; 
@@ -167,6 +289,7 @@ let currentUser = null;
 let currentActualBalance = 0; 
 
 document.addEventListener("DOMContentLoaded", async () => {
+  updateLanguageUI();
   sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   await initPiUser(); 
   await loadWalletData();
@@ -235,45 +358,47 @@ async function loadWalletData() {
     allTxs.sort((a, b) => b.date - a.date);
 
     if (allTxs.length === 0) {
-      container.innerHTML = `<div class="empty-state"><i class="fa-solid fa-receipt" style="font-size: 40px; margin-bottom: 10px; color: var(--border);"></i><h3>لا توجد معاملات</h3></div>`;
+      container.innerHTML = `<div class="empty-state"><i class="fa-solid fa-receipt" style="font-size: 40px; margin-bottom: 10px; color: var(--border);"></i><h3>${t('no_tx')}</h3></div>`;
       return;
     }
 
     container.innerHTML = "";
     allTxs.forEach(item => {
-      const dateStr = item.date.toLocaleDateString('ar-EG', { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
+      // Date formatting depends on language
+      const dateLocale = currentLang === 'ar' ? 'ar-EG' : 'en-US';
+      const dateStr = item.date.toLocaleDateString(dateLocale, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
       let html = "";
       
-      // ✅ معالجة اسم المنتج ليكون ذكياً (في حالة تم حذفه من قاعدة البيانات)
-      const productName = item.data.products ? item.data.products.name : "منتج (تم حذفه من الموقع)";
+      const productName = item.data.products ? item.data.products.name : t('prod_deleted');
 
       if(item.type === 'withdraw') {
           html = `
             <div class="tx-item">
               <div class="tx-icon withdraw"><i class="fa-solid fa-money-bill-transfer"></i></div>
               <div class="tx-details">
-                <div class="tx-title">سحب رصيد لمحفظة Pi</div>
+                <div class="tx-title">${t('tx_withdraw')}</div>
                 <div class="tx-date">${dateStr}</div>
               </div>
               <div class="tx-amount withdraw-color">
                 <span>-${item.data.amount} π</span>
-                <span class="tx-status status-badge completed" style="background:#FEE2E2; color:#EF4444;">مكتمل</span>
+                <span class="tx-status status-badge completed" style="background:#FEE2E2; color:#EF4444;">${t('stat_completed')}</span>
               </div>
             </div>`;
       } 
       else if(item.type === 'sell') {
           const tx = item.data;
           const isCompleted = tx.status === 'COMPLETED';
+          const statusTxt = isCompleted ? t('stat_completed') : t('stat_pending');
           html = `
             <div class="tx-item">
               <div class="tx-icon ${isCompleted ? 'income' : 'pending'}"><i class="fa-solid ${isCompleted ? 'fa-arrow-down' : 'fa-hourglass-half'}"></i></div>
               <div class="tx-details">
-                <div class="tx-title">بيع: ${productName}</div>
+                <div class="tx-title">${t('tx_sell')} ${productName}</div>
                 <div class="tx-date">${dateStr}</div>
               </div>
               <div class="tx-amount ${isCompleted ? 'positive' : 'pending'}">
                 <span>+${tx.amount} π</span>
-                <span class="tx-status status-badge ${isCompleted ? 'completed' : 'pending'}">${isCompleted ? 'مكتمل' : 'معلق'}</span>
+                <span class="tx-status status-badge ${isCompleted ? 'completed' : 'pending'}">${statusTxt}</span>
               </div>
             </div>`;
       }
@@ -283,12 +408,12 @@ async function loadWalletData() {
             <div class="tx-item">
               <div class="tx-icon outcome"><i class="fa-solid fa-arrow-up"></i></div>
               <div class="tx-details">
-                <div class="tx-title">شراء: ${productName}</div>
+                <div class="tx-title">${t('tx_buy')} ${productName}</div>
                 <div class="tx-date">${dateStr}</div>
               </div>
               <div class="tx-amount negative">
                 <span>-${tx.amount} π</span>
-                <span class="tx-status status-badge completed" style="background:#F1F5F9; color:#64748B;">مدفوع للوسيط</span>
+                <span class="tx-status status-badge completed" style="background:#F1F5F9; color:#64748B;">${t('stat_paid_escrow')}</span>
               </div>
             </div>`;
       }
@@ -297,7 +422,7 @@ async function loadWalletData() {
 
   } catch (err) {
     console.error(err);
-    container.innerHTML = `<div class="empty-state"><p style="color: var(--danger);">حدث خطأ في جلب البيانات.</p></div>`;
+    container.innerHTML = `<div class="empty-state"><p style="color: var(--danger);">${t('err_fetch')}</p></div>`;
   }
 }
 
@@ -340,16 +465,22 @@ async function submitWithdraw() {
     
     const amount = parseFloat(amountInput);
 
-    if(!amount || amount < 1) return alert("الحد الأدنى للسحب هو 1 Pi");
-    if(amount > currentActualBalance) return alert("الرصيد المطلوب أكبر من رصيدك المتاح!");
-    if(!addressInput) return alert("يرجى إدخال عنوان المحفظة المستلمة.");
-    if(addressInput.length < 40 || !addressInput.startsWith('G')) return alert("يرجى إدخال عنوان محفظة Pi صحيح (يبدأ بحرف G).");
+    if(!amount || amount < 1) return alert(t('alert_min_withdraw'));
+    if(amount > currentActualBalance) return alert(t('alert_insufficient'));
+    if(!addressInput) return alert(t('alert_no_address'));
+    if(addressInput.length < 40 || !addressInput.startsWith('G')) return alert(t('alert_invalid_address'));
 
     const netAmount = (amount - PLATFORM_FEE).toFixed(2);
-    if(!confirm(`سيتم خصم ${amount} من رصيدك، وسيصلك ${netAmount} Pi بعد خصم الرسوم. هل تريد المتابعة؟`)) return;
+    
+    const confirmMsg = currentLang === 'ar' 
+        ? `سيتم خصم ${amount} من رصيدك، وسيصلك ${netAmount} Pi بعد خصم الرسوم. هل تريد المتابعة؟`
+        : `${amount} Pi will be deducted. You will receive ${netAmount} Pi after fees. Do you want to proceed?`;
+        
+    if(!confirm(confirmMsg)) return;
 
     const btn = document.getElementById('confirmWithdrawBtn');
-    btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> جاري المعالجة...`;
+    const originalBtnText = btn.innerHTML;
+    btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> ${t('processing')}`;
     btn.disabled = true;
 
     try {
@@ -366,18 +497,18 @@ async function submitWithdraw() {
         const data = await res.json();
 
         if(res.ok && data.success) {
-            alert("تم تحويل الرصيد إلى محفظتك بنجاح!");
+            alert(t('alert_success'));
             closeWithdrawModal();
-            btn.innerHTML = `<i class="fa-solid fa-check"></i> تأكيد السحب`;
+            btn.innerHTML = originalBtnText;
             btn.disabled = false;
             await loadWalletData();
         } else {
-            throw new Error(data.error || "حدث خطأ غير معروف");
+            throw new Error(data.error || "Unknown Error");
         }
     } catch(err) {
         console.error(err);
-        alert("فشل السحب: " + err.message);
-        btn.innerHTML = `<i class="fa-solid fa-check"></i> تأكيد السحب`;
+        alert((currentLang === 'en' ? "Withdrawal failed: " : "فشل السحب: ") + err.message);
+        btn.innerHTML = originalBtnText;
         btn.disabled = false;
     }
 }
