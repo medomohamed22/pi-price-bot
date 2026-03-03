@@ -67,9 +67,12 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); background: white; border-radius: var(--radius-xl); border: 1px dashed var(--border); }
 
 /* --- المودال --- */
-.modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 2000; display: none; align-items: flex-end; justify-content: center; backdrop-filter: blur(8px); }
+.modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 2000; display: none; align-items: flex-end; justify-content: center; backdrop-filter: blur(8px); animation: fadeIn 0.3s ease;}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 .sheet { background: white; width: 100%; max-width: 600px; border-radius: var(--radius-xl) var(--radius-xl) 0 0; padding: 28px; animation: slideUp 0.3s ease-out; }
 @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid var(--border); }
+.close-btn { width: 36px; height: 36px; border-radius: 50%; border: none; background: var(--bg-body); color: var(--text-muted); cursor: pointer; display: grid; place-items: center; font-size: 18px; }
 .input-box { width: 100%; padding: 16px; border: 2px solid var(--border); border-radius: var(--radius-lg); font-family: inherit; font-size: 15px; font-weight: 700; outline: none; margin-bottom: 16px; color: var(--text-main); transition: all 0.3s;}
 .input-box:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
 .input-label { display: block; font-weight: 800; margin-bottom: 8px; color: var(--text-main); font-size: 14px; }
@@ -119,7 +122,10 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 
 <div id="withdrawModal" class="modal" onclick="if(event.target==this) closeWithdrawModal()">
   <div class="sheet">
-    <h3 style="margin-bottom: 8px; font-size: 20px; color: var(--text-main);">سحب الرصيد</h3>
+    <div class="modal-header">
+        <h3 style="margin-bottom: 0; font-size: 20px; color: var(--text-main);">سحب الرصيد</h3>
+        <button onclick="closeWithdrawModal()" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
+    </div>
     <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 24px;">الحد الأدنى للسحب هو 1 Pi. يرجى التأكد من عنوان المحفظة لتجنب فقدان العملات.</p>
     
     <label class="input-label">كمية Pi المراد سحبها:</label>
@@ -152,9 +158,8 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 <script>
 const SUPABASE_URL = "https://ssvyxrtyvdxxojmunrcv.supabase.co";
 const SUPABASE_KEY = "sb_publishable_8egOM2-lT9J6kPQTbluC4w_8YHtB4K3"; 
-const API_BASE = "/.netlify/functions"; // مسار السيرفر
+const API_BASE = "/.netlify/functions"; 
 
-// ثابت للرسوم لتسهيل تغييره مستقبلاً
 const PLATFORM_FEE = 0.05;
 
 let sb;
@@ -238,6 +243,9 @@ async function loadWalletData() {
     allTxs.forEach(item => {
       const dateStr = item.date.toLocaleDateString('ar-EG', { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
       let html = "";
+      
+      // ✅ معالجة اسم المنتج ليكون ذكياً (في حالة تم حذفه من قاعدة البيانات)
+      const productName = item.data.products ? item.data.products.name : "منتج (تم حذفه من الموقع)";
 
       if(item.type === 'withdraw') {
           html = `
@@ -260,7 +268,7 @@ async function loadWalletData() {
             <div class="tx-item">
               <div class="tx-icon ${isCompleted ? 'income' : 'pending'}"><i class="fa-solid ${isCompleted ? 'fa-arrow-down' : 'fa-hourglass-half'}"></i></div>
               <div class="tx-details">
-                <div class="tx-title">بيع: ${tx.products?.name || 'منتج'}</div>
+                <div class="tx-title">بيع: ${productName}</div>
                 <div class="tx-date">${dateStr}</div>
               </div>
               <div class="tx-amount ${isCompleted ? 'positive' : 'pending'}">
@@ -275,7 +283,7 @@ async function loadWalletData() {
             <div class="tx-item">
               <div class="tx-icon outcome"><i class="fa-solid fa-arrow-up"></i></div>
               <div class="tx-details">
-                <div class="tx-title">شراء: ${tx.products?.name || 'منتج'}</div>
+                <div class="tx-title">شراء: ${productName}</div>
                 <div class="tx-date">${dateStr}</div>
               </div>
               <div class="tx-amount negative">
@@ -296,13 +304,12 @@ async function loadWalletData() {
 function openWithdrawModal() { 
   document.getElementById('withdrawAmount').value = '';
   document.getElementById('withdrawAddress').value = '';
-  document.getElementById('fee-summary').style.display = 'none'; // إخفاء الفاتورة في البداية
+  document.getElementById('fee-summary').style.display = 'none'; 
   document.getElementById('withdrawModal').style.display = 'flex'; 
 }
 
 function closeWithdrawModal() { document.getElementById('withdrawModal').style.display = 'none'; }
 
-// دالة لحساب وعرض الرسوم مباشرة للمستخدم
 function calculateFee() {
     const inputVal = document.getElementById('withdrawAmount').value;
     const amount = parseFloat(inputVal);
@@ -317,7 +324,6 @@ function calculateFee() {
         let net = amount - PLATFORM_FEE;
         recSpan.innerText = net.toFixed(2) + ' π';
 
-        // تنبيه لوني إذا كان المبلغ المطلوب أكبر من رصيده
         if(amount > currentActualBalance) {
             reqSpan.style.color = 'var(--danger)';
         } else {
@@ -339,7 +345,6 @@ async function submitWithdraw() {
     if(!addressInput) return alert("يرجى إدخال عنوان المحفظة المستلمة.");
     if(addressInput.length < 40 || !addressInput.startsWith('G')) return alert("يرجى إدخال عنوان محفظة Pi صحيح (يبدأ بحرف G).");
 
-    // تحذير أخير للتأكيد
     const netAmount = (amount - PLATFORM_FEE).toFixed(2);
     if(!confirm(`سيتم خصم ${amount} من رصيدك، وسيصلك ${netAmount} Pi بعد خصم الرسوم. هل تريد المتابعة؟`)) return;
 
@@ -353,7 +358,7 @@ async function submitWithdraw() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
                 uid: currentUser.uid, 
-                amount: amount, // نرسل المبلغ الإجمالي للسيرفر
+                amount: amount,
                 address: addressInput 
             })
         });
