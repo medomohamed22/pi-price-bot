@@ -2382,33 +2382,74 @@ function nav(viewName) {
   if(viewName === 'chats' && user) loadInbox();
 }
 
+// --- تحديث دالة التهيئة لتقرأ من الـ Local Storage أولاً ---
 function initPi(){
   const btn = document.getElementById("loginBtn");
   const onIncompletePaymentFound = (payment) => { console.log("Incomplete:", payment); };
+  
+  // التحقق مما إذا كان المستخدم قد سجل دخوله مسبقاً ومحفوظ في المتصفح
+  const savedUser = localStorage.getItem('dealway_user');
+  
   if(!window.Pi){
-    btn.onclick = () => handleLogin("test_" + Math.floor(Math.random()*1000), "Guest_" + Math.floor(Math.random()*100));
+    // بيئة التطوير (خارج متصفح Pi)
+    if(savedUser) {
+        const parsed = JSON.parse(savedUser);
+        handleLogin(parsed.uid, parsed.username, false); // false تعني لا تحفظ مرة أخرى
+    } else {
+        btn.onclick = () => handleLogin("test_" + Math.floor(Math.random()*1000), "Guest_" + Math.floor(Math.random()*100), true);
+    }
     return;
   }
+
   Pi.init({ version: "2.0", sandbox: false });
+  
+  // إذا وجدنا مستخدم محفوظ، نقوم بتسجيل دخوله فوراً وبصمت
+  if(savedUser) {
+      const parsed = JSON.parse(savedUser);
+      handleLogin(parsed.uid, parsed.username, false);
+      
+      // كخطوة أمان إضافية: نقوم بمصادقة صامتة مع Pi للتأكد من أن الـ Token مازال صالحاً
+      Pi.authenticate(["username", "payments"], onIncompletePaymentFound).catch(e => {
+          // إذا فشلت المصادقة الصامتة (مثلاً غير حسابه)، نمسح البيانات المحفوظة
+          localStorage.removeItem('dealway_user');
+          location.reload();
+      });
+  }
+
+  // عند الضغط على زر الدخول (للمستخدم الجديد)
   btn.onclick = async () => { 
     try { 
       const auth = await Pi.authenticate(["username", "payments"], onIncompletePaymentFound); 
-      handleLogin(auth.user.uid, auth.user.username); 
+      handleLogin(auth.user.uid, auth.user.username, true); // true تعني احفظه في المتصفح
     } catch(e) { 
       console.error(e); 
     } 
   };
 }
 
-async function handleLogin(uid, username) {
+// --- تحديث دالة تسجيل الدخول لتحفظ البيانات ---
+async function handleLogin(uid, username, shouldSave = false) {
+  // التحقق من الحظر أولاً
   const { data: userData } = await sb.from("users").select("is_banned").eq("pi_id", uid).single();
   if (userData && userData.is_banned === true) { 
     document.getElementById("banned-screen").classList.remove("hidden"); 
     document.getElementById("banned-screen").style.display = "flex"; 
+    // نمسح حسابه من الـ Local Storage عشان ميقدرش يدخل لو عمل Refresh
+    localStorage.removeItem('dealway_user');
     return; 
   }
+  
   user = { uid, username };
+  
+  // حفظ المستخدم في الذاكرة المحلية إذا كان هذا تسجيل دخول جديد
+  if(shouldSave) {
+      localStorage.setItem('dealway_user', JSON.stringify(user));
+  }
+  
+  // تحديث قاعدة البيانات
   await sb.from("users").upsert({ pi_id: uid, username: username }, { onConflict: 'pi_id' });
+  
+  // تحديث واجهة المستخدم (UI)
   document.getElementById("loginBtn").classList.add("hidden");
   document.getElementById("headerUser").classList.remove("hidden");
   document.getElementById("userDispName").innerText = username;
@@ -2416,10 +2457,23 @@ async function handleLogin(uid, username) {
   document.getElementById("profile-user").classList.remove("hidden");
   document.getElementById("p-username").innerText = username;
   
-  loadMyAds(); loadInbox();
+  // تحميل البيانات الخاصة بالمستخدم
+  if(!document.getElementById('view-profile').classList.contains('hidden')) loadMyAds();
+  if(!document.getElementById('view-chats').classList.contains('hidden')) loadInbox();
+  
   checkUnreadMessages();
-  setInterval(checkUnreadMessages, 10000); 
+  
+  // منع تكرار الـ Interval لو الدالة اتنادت مرتين
+  if(window.msgInterval) clearInterval(window.msgInterval);
+  window.msgInterval = setInterval(checkUnreadMessages, 10000); 
 }
+
+// إضافة زر تسجيل خروج صغير في صفحة الحساب (اختياري ولكن مفيد)
+function logout() {
+    localStorage.removeItem('dealway_user');
+    location.reload(); // إعادة تحميل الصفحة لترجع كزائر
+}
+
 
 async function checkUnreadMessages() {
   if(!user) return;
