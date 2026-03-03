@@ -339,6 +339,7 @@ function updateLanguageUI() {
 // --- App Config & Logic ---
 const SUPABASE_URL = "https://ssvyxrtyvdxxojmunrcv.supabase.co";
 const SUPABASE_KEY = "sb_publishable_8egOM2-lT9J6kPQTbluC4w_8YHtB4K3"; 
+const API_BASE = "/.netlify/functions";
 let sb;
 let currentUser = null;
 let currentChatBuyerId = null; 
@@ -505,21 +506,33 @@ function renderOrderCard(order) {
 async function updateOrderStatus(orderId, newStatus) {
   if(!confirm(t('confirm_ship'))) return;
 
+  const btn = document.querySelector(`#order-${orderId} .btn-primary`);
+  const origHTML = btn ? btn.innerHTML : '';
+  if(btn) btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> ${t('updating')}`;
+
   try {
-    const btn = document.querySelector(`#order-${orderId} .btn-primary`);
-    if(btn) btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> ${t('updating')}`;
+    const res = await fetch(`${API_BASE}/update-escrow`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+            orderId: orderId, 
+            newStatus: newStatus,
+            uid: currentUser.uid 
+        })
+    });
+    
+    const data = await res.json();
 
-    const { error } = await sb.from('escrow_transactions')
-      .update({ status: newStatus })
-      .eq('id', orderId);
-
-    if (error) throw error;
-    await loadSellerOrders();
+    if(res.ok && data.success) {
+        await loadSellerOrders(); 
+    } else {
+        throw new Error(data.error || "Unknown Error");
+    }
 
   } catch (err) {
     console.error(err);
-    alert(t('update_error'));
-    await loadSellerOrders(); 
+    alert(t('update_error') + "\n" + err.message);
+    if(btn) btn.innerHTML = origHTML;
   }
 }
 
