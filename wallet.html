@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-<title>My Wallet - Deal Way</title>
+<title data-i18n="page_title">My Wallet - Deal Way</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
@@ -175,6 +175,7 @@ let currentLang = localStorage.getItem('lang') || 'en';
 
 const translations = {
   en: {
+    page_title: "My Wallet - Deal Way",
     my_account: "My Account",
     avail_balance: "Available Balance for Withdrawal",
     withdraw_btn: "Withdraw to Pi Wallet",
@@ -195,9 +196,11 @@ const translations = {
     tx_withdraw: "Withdrawal to Pi Wallet",
     tx_sell: "Sell:",
     tx_buy: "Buy:",
+    tx_refund: "Refund:",
     stat_completed: "Completed",
     stat_pending: "Pending",
     stat_paid_escrow: "Paid to Escrow",
+    stat_cancelled: "Cancelled",
     prod_deleted: "Product (Deleted from Site)",
     prod_unknown: "Unknown Product",
     alert_min_withdraw: "Minimum withdrawal is 1 Pi",
@@ -209,6 +212,7 @@ const translations = {
     processing: "Processing..."
   },
   ar: {
+    page_title: "محفظتي - Deal Way",
     my_account: "حسابي",
     avail_balance: "الرصيد المتاح للسحب",
     withdraw_btn: "سحب الرصيد لمحفظة Pi",
@@ -229,9 +233,11 @@ const translations = {
     tx_withdraw: "سحب رصيد لمحفظة Pi",
     tx_sell: "بيع:",
     tx_buy: "شراء:",
+    tx_refund: "استرداد:",
     stat_completed: "مكتمل",
     stat_pending: "معلق",
     stat_paid_escrow: "مدفوع للوسيط",
+    stat_cancelled: "ملغية",
     prod_deleted: "منتج (تم حذفه من الموقع)",
     prod_unknown: "منتج مجهول",
     alert_min_withdraw: "الحد الأدنى للسحب هو 1 Pi",
@@ -274,7 +280,7 @@ function updateLanguageUI() {
     });
 
     document.getElementById('withdrawAmount').placeholder = t('ph_amount');
-    document.title = currentLang === 'ar' ? "محفظتي - Deal Way" : "My Wallet - Deal Way";
+    document.title = t('page_title');
 }
 
 // --- App Config & Logic ---
@@ -327,12 +333,27 @@ async function loadWalletData() {
     if (escrows) {
         escrows.forEach(tx => {
           const isSeller = (tx.seller_pi_id === currentUser.uid);
+          
           if (isSeller) {
-              if (tx.status === 'COMPLETED') availableBalance += parseFloat(tx.amount);
-              else pendingBalance += parseFloat(tx.amount);
+              if (tx.status === 'COMPLETED') {
+                  availableBalance += parseFloat(tx.amount);
+              } else if (tx.status !== 'CANCELLED') {
+                  // لا يتم إضافة الصفقات الملغية للرصيد المعلق
+                  pendingBalance += parseFloat(tx.amount);
+              }
           }
+          
+          let type = '';
+          if (isSeller) {
+              // إذا كان المشتري هو النظام، فهذا يعني أنه استرداد لأموال (Refund)
+              if (tx.buyer_pi_id === 'SYSTEM_REFUND') type = 'refund';
+              else type = 'sell';
+          } else {
+              type = 'buy';
+          }
+
           allTxs.push({
-             type: isSeller ? 'sell' : 'buy',
+             type: type,
              data: tx,
              date: new Date(tx.created_at)
           });
@@ -385,25 +406,55 @@ async function loadWalletData() {
               </div>
             </div>`;
       } 
+      else if(item.type === 'refund') {
+          // معاملة استرداد أموال (Refund)
+          html = `
+            <div class="tx-item">
+              <div class="tx-icon income"><i class="fa-solid fa-arrow-rotate-left"></i></div>
+              <div class="tx-details">
+                <div class="tx-title">${t('tx_refund')} ${productName}</div>
+                <div class="tx-date">${dateStr}</div>
+              </div>
+              <div class="tx-amount positive">
+                <span>+${item.data.amount} π</span>
+                <span class="tx-status status-badge completed" style="background:#D1FAE5; color:#059669;">${t('stat_completed')}</span>
+              </div>
+            </div>`;
+      }
       else if(item.type === 'sell') {
           const tx = item.data;
           const isCompleted = tx.status === 'COMPLETED';
-          const statusTxt = isCompleted ? t('stat_completed') : t('stat_pending');
+          const isCancelled = tx.status === 'CANCELLED';
+          
+          const statusTxt = isCompleted ? t('stat_completed') : (isCancelled ? t('stat_cancelled') : t('stat_pending'));
+          const amountClass = isCompleted ? 'positive' : (isCancelled ? 'negative' : 'pending');
+          const iconClass = isCompleted ? 'income' : (isCancelled ? 'withdraw' : 'pending');
+          const iconName = isCompleted ? 'fa-arrow-down' : (isCancelled ? 'fa-ban' : 'fa-hourglass-half');
+          
+          const badgeStyle = isCancelled ? 'background:#FEE2E2; color:#EF4444;' : '';
+          const strikeStyle = isCancelled ? 'text-decoration: line-through; opacity: 0.5;' : '';
+
           html = `
             <div class="tx-item">
-              <div class="tx-icon ${isCompleted ? 'income' : 'pending'}"><i class="fa-solid ${isCompleted ? 'fa-arrow-down' : 'fa-hourglass-half'}"></i></div>
+              <div class="tx-icon ${iconClass}"><i class="fa-solid ${iconName}"></i></div>
               <div class="tx-details">
                 <div class="tx-title">${t('tx_sell')} ${productName}</div>
                 <div class="tx-date">${dateStr}</div>
               </div>
-              <div class="tx-amount ${isCompleted ? 'positive' : 'pending'}">
-                <span>+${tx.amount} π</span>
-                <span class="tx-status status-badge ${isCompleted ? 'completed' : 'pending'}">${statusTxt}</span>
+              <div class="tx-amount ${amountClass}">
+                <span style="${strikeStyle}">+${tx.amount} π</span>
+                <span class="tx-status status-badge ${isCompleted ? 'completed' : (isCancelled ? '' : 'pending')}" style="${badgeStyle}">${statusTxt}</span>
               </div>
             </div>`;
       }
       else if(item.type === 'buy') {
           const tx = item.data;
+          const isCancelled = tx.status === 'CANCELLED';
+          
+          const statusTxt = isCancelled ? t('stat_cancelled') : t('stat_paid_escrow');
+          const badgeStyle = isCancelled ? 'background:#FEE2E2; color:#EF4444;' : 'background:#F1F5F9; color:#64748B;';
+          const strikeStyle = isCancelled ? 'text-decoration: line-through; opacity: 0.5;' : '';
+
           html = `
             <div class="tx-item">
               <div class="tx-icon outcome"><i class="fa-solid fa-arrow-up"></i></div>
@@ -412,8 +463,8 @@ async function loadWalletData() {
                 <div class="tx-date">${dateStr}</div>
               </div>
               <div class="tx-amount negative">
-                <span>-${tx.amount} π</span>
-                <span class="tx-status status-badge completed" style="background:#F1F5F9; color:#64748B;">${t('stat_paid_escrow')}</span>
+                <span style="${strikeStyle}">-${tx.amount} π</span>
+                <span class="tx-status status-badge completed" style="${badgeStyle}">${statusTxt}</span>
               </div>
             </div>`;
       }
