@@ -111,13 +111,14 @@ exports.handler = async (event, context) => {
 
 
     // =========================================================
-    // 4. استخراج البيانات (Metadata Parsing) - [معدل لتشمل نوع الدفع]
+    // 4. استخراج البيانات (Metadata Parsing)
     // =========================================================
     let productId = null;
     let days = 3; 
     let paymentType = 'promotion'; // الافتراضي هو تمييز الإعلان
     let buyerId = piData.user_uid; // الافتراضي هو الشخص الذي دفع
     
+    // المبلغ الإجمالي الذي تم دفعه (شاملاً رسوم 1% إذا كان وسيط)
     const amount = parseFloat(piData.amount);
 
     if (piData.metadata) {
@@ -150,14 +151,14 @@ exports.handler = async (event, context) => {
 
 
     // =========================================================
-    // 5. تسجيل العملية في قاعدة البيانات (Log Payment)
+    // 5. تسجيل العملية في قاعدة البيانات للتوثيق المالي (Log Payment)
     // =========================================================
     const { error: payError } = await supabase.from('payments').upsert({
         payment_id: paymentId,
         user_id: piData.user_uid,
         product_id: productId,
-        amount: amount,
-        status: 'completed', // ✅ العلامة التي تمنع التكرار مستقبلاً
+        amount: amount, // نسجل ما دخل محفظتنا بالكامل
+        status: 'completed',
         txid: txid,
         created_at: new Date().toISOString()
     }, { onConflict: 'payment_id' });
@@ -220,6 +221,10 @@ exports.handler = async (event, context) => {
             throw new Error("Product not found for escrow transaction");
         }
         
+        // 💡 حساب الصافي للبائع (نقوم بإزالة نسبة الـ 1% التي دفعها المشتري كرسوم للمنصة)
+        // نقسم الإجمالي المدفوع على 1.01 لنستخرج سعر المنتج الأصلي بدقة
+        const sellerNetAmount = parseFloat((amount / 1.01).toFixed(5));
+        
         // 2. التحقق من وجود معاملة سابقة لنفس المنتج والمشتري (لمنع التكرار)
         const { data: existingEscrow } = await supabase
             .from('escrow_transactions')
@@ -232,25 +237,25 @@ exports.handler = async (event, context) => {
         let escrowError;
 
         if (existingEscrow && existingEscrow.length > 0) {
-            // ✅ تحديث المعاملة الحالية بدلاً من إنشاء واحدة جديدة
+            // ✅ تحديث المعاملة الحالية بالرصيد الصافي للبائع
             const res = await supabase
                 .from('escrow_transactions')
                 .update({ 
                     status: 'FUNDED', 
-                    amount: amount, 
+                    amount: sellerNetAmount, // ⬅️ نسجل الصافي فقط للبائع!
                     updated_at: new Date().toISOString() 
                 })
                 .eq('id', existingEscrow[0].id);
             escrowError = res.error;
         } else {
-            // ✅ إنشاء معاملة جديدة لو لم تكن موجودة
+            // ✅ إنشاء معاملة جديدة بالرصيد الصافي للبائع
             const res = await supabase
                 .from('escrow_transactions')
                 .insert({
                     product_id: productId,
                     buyer_pi_id: buyerId,
                     seller_pi_id: productData.seller_pi_id,
-                    amount: amount, 
+                    amount: sellerNetAmount, // ⬅️ نسجل الصافي فقط للبائع!
                     status: 'FUNDED'
                 });
             escrowError = res.error;
