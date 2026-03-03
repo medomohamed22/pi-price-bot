@@ -31,6 +31,7 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 .btn-success { background: linear-gradient(135deg, var(--success) 0%, #059669 100%); color: white; }
 .btn-gold { background: linear-gradient(135deg, var(--accent) 0%, #D97706 100%); color: white; }
 .btn-ghost { background: white; border: 1px solid var(--border); color: var(--text-muted); }
+.btn-red { background: var(--danger); color: white; }
 
 /* تعديل الهيدر ليحتوي على زر اللغة */
 .header { background: white; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; }
@@ -73,7 +74,7 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 .chat-input:focus { border-color: var(--primary); }
 .send-btn { background: var(--primary); color: white; border: none; width: 50px; border-radius: var(--radius-lg); cursor: pointer; }
 
-/* تصميم نافذة الفاتورة */
+/* تصميم النوافذ المنبثقة */
 .modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 2000; display: none; align-items: flex-end; justify-content: center; backdrop-filter: blur(8px); animation: fadeIn 0.3s ease;}
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 .sheet { background: white; width: 100%; max-width: 600px; border-radius: var(--radius-xl) var(--radius-xl) 0 0; padding: 28px; animation: slideUp 0.3s ease-out; }
@@ -83,6 +84,9 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 .invoice-box { background: #F8FAFC; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 24px; }
 .invoice-row { display: flex; justify-content: space-between; font-size: 15px; margin-bottom: 12px; color: var(--text-muted); }
 .invoice-row.total { font-size: 18px; font-weight: 900; margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--border); color: var(--text-main); }
+.input-box { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-lg); font-family: inherit; font-size: 14px; outline: none; margin-bottom: 16px; }
+.input-box:focus { border-color: var(--primary); }
+.input-label { display: block; font-weight: 800; margin-bottom: 8px; color: var(--text-main); font-size: 14px; }
 </style>
 </head>
 <body>
@@ -129,10 +133,16 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
     </div>
   </div>
 
-  <div class="card" id="action-area" style="text-align: center;">
+  <div class="card" style="text-align: center;">
     <p style="color: var(--text-muted); margin-bottom: 15px; font-size: 14px;" id="action-hint" data-i18n="verifying">Verifying transaction status...</p>
     <div id="action-buttons">
       <button class="btn btn-ghost" disabled><i class="fa-solid fa-circle-notch fa-spin"></i> <span data-i18n="please_wait">Please wait</span></button>
+    </div>
+    
+    <div id="dispute-area" style="margin-top: 15px; display: none; padding-top: 15px; border-top: 1px dashed var(--border);">
+        <button class="btn btn-ghost" style="color: var(--danger); border-color: #FECACA;" onclick="openDisputeModal()">
+            <i class="fa-solid fa-scale-balanced"></i> <span data-i18n="btn_dispute">Open Dispute</span>
+        </button>
     </div>
   </div>
 
@@ -181,6 +191,28 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
   </div>
 </div>
 
+<div id="disputeModal" class="modal" onclick="if(event.target==this) closeDisputeModal()">
+  <div class="sheet">
+    <div class="modal-header">
+      <h3 style="font-size: 18px; color: var(--danger); margin: 0;"><i class="fa-solid fa-scale-balanced"></i> <span data-i18n="dispute_title">Open Dispute</span></h3>
+      <button onclick="closeDisputeModal()" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;" data-i18n="dispute_desc">Please explain the issue. Site administration will review the transaction and messages.</p>
+
+    <div style="background: #F3F4F6; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 13px;">
+        <strong><span data-i18n="order_num">Order: #</span></strong> <span id="disp-order-id" style="font-family: monospace;">...</span><br>
+        <strong><span data-i18n="base_price">Product:</span></strong> <span id="disp-prod-name">...</span>
+    </div>
+
+    <label class="input-label" data-i18n="dispute_reason_label">Reason for dispute:</label>
+    <textarea id="disputeReason" class="input-box" style="height: 100px; resize: none;" placeholder="Explain what happened..."></textarea>
+
+    <button id="submitDisputeBtn" class="btn btn-red" onclick="submitDispute()">
+      <i class="fa-solid fa-paper-plane"></i> <span data-i18n="submit_dispute">Submit Dispute</span>
+    </button>
+  </div>
+</div>
+
 <script>
 // --- Translations Setup ---
 let currentLang = localStorage.getItem('lang') || 'en';
@@ -200,7 +232,7 @@ const translations = {
     chat_secure_msg: "Messages are encrypted and saved to protect both parties.",
     chat_placeholder: "Type a message regarding delivery...",
     payment_details: "Payment Details",
-    base_price: "Base Product Price:",
+    base_price: "Product:",
     platform_fee: "Platform & Escrow Fee (1%):",
     total_to_pay: "Total to Pay:",
     freeze_notice: "This amount will be frozen in the site's secure wallet and will not be released to the seller until you confirm receipt.",
@@ -240,7 +272,18 @@ const translations = {
     update_error: "Failed to update status. Check your connection.",
     confirm_receipt_msg: "Are you sure you received the product safely? This action cannot be undone.",
     receipt_success: "Receipt confirmed successfully!",
-    receipt_error: "Failed to confirm receipt."
+    receipt_error: "Failed to confirm receipt.",
+    
+    // Dispute Translations
+    btn_dispute: "Open Dispute",
+    dispute_title: "Open Dispute",
+    dispute_desc: "Please explain the issue. Site administration will review the transaction and messages.",
+    order_num: "Order: #",
+    dispute_reason_label: "Reason for dispute:",
+    ph_dispute_reason: "Explain what happened in detail...",
+    submit_dispute: "Submit Dispute",
+    empty_reason: "Please write the reason for the dispute.",
+    dispute_success: "Dispute submitted successfully. Admin will review it shortly."
   },
   ar: {
     page_title: "الدفع الآمن",
@@ -256,7 +299,7 @@ const translations = {
     chat_secure_msg: "الرسائل مشفرة ومحفوظة لحماية حقوق الطرفين",
     chat_placeholder: "اكتب رسالة بخصوص الاستلام...",
     payment_details: "تفاصيل الدفع",
-    base_price: "سعر المنتج الأساسي:",
+    base_price: "المنتج:",
     platform_fee: "رسوم المنصة والضمان (1%):",
     total_to_pay: "الإجمالي المطلوب دفعه:",
     freeze_notice: "سيتم تجميد هذا المبلغ في محفظة الموقع ولن يتم تسليمه للبائع إلا بعد تأكيدك للاستلام.",
@@ -296,7 +339,18 @@ const translations = {
     update_error: "فشل تحديث الحالة. تأكد من اتصالك.",
     confirm_receipt_msg: "هل أنت متأكد أنك استلمت المنتج سليماً؟ لا يمكن التراجع.",
     receipt_success: "تم تأكيد الاستلام بنجاح!",
-    receipt_error: "فشل تأكيد الاستلام."
+    receipt_error: "فشل تأكيد الاستلام.",
+
+    // Dispute Translations
+    btn_dispute: "فتح نزاع (شكوى)",
+    dispute_title: "فتح نزاع رسمي",
+    dispute_desc: "يرجى توضيح المشكلة. ستقوم إدارة الموقع بمراجعة المعاملة والرسائل لحفظ الحقوق.",
+    order_num: "رقم الطلب: #",
+    dispute_reason_label: "سبب النزاع والمشكلة:",
+    ph_dispute_reason: "اشرح بالتفصيل ما حدث...",
+    submit_dispute: "إرسال الشكوى",
+    empty_reason: "يرجى كتابة سبب الشكوى أولاً.",
+    dispute_success: "تم إرسال النزاع بنجاح. ستقوم الإدارة بمراجعته قريباً."
   }
 };
 
@@ -325,11 +379,16 @@ function updateLanguageUI() {
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
         if (translations[currentLang][key]) {
-            el.innerText = translations[currentLang][key];
+            if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+               // Ignore placeholders here, handle separately
+            } else {
+               el.innerHTML = translations[currentLang][key]; // innerHTML allows bold tags inside translations if any
+            }
         }
     });
 
     document.getElementById('escrow-msg-input').placeholder = t('chat_placeholder');
+    document.getElementById('disputeReason').placeholder = t('ph_dispute_reason');
     document.title = t('page_title') + " - Deal Way";
     
     if(currentEscrow) {
@@ -453,6 +512,7 @@ function updateUI() {
   const status = currentEscrow.status;
   const hint = document.getElementById('action-hint');
   const btns = document.getElementById('action-buttons');
+  const disputeArea = document.getElementById('dispute-area');
   
   if(status === 'FUNDED') { setStep(2); }
   else if(status === 'SHIPPED') { setStep(3); }
@@ -495,6 +555,13 @@ function updateUI() {
           btns.innerHTML = `<button class="btn btn-ghost" disabled><i class="fa-solid fa-check"></i> ${t('seller_btn_completed')}</button>`;
       }
   }
+
+  // إظهار زر النزاع فقط إذا كان هناك طلب تم دفع أمواله (أي شيء غير PENDING)
+  if(currentEscrow.id && status !== 'PENDING') {
+      disputeArea.style.display = 'block';
+  } else {
+      disputeArea.style.display = 'none';
+  }
 }
 
 function setStep(stepNumber) {
@@ -505,7 +572,7 @@ function setStep(stepNumber) {
   });
 }
 
-// ---- وظائف الدفع الجديدة بالرسوم ----
+// ---- وظائف الدفع ----
 
 function openPaymentModal() {
     const price = parseFloat(currentProduct.price);
@@ -606,7 +673,7 @@ function subscribeToChat() {
 
 document.getElementById("escrow-msg-input").addEventListener("keypress", function(event) { if (event.key === "Enter") { event.preventDefault(); sendEscrowMsg(); }});
 
-// ---- باقي الوظائف الخاصة بالشحن والاستلام ----
+// ---- وظائف الشحن والاستلام ----
 
 async function markAsShipped() {
   const btn = document.querySelector('.btn-primary');
@@ -632,6 +699,54 @@ async function confirmReceipt() {
     updateUI();
     alert(t('receipt_success'));
   } catch(e) { alert(t('receipt_error')); updateUI(); }
+}
+
+// ---- وظائف النزاع (Dispute) ----
+
+function openDisputeModal() {
+    if(!currentEscrow || !currentEscrow.id) return;
+    
+    // تعبئة البيانات تلقائياً في الواجهة
+    document.getElementById('disp-order-id').innerText = currentEscrow.id.substring(0, 8).toUpperCase();
+    document.getElementById('disp-prod-name').innerText = currentProduct.name;
+    document.getElementById('disputeReason').value = '';
+    
+    document.getElementById('disputeModal').style.display = 'flex';
+}
+
+function closeDisputeModal() {
+    document.getElementById('disputeModal').style.display = 'none';
+}
+
+async function submitDispute() {
+    const reason = document.getElementById('disputeReason').value.trim();
+    if(!reason) return alert(t('empty_reason'));
+
+    const btn = document.getElementById('submitDisputeBtn');
+    const origHTML = btn.innerHTML;
+    btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> ${t('updating')}`;
+    btn.disabled = true;
+
+    try {
+        const { error } = await sb.from('disputes').insert({
+            escrow_id: currentEscrow.id,
+            product_id: currentProduct.id,
+            complainer_pi_id: currentUser.uid,
+            against_pi_id: otherUserId,
+            reason: reason
+        });
+
+        if(error) throw error;
+
+        alert(t('dispute_success'));
+        closeDisputeModal();
+    } catch(e) {
+        console.error(e);
+        alert(t('update_error'));
+    } finally {
+        btn.innerHTML = origHTML;
+        btn.disabled = false;
+    }
 }
 </script>
 </body>
