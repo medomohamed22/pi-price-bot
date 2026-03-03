@@ -646,7 +646,7 @@ function setStep(stepNumber) {
   });
 }
 
-// ---- وظائف الدفع وإلغاء الصفقة ----
+// ---- وظائف الدفع ----
 function openPaymentModal() {
     const price = parseFloat(currentProduct.price);
     const fee = price * 0.01; 
@@ -749,21 +749,21 @@ async function executePayment() {
   }
 }
 
-async function cancelOrder() {
-    if(!confirm(t('confirm_cancel'))) return;
-
-    const btn = document.getElementById('cancelOrderBtn');
-    if(btn) {
-        btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> ${t('updating')}`;
-        btn.disabled = true;
+// ---- وظائف الشحن والاستلام والإلغاء (عبر الباك إند) ----
+async function callUpdateAPI(newStatus, btnElement, loadingText, successMsg) {
+    const origHTML = btnElement ? btnElement.innerHTML : '';
+    if(btnElement) {
+        btnElement.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> ${loadingText}`;
+        btnElement.disabled = true;
     }
 
     try {
-        const res = await fetch(`${API_BASE}/cancel`, {
+        const res = await fetch(`${API_BASE}/update-escrow`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
                 orderId: currentEscrow.id, 
+                newStatus: newStatus,
                 uid: currentUser.uid 
             })
         });
@@ -771,22 +771,39 @@ async function cancelOrder() {
         const data = await res.json();
 
         if(res.ok && data.success) {
-            currentEscrow.status = 'CANCELLED';
+            currentEscrow.status = newStatus;
             updateUI();
-            alert(t('cancel_success'));
+            if(successMsg) alert(successMsg);
         } else {
-            throw new Error(data.error || "حدث خطأ غير معروف");
+            throw new Error(data.error || "Server Error");
         }
-        
-    } catch (err) {
+    } catch(err) {
         console.error(err);
         alert(t('update_error') + "\n" + err.message);
-        if(btn) {
-            btn.innerHTML = `<i class="fa-solid fa-ban"></i> ${t('btn_cancel_order')}`;
-            btn.disabled = false;
+        if(btnElement) {
+            btnElement.innerHTML = origHTML;
+            btnElement.disabled = false;
         }
     }
 }
+
+async function markAsShipped() {
+  const btn = document.querySelector('.btn-primary');
+  await callUpdateAPI('SHIPPED', btn, t('updating'), null);
+}
+
+async function confirmReceipt() {
+  if(!confirm(t('confirm_receipt_msg'))) return;
+  const btn = document.querySelector('.btn-success');
+  await callUpdateAPI('COMPLETED', btn, t('updating'), t('receipt_success'));
+}
+
+async function cancelOrder() {
+    if(!confirm(t('confirm_cancel'))) return;
+    const btn = document.getElementById('cancelOrderBtn');
+    await callUpdateAPI('CANCELLED', btn, t('updating'), t('cancel_success'));
+}
+
 
 // ---- وظائف الشات ومعاينة الصور ----
 function handleChatImageSelection(input) {
@@ -842,7 +859,7 @@ async function sendEscrowMsg(){
     const btn = document.getElementById('chatSendBtn');
     const origHTML = btn.innerHTML;
 
-    // 1. إذا كان نص فقط 
+    // 1. إذا كان نص فقط (إرسال سريع)
     if(!chatSelectedImage) {
         inp.value = "";
         
@@ -903,33 +920,6 @@ function subscribeToChat() {
 }
 
 document.getElementById("escrow-msg-input").addEventListener("keypress", function(event) { if (event.key === "Enter") { event.preventDefault(); sendEscrowMsg(); }});
-
-// ---- وظائف الشحن والاستلام ----
-async function markAsShipped() {
-  const btn = document.querySelector('.btn-primary');
-  btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> ${t('updating')}`;
-  btn.disabled = true;
-  try {
-    const { error } = await sb.from('escrow_transactions').update({ status: 'SHIPPED' }).eq('id', currentEscrow.id);
-    if (error) throw error;
-    currentEscrow.status = 'SHIPPED';
-    updateUI();
-  } catch(e) { alert(t('update_error')); updateUI(); }
-}
-
-async function confirmReceipt() {
-  if(!confirm(t('confirm_receipt_msg'))) return;
-  const btn = document.querySelector('.btn-success');
-  btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> ${t('updating')}`;
-  btn.disabled = true;
-  try {
-    const { error } = await sb.from('escrow_transactions').update({ status: 'COMPLETED' }).eq('id', currentEscrow.id);
-    if (error) throw error;
-    currentEscrow.status = 'COMPLETED';
-    updateUI();
-    alert(t('receipt_success'));
-  } catch(e) { alert(t('receipt_error')); updateUI(); }
-}
 
 // ---- وظائف النزاع (Dispute) وصور النزاع ----
 function openDisputeModal() {
