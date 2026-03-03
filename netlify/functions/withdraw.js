@@ -10,8 +10,10 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 // إعدادات شبكة Pi
 const IS_TESTNET = true; 
 const HORIZON_URL = IS_TESTNET ? 'https://api.testnet.minepi.com' : 'https://api.mainnet.minepi.com';
-// ✅ تم تصحيح الـ Passphrase بناءً على الكود الخاص بك
 const NETWORK_PASSPHRASE = IS_TESTNET ? 'Pi Testnet' : 'Pi Network';
+
+// رسوم المنصة
+const PLATFORM_FEE = 0.05;
 
 exports.handler = async (event, context) => {
   const headers = { 
@@ -33,7 +35,7 @@ exports.handler = async (event, context) => {
         throw new Error("المفتاح السري للمحفظة غير موجود في إعدادات السيرفر.");
     }
 
-    console.log(`💸 Processing Withdrawal for ${uid}, Amount: ${withdrawAmount}, To: ${address}`);
+    console.log(`💸 Processing Withdrawal for ${uid}, Requested Amount: ${withdrawAmount}, To: ${address}`);
 
     // =========================================================
     // 1. حساب الرصيد الآمن من قاعدة البيانات
@@ -60,7 +62,9 @@ exports.handler = async (event, context) => {
     
     const sourceAccount = await server.loadAccount(sourceKeypair.publicKey());
 
-    // ✅ تطبيق التعديلات الجوهرية (الرسوم المحدثة والتوقيت)
+    // 💡 حساب الصافي بعد خصم عمولة المنصة
+    const netAmount = withdrawAmount - PLATFORM_FEE;
+
     const transaction = new StellarSdk.TransactionBuilder(sourceAccount, {
       fee: "100000", // 0.01 Pi لحل خطأ tx_insufficient_fee
       networkPassphrase: NETWORK_PASSPHRASE
@@ -68,9 +72,10 @@ exports.handler = async (event, context) => {
     .addOperation(StellarSdk.Operation.payment({
       destination: address,
       asset: StellarSdk.Asset.native(),
-      amount: withdrawAmount.toFixed(7).toString()
+      // نرسل الصافي فقط إلى محفظة المستخدم
+      amount: netAmount.toFixed(7).toString() 
     }))
-    .setTimeout(30) // تم التعديل إلى 30 ثانية لتجنب التعليق
+    .setTimeout(30)
     .build();
 
     // التوقيع السري
@@ -83,9 +88,10 @@ exports.handler = async (event, context) => {
     // =========================================================
     // 3. تسجيل العملية في قاعدة البيانات
     // =========================================================
+    // نسجل المبلغ بالكامل (withdrawAmount) حتى يتم خصمه بالكامل من حساب المستخدم في قاعدة البيانات
     await supabase.from('withdrawals').insert({
         user_pi_id: uid,
-        amount: withdrawAmount,
+        amount: withdrawAmount, 
         status: 'COMPLETED',
         txid: txid
     });
@@ -94,7 +100,6 @@ exports.handler = async (event, context) => {
     return { statusCode: 200, headers, body: JSON.stringify({ success: true, txid: txid }) };
 
   } catch (err) {
-    // ✅ معالجة الأخطاء المتقدمة مقتبسة من الكود الخاص بك
     console.error("--- ERROR LOG START ---");
     let errorResponse = {
         error: 'فشلت المعاملة',
