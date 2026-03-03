@@ -73,7 +73,7 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 
 /* أزرار وحقول الشات والمعاينة */
 .chat-input-group { display: flex; gap: 8px; align-items: center; }
-.chat-input { flex: 1; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-lg); font-family: inherit; font-size: 15px; outline: none; }
+.chat-input { flex: 1; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-lg); font-family: inherit; font-size: 15px; outline: none; background: white; }
 .chat-input:focus { border-color: var(--primary); }
 .send-btn { background: var(--primary); color: white; border: none; width: 50px; height: 50px; border-radius: var(--radius-lg); cursor: pointer; font-size: 18px; flex-shrink: 0; }
 .attach-btn { background: white; color: var(--text-muted); border: 1px solid var(--border); width: 50px; height: 50px; border-radius: var(--radius-lg); cursor: pointer; font-size: 18px; flex-shrink: 0; transition: 0.2s; }
@@ -152,7 +152,7 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 
   <div class="card" style="text-align: center;">
     <p style="color: var(--text-muted); margin-bottom: 15px; font-size: 14px;" id="action-hint" data-i18n="verifying">Verifying transaction status...</p>
-    <div id="action-buttons">
+    <div id="action-buttons" style="display: flex; flex-direction: column; gap: 10px;">
       <button class="btn btn-ghost" disabled><i class="fa-solid fa-circle-notch fa-spin"></i> <span data-i18n="please_wait">Please wait</span></button>
     </div>
     
@@ -276,6 +276,7 @@ const translations = {
     buyer_btn_pending: "Pay & Freeze Balance",
     buyer_hint_funded: "Balance frozen successfully. Waiting for seller to ship.",
     buyer_btn_funded: "Waiting for Shipping",
+    btn_cancel_order: "Cancel Order & Refund",
     buyer_hint_shipped: "Seller shipped the product. Click here ONLY after receiving it safely.",
     buyer_btn_shipped: "Confirm Receipt",
     buyer_hint_completed: "Transaction completed successfully. Funds transferred to seller.",
@@ -308,7 +309,7 @@ const translations = {
     receipt_success: "Receipt confirmed successfully!",
     receipt_error: "Failed to confirm receipt.",
     
-    // Dispute Translations
+    // Dispute & Image Translations
     btn_dispute: "Open Dispute",
     dispute_title: "Open Dispute",
     dispute_desc: "Please explain the issue. Site administration will review the transaction and messages.",
@@ -322,7 +323,14 @@ const translations = {
     dispute_success: "Dispute submitted successfully. Admin will review it shortly.",
     max_3_images: "Maximum 3 images allowed.",
     uploading_image: "Uploading image...",
-    send_error: "Failed to send message."
+    send_error: "Failed to send message.",
+
+    // Cancel logic
+    confirm_cancel: "Are you sure you want to cancel this order? The locked amount will be refunded to your Deal Way wallet.",
+    cancel_success: "Order cancelled successfully. Funds have been added to your wallet.",
+    status_cancelled: "Cancelled",
+    buyer_hint_cancelled: "This order has been cancelled and funds refunded to your wallet.",
+    seller_hint_cancelled: "The buyer cancelled this order."
   },
   ar: {
     page_title: "الدفع الآمن",
@@ -348,6 +356,7 @@ const translations = {
     buyer_btn_pending: "دفع وتجميد الرصيد",
     buyer_hint_funded: "تم تجميد رصيدك بنجاح. ننتظر من البائع شحن المنتج.",
     buyer_btn_funded: "في انتظار الشحن",
+    btn_cancel_order: "إلغاء الصفقة واسترداد الأموال",
     buyer_hint_shipped: "البائع قام بشحن المنتج. اضغط هنا فقط عند استلامك للمنتج سليماً.",
     buyer_btn_shipped: "تأكيد استلام المنتج",
     buyer_hint_completed: "تمت المعاملة بنجاح وتم تحويل الرصيد للبائع.",
@@ -380,7 +389,7 @@ const translations = {
     receipt_success: "تم تأكيد الاستلام بنجاح!",
     receipt_error: "فشل تأكيد الاستلام.",
 
-    // Dispute Translations
+    // Dispute & Image Translations
     btn_dispute: "فتح نزاع (شكوى)",
     dispute_title: "فتح نزاع رسمي",
     dispute_desc: "يرجى توضيح المشكلة. ستقوم إدارة الموقع بمراجعة المعاملة والرسائل لحفظ الحقوق.",
@@ -394,7 +403,14 @@ const translations = {
     dispute_success: "تم إرسال النزاع بنجاح. ستقوم الإدارة بمراجعته قريباً.",
     max_3_images: "الحد الأقصى 3 صور.",
     uploading_image: "جاري الرفع...",
-    send_error: "فشل الإرسال، تأكد من الإنترنت."
+    send_error: "فشل الإرسال، تأكد من الإنترنت.",
+
+    // Cancel logic
+    confirm_cancel: "هل أنت متأكد من إلغاء هذه الصفقة؟ سيتم استرداد المبلغ الصافي المجمد إلى محفظتك في الموقع لتتمكن من سحبه.",
+    cancel_success: "تم إلغاء الصفقة بنجاح. تمت إضافة المبلغ إلى محفظتك.",
+    status_cancelled: "ملغي",
+    buyer_hint_cancelled: "تم إلغاء هذه الصفقة وتم استرداد أموالك لمحفظتك.",
+    seller_hint_cancelled: "قام المشتري بإلغاء هذه الصفقة."
   }
 };
 
@@ -456,7 +472,7 @@ let isPaymentAlertShown = false;
 
 let finalTotalAmount = 0;
 let disputeFiles = []; 
-let chatSelectedImage = null; // الصورة المختارة للشات
+let chatSelectedImage = null; 
 
 const urlParams = new URLSearchParams(window.location.search);
 const productId = urlParams.get('productId');
@@ -563,6 +579,7 @@ function updateUI() {
   if(status === 'FUNDED') { setStep(2); }
   else if(status === 'SHIPPED') { setStep(3); }
   else if(status === 'COMPLETED') { setStep(4); }
+  else if(status === 'CANCELLED') { /* Do nothing to steps, just show cancelled status */ }
   else { setStep(1); } 
 
   if(userRole === 'BUYER') {
@@ -572,7 +589,10 @@ function updateUI() {
       } 
       else if(status === 'FUNDED') {
           hint.innerText = t('buyer_hint_funded');
-          btns.innerHTML = `<button class="btn btn-ghost" disabled><i class="fa-solid fa-clock"></i> ${t('buyer_btn_funded')}</button>`;
+          btns.innerHTML = `
+            <button class="btn btn-ghost" disabled><i class="fa-solid fa-clock"></i> ${t('buyer_btn_funded')}</button>
+            <button id="cancelOrderBtn" class="btn btn-red" onclick="cancelOrder()"><i class="fa-solid fa-ban"></i> ${t('btn_cancel_order')}</button>
+          `;
       }
       else if(status === 'SHIPPED') {
           hint.innerText = t('buyer_hint_shipped');
@@ -581,6 +601,10 @@ function updateUI() {
       else if(status === 'COMPLETED') {
           hint.innerText = t('buyer_hint_completed');
           btns.innerHTML = `<button class="btn btn-ghost" disabled><i class="fa-solid fa-check"></i> ${t('buyer_btn_completed')}</button>`;
+      }
+      else if(status === 'CANCELLED') {
+          hint.innerText = t('buyer_hint_cancelled');
+          btns.innerHTML = `<button class="btn btn-ghost" disabled><i class="fa-solid fa-ban"></i> ${t('status_cancelled')}</button>`;
       }
   } 
   else if (userRole === 'SELLER') {
@@ -600,10 +624,14 @@ function updateUI() {
           hint.innerText = t('seller_hint_completed');
           btns.innerHTML = `<button class="btn btn-ghost" disabled><i class="fa-solid fa-check"></i> ${t('seller_btn_completed')}</button>`;
       }
+      else if(status === 'CANCELLED') {
+          hint.innerText = t('seller_hint_cancelled');
+          btns.innerHTML = `<button class="btn btn-ghost" disabled><i class="fa-solid fa-ban"></i> ${t('status_cancelled')}</button>`;
+      }
   }
 
-  // إظهار زر النزاع فقط إذا كان هناك طلب تم دفع أمواله
-  if(currentEscrow.id && status !== 'PENDING') {
+  // إظهار زر النزاع فقط إذا كان هناك طلب تم دفع أمواله وغير ملغي
+  if(currentEscrow.id && status !== 'PENDING' && status !== 'CANCELLED') {
       disputeArea.style.display = 'block';
   } else {
       disputeArea.style.display = 'none';
@@ -618,7 +646,7 @@ function setStep(stepNumber) {
   });
 }
 
-// ---- وظائف الدفع ----
+// ---- وظائف الدفع وإلغاء الصفقة ----
 function openPaymentModal() {
     const price = parseFloat(currentProduct.price);
     const fee = price * 0.01; 
@@ -678,6 +706,46 @@ async function executePayment() {
       closePaymentModal(); 
       updateUI(); 
   }
+}
+
+async function cancelOrder() {
+    if(!confirm(t('confirm_cancel'))) return;
+
+    const btn = document.getElementById('cancelOrderBtn');
+    if(btn) {
+        btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> ${t('updating')}`;
+        btn.disabled = true;
+    }
+
+    try {
+        // 1. تحديث حالة المعاملة إلى ملغية
+        const { error } = await sb.from('escrow_transactions').update({ status: 'CANCELLED' }).eq('id', currentEscrow.id);
+        if (error) throw error;
+
+        // 2. استرداد الأموال: ننشئ قيد وهمي يجعل المشتري كأنه بائع لعملية مكتملة
+        // هذا سيجعل رصيد المحفظة يقرأ هذا المبلغ كرصيد متاح للسحب فوراً
+        const { error: refundError } = await sb.from('escrow_transactions').insert({
+            product_id: currentProduct.id,
+            buyer_pi_id: 'SYSTEM_REFUND',
+            seller_pi_id: currentUser.uid, // المشتري هو الذي سيستلم الأموال في محفظته
+            amount: currentEscrow.amount, // المبلغ الصافي
+            status: 'COMPLETED'
+        });
+
+        if (refundError) throw refundError;
+
+        currentEscrow.status = 'CANCELLED';
+        updateUI();
+        alert(t('cancel_success'));
+        
+    } catch (err) {
+        console.error(err);
+        alert(t('update_error'));
+        if(btn) {
+            btn.innerHTML = `<i class="fa-solid fa-ban"></i> ${t('btn_cancel_order')}`;
+            btn.disabled = false;
+        }
+    }
 }
 
 // ---- وظائف الشات ومعاينة الصور ----
