@@ -84,13 +84,17 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 .bubble.other { background: white; border: 1px solid var(--border); align-self: flex-start; border-bottom-left-radius: 4px; color: var(--text-main); }
 .chat-img-msg { max-width: 100%; border-radius: 8px; margin-top: 4px; cursor: pointer; }
 
-/* Chat Inputs */
-.input-group { display: flex; gap: 8px; align-items: center; }
-.input-box { flex: 1; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-lg); font-family: inherit; font-size: 15px; outline: none; background: white; }
-.input-box:focus { border-color: var(--primary); }
+/* Chat Inputs & Preview */
+.chat-input-group { display: flex; gap: 8px; align-items: center; }
+.chat-input { flex: 1; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-lg); font-family: inherit; font-size: 15px; outline: none; background: white; }
+.chat-input:focus { border-color: var(--primary); }
 .send-btn { width: 50px; height: 50px; border-radius: var(--radius-lg); padding: 0; flex-shrink: 0; background: var(--primary); color: white; border: none; font-size: 18px; cursor: pointer; }
 .attach-btn { background: white; color: var(--text-muted); border: 1px solid var(--border); width: 50px; height: 50px; border-radius: var(--radius-lg); cursor: pointer; font-size: 18px; flex-shrink: 0; transition: 0.2s; }
 .attach-btn:hover { background: #F1F5F9; color: var(--primary); border-color: var(--primary); }
+
+.chat-preview-container { display: none; padding: 8px; background: #E2E8F0; border-radius: var(--radius-lg); margin-bottom: 10px; position: relative; width: max-content; border: 1px solid var(--border); }
+.chat-preview-container img { max-height: 80px; border-radius: 8px; display: block; }
+.chat-preview-remove { position: absolute; top: -8px; inset-inline-end: -8px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm); }
 
 .input-label { display: block; font-weight: 800; margin-bottom: 8px; color: var(--text-main); font-size: 14px; }
 textarea.input-box { height: 100px; resize: none; margin-bottom: 16px; }
@@ -101,7 +105,7 @@ textarea.input-box { height: 100px; resize: none; margin-bottom: 16px; }
 .preview-container { display: flex; gap: 10px; overflow-x: auto; margin-bottom: 16px; }
 .preview-box { position: relative; width: 60px; height: 60px; flex-shrink: 0; border-radius: 8px; border: 1px solid var(--border); }
 .preview-box img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
-.preview-box button { position: absolute; top: -5px; right: -5px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 10px; cursor: pointer; }
+.preview-box button { position: absolute; top: -5px; inset-inline-end: -5px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 10px; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -145,11 +149,16 @@ textarea.input-box { height: 100px; resize: none; margin-bottom: 16px; }
     
     <div id="msgContainer" class="chat-area"></div>
     
+    <div id="chatPreviewContainer" class="chat-preview-container">
+        <img id="chatPreviewImg" src="" alt="preview">
+        <button class="chat-preview-remove" onclick="clearChatPreview()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
     <div class="input-group">
-      <input type="file" id="chatImgInput" accept="image/*" style="display:none;" onchange="sendChatImage(this)">
+      <input type="file" id="chatImgInput" accept="image/*" style="display:none;" onchange="handleChatImageSelection(this)">
       <button class="attach-btn" onclick="document.getElementById('chatImgInput').click()"><i class="fa-solid fa-image"></i></button>
 
-      <input id="msgInput" class="input-box" placeholder="Type a message to buyer..." />
+      <input id="msgInput" class="input-box" style="border-radius: var(--radius-full);" placeholder="Type a message to buyer..." />
       <button class="send-btn" id="chatSendBtn" onclick="sendMsg()">
         <i class="fa-solid fa-paper-plane"></i>
       </button>
@@ -311,7 +320,11 @@ function updateLanguageUI() {
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
         if (translations[currentLang][key]) {
-            el.innerText = translations[currentLang][key];
+            if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+               // handled separately
+            } else {
+               el.innerHTML = translations[currentLang][key]; 
+            }
         }
     });
 
@@ -329,7 +342,9 @@ let currentUser = null;
 let currentChatBuyerId = null; 
 let chatSubscription = null;
 let globalProductName = "Loading...";
-let disputeFiles = []; // مصفوفة لصور النزاع
+
+let disputeFiles = []; 
+let chatSelectedImage = null; // الصورة المختارة للشات
 
 const urlParams = new URLSearchParams(window.location.search);
 const productId = urlParams.get('productId');
@@ -497,7 +512,7 @@ async function updateOrderStatus(orderId, newStatus) {
 }
 
 // ==========================================
-// وظائف الشات المباشر وإرسال الصور
+// وظائف الشات المباشر (Realtime & Image Upload)
 // ==========================================
 
 function openChat(buyerId) {
@@ -506,6 +521,7 @@ function openChat(buyerId) {
     document.getElementById("chatModal").style.display = "flex";
     document.getElementById("msgContainer").innerHTML = "";
     
+    clearChatPreview();
     loadMessages();
     subscribeToChat();
 }
@@ -513,10 +529,28 @@ function openChat(buyerId) {
 function closeChat() {
     document.getElementById("chatModal").style.display = "none";
     currentChatBuyerId = null;
+    clearChatPreview();
     if(chatSubscription) {
         sb.removeChannel(chatSubscription);
         chatSubscription = null;
     }
+}
+
+// معاينة صورة الشات
+function handleChatImageSelection(input) {
+    if(input.files && input.files[0]) {
+        chatSelectedImage = input.files[0];
+        const url = URL.createObjectURL(chatSelectedImage);
+        document.getElementById('chatPreviewImg').src = url;
+        document.getElementById('chatPreviewContainer').style.display = 'block';
+    }
+    input.value = ""; // لكي يستطيع المستخدم اختيار نفس الصورة لو مسحها ورجع
+}
+
+function clearChatPreview() {
+    chatSelectedImage = null;
+    document.getElementById('chatPreviewImg').src = '';
+    document.getElementById('chatPreviewContainer').style.display = 'none';
 }
 
 async function loadMessages() {
@@ -552,7 +586,7 @@ function renderMsg(m){
     let textHtml = (m.content && m.content !== "📷 Image") ? `<div>${m.content}</div>` : '';
     
     div.innerHTML = `${textHtml}${imgHtml}`;
-
+    
     const box = document.getElementById("msgContainer"); 
     if(box.innerHTML.includes(t('no_msgs'))) box.innerHTML = "";
     
@@ -563,58 +597,65 @@ function renderMsg(m){
 async function sendMsg() {
     const inp = document.getElementById("msgInput"); 
     const text = inp.value.trim();
-    if(!text || !currentChatBuyerId) return;
     
-    inp.value = "";
-    renderMsg({ sender_pi_id: currentUser.uid, content: text });
+    if(!text && !chatSelectedImage) return; // لا نص ولا صورة
+    if(!currentChatBuyerId) return;
     
-    const { error } = await sb.from("messages").insert({ 
-      product_id: productId, 
-      sender_pi_id: currentUser.uid, 
-      receiver_pi_id: currentChatBuyerId, 
-      content: text 
-    });
-    
-    if(error) {
-        console.error("Error sending:", error);
-        alert(t('send_error'));
-    }
-}
-
-// إرسال صورة في الشات للبائع
-async function sendChatImage(input) {
-    const file = input.files[0];
-    if(!file || !currentChatBuyerId) return;
-    input.value = ""; 
-
     const btn = document.getElementById('chatSendBtn');
     const origHTML = btn.innerHTML;
+
+    // 1. إذا كان نص فقط (إرسال فوري Optimistic UI)
+    if(!chatSelectedImage) {
+        inp.value = "";
+        renderMsg({ sender_pi_id: currentUser.uid, content: text });
+        
+        sb.from("messages").insert({ 
+          product_id: productId, 
+          sender_pi_id: currentUser.uid, 
+          receiver_pi_id: currentChatBuyerId, 
+          content: text 
+        }).then(({error}) => {
+            if(error) { console.error("Error:", error); alert(t('send_error')); }
+        });
+        return;
+    }
+
+    // 2. إذا كان هناك صورة (نحتاج لرفعها أولاً)
     btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i>`;
     btn.disabled = true;
+    inp.disabled = true;
 
     try {
         const options = { maxSizeMB: 0.5, maxWidthOrHeight: 800, useWebWorker: true };
-        const compressed = await imageCompression(file, options);
+        const compressed = await imageCompression(chatSelectedImage, options);
         const path = `chat/${currentUser.uid}_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
         
         const { error: upErr } = await sb.storage.from("images").upload(path, compressed);
         if(upErr) throw upErr;
         
         const { data } = sb.storage.from("images").getPublicUrl(path);
+        const uploadedUrl = data.publicUrl;
+        const msgContent = text || "📷 Image";
 
-        await sb.from("messages").insert({
-            product_id: productId, 
-            sender_pi_id: currentUser.uid, 
-            receiver_pi_id: currentChatBuyerId,
-            content: "📷 Image", 
-            image_url: data.publicUrl
+        renderMsg({ sender_pi_id: currentUser.uid, content: msgContent, image_url: uploadedUrl });
+
+        await sb.from("messages").insert({ 
+          product_id: productId, 
+          sender_pi_id: currentUser.uid, 
+          receiver_pi_id: currentChatBuyerId, 
+          content: msgContent,
+          image_url: uploadedUrl
         });
+
+        inp.value = "";
+        clearChatPreview();
     } catch(e) {
-        console.error(e); 
+        console.error(e);
         alert(t('send_error'));
     } finally {
-        btn.innerHTML = origHTML; 
+        btn.innerHTML = origHTML;
         btn.disabled = false;
+        inp.disabled = false;
     }
 }
 
