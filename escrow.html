@@ -12,12 +12,12 @@
 <script defer src="https://sdk.minepi.com/pi-sdk.js"></script>
 
 <style>
-/* --- التصميم (كما هو بدون تغيير) --- */
+/* --- التصميم --- */
 :root {
   --primary: #6366F1; --primary-dark: #4F46E5; --primary-light: #818CF8;
   --accent: #F59E0B; --bg-body: #F8FAFC; --surface: #FFFFFF;
   --text-main: #0F172A; --text-muted: #64748B; --success: #10B981;
-  --border: #E2E8F0; --radius-lg: 16px; --radius-xl: 24px;
+  --danger: #EF4444; --border: #E2E8F0; --radius-lg: 16px; --radius-xl: 24px;
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
 }
@@ -60,6 +60,17 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 .chat-input { flex: 1; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-lg); font-family: inherit; outline: none; }
 .chat-input:focus { border-color: var(--primary); }
 .send-btn { background: var(--primary); color: white; border: none; width: 50px; border-radius: var(--radius-lg); cursor: pointer; }
+
+/* تصميم نافذة الفاتورة */
+.modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 2000; display: none; align-items: flex-end; justify-content: center; backdrop-filter: blur(8px); animation: fadeIn 0.3s ease;}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.sheet { background: white; width: 100%; max-width: 600px; border-radius: var(--radius-xl) var(--radius-xl) 0 0; padding: 28px; animation: slideUp 0.3s ease-out; }
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid var(--border); }
+.close-btn { width: 36px; height: 36px; border-radius: 50%; border: none; background: var(--bg-body); color: var(--text-muted); cursor: pointer; display: grid; place-items: center; font-size: 18px; }
+.invoice-box { background: #F8FAFC; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 24px; }
+.invoice-row { display: flex; justify-content: space-between; font-size: 15px; margin-bottom: 12px; color: var(--text-muted); }
+.invoice-row.total { font-size: 18px; font-weight: 900; margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--border); color: var(--text-main); }
 </style>
 </head>
 <body>
@@ -123,6 +134,36 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 
 </div>
 
+<div id="paymentModal" class="modal" onclick="if(event.target==this) closePaymentModal()">
+  <div class="sheet">
+    <div class="modal-header">
+      <h3 style="font-size: 18px; color: var(--text-main);"><i class="fa-solid fa-file-invoice-dollar" style="color: var(--primary);"></i> تفاصيل الدفع</h3>
+      <button onclick="closePaymentModal()" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    
+    <div class="invoice-box">
+      <div class="invoice-row">
+        <span>سعر المنتج الأساسي:</span>
+        <span id="inv-price" style="font-weight: 700; color: var(--text-main);">0.00 π</span>
+      </div>
+      <div class="invoice-row">
+        <span>رسوم المنصة والضمان (1%):</span>
+        <span id="inv-fee" style="font-weight: 700; color: var(--danger);">0.00 π</span>
+      </div>
+      <div class="invoice-row total">
+        <span>الإجمالي المطلوب دفعه:</span>
+        <span id="inv-total" style="color: var(--primary);">0.00 π</span>
+      </div>
+    </div>
+
+    <p style="font-size: 12px; color: var(--text-muted); text-align: center; margin-bottom: 16px;">سيتم تجميد هذا المبلغ في محفظة الموقع ولن يتم تسليمه للبائع إلا بعد تأكيدك للاستلام.</p>
+    
+    <button id="finalPayBtn" class="btn btn-gold" onclick="executePayment()">
+      <i class="fa-solid fa-lock"></i> تأكيد والدفع الآن
+    </button>
+  </div>
+</div>
+
 <script>
 const SUPABASE_URL = "https://ssvyxrtyvdxxojmunrcv.supabase.co";
 const SUPABASE_KEY = "sb_publishable_8egOM2-lT9J6kPQTbluC4w_8YHtB4K3"; 
@@ -133,10 +174,12 @@ let currentUser = null;
 let currentProduct = null;
 let currentEscrow = null; 
 let userRole = ''; 
-let otherUserId = ''; // معرف الطرف الآخر في الشات
+let otherUserId = ''; 
 let chatSubscription = null;
-
 let isPaymentAlertShown = false; 
+
+// متغيرات الدفع
+let finalTotalAmount = 0;
 
 const urlParams = new URLSearchParams(window.location.search);
 const productId = urlParams.get('productId');
@@ -193,7 +236,6 @@ async function loadEscrowData() {
     try {
         let query = sb.from("escrow_transactions").select("*").eq("product_id", productId).order("created_at", { ascending: false }).limit(1);
         
-        // جلب المعاملة بناءً على دور المستخدم الحالي
         if(userRole === 'BUYER') {
             query = query.eq("buyer_pi_id", currentUser.uid);
         } else {
@@ -209,11 +251,9 @@ async function loadEscrowData() {
       
     if(escrowData) {
         currentEscrow = escrowData;
-        // تحديد الطرف الآخر بدقة
         otherUserId = (userRole === 'BUYER') ? currentProduct.seller_pi_id : currentEscrow.buyer_pi_id;
         document.getElementById('chat-partner-name').innerText = (userRole === 'BUYER') ? "البائع" : "المشتري";
         
-        // تفعيل الشات بما أن المعاملة/الطرف الآخر معروف
         loadMessages();
         subscribeToChat();
     } else {
@@ -224,7 +264,6 @@ async function loadEscrowData() {
            loadMessages();
            subscribeToChat();
         } else {
-           // البائع ليس لديه مشتري بعد لهذا الطلب المفتوح
            document.getElementById('chat-partner-name').innerText = "المشتري (غير متوفر بعد)";
            document.getElementById('escrow-msg-input').disabled = true;
         }
@@ -248,8 +287,9 @@ function updateUI() {
 
   if(userRole === 'BUYER') {
       if(status === 'PENDING') {
-          hint.innerText = "قم بالدفع الآن. سيتم تجميد رصيدك في محفظة الموقع ولن يصل للبائع حتى تؤكد الاستلام.";
-          btns.innerHTML = `<button class="btn btn-gold" onclick="payToEscrow()"><i class="fa-brands fa-pied-piper-alt"></i> دفع وتجميد ${currentProduct.price} Pi</button>`;
+          hint.innerText = "الخطوة الأولى: دفع المبلغ وتجميده في محفظة الموقع الآمنة.";
+          // تم تغيير الزر ليفتح الفاتورة أولاً
+          btns.innerHTML = `<button class="btn btn-gold" onclick="openPaymentModal()"><i class="fa-brands fa-pied-piper-alt"></i> دفع وتجميد الرصيد</button>`;
       } 
       else if(status === 'FUNDED') {
           hint.innerText = "تم تجميد رصيدك بنجاح. ننتظر من البائع شحن المنتج.";
@@ -292,22 +332,76 @@ function setStep(stepNumber) {
   });
 }
 
-// ---- وظائف الشات الخاصة بنظام الوسيط ----
+// ---- وظائف الدفع الجديدة بالرسوم ----
+
+function openPaymentModal() {
+    const price = parseFloat(currentProduct.price);
+    const fee = price * 0.01; // نسبة 1%
+    finalTotalAmount = price + fee;
+
+    document.getElementById('inv-price').innerText = price.toFixed(2) + ' π';
+    document.getElementById('inv-fee').innerText = fee.toFixed(3) + ' π';
+    document.getElementById('inv-total').innerText = finalTotalAmount.toFixed(3) + ' π';
+
+    document.getElementById('paymentModal').style.display = 'flex';
+}
+
+function closePaymentModal() {
+    document.getElementById('paymentModal').style.display = 'none';
+}
+
+async function executePayment() {
+  if (typeof Pi === 'undefined') { alert("يرجى فتح الموقع من متصفح Pi Browser."); return; }
+  
+  const btn = document.getElementById('finalPayBtn');
+  btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> جاري فتح محفظة Pi...`;
+  btn.disabled = true;
+  isPaymentAlertShown = false;
+
+  try {
+    const paymentData = {
+      amount: parseFloat(finalTotalAmount.toFixed(5)), // إرسال المبلغ الإجمالي (السعر + الرسوم)
+      memo: `شراء آمن لمنتج: ${currentProduct.name} + رسوم الخدمة`,
+      metadata: { productId: currentProduct.id, type: "escrow", buyerId: currentUser.uid }
+    };
+
+    const paymentCallbacks = {
+      onReadyForServerApproval: async (paymentId) => {
+        try {
+          await fetch(`${API_BASE}/approve`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId }) });
+        } catch (e) { if(!isPaymentAlertShown) alert("خطأ في الاتصال."); closePaymentModal(); updateUI(); }
+      },
+      onReadyForServerCompletion: async (paymentId, txid) => {
+        try {
+          const res = await fetch(`${API_BASE}/complete`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId, txid }) });
+          const json = await res.json();
+          if(res.ok && (json.completed || json.success)) {
+            if(!isPaymentAlertShown) { alert("تم الدفع وتجميد الرصيد بنجاح!"); isPaymentAlertShown = true; }
+            closePaymentModal();
+            document.getElementById('action-hint').innerText = "جاري تحديث حالة الطلب...";
+            await loadEscrowData(); 
+          } else { if(!isPaymentAlertShown) alert("حدث خطأ."); closePaymentModal(); updateUI(); }
+        } catch (err) { if(!isPaymentAlertShown) alert("خطأ في الاتصال."); closePaymentModal(); updateUI(); }
+      },
+      onCancel: (paymentId) => { closePaymentModal(); updateUI(); },
+      onError: (error, payment) => { if(!isPaymentAlertShown) alert("حدث خطأ أثناء عملية الدفع."); closePaymentModal(); updateUI(); }
+    };
+    
+    Pi.createPayment(paymentData, paymentCallbacks);
+  } catch(err) { 
+      if(!isPaymentAlertShown) alert("خطأ في تهيئة الدفع."); 
+      closePaymentModal(); 
+      updateUI(); 
+  }
+}
+
+// ---- وظائف الشات ----
 
 async function loadMessages() {
   if(!otherUserId) return;
   const box = document.getElementById("escrow-chat");
-  
-  const { data } = await sb.from("messages")
-    .select("*")
-    .eq("product_id", productId)
-    .or(`and(sender_pi_id.eq.${currentUser.uid},receiver_pi_id.eq.${otherUserId}),and(sender_pi_id.eq.${otherUserId},receiver_pi_id.eq.${currentUser.uid})`)
-    .order("created_at",{ascending:true});
-    
-  if(data && data.length > 0) {
-    box.innerHTML = ""; // مسح رسالة "الرسائل مشفرة"
-    data.forEach(m => renderMsg(m));
-  }
+  const { data } = await sb.from("messages").select("*").eq("product_id", productId).or(`and(sender_pi_id.eq.${currentUser.uid},receiver_pi_id.eq.${otherUserId}),and(sender_pi_id.eq.${otherUserId},receiver_pi_id.eq.${currentUser.uid})`).order("created_at",{ascending:true});
+  if(data && data.length > 0) { box.innerHTML = ""; data.forEach(m => renderMsg(m)); }
 }
 
 function renderMsg(m){
@@ -324,87 +418,22 @@ async function sendEscrowMsg(){
     const inp = document.getElementById("escrow-msg-input"); 
     const text = inp.value.trim();
     if(!text || !otherUserId) return;
-    
-    // مسح الحقل ورسم الرسالة فوراً للمستخدم لسرعة الاستجابة (Optimistic UI)
     inp.value = "";
     renderMsg({ sender_pi_id: currentUser.uid, content: text });
-    
-    const { error } = await sb.from("messages").insert({ 
-      product_id: productId, 
-      sender_pi_id: currentUser.uid, 
-      receiver_pi_id: otherUserId, 
-      content: text 
-    });
-    
-    if(error) console.error("Error sending message:", error);
+    await sb.from("messages").insert({ product_id: productId, sender_pi_id: currentUser.uid, receiver_pi_id: otherUserId, content: text });
 }
 
 function subscribeToChat() {
   if(chatSubscription) sb.removeChannel(chatSubscription);
-  
-  chatSubscription = sb.channel(`escrow-room-${productId}-${currentUser.uid}`)
-    .on('postgres_changes', { 
-      event: 'INSERT', 
-      schema: 'public', 
-      table: 'messages', 
-      filter: `product_id=eq.${productId}` 
-    }, payload => {
+  chatSubscription = sb.channel(`escrow-room-${productId}-${currentUser.uid}`).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `product_id=eq.${productId}` }, payload => {
        const m = payload.new;
-       // نرسم الرسالة فقط إذا كانت قادمة من الطرف الآخر (لأن رسالتنا رسمناها مسبقاً وقت الضغط)
-       if(m.sender_pi_id === otherUserId && m.receiver_pi_id === currentUser.uid) {
-         renderMsg(m);
-       }
-    })
-    .subscribe();
+       if(m.sender_pi_id === otherUserId && m.receiver_pi_id === currentUser.uid) renderMsg(m);
+    }).subscribe();
 }
 
-// السماح بالإرسال عند الضغط على زر Enter
-document.getElementById("escrow-msg-input").addEventListener("keypress", function(event) {
-  if (event.key === "Enter") {
-    event.preventDefault();
-    sendEscrowMsg();
-  }
-});
+document.getElementById("escrow-msg-input").addEventListener("keypress", function(event) { if (event.key === "Enter") { event.preventDefault(); sendEscrowMsg(); }});
 
-// ---- باقي الوظائف الخاصة بالدفع (كما هي) ----
-
-async function payToEscrow() {
-  if (typeof Pi === 'undefined') { alert("يرجى فتح الموقع من متصفح Pi Browser."); return; }
-  const btn = document.querySelector('.btn-gold');
-  btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> جاري فتح محفظة Pi...`;
-  btn.disabled = true;
-  isPaymentAlertShown = false;
-
-  try {
-    const paymentData = {
-      amount: parseFloat(currentProduct.price),
-      memo: `شراء آمن لمنتج: ${currentProduct.name}`,
-      metadata: { productId: currentProduct.id, type: "escrow", buyerId: currentUser.uid }
-    };
-
-    const paymentCallbacks = {
-      onReadyForServerApproval: async (paymentId) => {
-        try {
-          await fetch(`${API_BASE}/approve`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId }) });
-        } catch (e) { if(!isPaymentAlertShown) alert("خطأ في الاتصال."); updateUI(); }
-      },
-      onReadyForServerCompletion: async (paymentId, txid) => {
-        try {
-          const res = await fetch(`${API_BASE}/complete`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId, txid }) });
-          const json = await res.json();
-          if(res.ok && (json.completed || json.success)) {
-            if(!isPaymentAlertShown) { alert("تم الدفع وتجميد الرصيد بنجاح!"); isPaymentAlertShown = true; }
-            document.getElementById('action-hint').innerText = "جاري تحديث حالة الطلب...";
-            await loadEscrowData(); 
-          } else { if(!isPaymentAlertShown) alert("حدث خطأ."); updateUI(); }
-        } catch (err) { if(!isPaymentAlertShown) alert("خطأ في الاتصال."); updateUI(); }
-      },
-      onCancel: (paymentId) => { updateUI(); },
-      onError: (error, payment) => { if(!isPaymentAlertShown) alert("حدث خطأ."); updateUI(); }
-    };
-    Pi.createPayment(paymentData, paymentCallbacks);
-  } catch(err) { if(!isPaymentAlertShown) alert("خطأ في تهيئة الدفع."); updateUI(); }
-}
+// ---- باقي الوظائف الخاصة بالشحن والاستلام ----
 
 async function markAsShipped() {
   const btn = document.querySelector('.btn-primary');
