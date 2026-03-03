@@ -226,9 +226,8 @@ function renderOrderCard(order) {
   const shortBuyerId = order.buyer_pi_id.substring(0, 8) + "...";
 
   // استخراج سعر المنتج الصافي للبائع 
-  // (نقسم المبلغ الإجمالي المحفوظ في الداتا بيز على 1.01 لإزالة رسوم المنصة 1%)
-  const grossAmount = parseFloat(order.amount);
-  const sellerNetAmount = (grossAmount / 1.01).toFixed(2);
+  // (السيرفر يقوم بالفعل بتسجيل السعر الصافي في قاعدة البيانات)
+  const sellerNetAmount = parseFloat(order.amount).toFixed(2);
 
   return `
     <div class="order-card" id="order-${order.id}">
