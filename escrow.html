@@ -667,22 +667,35 @@ async function executePayment() {
   if (typeof Pi === 'undefined') { alert(t('pi_browser_required')); return; }
   
   const btn = document.getElementById('finalPayBtn');
+  const origBtnHtml = btn.innerHTML; // الاحتفاظ بشكل الزر الأصلي
   btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> ${t('loading')}`;
   btn.disabled = true;
   isPaymentAlertShown = false;
 
   try {
+    // اختصار اسم المنتج حتى لا يرفضه السيرفر أو محفظة Pi لكونه طويل جداً
+    let safeName = currentProduct.name;
+    if(safeName.length > 20) safeName = safeName.substring(0, 20) + "...";
+
     const paymentData = {
       amount: parseFloat(finalTotalAmount.toFixed(5)),
-      memo: `Escrow: ${currentProduct.name} + Fee`,
+      memo: `Escrow: ${safeName}`,
       metadata: { productId: currentProduct.id, type: "escrow", buyerId: currentUser.uid }
     };
 
     const paymentCallbacks = {
       onReadyForServerApproval: async (paymentId) => {
         try {
-          await fetch(`${API_BASE}/approve`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId }) });
-        } catch (e) { if(!isPaymentAlertShown) alert(t('conn_error')); closePaymentModal(); updateUI(); }
+          const res = await fetch(`${API_BASE}/approve`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId }) });
+          if (!res.ok) throw new Error("Server approval failed");
+        } catch (e) { 
+          console.error("Approval error:", e);
+          if(!isPaymentAlertShown) { alert(t('conn_error') + " (Approval Error)"); isPaymentAlertShown = true; }
+          closePaymentModal(); 
+          btn.innerHTML = origBtnHtml;
+          btn.disabled = false;
+          updateUI(); 
+        }
       },
       onReadyForServerCompletion: async (paymentId, txid) => {
         try {
@@ -693,17 +706,45 @@ async function executePayment() {
             closePaymentModal();
             document.getElementById('action-hint').innerText = t('verifying');
             await loadEscrowData(); 
-          } else { if(!isPaymentAlertShown) alert(t('pay_error')); closePaymentModal(); updateUI(); }
-        } catch (err) { if(!isPaymentAlertShown) alert(t('conn_error')); closePaymentModal(); updateUI(); }
+          } else { 
+            throw new Error(json.error || "Completion failed");
+          }
+        } catch (err) { 
+          console.error("Completion error:", err);
+          if(!isPaymentAlertShown) { alert(t('pay_error') + "\n" + err.message); isPaymentAlertShown = true; }
+          closePaymentModal(); 
+          btn.innerHTML = origBtnHtml;
+          btn.disabled = false;
+          updateUI(); 
+        }
       },
-      onCancel: (paymentId) => { closePaymentModal(); updateUI(); },
-      onError: (error, payment) => { if(!isPaymentAlertShown) alert(t('pay_error')); closePaymentModal(); updateUI(); }
+      onCancel: (paymentId) => { 
+          closePaymentModal(); 
+          btn.innerHTML = origBtnHtml;
+          btn.disabled = false;
+          updateUI(); 
+      },
+      onError: (error, payment) => { 
+          console.error("Pi SDK Error:", error);
+          if(!isPaymentAlertShown) { 
+              const errMsg = error ? (error.message || JSON.stringify(error)) : "";
+              alert(t('pay_error') + "\n" + errMsg); 
+              isPaymentAlertShown = true; 
+          }
+          closePaymentModal(); 
+          btn.innerHTML = origBtnHtml;
+          btn.disabled = false;
+          updateUI(); 
+      }
     };
     
     Pi.createPayment(paymentData, paymentCallbacks);
   } catch(err) { 
-      if(!isPaymentAlertShown) alert(t('pay_error')); 
+      console.error("Payment setup error:", err);
+      if(!isPaymentAlertShown) { alert(t('pay_error') + "\n" + err.message); isPaymentAlertShown = true; }
       closePaymentModal(); 
+      btn.innerHTML = origBtnHtml;
+      btn.disabled = false;
       updateUI(); 
   }
 }
@@ -718,20 +759,28 @@ async function cancelOrder() {
     }
 
     try {
-        // تحديث حالة المعاملة إلى ملغية فقط (باقي الحسابات ستتم في المحفظة تلقائياً)
-        const { error } = await sb.from('escrow_transactions')
-          .update({ status: 'CANCELLED' })
-          .eq('id', currentEscrow.id);
-          
-        if (error) throw error;
+        const res = await fetch(`${API_BASE}/cancel`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                orderId: currentEscrow.id, 
+                uid: currentUser.uid 
+            })
+        });
+        
+        const data = await res.json();
 
-        currentEscrow.status = 'CANCELLED';
-        updateUI();
-        alert(t('cancel_success'));
+        if(res.ok && data.success) {
+            currentEscrow.status = 'CANCELLED';
+            updateUI();
+            alert(t('cancel_success'));
+        } else {
+            throw new Error(data.error || "حدث خطأ غير معروف");
+        }
         
     } catch (err) {
         console.error(err);
-        alert(t('update_error'));
+        alert(t('update_error') + "\n" + err.message);
         if(btn) {
             btn.innerHTML = `<i class="fa-solid fa-ban"></i> ${t('btn_cancel_order')}`;
             btn.disabled = false;
@@ -774,7 +823,7 @@ function renderMsg(m){
     div.className = `bubble ${isMe ? 'me':'other'}`; 
     
     let imgHtml = m.image_url ? `<img src="${m.image_url}" class="chat-img-msg" onclick="window.open('${m.image_url}')">` : '';
-    let textHtml = (m.content && m.content !== "📷 Image") ? `<div>${m.content}</div>` : '';
+    let textHtml = (m.content && m.content !== "📷 Image" && m.content !== "📷 صورة") ? `<div>${m.content}</div>` : '';
     
     div.innerHTML = `${textHtml}${imgHtml}`;
 
@@ -793,10 +842,9 @@ async function sendEscrowMsg(){
     const btn = document.getElementById('chatSendBtn');
     const origHTML = btn.innerHTML;
 
-    // 1. إذا كان نص فقط (إرسال سريع)
+    // 1. إذا كان نص فقط 
     if(!chatSelectedImage) {
         inp.value = "";
-        renderMsg({ sender_pi_id: currentUser.uid, content: text });
         
         const { error } = await sb.from("messages").insert({ 
           product_id: productId, 
@@ -824,9 +872,7 @@ async function sendEscrowMsg(){
         
         const { data } = sb.storage.from("images").getPublicUrl(path);
         const uploadedUrl = data.publicUrl;
-        const msgContent = text || "📷 Image";
-
-        renderMsg({ sender_pi_id: currentUser.uid, content: msgContent, image_url: uploadedUrl });
+        const msgContent = text || (currentLang === 'ar' ? "📷 صورة" : "📷 Image");
 
         await sb.from("messages").insert({
             product_id: productId, 
@@ -852,7 +898,7 @@ function subscribeToChat() {
   if(chatSubscription) sb.removeChannel(chatSubscription);
   chatSubscription = sb.channel(`escrow-room-${productId}-${currentUser.uid}`).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `product_id=eq.${productId}` }, payload => {
        const m = payload.new;
-       if(m.sender_pi_id === otherUserId && m.receiver_pi_id === currentUser.uid) renderMsg(m);
+       if(m.sender_pi_id === otherUserId && m.receiver_pi_id === currentUser.uid || m.sender_pi_id === currentUser.uid) renderMsg(m);
     }).subscribe();
 }
 
