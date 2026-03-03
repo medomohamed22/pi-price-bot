@@ -718,21 +718,12 @@ async function cancelOrder() {
     }
 
     try {
-        // 1. تحديث حالة المعاملة إلى ملغية
-        const { error } = await sb.from('escrow_transactions').update({ status: 'CANCELLED' }).eq('id', currentEscrow.id);
+        // تحديث حالة المعاملة إلى ملغية فقط (باقي الحسابات ستتم في المحفظة تلقائياً)
+        const { error } = await sb.from('escrow_transactions')
+          .update({ status: 'CANCELLED' })
+          .eq('id', currentEscrow.id);
+          
         if (error) throw error;
-
-        // 2. استرداد الأموال: ننشئ قيد وهمي يجعل المشتري كأنه بائع لعملية مكتملة
-        // هذا سيجعل رصيد المحفظة يقرأ هذا المبلغ كرصيد متاح للسحب فوراً
-        const { error: refundError } = await sb.from('escrow_transactions').insert({
-            product_id: currentProduct.id,
-            buyer_pi_id: 'SYSTEM_REFUND',
-            seller_pi_id: currentUser.uid, // المشتري هو الذي سيستلم الأموال في محفظته
-            amount: currentEscrow.amount, // المبلغ الصافي
-            status: 'COMPLETED'
-        });
-
-        if (refundError) throw refundError;
 
         currentEscrow.status = 'CANCELLED';
         updateUI();
