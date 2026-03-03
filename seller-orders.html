@@ -60,6 +60,7 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 .status-FUNDED { background: #FEF3C7; color: #D97706; }
 .status-SHIPPED { background: #E0E7FF; color: var(--primary-dark); }
 .status-COMPLETED { background: #D1FAE5; color: #059669; }
+.status-CANCELLED { background: #FEE2E2; color: #991B1B; } /* إضافة ستايل الملغي */
 
 .order-actions { padding: 16px; background: #F8FAFC; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; align-items: center; flex-wrap: wrap;}
 
@@ -218,10 +219,12 @@ const translations = {
     status_funded: "Funded (Ready to Ship)",
     status_shipped: "Shipped",
     status_completed: "Completed",
+    status_cancelled: "Cancelled",
     action_pending: "Waiting for payment...",
     action_ship: "Confirm Shipping",
     action_shipped: "Waiting for buyer confirmation...",
     action_completed: "Balance available",
+    action_cancelled: "Cancelled by buyer",
     btn_message: "Message",
     buyer: "Buyer",
     chat_placeholder: "Type a message to buyer...",
@@ -232,7 +235,7 @@ const translations = {
     send_error: "Message not sent, check your connection.",
     missing_id: "Product ID is missing",
 
-    // Dispute & Image Translations
+    // Dispute Translations
     btn_dispute: "Dispute",
     dispute_title: "Open Official Dispute",
     dispute_desc: "Please explain the issue. Site administration will review the transaction and messages to protect your rights.",
@@ -264,10 +267,12 @@ const translations = {
     status_funded: "مُجمّد (جاهز للشحن)",
     status_shipped: "تم الشحن",
     status_completed: "مكتمل",
+    status_cancelled: "ملغية",
     action_pending: "بانتظار الدفع...",
     action_ship: "تأكيد الشحن",
     action_shipped: "في انتظار تأكيد المشتري...",
     action_completed: "الرصيد متاح لك",
+    action_cancelled: "تم الإلغاء من قبل المشتري",
     btn_message: "مراسلة",
     buyer: "المشتري",
     chat_placeholder: "اكتب رسالة للمشتري...",
@@ -278,7 +283,7 @@ const translations = {
     send_error: "لم يتم إرسال الرسالة، تأكد من اتصالك.",
     missing_id: "رقم المنتج مفقود",
 
-    // Dispute & Image Translations
+    // Dispute Translations
     btn_dispute: "فتح نزاع",
     dispute_title: "فتح نزاع رسمي",
     dispute_desc: "يرجى توضيح المشكلة. ستقوم إدارة الموقع بمراجعة المعاملة والرسائل لحفظ الحقوق.",
@@ -320,11 +325,7 @@ function updateLanguageUI() {
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
         if (translations[currentLang][key]) {
-            if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-               // handled separately
-            } else {
-               el.innerHTML = translations[currentLang][key]; 
-            }
+            el.innerText = translations[currentLang][key];
         }
     });
 
@@ -447,10 +448,20 @@ function renderOrderCard(order) {
       statusText = t('status_completed');
       statusIcon = "fa-check-double";
       actionHtml = `<button class="btn btn-ghost" style="margin-inline-start: auto;" disabled><i class="fa-solid fa-check"></i> ${t('action_completed')}</button>`;
+  } else if(order.status === 'CANCELLED') {
+      statusText = t('status_cancelled');
+      statusIcon = "fa-ban";
+      actionHtml = `<span style="color: var(--danger); font-size: 13px; margin-inline-start: auto; font-weight: bold;"><i class="fa-solid fa-circle-info"></i> ${t('action_cancelled')}</span>`;
   }
 
   const shortBuyerId = order.buyer_pi_id.substring(0, 8) + "...";
   const sellerNetAmount = parseFloat(order.amount).toFixed(2);
+
+  // إخفاء الأرباح لو كانت الصفقة ملغية
+  let profitHtml = `<span style="color: var(--success);">${sellerNetAmount} π</span>`;
+  if (order.status === 'CANCELLED') {
+      profitHtml = `<span style="color: var(--text-muted); text-decoration: line-through; font-size: 14px;">${sellerNetAmount} π</span> <span style="color: var(--danger); font-size: 14px;">0.00 π</span>`;
+  }
 
   return `
     <div class="order-card" id="order-${order.id}">
@@ -469,7 +480,7 @@ function renderOrderCard(order) {
         
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <div style="font-size: 16px; font-weight: 800; color: var(--text-main);">
-            ${t('net_profit')} <span style="color: var(--success);">${sellerNetAmount} π</span>
+            ${t('net_profit')} ${profitHtml}
           </div>
           <div class="status-badge status-${order.status}">
             <i class="fa-solid ${statusIcon}"></i> ${statusText}
@@ -688,7 +699,7 @@ document.getElementById("msgInput").addEventListener("keypress", function(event)
 // ==========================================
 // وظائف النزاع (Dispute) والصور
 // ==========================================
-let currentDispute = null; 
+let currentDispute = null; // { orderId, againstId }
 
 function openDisputeModal(orderId, againstId) {
     currentDispute = { orderId, againstId };
@@ -743,6 +754,7 @@ async function submitDispute() {
     const reasonInput = document.getElementById('disputeReason').value.trim();
     if(!reasonInput) return alert(t('empty_reason'));
 
+    // 💡 هنا نضيف التوضيح للأدمن أن الشكوى مقدمة من البائع بناءً على اللغة
     const rolePrefix = currentLang === 'ar' ? "[شكوى من البائع] - " : "[Complaint from Seller] - ";
     const finalReason = rolePrefix + reasonInput;
 
@@ -752,7 +764,7 @@ async function submitDispute() {
     btn.disabled = true;
 
     try {
-        // رفع الصور للنزاع
+        // 1. رفع الصور إذا وجدت
         let uploadedUrls = [];
         if(disputeFiles.length > 0) {
             btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> ${t('uploading_image')}`;
@@ -770,13 +782,14 @@ async function submitDispute() {
             }
         }
 
+        // 2. إرسال النزاع لقاعدة البيانات مع الصور
         const { error } = await sb.from('disputes').insert({
             escrow_id: currentDispute.orderId,
             product_id: productId,
             complainer_pi_id: currentUser.uid,
             against_pi_id: currentDispute.againstId,
             reason: finalReason,
-            images: uploadedUrls.length > 0 ? uploadedUrls : null 
+            images: uploadedUrls.length > 0 ? uploadedUrls : null // حفظ المصفوفة في DB
         });
 
         if(error) throw error;
