@@ -11,6 +11,8 @@
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script defer src="https://sdk.minepi.com/pi-sdk.js"></script>
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
+
 
 <style>
 :root {
@@ -1644,6 +1646,14 @@ select.input-box {
   background: rgba(99, 102, 241, 0.2);
   color: var(--primary-dark);
 }
+/* --- إضافات صور الشات --- */
+.chat-img-msg { max-width: 100%; border-radius: 8px; margin-top: 4px; cursor: pointer; border: 1px solid rgba(0,0,0,0.1); }
+.chat-preview-container { display: none; padding: 8px; background: #E2E8F0; border-radius: var(--radius-lg); margin-bottom: 10px; position: relative; width: max-content; border: 1px solid var(--border); }
+.chat-preview-container img { max-height: 80px; border-radius: 8px; display: block; }
+.chat-preview-remove { position: absolute; top: -8px; inset-inline-end: -8px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm); }
+.attach-btn { background: white; color: var(--text-muted); border: 1px solid var(--border); width: 50px; height: 50px; border-radius: 30px; cursor: pointer; font-size: 18px; flex-shrink: 0; transition: 0.2s; }
+.attach-btn:hover { background: #F1F5F9; color: var(--primary); border-color: var(--primary); }
+
 </style>
 </head>
 <body>
@@ -2035,7 +2045,7 @@ select.input-box {
 
 
 <div id="chatModal" class="modal" style="z-index:2100" onclick="if(event.target==this) closeChat()">
-  <div class="sheet" style="height:92vh;padding:20px;">
+  <div class="sheet" style="height:92vh;padding:20px; display: flex; flex-direction: column;">
     <div class="chat-header">
       <div class="chat-user-info">
         <div class="chat-avatar" id="chatAvatar">U</div>
@@ -2051,14 +2061,24 @@ select.input-box {
     
     <div id="msgContainer" class="chat-area"></div>
     
-    <div class="input-group">
-      <input id="msgInput" class="input-box" placeholder="" style="margin:0;" />
-      <button class="btn btn-primary send-btn" onclick="sendMsg()">
+    <div id="chatPreviewContainer" class="chat-preview-container">
+        <img id="chatPreviewImg" src="" alt="preview">
+        <button class="chat-preview-remove" onclick="clearChatPreview()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <div class="input-group" style="display: flex; gap: 8px; align-items: center; padding-top: 10px;">
+      <input type="file" id="chatImgInput" accept="image/*" style="display:none;" onchange="handleChatImageSelection(this)">
+      <button class="attach-btn" onclick="document.getElementById('chatImgInput').click()"><i class="fa-solid fa-image"></i></button>
+
+      <input id="msgInput" class="input-box" placeholder="اكتب رسالة..." style="flex: 1; border-radius: 30px; height: 50px; padding: 0 20px; border: 1px solid var(--border); background: #F8FAFC; margin:0; outline: none; font-family: inherit;" />
+      
+      <button class="send-btn" id="chatSendBtn" onclick="sendMsg()" style="width: 50px; height: 50px; border-radius: 30px; padding: 0; flex-shrink: 0; background: var(--primary); color: white; border: none; font-size: 18px; cursor: pointer;">
         <i class="fa-solid fa-paper-plane"></i>
       </button>
     </div>
   </div>
 </div>
+
 
 <script>
 // --- CONFIG ---
@@ -2997,10 +3017,37 @@ async function loadMessages() {
   }
 }
 
+// --- متغيرات ودوال الصور في الشات ---
+let chatSelectedImage = null;
+
+function handleChatImageSelection(input) {
+    if(input.files && input.files[0]) {
+        chatSelectedImage = input.files[0];
+        const url = URL.createObjectURL(chatSelectedImage);
+        document.getElementById('chatPreviewImg').src = url;
+        document.getElementById('chatPreviewContainer').style.display = 'block';
+    }
+    input.value = ""; 
+}
+
+function clearChatPreview() {
+    chatSelectedImage = null;
+    document.getElementById('chatPreviewImg').src = '';
+    document.getElementById('chatPreviewContainer').style.display = 'none';
+}
+
+// --- دوال الشات الأساسية ---
 function renderMsg(m){
     const div = document.createElement("div"); 
-    div.className = `bubble ${m.sender_pi_id===user.uid ? 'me':'other'}`; 
-    div.innerText = m.content;
+    div.className = `bubble ${m.sender_pi_id === user.uid ? 'me' : 'other'}`; 
+    
+    // تجهيز الصورة والنص
+    let imgHtml = m.image_url ? `<img src="${m.image_url}" class="chat-img-msg" onclick="window.open('${m.image_url}')">` : '';
+    let textHtml = (m.content && m.content !== "📷 Image" && m.content !== "📷 صورة") ? `<div>${m.content}</div>` : '';
+    
+    // دمجهم داخل الفقاعة
+    div.innerHTML = `${textHtml}${imgHtml}`;
+    
     const c = document.getElementById("msgContainer"); 
     c.appendChild(div); 
     c.scrollTop = c.scrollHeight;
@@ -3008,19 +3055,69 @@ function renderMsg(m){
 
 async function sendMsg(){
     const inp = document.getElementById("msgInput"); 
-    if(!inp.value.trim()) return;
+    const text = inp.value.trim();
     
-    const { error } = await sb.from("messages").insert({ 
-      product_id: activeChat.pid, 
-      sender_pi_id: user.uid, 
-      receiver_pi_id: activeChat.otherId, 
-      content: inp.value.trim() 
-    });
-    
-    if(error) {
-      showToast('toast_send_fail', 'error');
-    } else {
-      inp.value = "";
+    if(!text && !chatSelectedImage) return; // منع الإرسال الفارغ
+    if(!activeChat) return;
+
+    const btn = document.querySelector('.send-btn');
+    const origHTML = btn.innerHTML;
+
+    // 1. إذا كان الإرسال نصاً فقط (إرسال فوري)
+    if(!chatSelectedImage) {
+        inp.value = "";
+        renderMsg({ sender_pi_id: user.uid, content: text }); // رسم الرسالة مباشرة
+        
+        const { error } = await sb.from("messages").insert({ 
+          product_id: activeChat.pid, 
+          sender_pi_id: user.uid, 
+          receiver_pi_id: activeChat.otherId, 
+          content: text 
+        });
+        
+        if(error) showToast('toast_send_fail', 'error');
+        return;
+    }
+
+    // 2. إذا كان الإرسال يحتوي على صورة (تحميل ثم إرسال)
+    btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i>`;
+    btn.disabled = true;
+    inp.disabled = true;
+
+    try {
+        const options = { maxSizeMB: 0.5, maxWidthOrHeight: 800, useWebWorker: true };
+        const compressed = await imageCompression(chatSelectedImage, options);
+        const path = `chat/${user.uid}_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+        
+        const { error: upErr } = await sb.storage.from("images").upload(path, compressed);
+        if(upErr) throw upErr;
+        
+        const { data } = sb.storage.from("images").getPublicUrl(path);
+        const uploadedUrl = data.publicUrl;
+        const msgContent = text || "📷 صورة"; // نص بديل يظهر في صندوق الوارد
+
+        // رسم الرسالة
+        renderMsg({ sender_pi_id: user.uid, content: msgContent, image_url: uploadedUrl });
+
+        const { error } = await sb.from("messages").insert({ 
+          product_id: activeChat.pid, 
+          sender_pi_id: user.uid, 
+          receiver_pi_id: activeChat.otherId, 
+          content: msgContent,
+          image_url: uploadedUrl
+        });
+
+        if(error) throw error;
+
+        inp.value = "";
+        clearChatPreview();
+    } catch(e) {
+        console.error(e);
+        showToast('toast_send_fail', 'error');
+    } finally {
+        btn.innerHTML = origHTML;
+        btn.disabled = false;
+        inp.disabled = false;
     }
 }
 
@@ -3028,9 +3125,11 @@ function closeChat() {
   document.getElementById("chatModal").style.display = "none"; 
   activeChat = null; 
   sb.removeAllChannels(); 
+  clearChatPreview(); // مسح المعاينة عند إغلاق الشات
   checkUnreadMessages(); 
 }
 
+// --- دالة صندوق الوارد (بدون تغيير، ستعمل تلقائياً بشكل ممتاز مع الصور) ---
 async function loadInbox() {
   const list = document.getElementById("inbox-list"); 
   list.innerHTML = `<div style="text-align:center;padding:40px;"><div class="skeleton" style="height:80px;width:100%;margin-bottom:12px;"></div><div class="skeleton" style="height:80px;width:100%;"></div></div>`;
@@ -3099,6 +3198,7 @@ async function loadInbox() {
   
   checkUnreadMessages();
 }
+
 </script>
 </body>
 </html>
