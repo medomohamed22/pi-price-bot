@@ -48,11 +48,29 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 .status-SHIPPED { background: #E0E7FF; color: var(--primary-dark); }
 .status-COMPLETED { background: #D1FAE5; color: #059669; }
 
-.order-actions { padding: 16px; background: #F8FAFC; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+.order-actions { padding: 16px; background: #F8FAFC; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; align-items: center;}
 
 /* رسائل الخطأ أو التحميل */
 .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
 .empty-state i { font-size: 48px; margin-bottom: 16px; color: var(--border); }
+
+/* --- تصميم الشات (Modal) --- */
+.modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 2000; display: none; align-items: flex-end; justify-content: center; backdrop-filter: blur(8px); animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.sheet { background: white; width: 100%; max-width: 600px; border-radius: var(--radius-xl) var(--radius-xl) 0 0; padding: 20px; max-height: 90vh; overflow-y: auto; animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; }
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.chat-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 16px; border-bottom: 2px solid var(--border); margin-bottom: 16px; }
+.close-btn { width: 40px; height: 40px; border-radius: 50%; border: none; background: var(--bg-body); color: var(--text-muted); cursor: pointer; display: grid; place-items: center; font-size: 20px; transition: all 0.3s ease; }
+.close-btn:hover { background: var(--danger); color: white; transform: rotate(90deg); }
+.chat-area { flex: 1; overflow-y: auto; background: #F8FAFC; padding: 16px; border-radius: var(--radius-lg); margin-bottom: 16px; min-height: 350px; max-height: 50vh; display: flex; flex-direction: column; gap: 12px; border: 1px solid var(--border); scroll-behavior: smooth; }
+.bubble { max-width: 80%; padding: 14px 18px; border-radius: 20px; font-size: 14px; line-height: 1.5; position: relative; animation: slideInUp 0.3s ease; word-wrap: break-word; }
+@keyframes slideInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.bubble.me { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+.bubble.other { background: white; border: 1px solid var(--border); align-self: flex-start; border-bottom-left-radius: 4px; color: var(--text-main); }
+.input-group { display: flex; gap: 12px; align-items: center; }
+.input-box { flex: 1; padding: 16px; border: 2px solid var(--border); border-radius: var(--radius-full); font-family: inherit; font-size: 15px; outline: none; background: white; }
+.input-box:focus { border-color: var(--primary); }
+.send-btn { width: 56px; height: 56px; border-radius: 50%; padding: 0; flex-shrink: 0; background: var(--primary); color: white; border: none; font-size: 18px; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -76,11 +94,39 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
   </div>
 </div>
 
+<div id="chatModal" class="modal" onclick="if(event.target==this) closeChat()">
+  <div class="sheet">
+    <div class="chat-header">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 45px; height: 45px; background: var(--primary); border-radius: 50%; color: white; display: grid; place-items: center; font-size: 18px;"><i class="fa-solid fa-user"></i></div>
+        <div>
+          <div style="font-weight: 800; font-size: 16px;">المشتري</div>
+          <div style="font-size: 12px; color: var(--text-muted); font-family: monospace;" id="chat-buyer-id">...</div>
+        </div>
+      </div>
+      <button onclick="closeChat()" class="close-btn">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+    
+    <div id="msgContainer" class="chat-area"></div>
+    
+    <div class="input-group">
+      <input id="msgInput" class="input-box" placeholder="اكتب رسالة للمشتري..." />
+      <button class="send-btn" onclick="sendMsg()">
+        <i class="fa-solid fa-paper-plane"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
 <script>
 const SUPABASE_URL = "https://ssvyxrtyvdxxojmunrcv.supabase.co";
 const SUPABASE_KEY = "sb_publishable_8egOM2-lT9J6kPQTbluC4w_8YHtB4K3"; 
 let sb;
 let currentUser = null;
+let currentChatBuyerId = null; // المشتري الذي نتحدث معه حالياً
+let chatSubscription = null;
 
 const urlParams = new URLSearchParams(window.location.search);
 const productId = urlParams.get('productId');
@@ -108,7 +154,6 @@ async function initPiUser() {
   } catch(e) { console.log("Pi Login Failed", e); }
 
   if(!currentUser) {
-      // حساب اختباري في حال فتحت من متصفح عادي
       currentUser = { uid: "test_seller_123", username: "TestSeller" }; 
   }
 }
@@ -117,7 +162,6 @@ async function loadSellerOrders() {
   const container = document.getElementById('orders-container');
 
   try {
-    // نجلب كل المعاملات الخاصة بهذا المنتج والتي يكون فيها المستخدم الحالي هو البائع
     const { data: orders, error } = await sb.from("escrow_transactions")
       .select("*")
       .eq("product_id", productId)
@@ -148,46 +192,43 @@ async function loadSellerOrders() {
       <div class="empty-state">
         <i class="fa-solid fa-triangle-exclamation" style="color: var(--danger);"></i>
         <h3>حدث خطأ</h3>
-        <p>لا يمكن تحميل الطلبات حالياً. (تأكد من إنشاء جدول escrow_transactions)</p>
+        <p>لا يمكن تحميل الطلبات حالياً.</p>
       </div>
     `;
   }
 }
 
 function renderOrderCard(order) {
-  // تنسيق التاريخ
   const dateStr = new Date(order.created_at).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' });
   
-  // تحديد اسم الحالة وشكلها
   let statusText = "";
   let statusIcon = "";
   let actionHtml = "";
 
   if(order.status === 'PENDING') {
-      statusText = "بانتظار دفع المشتري";
+      statusText = "بانتظار الدفع";
       statusIcon = "fa-clock";
-      actionHtml = `<span style="color: var(--text-muted); font-size: 13px;">لا تقم بشحن المنتج حتى يتم دفع المبلغ.</span>`;
+      actionHtml = `<span style="color: var(--text-muted); font-size: 13px; margin-left: auto;">بانتظار الدفع...</span>`;
   } else if(order.status === 'FUNDED') {
-      statusText = "تم تجميد الرصيد (جاهز للشحن)";
+      statusText = "مُجمّد (جاهز للشحن)";
       statusIcon = "fa-lock";
-      actionHtml = `<button onclick="updateOrderStatus('${order.id}', 'SHIPPED')" class="btn btn-primary"><i class="fa-solid fa-truck-fast"></i> تأكيد شحن المنتج</button>`;
+      actionHtml = `<button onclick="updateOrderStatus('${order.id}', 'SHIPPED')" class="btn btn-primary"><i class="fa-solid fa-truck-fast"></i> تأكيد الشحن</button>`;
   } else if(order.status === 'SHIPPED') {
       statusText = "تم الشحن";
       statusIcon = "fa-truck-fast";
-      actionHtml = `<span style="color: var(--text-muted); font-size: 13px;">في انتظار تأكيد المشتري للاستلام لتحويل الرصيد لك.</span>`;
+      actionHtml = `<span style="color: var(--text-muted); font-size: 13px; margin-left: auto;">في انتظار تأكيد المشتري...</span>`;
   } else if(order.status === 'COMPLETED') {
-      statusText = "مكتمل (تم تحويل الرصيد)";
+      statusText = "مكتمل";
       statusIcon = "fa-check-double";
-      actionHtml = `<button class="btn btn-ghost" disabled><i class="fa-solid fa-check"></i> تم استلام الرصيد بنجاح</button>`;
+      actionHtml = `<button class="btn btn-ghost" disabled><i class="fa-solid fa-check"></i> الرصيد متاح لك</button>`;
   }
 
-  // معرف وهمي للمشتري لسهولة القراءة (أول 8 حروف)
   const shortBuyerId = order.buyer_pi_id.substring(0, 8) + "...";
 
   return `
     <div class="order-card" id="order-${order.id}">
       <div class="order-header">
-        <span>رقم الطلب: #${order.id.substring(0, 6).toUpperCase()}</span>
+        <span>طلب: #${order.id.substring(0, 6).toUpperCase()}</span>
         <span>${dateStr}</span>
       </div>
       <div class="order-body">
@@ -195,13 +236,13 @@ function renderOrderCard(order) {
           <div class="buyer-avatar"><i class="fa-solid fa-user"></i></div>
           <div>
             <div style="font-size: 14px; font-weight: 800;">معرف المشتري: <span style="font-family: monospace; color: var(--primary);">${shortBuyerId}</span></div>
-            <div style="font-size: 12px; color: var(--text-muted);">تواصل معه من خلال الشات للإتفاق على التوصيل.</div>
+            <div style="font-size: 12px; color: var(--text-muted);">تواصل معه لتحديد موعد/مكان التسليم.</div>
           </div>
         </div>
         
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <div style="font-size: 16px; font-weight: 800; color: var(--text-main);">
-            المبلغ المستحق: <span style="color: var(--accent);">${order.amount} π</span>
+            المبلغ: <span style="color: var(--accent);">${order.amount} π</span>
           </div>
           <div class="status-badge status-${order.status}">
             <i class="fa-solid ${statusIcon}"></i> ${statusText}
@@ -209,37 +250,147 @@ function renderOrderCard(order) {
         </div>
       </div>
       <div class="order-actions">
+        <button onclick="openChat('${order.buyer_pi_id}')" class="btn btn-ghost" style="padding: 10px 16px;">
+           <i class="fa-solid fa-comment-dots" style="color: var(--primary);"></i> مراسلة
+        </button>
         ${actionHtml}
       </div>
     </div>
   `;
 }
 
-// دالة لتحديث حالة الطلب
 async function updateOrderStatus(orderId, newStatus) {
-  if(!confirm("هل أنت متأكد أنك قمت بشحن المنتج وتسليمه للمندوب/المشتري؟")) return;
+  if(!confirm("هل أنت متأكد أنك قمت بشحن المنتج وتسليمه للمشتري؟")) return;
 
   try {
-    // تغيير زر الشحن لعلامة تحميل مؤقتاً
     const btn = document.querySelector(`#order-${orderId} .btn-primary`);
     if(btn) btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> جاري التحديث...`;
 
-    // تحديث الحالة في قاعدة البيانات
     const { error } = await sb.from('escrow_transactions')
       .update({ status: newStatus })
       .eq('id', orderId);
 
     if (error) throw error;
-
-    // إعادة تحميل الطلبات لإظهار التحديث
     await loadSellerOrders();
 
   } catch (err) {
-    console.error("فشل التحديث:", err);
-    alert("حدث خطأ أثناء تحديث حالة الطلب. تأكد من اتصالك بالإنترنت.");
-    await loadSellerOrders(); // إعادة التحميل لإرجاع الزر لشكله الطبيعي
+    console.error(err);
+    alert("حدث خطأ أثناء تحديث الحالة.");
+    await loadSellerOrders(); 
   }
 }
+
+// ==========================================
+// وظائف الشات المباشر (Realtime)
+// ==========================================
+
+function openChat(buyerId) {
+    currentChatBuyerId = buyerId;
+    document.getElementById("chat-buyer-id").innerText = buyerId.substring(0, 12) + "...";
+    document.getElementById("chatModal").style.display = "flex";
+    document.getElementById("msgContainer").innerHTML = "";
+    
+    loadMessages();
+    subscribeToChat();
+}
+
+function closeChat() {
+    document.getElementById("chatModal").style.display = "none";
+    currentChatBuyerId = null;
+    if(chatSubscription) {
+        sb.removeChannel(chatSubscription);
+        chatSubscription = null;
+    }
+}
+
+async function loadMessages() {
+  if(!currentChatBuyerId) return;
+  const box = document.getElementById("msgContainer");
+  box.innerHTML = `<div style="text-align:center; padding:20px;"><i class="fa-solid fa-circle-notch fa-spin" style="color:var(--primary);"></i></div>`;
+  
+  // جلب الرسائل بين هذا البائع وهذا المشتري لنفس المنتج
+  const { data, error } = await sb.from("messages")
+    .select("*")
+    .eq("product_id", productId)
+    .or(`and(sender_pi_id.eq.${currentUser.uid},receiver_pi_id.eq.${currentChatBuyerId}),and(sender_pi_id.eq.${currentChatBuyerId},receiver_pi_id.eq.${currentUser.uid})`)
+    .order("created_at", { ascending: true });
+    
+  box.innerHTML = "";
+  if(error) {
+      console.error(error);
+      return;
+  }
+  
+  if(data && data.length > 0) {
+    data.forEach(m => renderMsg(m));
+  } else {
+    box.innerHTML = `<div style="text-align:center; color:var(--text-light); font-size:13px; margin-top:20px;">لا توجد رسائل سابقة. ابدأ المحادثة الآن!</div>`;
+  }
+}
+
+function renderMsg(m){
+    const div = document.createElement("div"); 
+    const isMe = m.sender_pi_id === currentUser.uid;
+    div.className = `bubble ${isMe ? 'me' : 'other'}`; 
+    div.innerText = m.content;
+    const box = document.getElementById("msgContainer"); 
+    // مسح رسالة "لا توجد رسائل سابقة" إذا كانت موجودة
+    if(box.innerHTML.includes("لا توجد رسائل سابقة")) box.innerHTML = "";
+    
+    box.appendChild(div); 
+    box.scrollTop = box.scrollHeight;
+}
+
+async function sendMsg() {
+    const inp = document.getElementById("msgInput"); 
+    const text = inp.value.trim();
+    if(!text || !currentChatBuyerId) return;
+    
+    // رسم الرسالة فوراً في الشاشة لتجربة مستخدم سريعة
+    inp.value = "";
+    renderMsg({ sender_pi_id: currentUser.uid, content: text });
+    
+    // إرسال لقاعدة البيانات
+    const { error } = await sb.from("messages").insert({ 
+      product_id: productId, 
+      sender_pi_id: currentUser.uid, 
+      receiver_pi_id: currentChatBuyerId, 
+      content: text 
+    });
+    
+    if(error) {
+        console.error("فشل إرسال الرسالة:", error);
+        alert("لم يتم إرسال الرسالة، تأكد من اتصالك.");
+    }
+}
+
+function subscribeToChat() {
+  if(chatSubscription) sb.removeChannel(chatSubscription);
+  
+  chatSubscription = sb.channel(`seller-room-${productId}-${currentChatBuyerId}`)
+    .on('postgres_changes', { 
+      event: 'INSERT', 
+      schema: 'public', 
+      table: 'messages', 
+      filter: `product_id=eq.${productId}` 
+    }, payload => {
+       const m = payload.new;
+       // نرسم الرسالة فقط إذا كانت قادمة من المشتري الذي نتحدث معه حالياً
+       if(m.sender_pi_id === currentChatBuyerId && m.receiver_pi_id === currentUser.uid) {
+         renderMsg(m);
+       }
+    })
+    .subscribe();
+}
+
+// السماح بإرسال الرسالة عند ضغط زر Enter في الكيبورد
+document.getElementById("msgInput").addEventListener("keypress", function(event) {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    sendMsg();
+  }
+});
+
 </script>
 </body>
 </html>
