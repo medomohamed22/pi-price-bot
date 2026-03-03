@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-<title data-i18n="page_title">Product Orders - Deal Way</title>
+<title data-i18n="page_title">Secure Escrow - Deal Way</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
@@ -13,7 +13,7 @@
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
 
 <style>
-/* --- التصميم الأساسي --- */
+/* --- التصميم --- */
 :root {
   --primary: #6366F1; --primary-dark: #4F46E5; --primary-light: #818CF8;
   --accent: #F59E0B; --bg-body: #F8FAFC; --surface: #FFFFFF;
@@ -24,20 +24,21 @@
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: var(--text-main); line-height: 1.6; padding-bottom: 40px; }
-.container { width: min(100%, 800px); margin: 0 auto; padding: 16px; }
+body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: var(--text-main); line-height: 1.6; }
+.container { width: min(100%, 800px); margin: 0 auto; padding: 16px; padding-bottom: 80px; }
 
-/* الأزرار والهيدر */
-.btn { border: none; cursor: pointer; border-radius: var(--radius-lg); padding: 12px 20px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-family: inherit; transition: all 0.3s; font-size: 14px;}
+.btn { border: none; cursor: pointer; border-radius: var(--radius-lg); padding: 14px 24px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 10px; font-family: inherit; width: 100%; transition: all 0.3s; }
 .btn-primary { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; }
 .btn-success { background: linear-gradient(135deg, var(--success) 0%, #059669 100%); color: white; }
+.btn-gold { background: linear-gradient(135deg, var(--accent) 0%, #D97706 100%); color: white; }
 .btn-ghost { background: white; border: 1px solid var(--border); color: var(--text-muted); }
-.btn-red { background: var(--danger); color: white; } 
+.btn-red { background: var(--danger); color: white; }
 
-.header { background: white; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; box-shadow: var(--shadow-sm);}
-.back-btn { background: none; border: none; font-size: 20px; color: var(--text-main); cursor: pointer; display: flex; align-items: center; gap: 10px; font-weight: 800; font-family: inherit;}
+.header { background: white; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; }
+.header-left { display: flex; align-items: center; gap: 16px; }
+.back-btn { background: none; border: none; font-size: 20px; color: var(--text-main); cursor: pointer; }
+.header-title { font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 8px; color: var(--primary); }
 
-/* زر اللغة */
 .lang-btn {
   width: 36px; height: 36px; border-radius: 50%;
   background: white; border: 1px solid var(--border);
@@ -48,47 +49,33 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 }
 .lang-btn:hover { border-color: var(--primary); background-color: #F8FAFC; }
 
-/* بطاقة الطلب (Order Card) */
-.order-card { background: white; border-radius: var(--radius-xl); border: 1px solid var(--border); margin-bottom: 16px; overflow: hidden; box-shadow: var(--shadow-sm); transition: transform 0.3s; }
-.order-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
-.order-header { background: #F8FAFC; padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; color: var(--text-muted); }
-.order-body { padding: 16px; }
-.buyer-info { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px dashed var(--border); }
-.buyer-avatar { width: 40px; height: 40px; background: var(--primary-light); color: white; border-radius: 50%; display: grid; place-items: center; font-weight: 800; }
-.status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 800; }
-.status-PENDING { background: #F1F5F9; color: #64748B; }
-.status-FUNDED { background: #FEF3C7; color: #D97706; }
-.status-SHIPPED { background: #E0E7FF; color: var(--primary-dark); }
-.status-COMPLETED { background: #D1FAE5; color: #059669; }
+.card { background: white; border-radius: var(--radius-xl); padding: 20px; border: 1px solid var(--border); margin-bottom: 20px; box-shadow: var(--shadow-sm); }
 
-.order-actions { padding: 16px; background: #F8FAFC; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; align-items: center; flex-wrap: wrap;}
+.stepper { display: flex; justify-content: space-between; position: relative; margin-bottom: 10px; }
+.stepper::before { content: ''; position: absolute; top: 20px; left: 30px; right: 30px; height: 3px; background: var(--border); z-index: 1; }
+.step { display: flex; flex-direction: column; align-items: center; gap: 8px; z-index: 2; width: 25%; }
+.step-icon { width: 40px; height: 40px; border-radius: 50%; background: white; border: 3px solid var(--border); display: grid; place-items: center; font-size: 16px; color: var(--text-muted); transition: all 0.3s; }
+.step.active .step-icon { border-color: var(--primary); background: var(--primary); color: white; box-shadow: 0 0 15px rgba(99,102,241,0.4); }
+.step.completed .step-icon { border-color: var(--success); background: var(--success); color: white; }
+.step-text { font-size: 12px; font-weight: 700; color: var(--text-muted); text-align: center; }
+.step.active .step-text { color: var(--primary); }
 
-/* رسائل الخطأ أو التحميل */
-.empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
-.empty-state i { font-size: 48px; margin-bottom: 16px; color: var(--border); }
+.product-summary { display: flex; gap: 16px; align-items: center; }
+.product-img { width: 80px; height: 80px; border-radius: 12px; object-fit: cover; border: 1px solid var(--border); }
+.product-details h3 { font-size: 16px; margin-bottom: 4px; }
+.price-tag { background: #FEF3C7; color: #92400E; padding: 4px 12px; border-radius: 20px; font-weight: 800; font-size: 14px; display: inline-block; }
 
-/* --- تصميم النوافذ المنبثقة (Modal) --- */
-.modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 2000; display: none; align-items: flex-end; justify-content: center; backdrop-filter: blur(8px); animation: fadeIn 0.3s ease; }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-.sheet { background: white; width: 100%; max-width: 600px; border-radius: var(--radius-xl) var(--radius-xl) 0 0; padding: 20px; max-height: 90vh; overflow-y: auto; animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; }
-@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-.modal-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 16px; border-bottom: 2px solid var(--border); margin-bottom: 16px; }
-.close-btn { width: 40px; height: 40px; border-radius: 50%; border: none; background: var(--bg-body); color: var(--text-muted); cursor: pointer; display: grid; place-items: center; font-size: 20px; transition: all 0.3s ease; }
-.close-btn:hover { background: var(--danger); color: white; transform: rotate(90deg); }
-
-/* Chat Styles */
-.chat-area { flex: 1; overflow-y: auto; background: #F8FAFC; padding: 16px; border-radius: var(--radius-lg); margin-bottom: 16px; min-height: 350px; max-height: 50vh; display: flex; flex-direction: column; gap: 12px; border: 1px solid var(--border); scroll-behavior: smooth; }
-.bubble { max-width: 80%; padding: 14px 18px; border-radius: 20px; font-size: 14px; line-height: 1.5; position: relative; animation: slideInUp 0.3s ease; word-wrap: break-word; }
-@keyframes slideInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-.bubble.me { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
-.bubble.other { background: white; border: 1px solid var(--border); align-self: flex-start; border-bottom-left-radius: 4px; color: var(--text-main); }
+.chat-box { background: var(--bg-body); border-radius: var(--radius-lg); padding: 16px; height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; border: 1px solid var(--border); margin-bottom: 12px; scroll-behavior: smooth;}
+.bubble { max-width: 80%; padding: 12px 16px; border-radius: 16px; font-size: 14px; line-height: 1.5; word-wrap: break-word;}
+.bubble.me { background: var(--primary); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+.bubble.other { background: white; border: 1px solid var(--border); align-self: flex-start; border-bottom-left-radius: 4px; }
 .chat-img-msg { max-width: 100%; border-radius: 8px; margin-top: 4px; cursor: pointer; }
 
-/* Chat Inputs & Preview */
+/* أزرار وحقول الشات والمعاينة */
 .chat-input-group { display: flex; gap: 8px; align-items: center; }
-.chat-input { flex: 1; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-lg); font-family: inherit; font-size: 15px; outline: none; background: white; }
+.chat-input { flex: 1; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-lg); font-family: inherit; font-size: 15px; outline: none; }
 .chat-input:focus { border-color: var(--primary); }
-.send-btn { width: 50px; height: 50px; border-radius: var(--radius-lg); padding: 0; flex-shrink: 0; background: var(--primary); color: white; border: none; font-size: 18px; cursor: pointer; }
+.send-btn { background: var(--primary); color: white; border: none; width: 50px; height: 50px; border-radius: var(--radius-lg); cursor: pointer; font-size: 18px; flex-shrink: 0; }
 .attach-btn { background: white; color: var(--text-muted); border: 1px solid var(--border); width: 50px; height: 50px; border-radius: var(--radius-lg); cursor: pointer; font-size: 18px; flex-shrink: 0; transition: 0.2s; }
 .attach-btn:hover { background: #F1F5F9; color: var(--primary); border-color: var(--primary); }
 
@@ -96,73 +83,137 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 .chat-preview-container img { max-height: 80px; border-radius: 8px; display: block; }
 .chat-preview-remove { position: absolute; top: -8px; inset-inline-end: -8px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm); }
 
+/* تصميم النوافذ المنبثقة */
+.modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 2000; display: none; align-items: flex-end; justify-content: center; backdrop-filter: blur(8px); animation: fadeIn 0.3s ease;}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.sheet { background: white; width: 100%; max-width: 600px; border-radius: var(--radius-xl) var(--radius-xl) 0 0; padding: 28px; animation: slideUp 0.3s ease-out; max-height: 90vh; overflow-y: auto;}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid var(--border); }
+.close-btn { width: 36px; height: 36px; border-radius: 50%; border: none; background: var(--bg-body); color: var(--text-muted); cursor: pointer; display: grid; place-items: center; font-size: 18px; }
+.invoice-box { background: #F8FAFC; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 24px; }
+.invoice-row { display: flex; justify-content: space-between; font-size: 15px; margin-bottom: 12px; color: var(--text-muted); }
+.invoice-row.total { font-size: 18px; font-weight: 900; margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--border); color: var(--text-main); }
+.input-box { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-lg); font-family: inherit; font-size: 14px; outline: none; margin-bottom: 16px; }
+.input-box:focus { border-color: var(--primary); }
 .input-label { display: block; font-weight: 800; margin-bottom: 8px; color: var(--text-main); font-size: 14px; }
-textarea.input-box { height: 100px; resize: none; margin-bottom: 16px; }
 
-/* Upload Area (Disputes) */
+/* رفع الصور في النزاع */
 .upload-area { border: 2px dashed var(--border); border-radius: var(--radius-lg); padding: 20px; text-align: center; cursor: pointer; background: #F8FAFC; transition: 0.3s; margin-bottom: 16px; }
 .upload-area:hover { border-color: var(--primary); background: #F5F3FF; }
 .preview-container { display: flex; gap: 10px; overflow-x: auto; margin-bottom: 16px; }
 .preview-box { position: relative; width: 60px; height: 60px; flex-shrink: 0; border-radius: 8px; border: 1px solid var(--border); }
 .preview-box img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
-.preview-box button { position: absolute; top: -5px; inset-inline-end: -5px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 10px; cursor: pointer; }
+.preview-box button { position: absolute; top: -5px; right: -5px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 10px; cursor: pointer; }
 </style>
 </head>
 <body>
 
 <header class="header">
-  <button class="back-btn" onclick="window.location.href='index.html'">
-    <i class="fa-solid fa-arrow-left" id="back-icon"></i> <span data-i18n="seller_dashboard">Seller Dashboard</span>
-  </button>
+  <div class="header-left">
+      <button class="back-btn" onclick="window.location.href='index.html'"><i id="back-icon" class="fa-solid fa-arrow-left"></i></button>
+      <div class="header-title"><i class="fa-solid fa-shield-halved"></i> <span data-i18n="page_title">Secure Escrow</span></div>
+  </div>
   <button class="lang-btn" onclick="toggleLanguage()">
-    <span id="langText">AR</span>
+      <span id="langText">AR</span>
   </button>
 </header>
 
 <div class="container">
-  <h2 style="margin-bottom: 20px; font-size: 20px; color: var(--text-main);">
-    <i class="fa-solid fa-boxes-packing" style="color: var(--primary);"></i> <span data-i18n="product_orders">Product Orders</span>
-  </h2>
-
-  <div id="orders-container">
-    <div class="empty-state">
-      <i class="fa-solid fa-circle-notch fa-spin" style="color: var(--primary);"></i>
-      <p data-i18n="loading_orders">Fetching orders...</p>
+  
+  <div class="card product-summary">
+    <img id="escrow-img" src="https://placehold.co/400x400/f1f5f9/94a3b8?text=Loading..." class="product-img" alt="Product">
+    <div class="product-details">
+      <h3 id="escrow-title" data-i18n="loading">Loading...</h3>
+      <div class="price-tag"><span id="escrow-price">0</span> π</div>
+      <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;"><span data-i18n="seller_label">Seller:</span> <span id="escrow-seller">...</span></div>
     </div>
   </div>
-</div>
 
-<div id="chatModal" class="modal" onclick="if(event.target==this) closeChat()">
-  <div class="sheet">
-    <div class="chat-header">
-      <div style="display: flex; align-items: center; gap: 12px;">
-        <div style="width: 45px; height: 45px; background: var(--primary); border-radius: 50%; color: white; display: grid; place-items: center; font-size: 18px;"><i class="fa-solid fa-user"></i></div>
-        <div>
-          <div style="font-weight: 800; font-size: 16px;" data-i18n="buyer">Buyer</div>
-          <div style="font-size: 12px; color: var(--text-muted); font-family: monospace;" id="chat-buyer-id">...</div>
-        </div>
+  <div class="card">
+    <div class="stepper" id="stepper-container">
+      <div class="step active" id="step-1">
+        <div class="step-icon"><i class="fa-solid fa-cart-shopping"></i></div>
+        <div class="step-text" data-i18n="step_1">Order</div>
       </div>
-      <button onclick="closeChat()" class="close-btn">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
+      <div class="step" id="step-2">
+        <div class="step-icon"><i class="fa-solid fa-lock"></i></div>
+        <div class="step-text" data-i18n="step_2">Funded</div>
+      </div>
+      <div class="step" id="step-3">
+        <div class="step-icon"><i class="fa-solid fa-truck-fast"></i></div>
+        <div class="step-text" data-i18n="step_3">Shipped</div>
+      </div>
+      <div class="step" id="step-4">
+        <div class="step-icon"><i class="fa-solid fa-check-double"></i></div>
+        <div class="step-text" data-i18n="step_4">Completed</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="text-align: center;">
+    <p style="color: var(--text-muted); margin-bottom: 15px; font-size: 14px;" id="action-hint" data-i18n="verifying">Verifying transaction status...</p>
+    <div id="action-buttons">
+      <button class="btn btn-ghost" disabled><i class="fa-solid fa-circle-notch fa-spin"></i> <span data-i18n="please_wait">Please wait</span></button>
     </div>
     
-    <div id="msgContainer" class="chat-area"></div>
-    
+    <div id="dispute-area" style="margin-top: 15px; display: none; padding-top: 15px; border-top: 1px dashed var(--border);">
+        <button class="btn btn-ghost" style="color: var(--danger); border-color: #FECACA;" onclick="openDisputeModal()">
+            <i class="fa-solid fa-scale-balanced"></i> <span data-i18n="btn_dispute">Open Dispute</span>
+        </button>
+    </div>
+  </div>
+
+  <div class="card" style="padding: 16px;">
+    <h3 style="font-size: 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+      <i class="fa-solid fa-comments" style="color: var(--primary);"></i> <span data-i18n="chat_with">Chat with</span> <span id="chat-partner-name">...</span>
+    </h3>
+    <div class="chat-box" id="escrow-chat">
+       <div style="text-align:center; color:var(--text-light); font-size:12px; margin-top:20px;" data-i18n="chat_secure_msg">Messages are encrypted and saved to protect both parties.</div>
+    </div>
+
     <div id="chatPreviewContainer" class="chat-preview-container">
         <img id="chatPreviewImg" src="" alt="preview">
         <button class="chat-preview-remove" onclick="clearChatPreview()"><i class="fa-solid fa-xmark"></i></button>
     </div>
 
-    <div class="input-group">
+    <div class="chat-input-group">
       <input type="file" id="chatImgInput" accept="image/*" style="display:none;" onchange="handleChatImageSelection(this)">
       <button class="attach-btn" onclick="document.getElementById('chatImgInput').click()"><i class="fa-solid fa-image"></i></button>
-
-      <input id="msgInput" class="input-box" style="border-radius: var(--radius-full);" placeholder="Type a message to buyer..." />
-      <button class="send-btn" id="chatSendBtn" onclick="sendMsg()">
-        <i class="fa-solid fa-paper-plane"></i>
-      </button>
+      
+      <input type="text" id="escrow-msg-input" class="chat-input" placeholder="Type a message regarding delivery...">
+      <button class="send-btn" id="chatSendBtn" onclick="sendEscrowMsg()"><i class="fa-solid fa-paper-plane"></i></button>
     </div>
+  </div>
+
+</div>
+
+<div id="paymentModal" class="modal" onclick="if(event.target==this) closePaymentModal()">
+  <div class="sheet">
+    <div class="modal-header">
+      <h3 style="font-size: 18px; color: var(--text-main); margin: 0;"><i class="fa-solid fa-file-invoice-dollar" style="color: var(--primary);"></i> <span data-i18n="payment_details">Payment Details</span></h3>
+      <button onclick="closePaymentModal()" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    
+    <div class="invoice-box">
+      <div class="invoice-row">
+        <span data-i18n="base_price">Base Product Price:</span>
+        <span id="inv-price" style="font-weight: 700; color: var(--text-main);">0.00 π</span>
+      </div>
+      <div class="invoice-row">
+        <span data-i18n="platform_fee">Platform & Escrow Fee (1%):</span>
+        <span id="inv-fee" style="font-weight: 700; color: var(--danger);">0.00 π</span>
+      </div>
+      <div class="invoice-row total">
+        <span data-i18n="total_to_pay">Total to Pay:</span>
+        <span id="inv-total" style="color: var(--primary);">0.00 π</span>
+      </div>
+    </div>
+
+    <p style="font-size: 12px; color: var(--text-muted); text-align: center; margin-bottom: 16px;" data-i18n="freeze_notice">This amount will be frozen in the site's secure wallet and will not be released to the seller until you confirm receipt.</p>
+    
+    <button id="finalPayBtn" class="btn btn-gold" onclick="executePayment()">
+      <i class="fa-solid fa-lock"></i> <span data-i18n="confirm_pay_btn">Confirm & Pay Now</span>
+    </button>
   </div>
 </div>
 
@@ -175,14 +226,14 @@ textarea.input-box { height: 100px; resize: none; margin-bottom: 16px; }
     <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;" data-i18n="dispute_desc">Please explain the issue. Site administration will review the transaction and messages.</p>
 
     <div style="background: #F3F4F6; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 13px;">
-        <strong><span data-i18n="order_num">Order: #</span></strong> <span id="disp-order-id" style="font-family: monospace; color: var(--primary);">...</span><br>
-        <strong><span data-i18n="product_label">Product:</span></strong> <span id="disp-prod-name">...</span>
+        <strong><span data-i18n="order_num">Order: #</span></strong> <span id="disp-order-id" style="font-family: monospace;">...</span><br>
+        <strong><span data-i18n="base_price">Product:</span></strong> <span id="disp-prod-name">...</span>
     </div>
 
     <label class="input-label" data-i18n="dispute_reason_label">Reason for dispute:</label>
-    <textarea id="disputeReason" class="input-box" placeholder="Explain what happened in detail..."></textarea>
+    <textarea id="disputeReason" class="input-box" style="height: 100px; resize: none;" placeholder="Explain what happened..."></textarea>
 
-    <label class="input-label" data-i18n="attach_images_label">Attach Evidence (Max 3 images):</label>
+    <label class="input-label" data-i18n="attach_images_label">Attach Images (Max 3):</label>
     <div class="upload-area" onclick="document.getElementById('disputeImgInput').click()">
         <i class="fa-solid fa-cloud-arrow-up" style="font-size: 24px; color: var(--primary);"></i>
         <div style="font-size: 12px; color: var(--text-muted); margin-top: 5px;" data-i18n="click_to_upload">Click to select images</div>
@@ -202,41 +253,66 @@ let currentLang = localStorage.getItem('lang') || 'en';
 
 const translations = {
   en: {
-    page_title: "Product Orders - Deal Way",
-    seller_dashboard: "Seller Dashboard",
-    product_orders: "Product Orders",
-    loading_orders: "Fetching orders...",
-    no_orders_title: "No orders yet",
-    no_orders_desc: "No one has purchased this product via Escrow yet.",
-    error_title: "Error occurred",
-    error_desc: "Cannot load orders currently.",
-    order_num: "Order: #",
-    buyer_id: "Buyer ID:",
-    contact_hint: "Contact buyer to arrange delivery time/place.",
-    net_profit: "Net Profit:",
-    status_pending: "Pending Payment",
-    status_funded: "Funded (Ready to Ship)",
-    status_shipped: "Shipped",
-    status_completed: "Completed",
-    action_pending: "Waiting for payment...",
-    action_ship: "Confirm Shipping",
-    action_shipped: "Waiting for buyer confirmation...",
-    action_completed: "Balance available",
-    btn_message: "Message",
-    buyer: "Buyer",
-    chat_placeholder: "Type a message to buyer...",
-    no_msgs: "No previous messages. Start chatting now!",
-    confirm_ship: "Are you sure you shipped and delivered the product to the buyer?",
-    updating: "Updating...",
-    update_error: "Error updating status.",
-    send_error: "Message not sent, check your connection.",
-    missing_id: "Product ID is missing",
+    page_title: "Secure Escrow",
+    loading: "Loading...",
+    seller_label: "Seller:",
+    step_1: "Order",
+    step_2: "Funded",
+    step_3: "Shipped",
+    step_4: "Completed",
+    verifying: "Verifying transaction status...",
+    please_wait: "Please wait",
+    chat_with: "Chat with",
+    chat_secure_msg: "Messages are encrypted and saved to protect both parties.",
+    chat_placeholder: "Type a message regarding delivery...",
+    payment_details: "Payment Details",
+    base_price: "Product:",
+    platform_fee: "Platform & Escrow Fee (1%):",
+    total_to_pay: "Total to Pay:",
+    freeze_notice: "This amount will be frozen in the site's secure wallet and will not be released to the seller until you confirm receipt.",
+    confirm_pay_btn: "Confirm & Pay Now",
 
-    // Dispute & Image Translations
-    btn_dispute: "Dispute",
-    dispute_title: "Open Official Dispute",
-    dispute_desc: "Please explain the issue. Site administration will review the transaction and messages to protect your rights.",
-    product_label: "Product Name:",
+    buyer_hint_pending: "Step 1: Pay and freeze the amount in the secure site wallet.",
+    buyer_btn_pending: "Pay & Freeze Balance",
+    buyer_hint_funded: "Balance frozen successfully. Waiting for seller to ship.",
+    buyer_btn_funded: "Waiting for Shipping",
+    buyer_hint_shipped: "Seller shipped the product. Click here ONLY after receiving it safely.",
+    buyer_btn_shipped: "Confirm Receipt",
+    buyer_hint_completed: "Transaction completed successfully. Funds transferred to seller.",
+    buyer_btn_completed: "Transaction Completed",
+
+    seller_hint_pending: "Buyer hasn't paid yet. Do not ship the product.",
+    seller_btn_pending: "Waiting for Buyer's Payment",
+    seller_hint_funded: "Balance is securely frozen. Please ship and deliver the product.",
+    seller_btn_funded: "Confirm Shipping",
+    seller_hint_shipped: "Shipping confirmed. Waiting for buyer to confirm receipt.",
+    seller_btn_shipped: "Waiting for Buyer's Confirmation",
+    seller_hint_completed: "Buyer confirmed receipt. Transaction completed successfully.",
+    seller_btn_completed: "Transaction Completed",
+
+    missing_product: "Product not found!",
+    loading_error: "Error loading data",
+    unknown_seller: "Unknown",
+    partner_buyer: "Buyer",
+    partner_seller: "Seller",
+    partner_unknown: "Buyer (Not available yet)",
+
+    pi_browser_required: "Please open the site from Pi Browser.",
+    conn_error: "Connection error.",
+    pay_success: "Payment frozen successfully!",
+    pay_error: "Error occurred during payment.",
+    updating: "Updating...",
+    update_success: "Status updated.",
+    update_error: "Failed to update status. Check your connection.",
+    confirm_receipt_msg: "Are you sure you received the product safely? This action cannot be undone.",
+    receipt_success: "Receipt confirmed successfully!",
+    receipt_error: "Failed to confirm receipt.",
+    
+    // Dispute Translations
+    btn_dispute: "Open Dispute",
+    dispute_title: "Open Dispute",
+    dispute_desc: "Please explain the issue. Site administration will review the transaction and messages.",
+    order_num: "Order: #",
     dispute_reason_label: "Reason for dispute:",
     ph_dispute_reason: "Explain what happened in detail...",
     attach_images_label: "Attach Evidence (Max 3 images):",
@@ -245,44 +321,70 @@ const translations = {
     empty_reason: "Please write the reason for the dispute.",
     dispute_success: "Dispute submitted successfully. Admin will review it shortly.",
     max_3_images: "Maximum 3 images allowed.",
-    uploading_image: "Uploading image..."
+    uploading_image: "Uploading image...",
+    send_error: "Failed to send message."
   },
   ar: {
-    page_title: "متابعة الطلبات - Deal Way",
-    seller_dashboard: "لوحة تحكم البائع",
-    product_orders: "طلبات المنتج",
-    loading_orders: "جاري جلب الطلبات...",
-    no_orders_title: "لا توجد طلبات حتى الآن",
-    no_orders_desc: "لم يقم أي شخص بشراء هذا المنتج عبر الوسيط بعد.",
-    error_title: "حدث خطأ",
-    error_desc: "لا يمكن تحميل الطلبات حالياً.",
-    order_num: "طلب: #",
-    buyer_id: "معرف المشتري:",
-    contact_hint: "تواصل معه لتحديد موعد/مكان التسليم.",
-    net_profit: "أرباحك الصافية:",
-    status_pending: "بانتظار الدفع",
-    status_funded: "مُجمّد (جاهز للشحن)",
-    status_shipped: "تم الشحن",
-    status_completed: "مكتمل",
-    action_pending: "بانتظار الدفع...",
-    action_ship: "تأكيد الشحن",
-    action_shipped: "في انتظار تأكيد المشتري...",
-    action_completed: "الرصيد متاح لك",
-    btn_message: "مراسلة",
-    buyer: "المشتري",
-    chat_placeholder: "اكتب رسالة للمشتري...",
-    no_msgs: "لا توجد رسائل سابقة. ابدأ المحادثة الآن!",
-    confirm_ship: "هل أنت متأكد أنك قمت بشحن المنتج وتسليمه للمشتري؟",
-    updating: "جاري التحديث...",
-    update_error: "حدث خطأ أثناء تحديث الحالة.",
-    send_error: "لم يتم إرسال الرسالة، تأكد من اتصالك.",
-    missing_id: "رقم المنتج مفقود",
+    page_title: "الدفع الآمن",
+    loading: "جاري التحميل...",
+    seller_label: "البائع:",
+    step_1: "طلب الشراء",
+    step_2: "تجميد الرصيد",
+    step_3: "تم الشحن",
+    step_4: "مكتمل",
+    verifying: "جاري التحقق من حالة المعاملة...",
+    please_wait: "يرجى الانتظار",
+    chat_with: "تواصل مع",
+    chat_secure_msg: "الرسائل مشفرة ومحفوظة لحماية حقوق الطرفين",
+    chat_placeholder: "اكتب رسالة بخصوص الاستلام...",
+    payment_details: "تفاصيل الدفع",
+    base_price: "المنتج:",
+    platform_fee: "رسوم المنصة والضمان (1%):",
+    total_to_pay: "الإجمالي المطلوب دفعه:",
+    freeze_notice: "سيتم تجميد هذا المبلغ في محفظة الموقع ولن يتم تسليمه للبائع إلا بعد تأكيدك للاستلام.",
+    confirm_pay_btn: "تأكيد والدفع الآن",
 
-    // Dispute & Image Translations
-    btn_dispute: "فتح نزاع",
+    buyer_hint_pending: "الخطوة الأولى: دفع المبلغ وتجميده في محفظة الموقع الآمنة.",
+    buyer_btn_pending: "دفع وتجميد الرصيد",
+    buyer_hint_funded: "تم تجميد رصيدك بنجاح. ننتظر من البائع شحن المنتج.",
+    buyer_btn_funded: "في انتظار الشحن",
+    buyer_hint_shipped: "البائع قام بشحن المنتج. اضغط هنا فقط عند استلامك للمنتج سليماً.",
+    buyer_btn_shipped: "تأكيد استلام المنتج",
+    buyer_hint_completed: "تمت المعاملة بنجاح وتم تحويل الرصيد للبائع.",
+    buyer_btn_completed: "معاملة مكتملة",
+
+    seller_hint_pending: "المشتري لم يقم بالدفع وتجميد الرصيد بعد. لا تقم بشحن المنتج.",
+    seller_btn_pending: "في انتظار دفع المشتري",
+    seller_hint_funded: "الرصيد مجمد الآن في الموقع بأمان. يرجى شحن وتسليم المنتج للمشتري.",
+    seller_btn_funded: "تأكيد شحن المنتج",
+    seller_hint_shipped: "لقد قمت بتأكيد الشحن. ننتظر تأكيد المشتري للاستلام لتحويل الرصيد لمحفظتك.",
+    seller_btn_shipped: "في انتظار تأكيد المشتري",
+    seller_hint_completed: "المشتري أكد الاستلام وتمت المعاملة بنجاح.",
+    seller_btn_completed: "معاملة مكتملة",
+
+    missing_product: "لم يتم العثور على المنتج!",
+    loading_error: "خطأ في التحميل",
+    unknown_seller: "غير معروف",
+    partner_buyer: "المشتري",
+    partner_seller: "البائع",
+    partner_unknown: "المشتري (غير متوفر بعد)",
+
+    pi_browser_required: "يرجى فتح الموقع من متصفح Pi Browser.",
+    conn_error: "خطأ في الاتصال.",
+    pay_success: "تم الدفع وتجميد الرصيد بنجاح!",
+    pay_error: "حدث خطأ أثناء عملية الدفع.",
+    updating: "جاري التحديث...",
+    update_success: "تم تحديث الحالة.",
+    update_error: "فشل تحديث الحالة. تأكد من اتصالك.",
+    confirm_receipt_msg: "هل أنت متأكد أنك استلمت المنتج سليماً؟ لا يمكن التراجع.",
+    receipt_success: "تم تأكيد الاستلام بنجاح!",
+    receipt_error: "فشل تأكيد الاستلام.",
+
+    // Dispute Translations
+    btn_dispute: "فتح نزاع (شكوى)",
     dispute_title: "فتح نزاع رسمي",
     dispute_desc: "يرجى توضيح المشكلة. ستقوم إدارة الموقع بمراجعة المعاملة والرسائل لحفظ الحقوق.",
-    product_label: "اسم المنتج:",
+    order_num: "رقم الطلب: #",
     dispute_reason_label: "سبب النزاع والمشكلة:",
     ph_dispute_reason: "اشرح بالتفصيل ما حدث...",
     attach_images_label: "إرفاق أدلة وصور (حد أقصى 3):",
@@ -291,7 +393,8 @@ const translations = {
     empty_reason: "يرجى كتابة سبب الشكوى أولاً.",
     dispute_success: "تم إرسال النزاع بنجاح. ستقوم الإدارة بمراجعته قريباً.",
     max_3_images: "الحد الأقصى 3 صور.",
-    uploading_image: "جاري الرفع..."
+    uploading_image: "جاري الرفع...",
+    send_error: "فشل الإرسال، تأكد من الإنترنت."
   }
 };
 
@@ -303,7 +406,7 @@ function toggleLanguage() {
     currentLang = currentLang === 'en' ? 'ar' : 'en';
     localStorage.setItem('lang', currentLang);
     updateLanguageUI();
-    if(currentUser) loadSellerOrders(); // Refresh table to translate dynamic content
+    if(currentUser) updateUI(); 
 }
 
 function updateLanguageUI() {
@@ -321,28 +424,37 @@ function updateLanguageUI() {
         const key = el.getAttribute('data-i18n');
         if (translations[currentLang][key]) {
             if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-               // handled separately
+               // Ignore placeholders here
             } else {
                el.innerHTML = translations[currentLang][key]; 
             }
         }
     });
 
-    document.getElementById('msgInput').placeholder = t('chat_placeholder');
+    document.getElementById('escrow-msg-input').placeholder = t('chat_placeholder');
     document.getElementById('disputeReason').placeholder = t('ph_dispute_reason');
-    document.title = t('page_title');
+    document.title = t('page_title') + " - Deal Way";
+    
+    if(currentEscrow) {
+        document.getElementById('chat-partner-name').innerText = (userRole === 'BUYER') ? t('partner_seller') : (otherUserId ? t('partner_buyer') : t('partner_unknown'));
+    }
 }
-
 
 // --- App Config & Logic ---
 const SUPABASE_URL = "https://ssvyxrtyvdxxojmunrcv.supabase.co";
 const SUPABASE_KEY = "sb_publishable_8egOM2-lT9J6kPQTbluC4w_8YHtB4K3"; 
-let sb;
-let currentUser = null;
-let currentChatBuyerId = null; 
-let chatSubscription = null;
-let globalProductName = "Loading...";
+const API_BASE = "/.netlify/functions"; 
 
+let sb; 
+let currentUser = null;
+let currentProduct = null;
+let currentEscrow = null; 
+let userRole = ''; 
+let otherUserId = ''; 
+let chatSubscription = null;
+let isPaymentAlertShown = false; 
+
+let finalTotalAmount = 0;
 let disputeFiles = []; 
 let chatSelectedImage = null; // الصورة المختارة للشات
 
@@ -354,17 +466,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   
   if(!productId) { 
-    alert(t('missing_id')); 
+    alert(t('missing_product')); 
     window.location.href = 'index.html'; 
     return; 
   }
 
-  // جلب اسم المنتج مرة واحدة لغرض النزاع
-  const { data: pData } = await sb.from("products").select("name").eq("id", productId).single();
-  if(pData) globalProductName = pData.name;
-
   await initPiUser(); 
-  await loadSellerOrders();
+  await loadEscrowData();
 });
 
 async function initPiUser() {
@@ -374,169 +482,205 @@ async function initPiUser() {
         const auth = await Pi.authenticate(["username", "payments"], (payment) => console.log(payment));
         currentUser = { uid: auth.user.uid, username: auth.user.username };
     }
-  } catch(e) { console.log("Pi Login Failed", e); }
+  } catch(e) { 
+    console.log("Pi Login Failed", e); 
+  }
 
   if(!currentUser) {
-      currentUser = { uid: "test_seller_123", username: "TestSeller" }; 
+      currentUser = { uid: "test_buyer_123", username: "TestBuyer" }; 
   }
 }
 
-async function loadSellerOrders() {
-  const container = document.getElementById('orders-container');
-
+async function loadEscrowData() {
   try {
-    const { data: orders, error } = await sb.from("escrow_transactions")
-      .select("*")
-      .eq("product_id", productId)
-      .eq("seller_pi_id", currentUser.uid)
-      .order("created_at", { ascending: false });
-
-    if (error) throw error;
-
-    if (!orders || orders.length === 0) {
-      container.innerHTML = `
-        <div class="empty-state">
-          <i class="fa-solid fa-box-open"></i>
-          <h3>${t('no_orders_title')}</h3>
-          <p>${t('no_orders_desc')}</p>
-        </div>
-      `;
+    const { data: prod, error: prodError } = await sb.from("products").select("*").eq("id", productId).single();
+    
+    if (prodError || !prod) {
+      document.getElementById('action-hint').innerText = t('missing_product');
+      document.getElementById('action-buttons').innerHTML = '';
       return;
     }
 
-    container.innerHTML = "";
-    orders.forEach(order => {
-      container.innerHTML += renderOrderCard(order);
-    });
+    currentProduct = prod;
+    userRole = (currentUser.uid === prod.seller_pi_id) ? 'SELLER' : 'BUYER';
+    
+    const imgUrl = (prod.images && prod.images.length > 0) ? prod.images[0] : (prod.image_url || "https://placehold.co/400x400/f1f5f9/94a3b8?text=No+Image");
+    document.getElementById('escrow-img').src = imgUrl;
+    document.getElementById('escrow-title').innerText = prod.name;
+    document.getElementById('escrow-price').innerText = prod.price;
+    document.getElementById('escrow-seller').innerText = prod.seller_username || t('unknown_seller');
 
+    let escrowData = null;
+    try {
+        let query = sb.from("escrow_transactions").select("*").eq("product_id", productId).order("created_at", { ascending: false }).limit(1);
+        
+        if(userRole === 'BUYER') {
+            query = query.eq("buyer_pi_id", currentUser.uid);
+        } else {
+            query = query.eq("seller_pi_id", currentUser.uid);
+        }
+
+        const { data: escrowList, error: escrowError } = await query;
+          
+        if(!escrowError && escrowList && escrowList.length > 0) {
+            escrowData = escrowList[0];
+        }
+    } catch(err) { console.log(err); }
+      
+    if(escrowData) {
+        currentEscrow = escrowData;
+        otherUserId = (userRole === 'BUYER') ? currentProduct.seller_pi_id : currentEscrow.buyer_pi_id;
+        document.getElementById('chat-partner-name').innerText = (userRole === 'BUYER') ? t('partner_seller') : t('partner_buyer');
+        
+        loadMessages();
+        subscribeToChat();
+    } else {
+        currentEscrow = { status: 'PENDING' };
+        if(userRole === 'BUYER') {
+           otherUserId = currentProduct.seller_pi_id;
+           document.getElementById('chat-partner-name').innerText = t('partner_seller');
+           loadMessages();
+           subscribeToChat();
+        } else {
+           document.getElementById('chat-partner-name').innerText = t('partner_unknown');
+           document.getElementById('escrow-msg-input').disabled = true;
+        }
+    }
+
+    updateUI();
   } catch (err) {
     console.error(err);
-    container.innerHTML = `
-      <div class="empty-state">
-        <i class="fa-solid fa-triangle-exclamation" style="color: var(--danger);"></i>
-        <h3>${t('error_title')}</h3>
-        <p>${t('error_desc')}</p>
-      </div>
-    `;
   }
 }
 
-function renderOrderCard(order) {
-  const dateLocale = currentLang === 'ar' ? 'ar-EG' : 'en-US';
-  const dateStr = new Date(order.created_at).toLocaleDateString(dateLocale, { year: 'numeric', month: 'short', day: 'numeric' });
+function updateUI() {
+  if(!currentEscrow) return;
+  const status = currentEscrow.status;
+  const hint = document.getElementById('action-hint');
+  const btns = document.getElementById('action-buttons');
+  const disputeArea = document.getElementById('dispute-area');
   
-  let statusText = "";
-  let statusIcon = "";
-  let actionHtml = "";
+  if(status === 'FUNDED') { setStep(2); }
+  else if(status === 'SHIPPED') { setStep(3); }
+  else if(status === 'COMPLETED') { setStep(4); }
+  else { setStep(1); } 
 
-  const marginEdge = currentLang === 'ar' ? 'margin-right: auto;' : 'margin-left: auto;';
-
-  if(order.status === 'PENDING') {
-      statusText = t('status_pending');
-      statusIcon = "fa-clock";
-      actionHtml = `<span style="color: var(--text-muted); font-size: 13px; margin-inline-start: auto;">${t('action_pending')}</span>`;
-  } else if(order.status === 'FUNDED') {
-      statusText = t('status_funded');
-      statusIcon = "fa-lock";
-      actionHtml = `<button onclick="updateOrderStatus('${order.id}', 'SHIPPED')" class="btn btn-primary" style="margin-inline-start: auto;"><i class="fa-solid fa-truck-fast"></i> ${t('action_ship')}</button>`;
-  } else if(order.status === 'SHIPPED') {
-      statusText = t('status_shipped');
-      statusIcon = "fa-truck-fast";
-      actionHtml = `<span style="color: var(--text-muted); font-size: 13px; margin-inline-start: auto;">${t('action_shipped')}</span>`;
-  } else if(order.status === 'COMPLETED') {
-      statusText = t('status_completed');
-      statusIcon = "fa-check-double";
-      actionHtml = `<button class="btn btn-ghost" style="margin-inline-start: auto;" disabled><i class="fa-solid fa-check"></i> ${t('action_completed')}</button>`;
+  if(userRole === 'BUYER') {
+      if(status === 'PENDING') {
+          hint.innerText = t('buyer_hint_pending');
+          btns.innerHTML = `<button class="btn btn-gold" onclick="openPaymentModal()"><i class="fa-brands fa-pied-piper-alt"></i> ${t('buyer_btn_pending')}</button>`;
+      } 
+      else if(status === 'FUNDED') {
+          hint.innerText = t('buyer_hint_funded');
+          btns.innerHTML = `<button class="btn btn-ghost" disabled><i class="fa-solid fa-clock"></i> ${t('buyer_btn_funded')}</button>`;
+      }
+      else if(status === 'SHIPPED') {
+          hint.innerText = t('buyer_hint_shipped');
+          btns.innerHTML = `<button class="btn btn-success" onclick="confirmReceipt()"><i class="fa-solid fa-handshake"></i> ${t('buyer_btn_shipped')}</button>`;
+      }
+      else if(status === 'COMPLETED') {
+          hint.innerText = t('buyer_hint_completed');
+          btns.innerHTML = `<button class="btn btn-ghost" disabled><i class="fa-solid fa-check"></i> ${t('buyer_btn_completed')}</button>`;
+      }
+  } 
+  else if (userRole === 'SELLER') {
+      if(status === 'PENDING') {
+          hint.innerText = t('seller_hint_pending');
+          btns.innerHTML = `<button class="btn btn-ghost" disabled><i class="fa-solid fa-clock"></i> ${t('seller_btn_pending')}</button>`;
+      }
+      else if(status === 'FUNDED') {
+          hint.innerText = t('seller_hint_funded');
+          btns.innerHTML = `<button class="btn btn-primary" onclick="markAsShipped()"><i class="fa-solid fa-box-open"></i> ${t('seller_btn_funded')}</button>`;
+      }
+      else if(status === 'SHIPPED') {
+          hint.innerText = t('seller_hint_shipped');
+          btns.innerHTML = `<button class="btn btn-ghost" disabled><i class="fa-solid fa-clock"></i> ${t('seller_btn_shipped')}</button>`;
+      }
+      else if(status === 'COMPLETED') {
+          hint.innerText = t('seller_hint_completed');
+          btns.innerHTML = `<button class="btn btn-ghost" disabled><i class="fa-solid fa-check"></i> ${t('seller_btn_completed')}</button>`;
+      }
   }
 
-  const shortBuyerId = order.buyer_pi_id.substring(0, 8) + "...";
-  const sellerNetAmount = parseFloat(order.amount).toFixed(2);
-
-  return `
-    <div class="order-card" id="order-${order.id}">
-      <div class="order-header">
-        <span>${t('order_num')}${order.id.substring(0, 6).toUpperCase()}</span>
-        <span>${dateStr}</span>
-      </div>
-      <div class="order-body">
-        <div class="buyer-info">
-          <div class="buyer-avatar"><i class="fa-solid fa-user"></i></div>
-          <div>
-            <div style="font-size: 14px; font-weight: 800;">${t('buyer_id')} <span style="font-family: monospace; color: var(--primary);">${shortBuyerId}</span></div>
-            <div style="font-size: 12px; color: var(--text-muted);">${t('contact_hint')}</div>
-          </div>
-        </div>
-        
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <div style="font-size: 16px; font-weight: 800; color: var(--text-main);">
-            ${t('net_profit')} <span style="color: var(--success);">${sellerNetAmount} π</span>
-          </div>
-          <div class="status-badge status-${order.status}">
-            <i class="fa-solid ${statusIcon}"></i> ${statusText}
-          </div>
-        </div>
-      </div>
-      <div class="order-actions">
-        <button onclick="openDisputeModal('${order.id}', '${order.buyer_pi_id}')" class="btn btn-ghost" style="padding: 10px 16px; color: var(--danger); border-color: #FECACA; margin-inline-end: auto;">
-           <i class="fa-solid fa-scale-balanced"></i> ${t('btn_dispute')}
-        </button>
-
-        <button onclick="openChat('${order.buyer_pi_id}')" class="btn btn-ghost" style="padding: 10px 16px;">
-           <i class="fa-solid fa-comment-dots" style="color: var(--primary);"></i> ${t('btn_message')}
-        </button>
-        ${actionHtml}
-      </div>
-    </div>
-  `;
+  // إظهار زر النزاع فقط إذا كان هناك طلب تم دفع أمواله
+  if(currentEscrow.id && status !== 'PENDING') {
+      disputeArea.style.display = 'block';
+  } else {
+      disputeArea.style.display = 'none';
+  }
 }
 
-async function updateOrderStatus(orderId, newStatus) {
-  if(!confirm(t('confirm_ship'))) return;
+function setStep(stepNumber) {
+  document.querySelectorAll('.step').forEach((el, index) => {
+      if(index < stepNumber) { el.classList.add('completed'); el.classList.remove('active'); }
+      else if(index === stepNumber - 1) { el.classList.add('active'); el.classList.remove('completed'); }
+      else { el.classList.remove('active', 'completed'); }
+  });
+}
+
+// ---- وظائف الدفع ----
+function openPaymentModal() {
+    const price = parseFloat(currentProduct.price);
+    const fee = price * 0.01; 
+    finalTotalAmount = price + fee;
+
+    document.getElementById('inv-price').innerText = price.toFixed(2) + ' π';
+    document.getElementById('inv-fee').innerText = fee.toFixed(3) + ' π';
+    document.getElementById('inv-total').innerText = finalTotalAmount.toFixed(3) + ' π';
+
+    document.getElementById('paymentModal').style.display = 'flex';
+}
+
+function closePaymentModal() {
+    document.getElementById('paymentModal').style.display = 'none';
+}
+
+async function executePayment() {
+  if (typeof Pi === 'undefined') { alert(t('pi_browser_required')); return; }
+  
+  const btn = document.getElementById('finalPayBtn');
+  btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> ${t('loading')}`;
+  btn.disabled = true;
+  isPaymentAlertShown = false;
 
   try {
-    const btn = document.querySelector(`#order-${orderId} .btn-primary`);
-    if(btn) btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> ${t('updating')}`;
+    const paymentData = {
+      amount: parseFloat(finalTotalAmount.toFixed(5)),
+      memo: `Escrow: ${currentProduct.name} + Fee`,
+      metadata: { productId: currentProduct.id, type: "escrow", buyerId: currentUser.uid }
+    };
 
-    const { error } = await sb.from('escrow_transactions')
-      .update({ status: newStatus })
-      .eq('id', orderId);
-
-    if (error) throw error;
-    await loadSellerOrders();
-
-  } catch (err) {
-    console.error(err);
-    alert(t('update_error'));
-    await loadSellerOrders(); 
+    const paymentCallbacks = {
+      onReadyForServerApproval: async (paymentId) => {
+        try {
+          await fetch(`${API_BASE}/approve`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId }) });
+        } catch (e) { if(!isPaymentAlertShown) alert(t('conn_error')); closePaymentModal(); updateUI(); }
+      },
+      onReadyForServerCompletion: async (paymentId, txid) => {
+        try {
+          const res = await fetch(`${API_BASE}/complete`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId, txid }) });
+          const json = await res.json();
+          if(res.ok && (json.completed || json.success)) {
+            if(!isPaymentAlertShown) { alert(t('pay_success')); isPaymentAlertShown = true; }
+            closePaymentModal();
+            document.getElementById('action-hint').innerText = t('verifying');
+            await loadEscrowData(); 
+          } else { if(!isPaymentAlertShown) alert(t('pay_error')); closePaymentModal(); updateUI(); }
+        } catch (err) { if(!isPaymentAlertShown) alert(t('conn_error')); closePaymentModal(); updateUI(); }
+      },
+      onCancel: (paymentId) => { closePaymentModal(); updateUI(); },
+      onError: (error, payment) => { if(!isPaymentAlertShown) alert(t('pay_error')); closePaymentModal(); updateUI(); }
+    };
+    
+    Pi.createPayment(paymentData, paymentCallbacks);
+  } catch(err) { 
+      if(!isPaymentAlertShown) alert(t('pay_error')); 
+      closePaymentModal(); 
+      updateUI(); 
   }
 }
 
-// ==========================================
-// وظائف الشات المباشر (Realtime & Image Upload)
-// ==========================================
-
-function openChat(buyerId) {
-    currentChatBuyerId = buyerId;
-    document.getElementById("chat-buyer-id").innerText = buyerId.substring(0, 12) + "...";
-    document.getElementById("chatModal").style.display = "flex";
-    document.getElementById("msgContainer").innerHTML = "";
-    
-    clearChatPreview();
-    loadMessages();
-    subscribeToChat();
-}
-
-function closeChat() {
-    document.getElementById("chatModal").style.display = "none";
-    currentChatBuyerId = null;
-    clearChatPreview();
-    if(chatSubscription) {
-        sb.removeChannel(chatSubscription);
-        chatSubscription = null;
-    }
-}
-
-// معاينة صورة الشات
+// ---- وظائف الشات ومعاينة الصور ----
 function handleChatImageSelection(input) {
     if(input.files && input.files[0]) {
         chatSelectedImage = input.files[0];
@@ -544,7 +688,7 @@ function handleChatImageSelection(input) {
         document.getElementById('chatPreviewImg').src = url;
         document.getElementById('chatPreviewContainer').style.display = 'block';
     }
-    input.value = ""; // لكي يستطيع المستخدم اختيار نفس الصورة لو مسحها ورجع
+    input.value = ""; 
 }
 
 function clearChatPreview() {
@@ -554,73 +698,59 @@ function clearChatPreview() {
 }
 
 async function loadMessages() {
-  if(!currentChatBuyerId) return;
-  const box = document.getElementById("msgContainer");
-  box.innerHTML = `<div style="text-align:center; padding:20px;"><i class="fa-solid fa-circle-notch fa-spin" style="color:var(--primary);"></i></div>`;
-  
-  const { data, error } = await sb.from("messages")
+  if(!otherUserId) return;
+  const box = document.getElementById("escrow-chat");
+  const { data } = await sb.from("messages")
     .select("*")
     .eq("product_id", productId)
-    .or(`and(sender_pi_id.eq.${currentUser.uid},receiver_pi_id.eq.${currentChatBuyerId}),and(sender_pi_id.eq.${currentChatBuyerId},receiver_pi_id.eq.${currentUser.uid})`)
-    .order("created_at", { ascending: true });
+    .or(`and(sender_pi_id.eq.${currentUser.uid},receiver_pi_id.eq.${otherUserId}),and(sender_pi_id.eq.${otherUserId},receiver_pi_id.eq.${currentUser.uid})`)
+    .order("created_at",{ascending:true});
     
-  box.innerHTML = "";
-  if(error) {
-      console.error(error);
-      return;
-  }
-  
-  if(data && data.length > 0) {
-    data.forEach(m => renderMsg(m));
-  } else {
-    box.innerHTML = `<div style="text-align:center; color:var(--text-light); font-size:13px; margin-top:20px;">${t('no_msgs')}</div>`;
-  }
+  if(data && data.length > 0) { box.innerHTML = ""; data.forEach(m => renderMsg(m)); }
 }
 
 function renderMsg(m){
     const div = document.createElement("div"); 
     const isMe = m.sender_pi_id === currentUser.uid;
-    div.className = `bubble ${isMe ? 'me' : 'other'}`; 
+    div.className = `bubble ${isMe ? 'me':'other'}`; 
     
     let imgHtml = m.image_url ? `<img src="${m.image_url}" class="chat-img-msg" onclick="window.open('${m.image_url}')">` : '';
     let textHtml = (m.content && m.content !== "📷 Image") ? `<div>${m.content}</div>` : '';
     
     div.innerHTML = `${textHtml}${imgHtml}`;
-    
-    const box = document.getElementById("msgContainer"); 
-    if(box.innerHTML.includes(t('no_msgs'))) box.innerHTML = "";
-    
+
+    const box = document.getElementById("escrow-chat"); 
     box.appendChild(div); 
     box.scrollTop = box.scrollHeight;
 }
 
-async function sendMsg() {
-    const inp = document.getElementById("msgInput"); 
+async function sendEscrowMsg(){
+    const inp = document.getElementById("escrow-msg-input"); 
     const text = inp.value.trim();
-    
-    if(!text && !chatSelectedImage) return; // لا نص ولا صورة
-    if(!currentChatBuyerId) return;
-    
+
+    if(!text && !chatSelectedImage) return; 
+    if(!otherUserId) return;
+
     const btn = document.getElementById('chatSendBtn');
     const origHTML = btn.innerHTML;
 
-    // 1. إذا كان نص فقط (إرسال فوري Optimistic UI)
+    // 1. إذا كان نص فقط (إرسال سريع)
     if(!chatSelectedImage) {
         inp.value = "";
         renderMsg({ sender_pi_id: currentUser.uid, content: text });
         
-        sb.from("messages").insert({ 
+        const { error } = await sb.from("messages").insert({ 
           product_id: productId, 
           sender_pi_id: currentUser.uid, 
-          receiver_pi_id: currentChatBuyerId, 
+          receiver_pi_id: otherUserId, 
           content: text 
-        }).then(({error}) => {
-            if(error) { console.error("Error:", error); alert(t('send_error')); }
         });
+        
+        if(error) { console.error("Error sending:", error); alert(t('send_error')); }
         return;
     }
 
-    // 2. إذا كان هناك صورة (نحتاج لرفعها أولاً)
+    // 2. إذا كان هناك صورة للرفع
     btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i>`;
     btn.disabled = true;
     inp.disabled = true;
@@ -639,21 +769,21 @@ async function sendMsg() {
 
         renderMsg({ sender_pi_id: currentUser.uid, content: msgContent, image_url: uploadedUrl });
 
-        await sb.from("messages").insert({ 
-          product_id: productId, 
-          sender_pi_id: currentUser.uid, 
-          receiver_pi_id: currentChatBuyerId, 
-          content: msgContent,
-          image_url: uploadedUrl
+        await sb.from("messages").insert({
+            product_id: productId, 
+            sender_pi_id: currentUser.uid, 
+            receiver_pi_id: otherUserId,
+            content: msgContent, 
+            image_url: uploadedUrl
         });
 
         inp.value = "";
         clearChatPreview();
     } catch(e) {
-        console.error(e);
+        console.error(e); 
         alert(t('send_error'));
     } finally {
-        btn.innerHTML = origHTML;
+        btn.innerHTML = origHTML; 
         btn.disabled = false;
         inp.disabled = false;
     }
@@ -661,39 +791,47 @@ async function sendMsg() {
 
 function subscribeToChat() {
   if(chatSubscription) sb.removeChannel(chatSubscription);
-  
-  chatSubscription = sb.channel(`seller-room-${productId}-${currentChatBuyerId}`)
-    .on('postgres_changes', { 
-      event: 'INSERT', 
-      schema: 'public', 
-      table: 'messages', 
-      filter: `product_id=eq.${productId}` 
-    }, payload => {
+  chatSubscription = sb.channel(`escrow-room-${productId}-${currentUser.uid}`).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `product_id=eq.${productId}` }, payload => {
        const m = payload.new;
-       if(m.sender_pi_id === currentChatBuyerId && m.receiver_pi_id === currentUser.uid) {
-         renderMsg(m);
-       }
-    })
-    .subscribe();
+       if(m.sender_pi_id === otherUserId && m.receiver_pi_id === currentUser.uid) renderMsg(m);
+    }).subscribe();
 }
 
-document.getElementById("msgInput").addEventListener("keypress", function(event) {
-  if (event.key === "Enter") {
-    event.preventDefault();
-    sendMsg();
-  }
-});
+document.getElementById("escrow-msg-input").addEventListener("keypress", function(event) { if (event.key === "Enter") { event.preventDefault(); sendEscrowMsg(); }});
 
+// ---- وظائف الشحن والاستلام ----
+async function markAsShipped() {
+  const btn = document.querySelector('.btn-primary');
+  btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> ${t('updating')}`;
+  btn.disabled = true;
+  try {
+    const { error } = await sb.from('escrow_transactions').update({ status: 'SHIPPED' }).eq('id', currentEscrow.id);
+    if (error) throw error;
+    currentEscrow.status = 'SHIPPED';
+    updateUI();
+  } catch(e) { alert(t('update_error')); updateUI(); }
+}
 
-// ==========================================
-// وظائف النزاع (Dispute) والصور
-// ==========================================
-let currentDispute = null; 
+async function confirmReceipt() {
+  if(!confirm(t('confirm_receipt_msg'))) return;
+  const btn = document.querySelector('.btn-success');
+  btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> ${t('updating')}`;
+  btn.disabled = true;
+  try {
+    const { error } = await sb.from('escrow_transactions').update({ status: 'COMPLETED' }).eq('id', currentEscrow.id);
+    if (error) throw error;
+    currentEscrow.status = 'COMPLETED';
+    updateUI();
+    alert(t('receipt_success'));
+  } catch(e) { alert(t('receipt_error')); updateUI(); }
+}
 
-function openDisputeModal(orderId, againstId) {
-    currentDispute = { orderId, againstId };
-    document.getElementById('disp-order-id').innerText = orderId.substring(0, 8).toUpperCase();
-    document.getElementById('disp-prod-name').innerText = globalProductName;
+// ---- وظائف النزاع (Dispute) وصور النزاع ----
+function openDisputeModal() {
+    if(!currentEscrow || !currentEscrow.id) return;
+    
+    document.getElementById('disp-order-id').innerText = currentEscrow.id.substring(0, 8).toUpperCase();
+    document.getElementById('disp-prod-name').innerText = currentProduct.name;
     document.getElementById('disputeReason').value = '';
     
     disputeFiles = [];
@@ -703,11 +841,9 @@ function openDisputeModal(orderId, againstId) {
 
 function closeDisputeModal() {
     document.getElementById('disputeModal').style.display = 'none';
-    currentDispute = null;
     disputeFiles = [];
 }
 
-// معالجة صور النزاع
 function handleDisputeImages(input) {
     if(!input.files) return;
     const newFiles = Array.from(input.files);
@@ -743,16 +879,13 @@ async function submitDispute() {
     const reasonInput = document.getElementById('disputeReason').value.trim();
     if(!reasonInput) return alert(t('empty_reason'));
 
-    const rolePrefix = currentLang === 'ar' ? "[شكوى من البائع] - " : "[Complaint from Seller] - ";
-    const finalReason = rolePrefix + reasonInput;
-
     const btn = document.getElementById('submitDisputeBtn');
-    const origText = btn.innerHTML;
+    const origHTML = btn.innerHTML;
     btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> ${t('updating')}`;
     btn.disabled = true;
 
     try {
-        // رفع الصور للنزاع
+        // 1. رفع الصور إذا وجدت
         let uploadedUrls = [];
         if(disputeFiles.length > 0) {
             btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> ${t('uploading_image')}`;
@@ -770,24 +903,25 @@ async function submitDispute() {
             }
         }
 
+        // 2. إرسال النزاع لقاعدة البيانات مع الصور
         const { error } = await sb.from('disputes').insert({
-            escrow_id: currentDispute.orderId,
-            product_id: productId,
+            escrow_id: currentEscrow.id,
+            product_id: currentProduct.id,
             complainer_pi_id: currentUser.uid,
-            against_pi_id: currentDispute.againstId,
-            reason: finalReason,
-            images: uploadedUrls.length > 0 ? uploadedUrls : null 
+            against_pi_id: otherUserId,
+            reason: reasonInput,
+            images: uploadedUrls.length > 0 ? uploadedUrls : null // حفظ المصفوفة في DB
         });
 
         if(error) throw error;
 
         alert(t('dispute_success'));
         closeDisputeModal();
-    } catch(err) {
-        console.error(err);
+    } catch(e) {
+        console.error(e);
         alert(t('update_error'));
     } finally {
-        btn.innerHTML = origText;
+        btn.innerHTML = origHTML;
         btn.disabled = false;
     }
 }
