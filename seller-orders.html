@@ -125,7 +125,7 @@ const SUPABASE_URL = "https://ssvyxrtyvdxxojmunrcv.supabase.co";
 const SUPABASE_KEY = "sb_publishable_8egOM2-lT9J6kPQTbluC4w_8YHtB4K3"; 
 let sb;
 let currentUser = null;
-let currentChatBuyerId = null; // المشتري الذي نتحدث معه حالياً
+let currentChatBuyerId = null; 
 let chatSubscription = null;
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -225,6 +225,11 @@ function renderOrderCard(order) {
 
   const shortBuyerId = order.buyer_pi_id.substring(0, 8) + "...";
 
+  // استخراج سعر المنتج الصافي للبائع 
+  // (نقسم المبلغ الإجمالي المحفوظ في الداتا بيز على 1.01 لإزالة رسوم المنصة 1%)
+  const grossAmount = parseFloat(order.amount);
+  const sellerNetAmount = (grossAmount / 1.01).toFixed(2);
+
   return `
     <div class="order-card" id="order-${order.id}">
       <div class="order-header">
@@ -242,7 +247,7 @@ function renderOrderCard(order) {
         
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <div style="font-size: 16px; font-weight: 800; color: var(--text-main);">
-            المبلغ: <span style="color: var(--accent);">${order.amount} π</span>
+            أرباحك الصافية: <span style="color: var(--success);">${sellerNetAmount} π</span>
           </div>
           <div class="status-badge status-${order.status}">
             <i class="fa-solid ${statusIcon}"></i> ${statusText}
