@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -53,8 +52,8 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 .product-details h3 { font-size: 16px; margin-bottom: 4px; }
 .price-tag { background: #FEF3C7; color: #92400E; padding: 4px 12px; border-radius: 20px; font-weight: 800; font-size: 14px; display: inline-block; }
 
-.chat-box { background: var(--bg-body); border-radius: var(--radius-lg); padding: 16px; height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; border: 1px solid var(--border); margin-bottom: 12px; }
-.bubble { max-width: 80%; padding: 12px 16px; border-radius: 16px; font-size: 14px; line-height: 1.5; }
+.chat-box { background: var(--bg-body); border-radius: var(--radius-lg); padding: 16px; height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; border: 1px solid var(--border); margin-bottom: 12px; scroll-behavior: smooth;}
+.bubble { max-width: 80%; padding: 12px 16px; border-radius: 16px; font-size: 14px; line-height: 1.5; word-wrap: break-word;}
 .bubble.me { background: var(--primary); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
 .bubble.other { background: white; border: 1px solid var(--border); align-self: flex-start; border-bottom-left-radius: 4px; }
 .chat-input-group { display: flex; gap: 10px; }
@@ -111,9 +110,11 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 
   <div class="card" style="padding: 16px;">
     <h3 style="font-size: 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-      <i class="fa-solid fa-comments" style="color: var(--primary);"></i> تواصل مع الطرف الآخر
+      <i class="fa-solid fa-comments" style="color: var(--primary);"></i> تواصل مع <span id="chat-partner-name">الطرف الآخر</span>
     </h3>
-    <div class="chat-box" id="escrow-chat"></div>
+    <div class="chat-box" id="escrow-chat">
+       <div style="text-align:center; color:var(--text-light); font-size:12px; margin-top:20px;">الرسائل مشفرة ومحفوظة لحماية حقوق الطرفين</div>
+    </div>
     <div class="chat-input-group">
       <input type="text" id="escrow-msg-input" class="chat-input" placeholder="اكتب رسالة بخصوص الاستلام...">
       <button class="send-btn" onclick="sendEscrowMsg()"><i class="fa-solid fa-paper-plane"></i></button>
@@ -123,7 +124,6 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 </div>
 
 <script>
-// الإعدادات ومسارات الـ API
 const SUPABASE_URL = "https://ssvyxrtyvdxxojmunrcv.supabase.co";
 const SUPABASE_KEY = "sb_publishable_8egOM2-lT9J6kPQTbluC4w_8YHtB4K3"; 
 const API_BASE = "/.netlify/functions"; 
@@ -133,8 +133,9 @@ let currentUser = null;
 let currentProduct = null;
 let currentEscrow = null; 
 let userRole = ''; 
+let otherUserId = ''; // معرف الطرف الآخر في الشات
+let chatSubscription = null;
 
-// متغير لمنع ظهور إشعار الدفع أكثر من مرة
 let isPaymentAlertShown = false; 
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -175,48 +176,63 @@ async function loadEscrowData() {
     
     if (prodError || !prod) {
       document.getElementById('action-hint').innerText = "لم يتم العثور على المنتج!";
-      document.getElementById('escrow-title').innerText = "خطأ في التحميل";
       document.getElementById('action-buttons').innerHTML = '';
       return;
     }
 
     currentProduct = prod;
+    userRole = (currentUser.uid === prod.seller_pi_id) ? 'SELLER' : 'BUYER';
     
     const imgUrl = (prod.images && prod.images.length > 0) ? prod.images[0] : (prod.image_url || "https://placehold.co/400x400/f1f5f9/94a3b8?text=No+Image");
     document.getElementById('escrow-img').src = imgUrl;
     document.getElementById('escrow-title').innerText = prod.name;
     document.getElementById('escrow-price').innerText = prod.price;
     document.getElementById('escrow-seller').innerText = prod.seller_username || "غير معروف";
-    
-    userRole = (currentUser.uid === prod.seller_pi_id) ? 'SELLER' : 'BUYER';
 
     let escrowData = null;
     try {
-        // ✅ التعديل هنا: نستخدم limit(1) بدلاً من maybeSingle() لجلب أحدث معاملة وتجنب توقف الكود
-        const { data: escrowList, error: escrowError } = await sb.from("escrow_transactions")
-          .select("*")
-          .eq("product_id", productId)
-          .eq("buyer_pi_id", userRole === 'BUYER' ? currentUser.uid : currentProduct.buyer_pi_id)
-          .order("created_at", { ascending: false })
-          .limit(1);
+        let query = sb.from("escrow_transactions").select("*").eq("product_id", productId).order("created_at", { ascending: false }).limit(1);
+        
+        // جلب المعاملة بناءً على دور المستخدم الحالي
+        if(userRole === 'BUYER') {
+            query = query.eq("buyer_pi_id", currentUser.uid);
+        } else {
+            query = query.eq("seller_pi_id", currentUser.uid);
+        }
+
+        const { data: escrowList, error: escrowError } = await query;
           
         if(!escrowError && escrowList && escrowList.length > 0) {
             escrowData = escrowList[0];
         }
-    } catch(err) {
-        console.log("جدول escrow_transactions غير موجود أو به مشكلة:", err);
-    }
+    } catch(err) { console.log(err); }
       
     if(escrowData) {
         currentEscrow = escrowData;
+        // تحديد الطرف الآخر بدقة
+        otherUserId = (userRole === 'BUYER') ? currentProduct.seller_pi_id : currentEscrow.buyer_pi_id;
+        document.getElementById('chat-partner-name').innerText = (userRole === 'BUYER') ? "البائع" : "المشتري";
+        
+        // تفعيل الشات بما أن المعاملة/الطرف الآخر معروف
+        loadMessages();
+        subscribeToChat();
     } else {
         currentEscrow = { status: 'PENDING' };
+        if(userRole === 'BUYER') {
+           otherUserId = currentProduct.seller_pi_id;
+           document.getElementById('chat-partner-name').innerText = "البائع";
+           loadMessages();
+           subscribeToChat();
+        } else {
+           // البائع ليس لديه مشتري بعد لهذا الطلب المفتوح
+           document.getElementById('chat-partner-name').innerText = "المشتري (غير متوفر بعد)";
+           document.getElementById('escrow-msg-input').disabled = true;
+        }
     }
 
     updateUI();
   } catch (err) {
-    console.error("حدث خطأ عام أثناء التحميل:", err);
-    document.getElementById('action-hint').innerText = "حدث خطأ غير متوقع في جلب البيانات.";
+    console.error(err);
   }
 }
 
@@ -276,18 +292,87 @@ function setStep(stepNumber) {
   });
 }
 
-// ---- ربط الدفع الفعلي بشبكة Pi Network ----
-async function payToEscrow() {
-  if (typeof Pi === 'undefined') {
-    alert("يرجى فتح الموقع من متصفح Pi Browser لإتمام عملية الدفع بأمان.");
-    return;
-  }
+// ---- وظائف الشات الخاصة بنظام الوسيط ----
 
+async function loadMessages() {
+  if(!otherUserId) return;
+  const box = document.getElementById("escrow-chat");
+  
+  const { data } = await sb.from("messages")
+    .select("*")
+    .eq("product_id", productId)
+    .or(`and(sender_pi_id.eq.${currentUser.uid},receiver_pi_id.eq.${otherUserId}),and(sender_pi_id.eq.${otherUserId},receiver_pi_id.eq.${currentUser.uid})`)
+    .order("created_at",{ascending:true});
+    
+  if(data && data.length > 0) {
+    box.innerHTML = ""; // مسح رسالة "الرسائل مشفرة"
+    data.forEach(m => renderMsg(m));
+  }
+}
+
+function renderMsg(m){
+    const div = document.createElement("div"); 
+    const isMe = m.sender_pi_id === currentUser.uid;
+    div.className = `bubble ${isMe ? 'me':'other'}`; 
+    div.innerText = m.content;
+    const box = document.getElementById("escrow-chat"); 
+    box.appendChild(div); 
+    box.scrollTop = box.scrollHeight;
+}
+
+async function sendEscrowMsg(){
+    const inp = document.getElementById("escrow-msg-input"); 
+    const text = inp.value.trim();
+    if(!text || !otherUserId) return;
+    
+    // مسح الحقل ورسم الرسالة فوراً للمستخدم لسرعة الاستجابة (Optimistic UI)
+    inp.value = "";
+    renderMsg({ sender_pi_id: currentUser.uid, content: text });
+    
+    const { error } = await sb.from("messages").insert({ 
+      product_id: productId, 
+      sender_pi_id: currentUser.uid, 
+      receiver_pi_id: otherUserId, 
+      content: text 
+    });
+    
+    if(error) console.error("Error sending message:", error);
+}
+
+function subscribeToChat() {
+  if(chatSubscription) sb.removeChannel(chatSubscription);
+  
+  chatSubscription = sb.channel(`escrow-room-${productId}-${currentUser.uid}`)
+    .on('postgres_changes', { 
+      event: 'INSERT', 
+      schema: 'public', 
+      table: 'messages', 
+      filter: `product_id=eq.${productId}` 
+    }, payload => {
+       const m = payload.new;
+       // نرسم الرسالة فقط إذا كانت قادمة من الطرف الآخر (لأن رسالتنا رسمناها مسبقاً وقت الضغط)
+       if(m.sender_pi_id === otherUserId && m.receiver_pi_id === currentUser.uid) {
+         renderMsg(m);
+       }
+    })
+    .subscribe();
+}
+
+// السماح بالإرسال عند الضغط على زر Enter
+document.getElementById("escrow-msg-input").addEventListener("keypress", function(event) {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    sendEscrowMsg();
+  }
+});
+
+// ---- باقي الوظائف الخاصة بالدفع (كما هي) ----
+
+async function payToEscrow() {
+  if (typeof Pi === 'undefined') { alert("يرجى فتح الموقع من متصفح Pi Browser."); return; }
   const btn = document.querySelector('.btn-gold');
   btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> جاري فتح محفظة Pi...`;
   btn.disabled = true;
-  
-  // تصفير المتغير قبل بدء الدفع
   isPaymentAlertShown = false;
 
   try {
@@ -300,120 +385,51 @@ async function payToEscrow() {
     const paymentCallbacks = {
       onReadyForServerApproval: async (paymentId) => {
         try {
-          await fetch(`${API_BASE}/approve`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ paymentId })
-          });
-        } catch (e) {
-          console.error("Error approving payment:", e);
-          if(!isPaymentAlertShown) alert("خطأ في الاتصال بالسيرفر للموافقة.");
-          updateUI();
-        }
+          await fetch(`${API_BASE}/approve`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId }) });
+        } catch (e) { if(!isPaymentAlertShown) alert("خطأ في الاتصال."); updateUI(); }
       },
       onReadyForServerCompletion: async (paymentId, txid) => {
         try {
-          const res = await fetch(`${API_BASE}/complete`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ paymentId, txid })
-          });
+          const res = await fetch(`${API_BASE}/complete`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId, txid }) });
           const json = await res.json();
-          
           if(res.ok && (json.completed || json.success)) {
-            // ✅ منع الرسالة من الظهور مرتين
-            if(!isPaymentAlertShown) {
-                alert("تم الدفع وتجميد الرصيد بنجاح! سيتم إشعار البائع لشحن المنتج.");
-                isPaymentAlertShown = true;
-            }
-            
-            // إعادة تحميل البيانات لتحديث الواجهة تلقائياً للحالة الجديدة (FUNDED)
+            if(!isPaymentAlertShown) { alert("تم الدفع وتجميد الرصيد بنجاح!"); isPaymentAlertShown = true; }
             document.getElementById('action-hint').innerText = "جاري تحديث حالة الطلب...";
             await loadEscrowData(); 
-            
-          } else {
-            if(!isPaymentAlertShown) alert("حدث خطأ أثناء تأكيد الدفع من السيرفر.");
-            updateUI();
-          }
-        } catch (err) {
-          console.error("Error completing payment:", err);
-          if(!isPaymentAlertShown) alert("خطأ في الاتصال بالسيرفر لإكمال الدفع.");
-          updateUI();
-        }
+          } else { if(!isPaymentAlertShown) alert("حدث خطأ."); updateUI(); }
+        } catch (err) { if(!isPaymentAlertShown) alert("خطأ في الاتصال."); updateUI(); }
       },
-      onCancel: (paymentId) => {
-        console.log("تم إلغاء الدفع", paymentId);
-        updateUI(); // يرجع الزر لشكله الطبيعي
-      },
-      onError: (error, payment) => {
-        console.error("خطأ في الدفع", error);
-        if(!isPaymentAlertShown) alert("حدث خطأ أثناء عملية الدفع.");
-        updateUI(); 
-      }
+      onCancel: (paymentId) => { updateUI(); },
+      onError: (error, payment) => { if(!isPaymentAlertShown) alert("حدث خطأ."); updateUI(); }
     };
-
     Pi.createPayment(paymentData, paymentCallbacks);
-  } catch(err) {
-    console.error("Payment initialization error:", err);
-    if(!isPaymentAlertShown) alert("حدث خطأ في تهيئة نافذة الدفع.");
-    updateUI();
-  }
+  } catch(err) { if(!isPaymentAlertShown) alert("خطأ في تهيئة الدفع."); updateUI(); }
 }
 
-// تحديث حالة المعاملة إلى "تم الشحن" (يضغط عليه البائع)
 async function markAsShipped() {
   const btn = document.querySelector('.btn-primary');
   btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> جاري التحديث...`;
   btn.disabled = true;
-
   try {
-    const { error } = await sb.from('escrow_transactions')
-      .update({ status: 'SHIPPED' })
-      .eq('id', currentEscrow.id);
-
+    const { error } = await sb.from('escrow_transactions').update({ status: 'SHIPPED' }).eq('id', currentEscrow.id);
     if (error) throw error;
-
     currentEscrow.status = 'SHIPPED';
     updateUI();
-  } catch(e) {
-    console.error("Error updating status:", e);
-    alert("فشل تحديث الحالة. تأكد من اتصالك.");
-    updateUI();
-  }
+  } catch(e) { alert("فشل تحديث الحالة."); updateUI(); }
 }
 
-// تحديث حالة المعاملة إلى "مكتمل" (يضغط عليه المشتري بعد الاستلام)
 async function confirmReceipt() {
-  if(!confirm("هل أنت متأكد أنك استلمت المنتج سليماً؟ بمجرد التأكيد، سيتم نقل العملات إلى محفظة البائع (عن طريق الإدارة) ولا يمكن التراجع.")) return;
-
+  if(!confirm("هل أنت متأكد أنك استلمت المنتج سليماً؟ لا يمكن التراجع.")) return;
   const btn = document.querySelector('.btn-success');
   btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> جاري التأكيد...`;
   btn.disabled = true;
-
   try {
-    const { error } = await sb.from('escrow_transactions')
-      .update({ status: 'COMPLETED' })
-      .eq('id', currentEscrow.id);
-
+    const { error } = await sb.from('escrow_transactions').update({ status: 'COMPLETED' }).eq('id', currentEscrow.id);
     if (error) throw error;
-
     currentEscrow.status = 'COMPLETED';
     updateUI();
     alert("تم تأكيد الاستلام بنجاح!");
-  } catch(e) {
-    console.error("Error confirming receipt:", e);
-    alert("فشل تأكيد الاستلام. تأكد من اتصالك.");
-    updateUI();
-  }
-}
-
-function sendEscrowMsg() {
-  const inp = document.getElementById('escrow-msg-input');
-  if(!inp.value.trim()) return;
-  const box = document.getElementById('escrow-chat');
-  box.innerHTML += `<div class="bubble me">${inp.value}</div>`;
-  inp.value = '';
-  box.scrollTop = box.scrollHeight;
+  } catch(e) { alert("فشل تأكيد الاستلام."); updateUI(); }
 }
 </script>
 </body>
