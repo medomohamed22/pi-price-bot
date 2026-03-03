@@ -3063,11 +3063,11 @@ async function sendMsg(){
     const btn = document.querySelector('.send-btn');
     const origHTML = btn.innerHTML;
 
-    // 1. إذا كان الإرسال نصاً فقط (إرسال فوري)
+    // 1. إذا كان الإرسال نصاً فقط
     if(!chatSelectedImage) {
         inp.value = "";
-        renderMsg({ sender_pi_id: user.uid, content: text }); // رسم الرسالة مباشرة
         
+        // أزلنا سطر الرسم الفوري من هنا، سنعتمد على نظام Realtime ليرسمها
         const { error } = await sb.from("messages").insert({ 
           product_id: activeChat.pid, 
           sender_pi_id: user.uid, 
@@ -3075,7 +3075,7 @@ async function sendMsg(){
           content: text 
         });
         
-        if(error) showToast('toast_send_fail', 'error');
+        if(error) showToast('حدث خطأ في الإرسال', 'error');
         return;
     }
 
@@ -3094,10 +3094,9 @@ async function sendMsg(){
         
         const { data } = sb.storage.from("images").getPublicUrl(path);
         const uploadedUrl = data.publicUrl;
-        const msgContent = text || "📷 صورة"; // نص بديل يظهر في صندوق الوارد
+        const msgContent = text || "📷 صورة"; 
 
-        // رسم الرسالة
-        renderMsg({ sender_pi_id: user.uid, content: msgContent, image_url: uploadedUrl });
+        // أزلنا سطر الرسم الفوري من هنا أيضاً
 
         const { error } = await sb.from("messages").insert({ 
           product_id: activeChat.pid, 
@@ -3113,13 +3112,14 @@ async function sendMsg(){
         clearChatPreview();
     } catch(e) {
         console.error(e);
-        showToast('toast_send_fail', 'error');
+        showToast('حدث خطأ في الإرسال', 'error');
     } finally {
         btn.innerHTML = origHTML;
         btn.disabled = false;
         inp.disabled = false;
     }
 }
+
 
 function closeChat() { 
   document.getElementById("chatModal").style.display = "none"; 
