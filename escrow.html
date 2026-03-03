@@ -10,6 +10,7 @@
 
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script defer src="https://sdk.minepi.com/pi-sdk.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
 
 <style>
 /* --- التصميم --- */
@@ -33,7 +34,6 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 .btn-ghost { background: white; border: 1px solid var(--border); color: var(--text-muted); }
 .btn-red { background: var(--danger); color: white; }
 
-/* تعديل الهيدر ليحتوي على زر اللغة */
 .header { background: white; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; }
 .header-left { display: flex; align-items: center; gap: 16px; }
 .back-btn { background: none; border: none; font-size: 20px; color: var(--text-main); cursor: pointer; }
@@ -69,15 +69,20 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 .bubble { max-width: 80%; padding: 12px 16px; border-radius: 16px; font-size: 14px; line-height: 1.5; word-wrap: break-word;}
 .bubble.me { background: var(--primary); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
 .bubble.other { background: white; border: 1px solid var(--border); align-self: flex-start; border-bottom-left-radius: 4px; }
-.chat-input-group { display: flex; gap: 10px; }
+.chat-img-msg { max-width: 100%; border-radius: 8px; margin-top: 4px; cursor: pointer; }
+
+/* أزرار وحقول الشات */
+.chat-input-group { display: flex; gap: 8px; align-items: center; }
 .chat-input { flex: 1; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-lg); font-family: inherit; outline: none; }
 .chat-input:focus { border-color: var(--primary); }
-.send-btn { background: var(--primary); color: white; border: none; width: 50px; border-radius: var(--radius-lg); cursor: pointer; }
+.send-btn { background: var(--primary); color: white; border: none; width: 50px; height: 50px; border-radius: var(--radius-lg); cursor: pointer; font-size: 18px; flex-shrink: 0; }
+.attach-btn { background: white; color: var(--text-muted); border: 1px solid var(--border); width: 50px; height: 50px; border-radius: var(--radius-lg); cursor: pointer; font-size: 18px; flex-shrink: 0; transition: 0.2s; }
+.attach-btn:hover { background: #F1F5F9; color: var(--primary); border-color: var(--primary); }
 
 /* تصميم النوافذ المنبثقة */
 .modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 2000; display: none; align-items: flex-end; justify-content: center; backdrop-filter: blur(8px); animation: fadeIn 0.3s ease;}
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-.sheet { background: white; width: 100%; max-width: 600px; border-radius: var(--radius-xl) var(--radius-xl) 0 0; padding: 28px; animation: slideUp 0.3s ease-out; }
+.sheet { background: white; width: 100%; max-width: 600px; border-radius: var(--radius-xl) var(--radius-xl) 0 0; padding: 28px; animation: slideUp 0.3s ease-out; max-height: 90vh; overflow-y: auto;}
 @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid var(--border); }
 .close-btn { width: 36px; height: 36px; border-radius: 50%; border: none; background: var(--bg-body); color: var(--text-muted); cursor: pointer; display: grid; place-items: center; font-size: 18px; }
@@ -87,6 +92,14 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 .input-box { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-lg); font-family: inherit; font-size: 14px; outline: none; margin-bottom: 16px; }
 .input-box:focus { border-color: var(--primary); }
 .input-label { display: block; font-weight: 800; margin-bottom: 8px; color: var(--text-main); font-size: 14px; }
+
+/* رفع الصور في النزاع */
+.upload-area { border: 2px dashed var(--border); border-radius: var(--radius-lg); padding: 20px; text-align: center; cursor: pointer; background: #F8FAFC; transition: 0.3s; margin-bottom: 16px; }
+.upload-area:hover { border-color: var(--primary); background: #F5F3FF; }
+.preview-container { display: flex; gap: 10px; overflow-x: auto; margin-bottom: 16px; }
+.preview-box { position: relative; width: 60px; height: 60px; flex-shrink: 0; border-radius: 8px; border: 1px solid var(--border); }
+.preview-box img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+.preview-box button { position: absolute; top: -5px; right: -5px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 10px; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -154,8 +167,11 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
        <div style="text-align:center; color:var(--text-light); font-size:12px; margin-top:20px;" data-i18n="chat_secure_msg">Messages are encrypted and saved to protect both parties.</div>
     </div>
     <div class="chat-input-group">
+      <input type="file" id="chatImgInput" accept="image/*" style="display:none;" onchange="sendChatImage(this)">
+      <button class="attach-btn" onclick="document.getElementById('chatImgInput').click()"><i class="fa-solid fa-image"></i></button>
+      
       <input type="text" id="escrow-msg-input" class="chat-input" placeholder="Type a message regarding delivery...">
-      <button class="send-btn" onclick="sendEscrowMsg()"><i class="fa-solid fa-paper-plane"></i></button>
+      <button class="send-btn" id="chatSendBtn" onclick="sendEscrowMsg()"><i class="fa-solid fa-paper-plane"></i></button>
     </div>
   </div>
 
@@ -206,6 +222,14 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 
     <label class="input-label" data-i18n="dispute_reason_label">Reason for dispute:</label>
     <textarea id="disputeReason" class="input-box" style="height: 100px; resize: none;" placeholder="Explain what happened..."></textarea>
+
+    <label class="input-label" data-i18n="attach_images_label">Attach Images (Max 3):</label>
+    <div class="upload-area" onclick="document.getElementById('disputeImgInput').click()">
+        <i class="fa-solid fa-cloud-arrow-up" style="font-size: 24px; color: var(--primary);"></i>
+        <div style="font-size: 12px; color: var(--text-muted); margin-top: 5px;" data-i18n="click_to_upload">Click to select images</div>
+    </div>
+    <input type="file" id="disputeImgInput" accept="image/*" multiple style="display:none" onchange="handleDisputeImages(this)">
+    <div id="dispute-image-previews" class="preview-container"></div>
 
     <button id="submitDisputeBtn" class="btn btn-red" onclick="submitDispute()">
       <i class="fa-solid fa-paper-plane"></i> <span data-i18n="submit_dispute">Submit Dispute</span>
@@ -281,9 +305,14 @@ const translations = {
     order_num: "Order: #",
     dispute_reason_label: "Reason for dispute:",
     ph_dispute_reason: "Explain what happened in detail...",
+    attach_images_label: "Attach Evidence (Max 3 images):",
+    click_to_upload: "Click to select images",
     submit_dispute: "Submit Dispute",
     empty_reason: "Please write the reason for the dispute.",
-    dispute_success: "Dispute submitted successfully. Admin will review it shortly."
+    dispute_success: "Dispute submitted successfully. Admin will review it shortly.",
+    max_3_images: "Maximum 3 images allowed.",
+    uploading_image: "Uploading image...",
+    send_error: "Failed to send message."
   },
   ar: {
     page_title: "الدفع الآمن",
@@ -348,9 +377,14 @@ const translations = {
     order_num: "رقم الطلب: #",
     dispute_reason_label: "سبب النزاع والمشكلة:",
     ph_dispute_reason: "اشرح بالتفصيل ما حدث...",
+    attach_images_label: "إرفاق أدلة وصور (حد أقصى 3):",
+    click_to_upload: "اضغط لاختيار الصور",
     submit_dispute: "إرسال الشكوى",
     empty_reason: "يرجى كتابة سبب الشكوى أولاً.",
-    dispute_success: "تم إرسال النزاع بنجاح. ستقوم الإدارة بمراجعته قريباً."
+    dispute_success: "تم إرسال النزاع بنجاح. ستقوم الإدارة بمراجعته قريباً.",
+    max_3_images: "الحد الأقصى 3 صور.",
+    uploading_image: "جاري الرفع...",
+    send_error: "فشل الإرسال، تأكد من الإنترنت."
   }
 };
 
@@ -362,7 +396,7 @@ function toggleLanguage() {
     currentLang = currentLang === 'en' ? 'ar' : 'en';
     localStorage.setItem('lang', currentLang);
     updateLanguageUI();
-    if(currentUser) updateUI(); // Refresh UI texts
+    if(currentUser) updateUI(); 
 }
 
 function updateLanguageUI() {
@@ -380,9 +414,9 @@ function updateLanguageUI() {
         const key = el.getAttribute('data-i18n');
         if (translations[currentLang][key]) {
             if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-               // Ignore placeholders here, handle separately
+               // Ignore placeholders here
             } else {
-               el.innerHTML = translations[currentLang][key]; // innerHTML allows bold tags inside translations if any
+               el.innerHTML = translations[currentLang][key]; 
             }
         }
     });
@@ -411,6 +445,7 @@ let chatSubscription = null;
 let isPaymentAlertShown = false; 
 
 let finalTotalAmount = 0;
+let disputeFiles = []; // مصفوفة لصور النزاع
 
 const urlParams = new URLSearchParams(window.location.search);
 const productId = urlParams.get('productId');
@@ -556,7 +591,7 @@ function updateUI() {
       }
   }
 
-  // إظهار زر النزاع فقط إذا كان هناك طلب تم دفع أمواله (أي شيء غير PENDING)
+  // إظهار زر النزاع فقط إذا كان هناك طلب تم دفع أمواله
   if(currentEscrow.id && status !== 'PENDING') {
       disputeArea.style.display = 'block';
   } else {
@@ -573,10 +608,9 @@ function setStep(stepNumber) {
 }
 
 // ---- وظائف الدفع ----
-
 function openPaymentModal() {
     const price = parseFloat(currentProduct.price);
-    const fee = price * 0.01; // 1%
+    const fee = price * 0.01; 
     finalTotalAmount = price + fee;
 
     document.getElementById('inv-price').innerText = price.toFixed(2) + ' π';
@@ -636,11 +670,15 @@ async function executePayment() {
 }
 
 // ---- وظائف الشات ----
-
 async function loadMessages() {
   if(!otherUserId) return;
   const box = document.getElementById("escrow-chat");
-  const { data } = await sb.from("messages").select("*").eq("product_id", productId).or(`and(sender_pi_id.eq.${currentUser.uid},receiver_pi_id.eq.${otherUserId}),and(sender_pi_id.eq.${otherUserId},receiver_pi_id.eq.${currentUser.uid})`).order("created_at",{ascending:true});
+  const { data } = await sb.from("messages")
+    .select("*")
+    .eq("product_id", productId)
+    .or(`and(sender_pi_id.eq.${currentUser.uid},receiver_pi_id.eq.${otherUserId}),and(sender_pi_id.eq.${otherUserId},receiver_pi_id.eq.${currentUser.uid})`)
+    .order("created_at",{ascending:true});
+    
   if(data && data.length > 0) { box.innerHTML = ""; data.forEach(m => renderMsg(m)); }
 }
 
@@ -648,7 +686,12 @@ function renderMsg(m){
     const div = document.createElement("div"); 
     const isMe = m.sender_pi_id === currentUser.uid;
     div.className = `bubble ${isMe ? 'me':'other'}`; 
-    div.innerText = m.content;
+    
+    let imgHtml = m.image_url ? `<img src="${m.image_url}" class="chat-img-msg" onclick="window.open('${m.image_url}')">` : '';
+    let textHtml = (m.content && m.content !== "📷 Image") ? `<div>${m.content}</div>` : '';
+    
+    div.innerHTML = `${textHtml}${imgHtml}`;
+
     const box = document.getElementById("escrow-chat"); 
     box.appendChild(div); 
     box.scrollTop = box.scrollHeight;
@@ -659,8 +702,48 @@ async function sendEscrowMsg(){
     const text = inp.value.trim();
     if(!text || !otherUserId) return;
     inp.value = "";
+    
+    // Optimistic UI update
     renderMsg({ sender_pi_id: currentUser.uid, content: text });
+    
     await sb.from("messages").insert({ product_id: productId, sender_pi_id: currentUser.uid, receiver_pi_id: otherUserId, content: text });
+}
+
+// إرسال صورة في الشات
+async function sendChatImage(input) {
+    const file = input.files[0];
+    if(!file || !otherUserId) return;
+    input.value = ""; 
+
+    const btn = document.getElementById('chatSendBtn');
+    const origHTML = btn.innerHTML;
+    btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i>`;
+    btn.disabled = true;
+
+    try {
+        const options = { maxSizeMB: 0.5, maxWidthOrHeight: 800, useWebWorker: true };
+        const compressed = await imageCompression(file, options);
+        const path = `chat/${currentUser.uid}_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+        
+        const { error: upErr } = await sb.storage.from("images").upload(path, compressed);
+        if(upErr) throw upErr;
+        
+        const { data } = sb.storage.from("images").getPublicUrl(path);
+
+        await sb.from("messages").insert({
+            product_id: productId, 
+            sender_pi_id: currentUser.uid, 
+            receiver_pi_id: otherUserId,
+            content: "📷 Image", 
+            image_url: data.publicUrl
+        });
+    } catch(e) {
+        console.error(e); 
+        alert(t('send_error'));
+    } finally {
+        btn.innerHTML = origHTML; 
+        btn.disabled = false;
+    }
 }
 
 function subscribeToChat() {
@@ -674,7 +757,6 @@ function subscribeToChat() {
 document.getElementById("escrow-msg-input").addEventListener("keypress", function(event) { if (event.key === "Enter") { event.preventDefault(); sendEscrowMsg(); }});
 
 // ---- وظائف الشحن والاستلام ----
-
 async function markAsShipped() {
   const btn = document.querySelector('.btn-primary');
   btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> ${t('updating')}`;
@@ -701,26 +783,58 @@ async function confirmReceipt() {
   } catch(e) { alert(t('receipt_error')); updateUI(); }
 }
 
-// ---- وظائف النزاع (Dispute) ----
-
+// ---- وظائف النزاع (Dispute) وصور النزاع ----
 function openDisputeModal() {
     if(!currentEscrow || !currentEscrow.id) return;
     
-    // تعبئة البيانات تلقائياً في الواجهة
     document.getElementById('disp-order-id').innerText = currentEscrow.id.substring(0, 8).toUpperCase();
     document.getElementById('disp-prod-name').innerText = currentProduct.name;
     document.getElementById('disputeReason').value = '';
     
+    disputeFiles = [];
+    updateDisputePreviews();
     document.getElementById('disputeModal').style.display = 'flex';
 }
 
 function closeDisputeModal() {
     document.getElementById('disputeModal').style.display = 'none';
+    disputeFiles = [];
+}
+
+function handleDisputeImages(input) {
+    if(!input.files) return;
+    const newFiles = Array.from(input.files);
+    if(disputeFiles.length + newFiles.length > 3) {
+        alert(t('max_3_images')); 
+        return;
+    }
+    disputeFiles = [...disputeFiles, ...newFiles];
+    updateDisputePreviews();
+    input.value = "";
+}
+
+function updateDisputePreviews() {
+    const container = document.getElementById('dispute-image-previews');
+    container.innerHTML = "";
+    disputeFiles.forEach((file, index) => {
+        const url = URL.createObjectURL(file);
+        container.innerHTML += `
+            <div class="preview-box">
+                <img src="${url}">
+                <button onclick="removeDisputeImage(${index})"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+        `;
+    });
+}
+
+function removeDisputeImage(idx) {
+    disputeFiles.splice(idx, 1);
+    updateDisputePreviews();
 }
 
 async function submitDispute() {
-    const reason = document.getElementById('disputeReason').value.trim();
-    if(!reason) return alert(t('empty_reason'));
+    const reasonInput = document.getElementById('disputeReason').value.trim();
+    if(!reasonInput) return alert(t('empty_reason'));
 
     const btn = document.getElementById('submitDisputeBtn');
     const origHTML = btn.innerHTML;
@@ -728,12 +842,32 @@ async function submitDispute() {
     btn.disabled = true;
 
     try {
+        // 1. رفع الصور إذا وجدت
+        let uploadedUrls = [];
+        if(disputeFiles.length > 0) {
+            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> ${t('uploading_image')}`;
+            const options = { maxSizeMB: 0.8, maxWidthOrHeight: 1200, useWebWorker: true };
+            
+            for(const file of disputeFiles) {
+                const compressed = await imageCompression(file, options);
+                const path = `disputes/${currentUser.uid}_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+                
+                const { error: upErr } = await sb.storage.from("images").upload(path, compressed);
+                if(upErr) throw upErr;
+                
+                const { data } = sb.storage.from("images").getPublicUrl(path);
+                uploadedUrls.push(data.publicUrl);
+            }
+        }
+
+        // 2. إرسال النزاع لقاعدة البيانات مع الصور
         const { error } = await sb.from('disputes').insert({
             escrow_id: currentEscrow.id,
             product_id: currentProduct.id,
             complainer_pi_id: currentUser.uid,
             against_pi_id: otherUserId,
-            reason: reason
+            reason: reasonInput,
+            images: uploadedUrls.length > 0 ? uploadedUrls : null // حفظ المصفوفة في DB
         });
 
         if(error) throw error;
