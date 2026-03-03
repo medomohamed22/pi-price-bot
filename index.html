@@ -2081,8 +2081,10 @@ function formatCurrency(num) {
 // --- Translations ---
 const translations = {
   ar: { 
-    brand_name: "Deal Way", login: "دخول",label_views: "المشاهدات:",stat_views: "المشاهدات",stat_chats: "المحادثات",feat_gold: "شريط ذهبي",feat_priority: "أولوية الظهور",feat_high_priority: "أولوية عالية",feat_save: "توفير 44%",
-    link_privacy: "سياسة الخصوصية", link_terms: "شروط الخدمة",
+    brand_name: "Deal Way", login: "دخول",label_views: "المشاهدات:",stat_views: "المشاهدات",stat_chats: "المحادثات",feat_gold: "شريط ذهبي",feat_priority: "أولوية الظهور",feat_high_priority: "أولوية عالية",feat_save: "توفير 44%",secure_escrow: "شراء آمن (نظام الوسيط)",
+
+    link_privacy: "سياسة الخصوصية", link_terms: "شروط الخدمة",    track_orders: "متابعة طلبات هذا المنتج",
+
     latest_products: "أحدث المعروضات", loading: "جاري التحميل...", 
     inbox_title: "الرسائل الواردة", guest_title: "أنت زائر", 
     guest_msg: "سجل الدخول لإدارة إعلاناتك.", add_ad_btn: "إضافة إعلان جديد", 
@@ -2120,7 +2122,8 @@ const translations = {
   },
   en: { 
     brand_name: "Deal Way", login: "Login",label_views: "Views:",stat_views: "Views",stat_chats: "Chats",feat_gold: "Golden Badge",feat_priority: "Standard Priority",feat_high_priority: "High Priority",feat_save: "Save 44%",
-    link_privacy: "Privacy Policy", link_terms: "Terms of Service",
+    link_privacy: "Privacy Policy", link_terms: "Terms of Service",    track_orders: "Track Product Orders",
+
     latest_products: "Latest Products", loading: "Loading...",     wallet_title: "My Wallet",
     wallet_desc: "Track your available and pending balance",
 
@@ -2132,7 +2135,8 @@ const translations = {
     label_prod_name: "Product Name", label_category: "Category", label_price: "Price (Pi)", 
     label_desc: "Description", publish_btn: "Publish Ad", 
     msg_placeholder: "Type a message...", promoted_badge: "Promoted", 
-    message_seller: "Message Seller", your_ad: "Your Ad", promote_ad_btn: "Promote Ad", 
+    message_seller: "Message Seller", your_ad: "Your Ad", promote_ad_btn: "Promote Ad", secure_escrow: "Secure Buy (Escrow)",
+
     promoted_until: "Promoted until", delete_btn: "Delete", confirm_delete: "Are you sure to delete?", 
     no_products: "No products found", no_messages: "No messages", toast_login_first: "Login required first", 
     toast_fill_data: "Please fill all required fields", toast_upload_fail: "Image upload failed", 
@@ -2626,48 +2630,49 @@ async function openProductDetails(pid) {
         </button>`; 
      }
      
-     // هنا أضفنا زر متابعة الطلبات للبائع في الأعلى
+          // هنا أضفنا زر متابعة الطلبات للبائع في الأعلى
      actionsDiv.innerHTML = `
        <button onclick="window.location.href='seller-orders.html?productId=${p.id}'" class="btn btn-success" style="width:100%; margin-bottom: 12px;">
-         <i class="fa-solid fa-boxes-packing"></i> متابعة طلبات هذا المنتج
+         <i class="fa-solid fa-boxes-packing"></i> ${t('track_orders')}
        </button>
        ${promoteBtn}
        <button onclick="deleteProduct(${p.id})" class="btn btn-danger" style="width:100%;">
          <i class="fa-solid fa-trash"></i> ${t('delete_btn')}
        </button>
      `;
-  } else {
-     // هنا أضفنا زر الدفع الآمن بجانب زر المراسلة للمشتري
-     actionsDiv.innerHTML = `
+     }
+     else {
+       // هنا أضفنا زر الدفع الآمن بجانب زر المراسلة للمشتري
+       actionsDiv.innerHTML = `
        <button onclick="window.location.href='escrow.html?productId=${p.id}'" class="btn btn-gold" style="width:100%; margin-bottom: 12px; font-size: 16px;">
-         <i class="fa-solid fa-shield-halved"></i> شراء آمن (نظام الوسيط)
+         <i class="fa-solid fa-shield-halved"></i> ${t('secure_escrow')}
        </button>
        <button onclick="openChatRoom(${p.id}, '${p.seller_pi_id}', '${p.name}', '${p.seller_username}')" class="btn btn-primary" style="width:100%">
          <i class="fa-solid fa-comment-dots"></i> ${t('message_seller')}
        </button>
      `;
-  }
-
-  
-  document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
-  const view = document.getElementById('view-details'); 
-  view.classList.remove('hidden'); 
-  view.style.animation = 'none'; 
-  view.offsetHeight; 
-  view.style.animation = 'fadeScale 0.5s ease-out';
-  
-  try {
-    const { data: userData } = await sb.from('users').select('created_at').eq('pi_id', p.seller_pi_id).single();
-    if(userData) { 
-      const date = new Date(userData.created_at); 
-      document.getElementById('detail-join-date').innerText = date.toLocaleDateString(currentLang === 'ar' ? 'ar-EG' : 'en-US'); 
-    }
-    const { count } = await sb.from('products').select('*', { count: 'exact', head: true }).eq('seller_pi_id', p.seller_pi_id);
-    document.getElementById('detail-ad-count').innerText = count || 0;
-  } catch(e) { 
-    console.error(e); 
-  }
-}
+     }
+     
+     
+     document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+     const view = document.getElementById('view-details');
+     view.classList.remove('hidden');
+     view.style.animation = 'none';
+     view.offsetHeight;
+     view.style.animation = 'fadeScale 0.5s ease-out';
+     
+     try {
+       const { data: userData } = await sb.from('users').select('created_at').eq('pi_id', p.seller_pi_id).single();
+       if (userData) {
+         const date = new Date(userData.created_at);
+         document.getElementById('detail-join-date').innerText = date.toLocaleDateString(currentLang === 'ar' ? 'ar-EG' : 'en-US');
+       }
+       const { count } = await sb.from('products').select('*', { count: 'exact', head: true }).eq('seller_pi_id', p.seller_pi_id);
+       document.getElementById('detail-ad-count').innerText = count || 0;
+     } catch (e) {
+       console.error(e);
+     }
+     }
 
 
 async function loadMyAds() {
