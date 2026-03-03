@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-<title>الدفع الآمن - Deal Way</title>
+<title data-i18n="page_title">Secure Escrow - Deal Way</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
@@ -32,9 +32,21 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 .btn-gold { background: linear-gradient(135deg, var(--accent) 0%, #D97706 100%); color: white; }
 .btn-ghost { background: white; border: 1px solid var(--border); color: var(--text-muted); }
 
-.header { background: white; padding: 16px 20px; display: flex; align-items: center; gap: 16px; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; }
+/* تعديل الهيدر ليحتوي على زر اللغة */
+.header { background: white; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; }
+.header-left { display: flex; align-items: center; gap: 16px; }
 .back-btn { background: none; border: none; font-size: 20px; color: var(--text-main); cursor: pointer; }
 .header-title { font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 8px; color: var(--primary); }
+
+.lang-btn {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: white; border: 1px solid var(--border);
+  color: var(--primary); font-weight: 800; font-size: 12px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  transition: border-color 0.2s, background-color 0.2s;
+}
+.lang-btn:hover { border-color: var(--primary); background-color: #F8FAFC; }
 
 .card { background: white; border-radius: var(--radius-xl); padding: 20px; border: 1px solid var(--border); margin-bottom: 20px; box-shadow: var(--shadow-sm); }
 
@@ -76,8 +88,13 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 <body>
 
 <header class="header">
-  <button class="back-btn" onclick="window.location.href='index.html'"><i class="fa-solid fa-arrow-right"></i></button>
-  <div class="header-title"><i class="fa-solid fa-shield-halved"></i> نظام الوسيط الآمن</div>
+  <div class="header-left">
+      <button class="back-btn" onclick="window.location.href='index.html'"><i id="back-icon" class="fa-solid fa-arrow-left"></i></button>
+      <div class="header-title"><i class="fa-solid fa-shield-halved"></i> <span data-i18n="page_title">Secure Escrow</span></div>
+  </div>
+  <button class="lang-btn" onclick="toggleLanguage()">
+      <span id="langText">AR</span>
+  </button>
 </header>
 
 <div class="container">
@@ -85,9 +102,9 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
   <div class="card product-summary">
     <img id="escrow-img" src="https://placehold.co/400x400/f1f5f9/94a3b8?text=Loading..." class="product-img" alt="Product">
     <div class="product-details">
-      <h3 id="escrow-title">جاري التحميل...</h3>
+      <h3 id="escrow-title" data-i18n="loading">Loading...</h3>
       <div class="price-tag"><span id="escrow-price">0</span> π</div>
-      <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">البائع: <span id="escrow-seller">...</span></div>
+      <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;"><span data-i18n="seller_label">Seller:</span> <span id="escrow-seller">...</span></div>
     </div>
   </div>
 
@@ -95,39 +112,39 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
     <div class="stepper" id="stepper-container">
       <div class="step active" id="step-1">
         <div class="step-icon"><i class="fa-solid fa-cart-shopping"></i></div>
-        <div class="step-text">طلب الشراء</div>
+        <div class="step-text" data-i18n="step_1">Order</div>
       </div>
       <div class="step" id="step-2">
         <div class="step-icon"><i class="fa-solid fa-lock"></i></div>
-        <div class="step-text">تجميد الرصيد</div>
+        <div class="step-text" data-i18n="step_2">Funded</div>
       </div>
       <div class="step" id="step-3">
         <div class="step-icon"><i class="fa-solid fa-truck-fast"></i></div>
-        <div class="step-text">تم الشحن</div>
+        <div class="step-text" data-i18n="step_3">Shipped</div>
       </div>
       <div class="step" id="step-4">
         <div class="step-icon"><i class="fa-solid fa-check-double"></i></div>
-        <div class="step-text">مكتمل</div>
+        <div class="step-text" data-i18n="step_4">Completed</div>
       </div>
     </div>
   </div>
 
   <div class="card" id="action-area" style="text-align: center;">
-    <p style="color: var(--text-muted); margin-bottom: 15px; font-size: 14px;" id="action-hint">جاري التحقق من حالة المعاملة...</p>
+    <p style="color: var(--text-muted); margin-bottom: 15px; font-size: 14px;" id="action-hint" data-i18n="verifying">Verifying transaction status...</p>
     <div id="action-buttons">
-      <button class="btn btn-ghost" disabled><i class="fa-solid fa-circle-notch fa-spin"></i> يرجى الانتظار</button>
+      <button class="btn btn-ghost" disabled><i class="fa-solid fa-circle-notch fa-spin"></i> <span data-i18n="please_wait">Please wait</span></button>
     </div>
   </div>
 
   <div class="card" style="padding: 16px;">
     <h3 style="font-size: 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-      <i class="fa-solid fa-comments" style="color: var(--primary);"></i> تواصل مع <span id="chat-partner-name">الطرف الآخر</span>
+      <i class="fa-solid fa-comments" style="color: var(--primary);"></i> <span data-i18n="chat_with">Chat with</span> <span id="chat-partner-name">...</span>
     </h3>
     <div class="chat-box" id="escrow-chat">
-       <div style="text-align:center; color:var(--text-light); font-size:12px; margin-top:20px;">الرسائل مشفرة ومحفوظة لحماية حقوق الطرفين</div>
+       <div style="text-align:center; color:var(--text-light); font-size:12px; margin-top:20px;" data-i18n="chat_secure_msg">Messages are encrypted and saved to protect both parties.</div>
     </div>
     <div class="chat-input-group">
-      <input type="text" id="escrow-msg-input" class="chat-input" placeholder="اكتب رسالة بخصوص الاستلام...">
+      <input type="text" id="escrow-msg-input" class="chat-input" placeholder="Type a message regarding delivery...">
       <button class="send-btn" onclick="sendEscrowMsg()"><i class="fa-solid fa-paper-plane"></i></button>
     </div>
   </div>
@@ -137,34 +154,190 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 <div id="paymentModal" class="modal" onclick="if(event.target==this) closePaymentModal()">
   <div class="sheet">
     <div class="modal-header">
-      <h3 style="font-size: 18px; color: var(--text-main);"><i class="fa-solid fa-file-invoice-dollar" style="color: var(--primary);"></i> تفاصيل الدفع</h3>
+      <h3 style="font-size: 18px; color: var(--text-main); margin: 0;"><i class="fa-solid fa-file-invoice-dollar" style="color: var(--primary);"></i> <span data-i18n="payment_details">Payment Details</span></h3>
       <button onclick="closePaymentModal()" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
     </div>
     
     <div class="invoice-box">
       <div class="invoice-row">
-        <span>سعر المنتج الأساسي:</span>
+        <span data-i18n="base_price">Base Product Price:</span>
         <span id="inv-price" style="font-weight: 700; color: var(--text-main);">0.00 π</span>
       </div>
       <div class="invoice-row">
-        <span>رسوم المنصة والضمان (1%):</span>
+        <span data-i18n="platform_fee">Platform & Escrow Fee (1%):</span>
         <span id="inv-fee" style="font-weight: 700; color: var(--danger);">0.00 π</span>
       </div>
       <div class="invoice-row total">
-        <span>الإجمالي المطلوب دفعه:</span>
+        <span data-i18n="total_to_pay">Total to Pay:</span>
         <span id="inv-total" style="color: var(--primary);">0.00 π</span>
       </div>
     </div>
 
-    <p style="font-size: 12px; color: var(--text-muted); text-align: center; margin-bottom: 16px;">سيتم تجميد هذا المبلغ في محفظة الموقع ولن يتم تسليمه للبائع إلا بعد تأكيدك للاستلام.</p>
+    <p style="font-size: 12px; color: var(--text-muted); text-align: center; margin-bottom: 16px;" data-i18n="freeze_notice">This amount will be frozen in the site's secure wallet and will not be released to the seller until you confirm receipt.</p>
     
     <button id="finalPayBtn" class="btn btn-gold" onclick="executePayment()">
-      <i class="fa-solid fa-lock"></i> تأكيد والدفع الآن
+      <i class="fa-solid fa-lock"></i> <span data-i18n="confirm_pay_btn">Confirm & Pay Now</span>
     </button>
   </div>
 </div>
 
 <script>
+// --- Translations Setup ---
+let currentLang = localStorage.getItem('lang') || 'en';
+
+const translations = {
+  en: {
+    page_title: "Secure Escrow",
+    loading: "Loading...",
+    seller_label: "Seller:",
+    step_1: "Order",
+    step_2: "Funded",
+    step_3: "Shipped",
+    step_4: "Completed",
+    verifying: "Verifying transaction status...",
+    please_wait: "Please wait",
+    chat_with: "Chat with",
+    chat_secure_msg: "Messages are encrypted and saved to protect both parties.",
+    chat_placeholder: "Type a message regarding delivery...",
+    payment_details: "Payment Details",
+    base_price: "Base Product Price:",
+    platform_fee: "Platform & Escrow Fee (1%):",
+    total_to_pay: "Total to Pay:",
+    freeze_notice: "This amount will be frozen in the site's secure wallet and will not be released to the seller until you confirm receipt.",
+    confirm_pay_btn: "Confirm & Pay Now",
+
+    buyer_hint_pending: "Step 1: Pay and freeze the amount in the secure site wallet.",
+    buyer_btn_pending: "Pay & Freeze Balance",
+    buyer_hint_funded: "Balance frozen successfully. Waiting for seller to ship.",
+    buyer_btn_funded: "Waiting for Shipping",
+    buyer_hint_shipped: "Seller shipped the product. Click here ONLY after receiving it safely.",
+    buyer_btn_shipped: "Confirm Receipt",
+    buyer_hint_completed: "Transaction completed successfully. Funds transferred to seller.",
+    buyer_btn_completed: "Transaction Completed",
+
+    seller_hint_pending: "Buyer hasn't paid yet. Do not ship the product.",
+    seller_btn_pending: "Waiting for Buyer's Payment",
+    seller_hint_funded: "Balance is securely frozen. Please ship and deliver the product.",
+    seller_btn_funded: "Confirm Shipping",
+    seller_hint_shipped: "Shipping confirmed. Waiting for buyer to confirm receipt.",
+    seller_btn_shipped: "Waiting for Buyer's Confirmation",
+    seller_hint_completed: "Buyer confirmed receipt. Transaction completed successfully.",
+    seller_btn_completed: "Transaction Completed",
+
+    missing_product: "Product not found!",
+    loading_error: "Error loading data",
+    unknown_seller: "Unknown",
+    partner_buyer: "Buyer",
+    partner_seller: "Seller",
+    partner_unknown: "Buyer (Not available yet)",
+
+    pi_browser_required: "Please open the site from Pi Browser.",
+    conn_error: "Connection error.",
+    pay_success: "Payment frozen successfully!",
+    pay_error: "Error occurred during payment.",
+    updating: "Updating...",
+    update_success: "Status updated.",
+    update_error: "Failed to update status. Check your connection.",
+    confirm_receipt_msg: "Are you sure you received the product safely? This action cannot be undone.",
+    receipt_success: "Receipt confirmed successfully!",
+    receipt_error: "Failed to confirm receipt."
+  },
+  ar: {
+    page_title: "الدفع الآمن",
+    loading: "جاري التحميل...",
+    seller_label: "البائع:",
+    step_1: "طلب الشراء",
+    step_2: "تجميد الرصيد",
+    step_3: "تم الشحن",
+    step_4: "مكتمل",
+    verifying: "جاري التحقق من حالة المعاملة...",
+    please_wait: "يرجى الانتظار",
+    chat_with: "تواصل مع",
+    chat_secure_msg: "الرسائل مشفرة ومحفوظة لحماية حقوق الطرفين",
+    chat_placeholder: "اكتب رسالة بخصوص الاستلام...",
+    payment_details: "تفاصيل الدفع",
+    base_price: "سعر المنتج الأساسي:",
+    platform_fee: "رسوم المنصة والضمان (1%):",
+    total_to_pay: "الإجمالي المطلوب دفعه:",
+    freeze_notice: "سيتم تجميد هذا المبلغ في محفظة الموقع ولن يتم تسليمه للبائع إلا بعد تأكيدك للاستلام.",
+    confirm_pay_btn: "تأكيد والدفع الآن",
+
+    buyer_hint_pending: "الخطوة الأولى: دفع المبلغ وتجميده في محفظة الموقع الآمنة.",
+    buyer_btn_pending: "دفع وتجميد الرصيد",
+    buyer_hint_funded: "تم تجميد رصيدك بنجاح. ننتظر من البائع شحن المنتج.",
+    buyer_btn_funded: "في انتظار الشحن",
+    buyer_hint_shipped: "البائع قام بشحن المنتج. اضغط هنا فقط عند استلامك للمنتج سليماً.",
+    buyer_btn_shipped: "تأكيد استلام المنتج",
+    buyer_hint_completed: "تمت المعاملة بنجاح وتم تحويل الرصيد للبائع.",
+    buyer_btn_completed: "معاملة مكتملة",
+
+    seller_hint_pending: "المشتري لم يقم بالدفع وتجميد الرصيد بعد. لا تقم بشحن المنتج.",
+    seller_btn_pending: "في انتظار دفع المشتري",
+    seller_hint_funded: "الرصيد مجمد الآن في الموقع بأمان. يرجى شحن وتسليم المنتج للمشتري.",
+    seller_btn_funded: "تأكيد شحن المنتج",
+    seller_hint_shipped: "لقد قمت بتأكيد الشحن. ننتظر تأكيد المشتري للاستلام لتحويل الرصيد لمحفظتك.",
+    seller_btn_shipped: "في انتظار تأكيد المشتري",
+    seller_hint_completed: "المشتري أكد الاستلام وتمت المعاملة بنجاح.",
+    seller_btn_completed: "معاملة مكتملة",
+
+    missing_product: "لم يتم العثور على المنتج!",
+    loading_error: "خطأ في التحميل",
+    unknown_seller: "غير معروف",
+    partner_buyer: "المشتري",
+    partner_seller: "البائع",
+    partner_unknown: "المشتري (غير متوفر بعد)",
+
+    pi_browser_required: "يرجى فتح الموقع من متصفح Pi Browser.",
+    conn_error: "خطأ في الاتصال.",
+    pay_success: "تم الدفع وتجميد الرصيد بنجاح!",
+    pay_error: "حدث خطأ أثناء عملية الدفع.",
+    updating: "جاري التحديث...",
+    update_success: "تم تحديث الحالة.",
+    update_error: "فشل تحديث الحالة. تأكد من اتصالك.",
+    confirm_receipt_msg: "هل أنت متأكد أنك استلمت المنتج سليماً؟ لا يمكن التراجع.",
+    receipt_success: "تم تأكيد الاستلام بنجاح!",
+    receipt_error: "فشل تأكيد الاستلام."
+  }
+};
+
+function t(key) {
+    return translations[currentLang][key] || key;
+}
+
+function toggleLanguage() {
+    currentLang = currentLang === 'en' ? 'ar' : 'en';
+    localStorage.setItem('lang', currentLang);
+    updateLanguageUI();
+    if(currentUser) updateUI(); // Refresh UI texts
+}
+
+function updateLanguageUI() {
+    document.documentElement.lang = currentLang;
+    document.documentElement.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
+    
+    document.getElementById('langText').innerText = currentLang === 'ar' ? 'EN' : 'AR';
+    
+    const backIcon = document.getElementById('back-icon');
+    if (backIcon) {
+        backIcon.className = currentLang === 'ar' ? 'fa-solid fa-arrow-right' : 'fa-solid fa-arrow-left';
+    }
+
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (translations[currentLang][key]) {
+            el.innerText = translations[currentLang][key];
+        }
+    });
+
+    document.getElementById('escrow-msg-input').placeholder = t('chat_placeholder');
+    document.title = t('page_title') + " - Deal Way";
+    
+    if(currentEscrow) {
+        document.getElementById('chat-partner-name').innerText = (userRole === 'BUYER') ? t('partner_seller') : (otherUserId ? t('partner_buyer') : t('partner_unknown'));
+    }
+}
+
+// --- App Config & Logic ---
 const SUPABASE_URL = "https://ssvyxrtyvdxxojmunrcv.supabase.co";
 const SUPABASE_KEY = "sb_publishable_8egOM2-lT9J6kPQTbluC4w_8YHtB4K3"; 
 const API_BASE = "/.netlify/functions"; 
@@ -178,17 +351,17 @@ let otherUserId = '';
 let chatSubscription = null;
 let isPaymentAlertShown = false; 
 
-// متغيرات الدفع
 let finalTotalAmount = 0;
 
 const urlParams = new URLSearchParams(window.location.search);
 const productId = urlParams.get('productId');
 
 document.addEventListener("DOMContentLoaded", async () => {
+  updateLanguageUI();
   sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   
   if(!productId) { 
-    alert("رقم المنتج مفقود"); 
+    alert(t('missing_product')); 
     window.location.href = 'index.html'; 
     return; 
   }
@@ -205,7 +378,7 @@ async function initPiUser() {
         currentUser = { uid: auth.user.uid, username: auth.user.username };
     }
   } catch(e) { 
-    console.log("فشل تسجيل الدخول عبر Pi، سيتم استخدام حساب اختباري.", e); 
+    console.log("Pi Login Failed", e); 
   }
 
   if(!currentUser) {
@@ -218,7 +391,7 @@ async function loadEscrowData() {
     const { data: prod, error: prodError } = await sb.from("products").select("*").eq("id", productId).single();
     
     if (prodError || !prod) {
-      document.getElementById('action-hint').innerText = "لم يتم العثور على المنتج!";
+      document.getElementById('action-hint').innerText = t('missing_product');
       document.getElementById('action-buttons').innerHTML = '';
       return;
     }
@@ -230,7 +403,7 @@ async function loadEscrowData() {
     document.getElementById('escrow-img').src = imgUrl;
     document.getElementById('escrow-title').innerText = prod.name;
     document.getElementById('escrow-price').innerText = prod.price;
-    document.getElementById('escrow-seller').innerText = prod.seller_username || "غير معروف";
+    document.getElementById('escrow-seller').innerText = prod.seller_username || t('unknown_seller');
 
     let escrowData = null;
     try {
@@ -252,7 +425,7 @@ async function loadEscrowData() {
     if(escrowData) {
         currentEscrow = escrowData;
         otherUserId = (userRole === 'BUYER') ? currentProduct.seller_pi_id : currentEscrow.buyer_pi_id;
-        document.getElementById('chat-partner-name').innerText = (userRole === 'BUYER') ? "البائع" : "المشتري";
+        document.getElementById('chat-partner-name').innerText = (userRole === 'BUYER') ? t('partner_seller') : t('partner_buyer');
         
         loadMessages();
         subscribeToChat();
@@ -260,11 +433,11 @@ async function loadEscrowData() {
         currentEscrow = { status: 'PENDING' };
         if(userRole === 'BUYER') {
            otherUserId = currentProduct.seller_pi_id;
-           document.getElementById('chat-partner-name').innerText = "البائع";
+           document.getElementById('chat-partner-name').innerText = t('partner_seller');
            loadMessages();
            subscribeToChat();
         } else {
-           document.getElementById('chat-partner-name').innerText = "المشتري (غير متوفر بعد)";
+           document.getElementById('chat-partner-name').innerText = t('partner_unknown');
            document.getElementById('escrow-msg-input').disabled = true;
         }
     }
@@ -276,6 +449,7 @@ async function loadEscrowData() {
 }
 
 function updateUI() {
+  if(!currentEscrow) return;
   const status = currentEscrow.status;
   const hint = document.getElementById('action-hint');
   const btns = document.getElementById('action-buttons');
@@ -287,39 +461,38 @@ function updateUI() {
 
   if(userRole === 'BUYER') {
       if(status === 'PENDING') {
-          hint.innerText = "الخطوة الأولى: دفع المبلغ وتجميده في محفظة الموقع الآمنة.";
-          // تم تغيير الزر ليفتح الفاتورة أولاً
-          btns.innerHTML = `<button class="btn btn-gold" onclick="openPaymentModal()"><i class="fa-brands fa-pied-piper-alt"></i> دفع وتجميد الرصيد</button>`;
+          hint.innerText = t('buyer_hint_pending');
+          btns.innerHTML = `<button class="btn btn-gold" onclick="openPaymentModal()"><i class="fa-brands fa-pied-piper-alt"></i> ${t('buyer_btn_pending')}</button>`;
       } 
       else if(status === 'FUNDED') {
-          hint.innerText = "تم تجميد رصيدك بنجاح. ننتظر من البائع شحن المنتج.";
-          btns.innerHTML = `<button class="btn btn-ghost" disabled><i class="fa-solid fa-clock"></i> في انتظار الشحن</button>`;
+          hint.innerText = t('buyer_hint_funded');
+          btns.innerHTML = `<button class="btn btn-ghost" disabled><i class="fa-solid fa-clock"></i> ${t('buyer_btn_funded')}</button>`;
       }
       else if(status === 'SHIPPED') {
-          hint.innerText = "البائع قام بشحن المنتج. اضغط هنا فقط عند استلامك للمنتج سليماً.";
-          btns.innerHTML = `<button class="btn btn-success" onclick="confirmReceipt()"><i class="fa-solid fa-handshake"></i> تأكيد استلام المنتج</button>`;
+          hint.innerText = t('buyer_hint_shipped');
+          btns.innerHTML = `<button class="btn btn-success" onclick="confirmReceipt()"><i class="fa-solid fa-handshake"></i> ${t('buyer_btn_shipped')}</button>`;
       }
       else if(status === 'COMPLETED') {
-          hint.innerText = "تمت المعاملة بنجاح وتم تحويل الرصيد للبائع.";
-          btns.innerHTML = `<button class="btn btn-ghost" disabled><i class="fa-solid fa-check"></i> معاملة مكتملة</button>`;
+          hint.innerText = t('buyer_hint_completed');
+          btns.innerHTML = `<button class="btn btn-ghost" disabled><i class="fa-solid fa-check"></i> ${t('buyer_btn_completed')}</button>`;
       }
   } 
   else if (userRole === 'SELLER') {
       if(status === 'PENDING') {
-          hint.innerText = "المشتري لم يقم بالدفع وتجميد الرصيد بعد. لا تقم بشحن المنتج.";
-          btns.innerHTML = `<button class="btn btn-ghost" disabled><i class="fa-solid fa-clock"></i> في انتظار دفع المشتري</button>`;
+          hint.innerText = t('seller_hint_pending');
+          btns.innerHTML = `<button class="btn btn-ghost" disabled><i class="fa-solid fa-clock"></i> ${t('seller_btn_pending')}</button>`;
       }
       else if(status === 'FUNDED') {
-          hint.innerText = "الرصيد مجمد الآن في الموقع بأمان. يرجى شحن وتسليم المنتج للمشتري.";
-          btns.innerHTML = `<button class="btn btn-primary" onclick="markAsShipped()"><i class="fa-solid fa-box-open"></i> تأكيد شحن المنتج</button>`;
+          hint.innerText = t('seller_hint_funded');
+          btns.innerHTML = `<button class="btn btn-primary" onclick="markAsShipped()"><i class="fa-solid fa-box-open"></i> ${t('seller_btn_funded')}</button>`;
       }
       else if(status === 'SHIPPED') {
-          hint.innerText = "لقد قمت بتأكيد الشحن. ننتظر تأكيد المشتري للاستلام لتحويل الرصيد لمحفظتك.";
-          btns.innerHTML = `<button class="btn btn-ghost" disabled><i class="fa-solid fa-clock"></i> في انتظار تأكيد المشتري</button>`;
+          hint.innerText = t('seller_hint_shipped');
+          btns.innerHTML = `<button class="btn btn-ghost" disabled><i class="fa-solid fa-clock"></i> ${t('seller_btn_shipped')}</button>`;
       }
       else if(status === 'COMPLETED') {
-          hint.innerText = "المشتري أكد الاستلام وتمت المعاملة بنجاح.";
-          btns.innerHTML = `<button class="btn btn-ghost" disabled><i class="fa-solid fa-check"></i> معاملة مكتملة</button>`;
+          hint.innerText = t('seller_hint_completed');
+          btns.innerHTML = `<button class="btn btn-ghost" disabled><i class="fa-solid fa-check"></i> ${t('seller_btn_completed')}</button>`;
       }
   }
 }
@@ -336,7 +509,7 @@ function setStep(stepNumber) {
 
 function openPaymentModal() {
     const price = parseFloat(currentProduct.price);
-    const fee = price * 0.01; // نسبة 1%
+    const fee = price * 0.01; // 1%
     finalTotalAmount = price + fee;
 
     document.getElementById('inv-price').innerText = price.toFixed(2) + ' π';
@@ -351,17 +524,17 @@ function closePaymentModal() {
 }
 
 async function executePayment() {
-  if (typeof Pi === 'undefined') { alert("يرجى فتح الموقع من متصفح Pi Browser."); return; }
+  if (typeof Pi === 'undefined') { alert(t('pi_browser_required')); return; }
   
   const btn = document.getElementById('finalPayBtn');
-  btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> جاري فتح محفظة Pi...`;
+  btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> ${t('loading')}`;
   btn.disabled = true;
   isPaymentAlertShown = false;
 
   try {
     const paymentData = {
-      amount: parseFloat(finalTotalAmount.toFixed(5)), // إرسال المبلغ الإجمالي (السعر + الرسوم)
-      memo: `شراء آمن لمنتج: ${currentProduct.name} + رسوم الخدمة`,
+      amount: parseFloat(finalTotalAmount.toFixed(5)),
+      memo: `Escrow: ${currentProduct.name} + Fee`,
       metadata: { productId: currentProduct.id, type: "escrow", buyerId: currentUser.uid }
     };
 
@@ -369,27 +542,27 @@ async function executePayment() {
       onReadyForServerApproval: async (paymentId) => {
         try {
           await fetch(`${API_BASE}/approve`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId }) });
-        } catch (e) { if(!isPaymentAlertShown) alert("خطأ في الاتصال."); closePaymentModal(); updateUI(); }
+        } catch (e) { if(!isPaymentAlertShown) alert(t('conn_error')); closePaymentModal(); updateUI(); }
       },
       onReadyForServerCompletion: async (paymentId, txid) => {
         try {
           const res = await fetch(`${API_BASE}/complete`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId, txid }) });
           const json = await res.json();
           if(res.ok && (json.completed || json.success)) {
-            if(!isPaymentAlertShown) { alert("تم الدفع وتجميد الرصيد بنجاح!"); isPaymentAlertShown = true; }
+            if(!isPaymentAlertShown) { alert(t('pay_success')); isPaymentAlertShown = true; }
             closePaymentModal();
-            document.getElementById('action-hint').innerText = "جاري تحديث حالة الطلب...";
+            document.getElementById('action-hint').innerText = t('verifying');
             await loadEscrowData(); 
-          } else { if(!isPaymentAlertShown) alert("حدث خطأ."); closePaymentModal(); updateUI(); }
-        } catch (err) { if(!isPaymentAlertShown) alert("خطأ في الاتصال."); closePaymentModal(); updateUI(); }
+          } else { if(!isPaymentAlertShown) alert(t('pay_error')); closePaymentModal(); updateUI(); }
+        } catch (err) { if(!isPaymentAlertShown) alert(t('conn_error')); closePaymentModal(); updateUI(); }
       },
       onCancel: (paymentId) => { closePaymentModal(); updateUI(); },
-      onError: (error, payment) => { if(!isPaymentAlertShown) alert("حدث خطأ أثناء عملية الدفع."); closePaymentModal(); updateUI(); }
+      onError: (error, payment) => { if(!isPaymentAlertShown) alert(t('pay_error')); closePaymentModal(); updateUI(); }
     };
     
     Pi.createPayment(paymentData, paymentCallbacks);
   } catch(err) { 
-      if(!isPaymentAlertShown) alert("خطأ في تهيئة الدفع."); 
+      if(!isPaymentAlertShown) alert(t('pay_error')); 
       closePaymentModal(); 
       updateUI(); 
   }
@@ -437,28 +610,28 @@ document.getElementById("escrow-msg-input").addEventListener("keypress", functio
 
 async function markAsShipped() {
   const btn = document.querySelector('.btn-primary');
-  btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> جاري التحديث...`;
+  btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> ${t('updating')}`;
   btn.disabled = true;
   try {
     const { error } = await sb.from('escrow_transactions').update({ status: 'SHIPPED' }).eq('id', currentEscrow.id);
     if (error) throw error;
     currentEscrow.status = 'SHIPPED';
     updateUI();
-  } catch(e) { alert("فشل تحديث الحالة."); updateUI(); }
+  } catch(e) { alert(t('update_error')); updateUI(); }
 }
 
 async function confirmReceipt() {
-  if(!confirm("هل أنت متأكد أنك استلمت المنتج سليماً؟ لا يمكن التراجع.")) return;
+  if(!confirm(t('confirm_receipt_msg'))) return;
   const btn = document.querySelector('.btn-success');
-  btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> جاري التأكيد...`;
+  btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> ${t('updating')}`;
   btn.disabled = true;
   try {
     const { error } = await sb.from('escrow_transactions').update({ status: 'COMPLETED' }).eq('id', currentEscrow.id);
     if (error) throw error;
     currentEscrow.status = 'COMPLETED';
     updateUI();
-    alert("تم تأكيد الاستلام بنجاح!");
-  } catch(e) { alert("فشل تأكيد الاستلام."); updateUI(); }
+    alert(t('receipt_success'));
+  } catch(e) { alert(t('receipt_error')); updateUI(); }
 }
 </script>
 </body>
