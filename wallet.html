@@ -73,6 +73,11 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 .input-box { width: 100%; padding: 16px; border: 2px solid var(--border); border-radius: var(--radius-lg); font-family: inherit; font-size: 15px; font-weight: 700; outline: none; margin-bottom: 16px; color: var(--text-main); transition: all 0.3s;}
 .input-box:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
 .input-label { display: block; font-weight: 800; margin-bottom: 8px; color: var(--text-main); font-size: 14px; }
+
+/* صندوق ملخص الرسوم */
+.fee-summary-box { background: #F8FAFC; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; margin-bottom: 20px; display: none; animation: fadeIn 0.3s ease; }
+.fee-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px; }
+.fee-row.total { font-size: 16px; font-weight: 900; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); color: var(--success); }
 </style>
 </head>
 <body>
@@ -115,11 +120,26 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg-body); color: va
 <div id="withdrawModal" class="modal" onclick="if(event.target==this) closeWithdrawModal()">
   <div class="sheet">
     <h3 style="margin-bottom: 8px; font-size: 20px; color: var(--text-main);">سحب الرصيد</h3>
-    <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 24px;">الحد الأدنى للسحب هو 1 Pi. يرجى التأكد من عنوان المحفظة بشكل صحيح لتجنب فقدان العملات.</p>
+    <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 24px;">الحد الأدنى للسحب هو 1 Pi. يرجى التأكد من عنوان المحفظة لتجنب فقدان العملات.</p>
     
     <label class="input-label">كمية Pi المراد سحبها:</label>
-    <input type="number" id="withdrawAmount" class="input-box" placeholder="مثال: 10.5" step="0.1" min="1" style="text-align: center; color: var(--primary); font-size: 18px;" />
+    <input type="number" id="withdrawAmount" class="input-box" placeholder="مثال: 10.5" step="0.1" min="1" style="text-align: center; color: var(--primary); font-size: 18px;" oninput="calculateFee()" />
     
+    <div id="fee-summary" class="fee-summary-box">
+      <div class="fee-row">
+        <span style="color: var(--text-muted);">المبلغ المخصوم من حسابك:</span>
+        <span id="summary-requested" style="font-weight: bold; color: var(--text-main);">0.00 π</span>
+      </div>
+      <div class="fee-row">
+        <span style="color: var(--danger);"><i class="fa-solid fa-tags"></i> رسوم المنصة والشبكة:</span>
+        <span style="font-weight: bold; color: var(--danger);">-0.05 π</span>
+      </div>
+      <div class="fee-row total">
+        <span>الصافي الواصل لمحفظتك:</span>
+        <span id="summary-receive">0.00 π</span>
+      </div>
+    </div>
+
     <label class="input-label">عنوان المحفظة المستلمة (Public Key):</label>
     <input type="text" id="withdrawAddress" class="input-box" placeholder="G..." dir="ltr" style="text-align: left; font-family: monospace;" autocomplete="off" autocorrect="off" spellcheck="false" />
     
@@ -134,9 +154,12 @@ const SUPABASE_URL = "https://ssvyxrtyvdxxojmunrcv.supabase.co";
 const SUPABASE_KEY = "sb_publishable_8egOM2-lT9J6kPQTbluC4w_8YHtB4K3"; 
 const API_BASE = "/.netlify/functions"; // مسار السيرفر
 
+// ثابت للرسوم لتسهيل تغييره مستقبلاً
+const PLATFORM_FEE = 0.05;
+
 let sb;
 let currentUser = null;
-let currentActualBalance = 0; // الرصيد المتاح الفعلي بعد الحسابات
+let currentActualBalance = 0; 
 
 document.addEventListener("DOMContentLoaded", async () => {
   sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -160,12 +183,10 @@ async function loadWalletData() {
   const container = document.getElementById('tx-container');
 
   try {
-    // 1. جلب معاملات البيع والشراء
     const { data: escrows } = await sb.from("escrow_transactions")
       .select("*, products(name)")
       .or(`seller_pi_id.eq.${currentUser.uid},buyer_pi_id.eq.${currentUser.uid}`);
 
-    // 2. جلب عمليات السحب السابقة لهذا المستخدم
     const { data: withdrawals } = await sb.from("withdrawals")
       .select("*")
       .eq("user_pi_id", currentUser.uid);
@@ -175,7 +196,6 @@ async function loadWalletData() {
     let pendingBalance = 0;
     let totalWithdrawn = 0;
     
-    // معالجة مبيعات ومشتريات الوسيط
     if (escrows) {
         escrows.forEach(tx => {
           const isSeller = (tx.seller_pi_id === currentUser.uid);
@@ -191,7 +211,6 @@ async function loadWalletData() {
         });
     }
 
-    // معالجة السحوبات
     if (withdrawals) {
         withdrawals.forEach(w => {
             totalWithdrawn += parseFloat(w.amount);
@@ -203,14 +222,11 @@ async function loadWalletData() {
         });
     }
 
-    // حساب الرصيد النهائي القابل للسحب
     currentActualBalance = availableBalance - totalWithdrawn;
 
-    // تحديث الواجهة بالأرقام
     document.getElementById('available-balance').innerHTML = `${currentActualBalance.toFixed(2)} <span style="font-size: 24px; color: white;">π</span>`;
     document.getElementById('pending-balance').innerHTML = `${pendingBalance.toFixed(2)} π`;
 
-    // ترتيب السجل بالأحدث أولاً
     allTxs.sort((a, b) => b.date - a.date);
 
     if (allTxs.length === 0) {
@@ -280,11 +296,38 @@ async function loadWalletData() {
 function openWithdrawModal() { 
   document.getElementById('withdrawAmount').value = '';
   document.getElementById('withdrawAddress').value = '';
+  document.getElementById('fee-summary').style.display = 'none'; // إخفاء الفاتورة في البداية
   document.getElementById('withdrawModal').style.display = 'flex'; 
 }
+
 function closeWithdrawModal() { document.getElementById('withdrawModal').style.display = 'none'; }
 
-// دالة طلب السحب من السيرفر مع المتغيرات الجديدة
+// دالة لحساب وعرض الرسوم مباشرة للمستخدم
+function calculateFee() {
+    const inputVal = document.getElementById('withdrawAmount').value;
+    const amount = parseFloat(inputVal);
+    const summaryBox = document.getElementById('fee-summary');
+    const reqSpan = document.getElementById('summary-requested');
+    const recSpan = document.getElementById('summary-receive');
+
+    if(amount && amount > PLATFORM_FEE) {
+        summaryBox.style.display = 'block';
+        reqSpan.innerText = amount.toFixed(2) + ' π';
+        
+        let net = amount - PLATFORM_FEE;
+        recSpan.innerText = net.toFixed(2) + ' π';
+
+        // تنبيه لوني إذا كان المبلغ المطلوب أكبر من رصيده
+        if(amount > currentActualBalance) {
+            reqSpan.style.color = 'var(--danger)';
+        } else {
+            reqSpan.style.color = 'var(--text-main)';
+        }
+    } else {
+        summaryBox.style.display = 'none';
+    }
+}
+
 async function submitWithdraw() {
     const amountInput = document.getElementById('withdrawAmount').value;
     const addressInput = document.getElementById('withdrawAddress').value.trim();
@@ -296,19 +339,22 @@ async function submitWithdraw() {
     if(!addressInput) return alert("يرجى إدخال عنوان المحفظة المستلمة.");
     if(addressInput.length < 40 || !addressInput.startsWith('G')) return alert("يرجى إدخال عنوان محفظة Pi صحيح (يبدأ بحرف G).");
 
+    // تحذير أخير للتأكيد
+    const netAmount = (amount - PLATFORM_FEE).toFixed(2);
+    if(!confirm(`سيتم خصم ${amount} من رصيدك، وسيصلك ${netAmount} Pi بعد خصم الرسوم. هل تريد المتابعة؟`)) return;
+
     const btn = document.getElementById('confirmWithdrawBtn');
     btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> جاري المعالجة...`;
     btn.disabled = true;
 
     try {
-        // نرسل الطلب للسيرفر مع إضافة العنوان (address)
         const res = await fetch(`${API_BASE}/withdraw`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
                 uid: currentUser.uid, 
-                amount: amount,
-                address: addressInput // ⬅️ الإضافة الجديدة هنا
+                amount: amount, // نرسل المبلغ الإجمالي للسيرفر
+                address: addressInput 
             })
         });
         
@@ -319,7 +365,6 @@ async function submitWithdraw() {
             closeWithdrawModal();
             btn.innerHTML = `<i class="fa-solid fa-check"></i> تأكيد السحب`;
             btn.disabled = false;
-            // إعادة تحميل الصفحة لتحديث الأرصدة
             await loadWalletData();
         } else {
             throw new Error(data.error || "حدث خطأ غير معروف");
