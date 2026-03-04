@@ -765,59 +765,61 @@ async function executePayment() {
   }
 }
 
-// ---- وظائف الشحن والاستلام والإلغاء (عبر الباك إند) ----
-async function callUpdateAPI(newStatus, btnElement, loadingText, successMsg) {
-    const origHTML = btnElement ? btnElement.innerHTML : '';
-    if(btnElement) {
-        btnElement.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> ${loadingText}`;
-        btnElement.disabled = true;
-    }
-
-    try {
-        const res = await fetch(`${API_BASE}/update-escrow`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ 
-                orderId: currentEscrow.id, 
-                newStatus: newStatus,
-                uid: currentUser.uid 
-            })
-        });
-        
-        const data = await res.json();
-
-        if(res.ok && data.success) {
-            currentEscrow.status = newStatus;
-            updateUI();
-            if(successMsg) alert(successMsg);
-        } else {
-            throw new Error(data.error || "Server Error");
-        }
-    } catch(err) {
-        console.error(err);
-        alert(t('update_error') + "\n" + err.message);
-        if(btnElement) {
-            btnElement.innerHTML = origHTML;
-            btnElement.disabled = false;
-        }
-    }
-}
-
+// ---- وظائف الشحن والاستلام والإلغاء (عبر الواجهة الأمامية مباشرة) ----
 async function markAsShipped() {
   const btn = document.querySelector('.btn-primary');
-  await callUpdateAPI('SHIPPED', btn, t('updating'), null);
+  btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> ${t('updating')}`;
+  btn.disabled = true;
+  try {
+    const { error } = await sb.from('escrow_transactions').update({ status: 'SHIPPED' }).eq('id', currentEscrow.id);
+    if (error) throw error;
+    currentEscrow.status = 'SHIPPED';
+    updateUI();
+  } catch(e) { alert(t('update_error')); updateUI(); }
 }
 
 async function confirmReceipt() {
   if(!confirm(t('confirm_receipt_msg'))) return;
   const btn = document.querySelector('.btn-success');
-  await callUpdateAPI('COMPLETED', btn, t('updating'), t('receipt_success'));
+  btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> ${t('updating')}`;
+  btn.disabled = true;
+  try {
+    const { error } = await sb.from('escrow_transactions').update({ status: 'COMPLETED' }).eq('id', currentEscrow.id);
+    if (error) throw error;
+    currentEscrow.status = 'COMPLETED';
+    updateUI();
+    alert(t('receipt_success'));
+  } catch(e) { alert(t('receipt_error')); updateUI(); }
 }
 
 async function cancelOrder() {
     if(!confirm(t('confirm_cancel'))) return;
+
     const btn = document.getElementById('cancelOrderBtn');
-    await callUpdateAPI('CANCELLED', btn, t('updating'), t('cancel_success'));
+    if(btn) {
+        btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> ${t('updating')}`;
+        btn.disabled = true;
+    }
+
+    try {
+        const { error } = await sb.from('escrow_transactions')
+          .update({ status: 'CANCELLED' })
+          .eq('id', currentEscrow.id);
+          
+        if (error) throw error;
+
+        currentEscrow.status = 'CANCELLED';
+        updateUI();
+        alert(t('cancel_success'));
+        
+    } catch (err) {
+        console.error(err);
+        alert(t('update_error'));
+        if(btn) {
+            btn.innerHTML = `<i class="fa-solid fa-ban"></i> ${t('btn_cancel_order')}`;
+            btn.disabled = false;
+        }
+    }
 }
 
 
