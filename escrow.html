@@ -702,6 +702,22 @@ async function executePayment() {
           const res = await fetch(`${API_BASE}/complete`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId, txid }) });
           const json = await res.json();
           if(res.ok && (json.completed || json.success)) {
+            
+            // 🚨🚨🚨 التعديل هنا: تسجيل الصفقة في قاعدة البيانات بعد نجاح الدفع 🚨🚨🚨
+            const { error: insertError } = await sb.from('escrow_transactions').insert({
+                product_id: currentProduct.id,
+                buyer_pi_id: currentUser.uid,
+                seller_pi_id: currentProduct.seller_pi_id,
+                amount: currentProduct.price, // تسجيل سعر المنتج الأصلي كقيمة للصفقة
+                status: 'FUNDED'
+            });
+
+            if (insertError) {
+                console.error("Insert Error:", insertError);
+                throw new Error("تم الدفع ولكن فشل التسجيل في قاعدة البيانات");
+            }
+            // -----------------------------------------------------------------
+
             if(!isPaymentAlertShown) { alert(t('pay_success')); isPaymentAlertShown = true; }
             closePaymentModal();
             document.getElementById('action-hint').innerText = t('verifying');
