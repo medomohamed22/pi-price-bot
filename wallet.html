@@ -317,11 +317,21 @@ async function loadWalletData() {
   const container = document.getElementById('tx-container');
 
   try {
-    const { data: escrows } = await sb.from("escrow_transactions")
+    // جلب الصفقات بطريقة آمنة بحيث لا يتوقف الكود إذا لم يكن هناك منتج
+    let { data: escrows, error: escrowErr } = await sb.from("escrow_transactions")
       .select("*, products(name)")
       .or(`seller_pi_id.eq.${currentUser.uid},buyer_pi_id.eq.${currentUser.uid}`);
 
-    const { data: withdrawals } = await sb.from("withdrawals")
+    // Fallback في حال كانت العلاقة محذوفة أو بها مشكلة
+    if (escrowErr) {
+        console.warn("Product join failed, fallback applied.");
+        const fallbackRes = await sb.from("escrow_transactions")
+            .select("*")
+            .or(`seller_pi_id.eq.${currentUser.uid},buyer_pi_id.eq.${currentUser.uid}`);
+        escrows = fallbackRes.data;
+    }
+
+    const { data: withdrawals, error: wErr } = await sb.from("withdrawals")
       .select("*")
       .eq("user_pi_id", currentUser.uid);
 
@@ -332,20 +342,24 @@ async function loadWalletData() {
     
     if (escrows) {
         escrows.forEach(tx => {
+          // 🚨 تجاهل الطلبات التي لم يتم دفعها نهائياً لتصحيح الحسابات
+          if (tx.status === 'PENDING') return; 
+
           const isSeller = (tx.seller_pi_id === currentUser.uid);
           const isBuyer = (tx.buyer_pi_id === currentUser.uid);
-          const amt = parseFloat(tx.amount);
+          const amt = parseFloat(tx.amount) || 0;
+          const txDate = new Date(tx.updated_at || tx.created_at); // استخدام تاريخ التحديث للطلبات المكتملة/الملغية
 
           if (isSeller) {
               if (tx.status === 'COMPLETED') {
                   availableBalance += amt;
-                  allTxs.push({ type: 'sell', data: tx, date: new Date(tx.created_at) });
-              } else if (tx.status !== 'CANCELLED') {
+                  allTxs.push({ type: 'sell', data: tx, date: txDate });
+              } else if (tx.status === 'FUNDED' || tx.status === 'SHIPPED') {
                   pendingBalance += amt;
                   allTxs.push({ type: 'sell', data: tx, date: new Date(tx.created_at) });
               } else if (tx.status === 'CANCELLED') {
-                  // صفقة بيع ملغية تظهر فقط للسجل ولا تؤثر على الرصيد المعلق
-                  allTxs.push({ type: 'sell', data: tx, date: new Date(tx.created_at) });
+                  // صفقة بيع ملغية تظهر فقط للسجل ولا تؤثر على الرصيد
+                  allTxs.push({ type: 'sell', data: tx, date: txDate });
               }
           }
           
@@ -353,7 +367,7 @@ async function loadWalletData() {
               if (tx.status === 'CANCELLED') {
                   // استرداد أموال المشتري
                   availableBalance += amt;
-                  allTxs.push({ type: 'refund', data: tx, date: new Date(tx.created_at) });
+                  allTxs.push({ type: 'refund', data: tx, date: txDate });
               } else {
                   // شراء عادي
                   allTxs.push({ type: 'buy', data: tx, date: new Date(tx.created_at) });
@@ -364,7 +378,7 @@ async function loadWalletData() {
 
     if (withdrawals) {
         withdrawals.forEach(w => {
-            totalWithdrawn += parseFloat(w.amount);
+            totalWithdrawn += parseFloat(w.amount) || 0;
             allTxs.push({
                 type: 'withdraw',
                 data: w,
@@ -378,6 +392,7 @@ async function loadWalletData() {
     document.getElementById('available-balance').innerHTML = `${currentActualBalance.toFixed(2)} <span style="font-size: 24px; color: white;">π</span>`;
     document.getElementById('pending-balance').innerHTML = `${pendingBalance.toFixed(2)} π`;
 
+    // ترتيب السجل من الأحدث للأقدم
     allTxs.sort((a, b) => b.date - a.date);
 
     if (allTxs.length === 0) {
@@ -391,7 +406,8 @@ async function loadWalletData() {
       const dateStr = item.date.toLocaleDateString(dateLocale, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
       let html = "";
       
-      const productName = item.data.products ? item.data.products.name : t('prod_deleted');
+      // جلب اسم المنتج بشكل آمن
+      const productName = (item.data.products && item.data.products.name) ? item.data.products.name : t('prod_deleted');
 
       if(item.type === 'withdraw') {
           html = `
