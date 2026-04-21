@@ -4,7 +4,7 @@ HORIZON_URL="https://api.testnet.minepi.com"
 
 # Organization Info
 ORG_NAME="USD1"
-ORG_URL="https://donateway.netlify.app"
+ORG_URL="https://dealway.netlify.app"
 ORG_DESCRIPTION="usd1"
 ORG_LOGO="https://dealway.netlify.app/logo.png"
 
